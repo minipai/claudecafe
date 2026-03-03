@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import matter from 'gray-matter'
 
-export interface Role {
+export interface Maid {
   slug: string
   jaName: string
   enName: string
@@ -11,7 +11,7 @@ export interface Role {
   rawMd: string
 }
 
-function parseRole(slug: string, raw: string): Role {
+function parseMaid(slug: string, raw: string): Maid {
   const { data, content } = matter(raw)
 
   return {
@@ -24,27 +24,27 @@ function parseRole(slug: string, raw: string): Role {
   }
 }
 
-let rolesCache: Role[] | null = null
+let maidsCache: Maid[] | null = null
 
-function getRolesDir(): string {
-  return join(import.meta.dirname, '../../roles')
+function getCafeDir(): string {
+  return join(import.meta.dirname, '../../cafe')
 }
 
-export function getAllRoles(): Role[] {
-  if (rolesCache) return rolesCache
+export function getAllMaids(): Maid[] {
+  if (maidsCache) return maidsCache
 
-  const dir = getRolesDir()
+  const dir = getCafeDir()
   const files = readdirSync(dir).filter(f => f.endsWith('.md')).sort()
 
-  rolesCache = files.map(f => {
+  maidsCache = files.map(f => {
     const slug = f.replace('.md', '')
     const raw = readFileSync(join(dir, f), 'utf-8')
-    return parseRole(slug, raw)
+    return parseMaid(slug, raw)
   })
 
-  return rolesCache
+  return maidsCache
 }
 
-export function getRole(name: string): Role | undefined {
-  return getAllRoles().find(r => r.slug === name || r.enName.toLowerCase() === name.toLowerCase())
+export function getMaid(name: string): Maid | undefined {
+  return getAllMaids().find(m => m.slug === name || m.enName.toLowerCase() === name.toLowerCase())
 }

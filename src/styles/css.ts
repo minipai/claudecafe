@@ -167,7 +167,7 @@ main {
   font-style: italic;
 }
 
-/* Role Detail Page */
+/* Maid Detail Page */
 .role-detail {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -234,7 +234,7 @@ main {
   font-size: 0.85rem;
 }
 
-/* Role CTA */
+/* Maid CTA */
 .role-cta {
   font-family: var(--font-sans);
   text-align: center;

@@ -4,7 +4,7 @@ COPY package.json ./
 RUN bun install --production
 COPY tsconfig.json ./
 COPY src ./src
-COPY roles ./roles
+COPY cafe ./cafe
 COPY public ./public
 ENV NODE_ENV=production
 EXPOSE 3000

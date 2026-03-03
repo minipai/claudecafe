@@ -1,9 +1,9 @@
-import type { Role } from '../utils/roles.js'
+import type { Maid } from '../utils/maids.js'
 import { renderMarkdown } from '../utils/markdown.js'
 
-export function RolePage({ role }: { role: Role }) {
-  const html = renderMarkdown(role.rawMd)
-  const rawMdJson = JSON.stringify(role.rawMd)
+export function RolePage({ maid }: { maid: Maid }) {
+  const html = renderMarkdown(maid.rawMd)
+  const rawMdJson = JSON.stringify(maid.rawMd)
 
   const copyScript = `
     document.getElementById('hire-btn').addEventListener('click', function(e) {
@@ -26,12 +26,12 @@ export function RolePage({ role }: { role: Role }) {
         <header class="role-header">
           <div class="maid-info">
             <div class="maid-info-primary">
-              <h1 class="maid-name">{role.jaName}</h1>
-              <span class="maid-traits">{role.title}</span>
+              <h1 class="maid-name">{maid.jaName}</h1>
+              <span class="maid-traits">{maid.title}</span>
             </div>
-            <p class="maid-quote">「{role.quote}」</p>
+            <p class="maid-quote">「{maid.quote}」</p>
           </div>
-          <span class="maid-en-name">{role.enName}</span>
+          <span class="maid-en-name">{maid.enName}</span>
         </header>
         <div class="role-content" dangerouslySetInnerHTML={{ __html: html }} />
       </article>

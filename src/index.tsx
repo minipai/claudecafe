@@ -4,7 +4,7 @@ import { serveStatic } from '@hono/node-server/serve-static'
 import { Layout } from './components/Layout.js'
 import { HomePage } from './components/HomePage.js'
 import { RolePage } from './pages/RolePage.js'
-import { getAllRoles, getRole } from './utils/roles.js'
+import { getAllMaids, getMaid } from './utils/maids.js'
 
 const app = new Hono()
 
@@ -16,11 +16,11 @@ app.use('/public/*', serveStatic({ root: './' }))
 
 app.get('/', (c) => {
   const accept = c.req.header('Accept') || ''
-  const roles = getAllRoles()
+  const maids = getAllMaids()
 
   if (accept.includes('text/markdown')) {
-    const index = roles
-      .map(r => `- [${r.jaName} (${r.enName})](/roles/${r.slug}) — ${r.title}`)
+    const index = maids
+      .map(m => `- [${m.jaName} (${m.enName})](/${m.slug}) — ${m.title}`)
       .join('\n')
     const md = `# The Claude Café\n\n六位女僕，一座咖啡廳。\n\n${index}\n`
     return c.text(md, 200, { 'Content-Type': 'text/markdown; charset=utf-8' })
@@ -28,26 +28,26 @@ app.get('/', (c) => {
 
   return c.html(
     <Layout>
-      <HomePage roles={roles} />
+      <HomePage maids={maids} />
     </Layout>
   )
 })
 
-app.get('/roles/:name', (c) => {
+app.get('/:name', (c) => {
   const accept = c.req.header('Accept') || ''
-  const role = getRole(c.req.param('name'))
+  const maid = getMaid(c.req.param('name'))
 
-  if (!role) {
+  if (!maid) {
     return c.text('404 — この子はまだ café にいないようです', 404)
   }
 
   if (accept.includes('text/markdown') || accept.includes('text/plain')) {
-    return c.text(role.rawMd, 200, { 'Content-Type': 'text/markdown; charset=utf-8' })
+    return c.text(maid.rawMd, 200, { 'Content-Type': 'text/markdown; charset=utf-8' })
   }
 
   return c.html(
-    <Layout title={`${role.jaName} (${role.enName})`} showBack>
-      <RolePage role={role} />
+    <Layout title={`${maid.jaName} (${maid.enName})`} showBack>
+      <RolePage maid={maid} />
     </Layout>
   )
 })

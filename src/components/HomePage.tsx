@@ -1,7 +1,7 @@
-import type { Role } from '../utils/roles.js'
+import type { Maid } from '../utils/maids.js'
 import { MaidCard } from './MaidCard.js'
 
-export function HomePage({ roles }: { roles: Role[] }) {
+export function HomePage({ maids }: { maids: Maid[] }) {
   return (
     <div class="home">
       <section class="hero">
@@ -9,8 +9,8 @@ export function HomePage({ roles }: { roles: Role[] }) {
         <p>歡迎來到 The Claude Café，這裡有六位個性迥異的女僕為您服務。</p>
       </section>
       <div class="maid-list">
-        {roles.map(role => (
-          <MaidCard role={role} />
+        {maids.map(maid => (
+          <MaidCard maid={maid} />
         ))}
       </div>
       <footer class="site-footer">

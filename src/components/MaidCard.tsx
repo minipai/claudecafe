@@ -1,16 +1,16 @@
-import type { Role } from '../utils/roles.js'
+import type { Maid } from '../utils/maids.js'
 
-export function MaidCard({ role }: { role: Role }) {
+export function MaidCard({ maid }: { maid: Maid }) {
   return (
-    <a href={`/roles/${role.slug}`} class="maid-row">
+    <a href={`/${maid.slug}`} class="maid-row">
       <div class="maid-info">
         <div class="maid-info-primary">
-          <span class="maid-name">{role.jaName}</span>
-          <span class="maid-traits">{role.title}</span>
+          <span class="maid-name">{maid.jaName}</span>
+          <span class="maid-traits">{maid.title}</span>
         </div>
-        <p class="maid-quote">「{role.quote}」</p>
+        <p class="maid-quote">「{maid.quote}」</p>
       </div>
-      <span class="maid-en-name">{role.enName}</span>
+      <span class="maid-en-name">{maid.enName}</span>
     </a>
   )
 }
