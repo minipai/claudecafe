@@ -279,6 +279,42 @@ main {
   opacity: 0.6;
 }
 
+/* Not Found */
+.not-found {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.not-found h1 {
+  font-size: 1.4rem;
+  color: var(--accent);
+  margin-bottom: 2rem;
+}
+
+.not-found-quote {
+  font-size: 1.05rem;
+  font-style: italic;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.not-found-maid {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 2.5rem;
+}
+
+.not-found-back a {
+  color: var(--accent);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+}
+
+.not-found-back a:hover {
+  text-decoration: underline;
+}
+
 /* RWD */
 @media (max-width: 600px) {
   .site-title { font-size: 1.4rem; }

@@ -3,7 +3,8 @@ import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Layout } from './components/Layout.js'
 import { HomePage } from './components/HomePage.js'
-import { RolePage } from './pages/RolePage.js'
+import { MaidPage } from './pages/MaidPage.js'
+import { NotFoundPage } from './pages/NotFoundPage.js'
 import { getAllMaids, getMaid } from './utils/maids.js'
 
 const app = new Hono()
@@ -38,7 +39,12 @@ app.get('/:name', (c) => {
   const maid = getMaid(c.req.param('name'))
 
   if (!maid) {
-    return c.text('404 — この子はまだ café にいないようです', 404)
+    return c.html(
+      <Layout>
+        <NotFoundPage />
+      </Layout>,
+      404,
+    )
   }
 
   if (accept.includes('text/markdown') || accept.includes('text/plain')) {
@@ -47,8 +53,17 @@ app.get('/:name', (c) => {
 
   return c.html(
     <Layout title={`${maid.jaName} (${maid.enName})`} showBack>
-      <RolePage maid={maid} />
+      <MaidPage maid={maid} />
     </Layout>
+  )
+})
+
+app.notFound((c) => {
+  return c.html(
+    <Layout>
+      <NotFoundPage />
+    </Layout>,
+    404,
   )
 })
 

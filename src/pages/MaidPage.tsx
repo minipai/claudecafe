@@ -1,7 +1,7 @@
 import type { Maid } from '../utils/maids.js'
 import { renderMarkdown } from '../utils/markdown.js'
 
-export function RolePage({ maid }: { maid: Maid }) {
+export function MaidPage({ maid }: { maid: Maid }) {
   const html = renderMarkdown(maid.rawMd)
   const rawMdJson = JSON.stringify(maid.rawMd)
 
