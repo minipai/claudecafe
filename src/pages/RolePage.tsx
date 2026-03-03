@@ -35,7 +35,7 @@ export function RolePage({ role }: { role: Role }) {
       </article>
       <footer class="role-footer">
         <p class="role-footer-note">
-          Paste into your <code>CLAUDE.md</code> to hire — <a href="#" id="hire-btn">copy source</a>
+          Add to your <code>CLAUDE.md</code> to make Claude this maid — <a href="#" id="hire-btn">copy source</a>
         </p>
       </footer>
       <script dangerouslySetInnerHTML={{ __html: copyScript }} />
