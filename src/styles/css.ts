@@ -158,7 +158,7 @@ main {
 }
 
 .maid-row:hover .maid-en-name {
-  opacity: 1;
+  opacity: 0.3;
 }
 
 .maid-traits {
