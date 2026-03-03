@@ -19,7 +19,7 @@ export function Layout({ children, title, showBack }: { children: Child; title?:
         <header class="site-header">
           <div class="site-header-inner">
             <div class="header-left">
-              {showBack ? <a href="/" class="header-back">← 回到大廳</a> : <span />}
+              {showBack ? <a href="/" class="header-back">← café</a> : <span />}
             </div>
             <a href="/" class="site-title">
               <img src="/public/bow.png" alt="" class="site-logo" />
