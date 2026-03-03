@@ -8,6 +8,10 @@ import { getAllRoles, getRole } from './utils/roles.js'
 
 const app = new Hono()
 
+app.use('/public/*', async (c, next) => {
+  await next()
+  c.header('Cache-Control', 'public, max-age=86400, immutable')
+})
 app.use('/public/*', serveStatic({ root: './' }))
 
 app.get('/', (c) => {
