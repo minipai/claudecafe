@@ -3,7 +3,6 @@ import type { Role } from '../utils/roles.js'
 export function MaidCard({ role }: { role: Role }) {
   return (
     <a href={`/roles/${role.slug}`} class="maid-row">
-      <div class="maid-avatar" />
       <div class="maid-info">
         <div class="maid-info-primary">
           <span class="maid-name">{role.jaName}</span>

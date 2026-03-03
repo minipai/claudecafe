@@ -11,7 +11,7 @@ export function RolePage({ role }: { role: Role }) {
       var md = ${rawMdJson};
       navigator.clipboard.writeText(md).then(function() {
         var link = document.getElementById('hire-btn');
-        link.textContent = 'copied!';
+        link.textContent = 'copied, cool';
         setTimeout(function() { link.textContent = 'copy source'; }, 2000);
       });
     });
@@ -19,6 +19,9 @@ export function RolePage({ role }: { role: Role }) {
 
   return (
     <div class="role-page">
+      <div class="role-cta">
+        <p>Add to your <code>CLAUDE.md</code> to make Claude this maid — <a href="#" id="hire-btn">copy source</a></p>
+      </div>
       <article class="role-detail">
         <header class="role-header">
           <div class="maid-info">
@@ -30,14 +33,8 @@ export function RolePage({ role }: { role: Role }) {
           </div>
           <span class="maid-en-name">{role.enName}</span>
         </header>
-        <div class="role-illustration" />
         <div class="role-content" dangerouslySetInnerHTML={{ __html: html }} />
       </article>
-      <footer class="role-footer">
-        <p class="role-footer-note">
-          Add to your <code>CLAUDE.md</code> to make Claude this maid — <a href="#" id="hire-btn">copy source</a>
-        </p>
-      </footer>
       <script dangerouslySetInnerHTML={{ __html: copyScript }} />
     </div>
   )

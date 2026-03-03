@@ -6,10 +6,10 @@ export const css = /* css */ `
   --text-muted: #7a6a5e;
   --border: #e8ddd0;
   --accent: #8b7355;
+  --accent-bold: #8b2020;
   --header-bg: #3c2f2f;
   --header-text: #faf6f0;
-  --shadow: 0 2px 8px rgba(60, 47, 47, 0.08);
-  --radius: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,7 +46,7 @@ body {
   align-items: center;
   color: var(--header-text);
   text-decoration: none;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.85rem;
   opacity: 0.8;
   padding: 0.7rem 1.5rem;
@@ -106,7 +106,7 @@ main {
 .maid-list {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--border);
+  border-top: 1px dashed var(--border);
 }
 
 .maid-row {
@@ -116,16 +116,11 @@ main {
   padding: 0.8rem 0.5rem;
   text-decoration: none;
   color: var(--text);
-  border-bottom: 1px solid var(--border);
-  transition: background 0.15s ease;
+  border-bottom: 1px dashed var(--border);
 }
 
 .maid-row:hover {
-  background: var(--bg-card);
-}
-
-.maid-avatar {
-  display: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5) 5%, rgba(255, 255, 255, 0.5) 60%, transparent);
 }
 
 .maid-info {
@@ -148,7 +143,7 @@ main {
 
 .maid-en-name {
   margin-left: auto;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.85rem;
   color: var(--text-muted);
   flex-shrink: 0;
@@ -157,8 +152,8 @@ main {
   transition: opacity 0.15s ease;
 }
 
-.maid-row:hover .maid-en-name {
-  opacity: 0.3;
+.maid-row:hover .maid-name {
+  color: var(--accent-bold);
 }
 
 .maid-traits {
@@ -217,14 +212,15 @@ main {
 
 .role-header .maid-name {
   font-size: 1.5rem;
-}
-
-.role-illustration {
-  display: none;
+  color: var(--accent-bold);
 }
 
 /* Markdown content */
-.role-content { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.9rem; line-height: 1.7; }
+.role-content {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
 .role-content .md-hash { opacity: 0.3; }
 .role-content h1 { font-size: 1.3rem; margin: 1.5rem 0 0.8rem; color: var(--accent); }
 .role-content h2 { font-size: 1.1rem; margin: 1.3rem 0 0.6rem; color: var(--accent); }
@@ -238,34 +234,30 @@ main {
   font-size: 0.85rem;
 }
 
-/* Role Footer */
-.role-footer {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif;
+/* Role CTA */
+.role-cta {
+  font-family: var(--font-sans);
   text-align: center;
-  padding: 0;
-}
-
-.role-footer-note {
-  margin-top: 1.5rem;
-  font-size: 0.8rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
   color: var(--text-muted);
-  opacity: 0.6;
 }
 
-.role-footer-note code {
+.role-cta code {
   background: var(--border);
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
-  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
 }
 
-.role-footer-note a {
+.role-cta a {
   color: var(--accent);
   text-decoration: none;
+  font-weight: bold;
   white-space: nowrap;
 }
 
-.role-footer-note a:hover {
+.role-cta a:hover {
   text-decoration: underline;
 }
 
@@ -274,6 +266,7 @@ main {
   text-align: center;
   padding: 2rem 1.5rem;
   font-size: 0.7rem;
+  font-family: var(--font-sans);
 }
 
 .site-footer a {
@@ -283,7 +276,7 @@ main {
 }
 
 .site-footer a:hover {
-  opacity: 0.8;
+  opacity: 0.6;
 }
 
 /* RWD */
@@ -292,7 +285,6 @@ main {
   .hero h1 { font-size: 1.5rem; }
   main { padding: 1rem; }
   .role-detail { padding: 1.2rem; }
-  .maid-grid { grid-template-columns: 1fr; }
   .header-back { font-size: 0; line-height: 0; padding: 0.7rem 1.2rem; min-width: 44px; min-height: 44px; justify-content: center; }
   .header-back::before { content: '←'; font-size: 1rem; line-height: normal; }
   .maid-info-primary { flex-direction: column; gap: 0.2rem; }

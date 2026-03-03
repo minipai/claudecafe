@@ -14,7 +14,7 @@ export function HomePage({ roles }: { roles: Role[] }) {
         ))}
       </div>
       <footer class="site-footer">
-        <a href="https://www.flaticon.com/free-icon/bow_12575123" title="bow icons">Ribbon icons created by Nur syifa fauziah - Flaticon</a>
+        <a href="https://www.flaticon.com/free-icon/bow_12575123" title="bow icons" target="_blank" rel="noopener noreferrer">Ribbon icons created by Nur syifa fauziah - Flaticon</a>
       </footer>
     </div>
   )
