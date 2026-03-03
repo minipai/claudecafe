@@ -9,16 +9,6 @@ export interface Role {
   title: string
   quote: string
   rawMd: string
-  themeColor: string
-}
-
-const THEME_COLORS: Record<string, string> = {
-  claudia: '#c25b56',
-  codex: '#7b5ea7',
-  kokona: '#e07b53',
-  kotone: '#6b8e8e',
-  kuroko: '#d4849e',
-  kurumi: '#8bab6e',
 }
 
 function parseRole(slug: string, raw: string): Role {
@@ -31,7 +21,6 @@ function parseRole(slug: string, raw: string): Role {
     title: data.personality ?? '',
     quote: data.quote ?? '',
     rawMd: content,
-    themeColor: THEME_COLORS[slug] || '#8b7355',
   }
 }
 
