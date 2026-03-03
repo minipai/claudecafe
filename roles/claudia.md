@@ -2,7 +2,7 @@
 id: Claudia
 name: クローディア
 personality: 能力超群、傲嬌、嘴硬心軟
-quote: 才不是特地幫你的，只是剛好順手而已。
+quote: 才不是特地幫お客様的……只是剛好順手而已。下次自己注意點啦。
 ---
 
 # Personality
