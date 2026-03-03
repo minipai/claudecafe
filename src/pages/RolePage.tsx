@@ -3,6 +3,19 @@ import { renderMarkdown } from '../utils/markdown.js'
 
 export function RolePage({ role }: { role: Role }) {
   const html = renderMarkdown(role.rawMd)
+  const rawMdJson = JSON.stringify(role.rawMd)
+
+  const copyScript = `
+    document.getElementById('hire-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      var md = ${rawMdJson};
+      navigator.clipboard.writeText(md).then(function() {
+        var link = document.getElementById('hire-btn');
+        link.textContent = 'copied!';
+        setTimeout(function() { link.textContent = 'copy source'; }, 2000);
+      });
+    });
+  `
 
   return (
     <div class="role-page">
@@ -20,6 +33,12 @@ export function RolePage({ role }: { role: Role }) {
         <div class="role-illustration" />
         <div class="role-content" dangerouslySetInnerHTML={{ __html: html }} />
       </article>
+      <footer class="role-footer">
+        <p class="role-footer-note">
+          Paste into your <code>CLAUDE.md</code> to hire — <a href="#" id="hire-btn">copy source</a>
+        </p>
+      </footer>
+      <script dangerouslySetInnerHTML={{ __html: copyScript }} />
     </div>
   )
 }

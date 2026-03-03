@@ -238,6 +238,36 @@ main {
   font-size: 0.88rem;
 }
 
+/* Role Footer */
+.role-footer {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif;
+  text-align: center;
+  padding: 0;
+}
+
+.role-footer-note {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.role-footer-note code {
+  background: var(--border);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+.role-footer-note a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.role-footer-note a:hover {
+  text-decoration: underline;
+}
+
 /* RWD */
 @media (max-width: 600px) {
   .site-title { font-size: 1.4rem; }
