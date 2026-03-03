@@ -167,8 +167,8 @@ main {
   font-style: italic;
 }
 
-/* Maid Detail Page */
-.role-detail {
+/* Maid Detail */
+.maid-detail {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 0;
@@ -177,7 +177,7 @@ main {
   position: relative;
 }
 
-.role-detail::before {
+.maid-detail::before {
   content: '';
   display: block;
   position: absolute;
@@ -189,7 +189,7 @@ main {
   transform: rotate(135deg);
 }
 
-.role-detail::after {
+.maid-detail::after {
   content: '';
   display: block;
   position: absolute;
@@ -201,7 +201,7 @@ main {
   transform: rotate(135deg);
 }
 
-.role-header {
+.maid-header {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -210,24 +210,24 @@ main {
   border-bottom: 1px solid var(--border);
 }
 
-.role-header .maid-name {
+.maid-header .maid-name {
   font-size: 1.5rem;
   color: var(--accent-bold);
 }
 
 /* Markdown content */
-.role-content {
+.maid-content {
   font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
   font-size: 0.9rem;
   line-height: 1.7;
 }
-.role-content .md-hash { opacity: 0.3; }
-.role-content h1 { font-size: 1.3rem; margin: 1.5rem 0 0.8rem; color: var(--accent); }
-.role-content h2 { font-size: 1.1rem; margin: 1.3rem 0 0.6rem; color: var(--accent); }
-.role-content p { margin-bottom: 0.8rem; }
-.role-content ul, .role-content ol { margin: 0.5rem 0 1rem 0; list-style: none; }
-.role-content li { margin-bottom: 0.3rem; }
-.role-content code {
+.maid-content .md-hash { opacity: 0.3; }
+.maid-content h1 { font-size: 1.3rem; margin: 1.5rem 0 0.8rem; color: var(--accent); }
+.maid-content h2 { font-size: 1.1rem; margin: 1.3rem 0 0.6rem; color: var(--accent); }
+.maid-content p { margin-bottom: 0.8rem; }
+.maid-content ul, .maid-content ol { margin: 0.5rem 0 1rem 0; list-style: none; }
+.maid-content li { margin-bottom: 0.3rem; }
+.maid-content code {
   background: var(--bg);
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
@@ -235,7 +235,7 @@ main {
 }
 
 /* Maid CTA */
-.role-cta {
+.maid-cta {
   font-family: var(--font-sans);
   text-align: center;
   margin-bottom: 1.5rem;
@@ -243,21 +243,21 @@ main {
   color: var(--text-muted);
 }
 
-.role-cta code {
+.maid-cta code {
   background: var(--border);
   padding: 0.15rem 0.5rem;
   border-radius: 4px;
   font-size: 0.85rem;
 }
 
-.role-cta a {
+.maid-cta a {
   color: var(--accent);
   text-decoration: none;
   font-weight: bold;
   white-space: nowrap;
 }
 
-.role-cta a:hover {
+.maid-cta a:hover {
   text-decoration: underline;
 }
 
@@ -320,12 +320,12 @@ main {
   .site-title { font-size: 1.4rem; }
   .hero h1 { font-size: 1.5rem; }
   main { padding: 1rem; }
-  .role-detail { padding: 1.2rem; }
+  .maid-detail { padding: 1.2rem; }
   .header-back { font-size: 0; line-height: 0; padding: 0.7rem 1.2rem; min-width: 44px; min-height: 44px; justify-content: center; }
   .header-back::before { content: '←'; font-size: 1rem; line-height: normal; }
   .maid-info-primary { flex-direction: column; gap: 0.2rem; }
   .maid-en-name { display: none; }
-  .role-detail { overflow: hidden; margin: -1rem; border: none; border-bottom: 1px solid var(--border); box-shadow: none; border-radius: 0; }
-  .role-detail::before, .role-detail::after { display: none; }
+  .maid-detail { overflow: hidden; margin: -1rem; border: none; border-bottom: 1px solid var(--border); box-shadow: none; border-radius: 0; }
+  .maid-detail::before, .maid-detail::after { display: none; }
 }
 `
