@@ -224,17 +224,18 @@ main {
 }
 
 /* Markdown content */
-.role-content { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif; }
-.role-content h1 { font-size: 1.5rem; margin: 1.5rem 0 0.8rem; color: var(--maid-color, var(--accent)); }
-.role-content h2 { font-size: 1.2rem; margin: 1.3rem 0 0.6rem; color: var(--maid-color, var(--accent)); }
+.role-content { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.9rem; line-height: 1.7; }
+.role-content .md-hash { opacity: 0.3; }
+.role-content h1 { font-size: 1.3rem; margin: 1.5rem 0 0.8rem; color: var(--maid-color, var(--accent)); }
+.role-content h2 { font-size: 1.1rem; margin: 1.3rem 0 0.6rem; color: var(--maid-color, var(--accent)); }
 .role-content p { margin-bottom: 0.8rem; }
-.role-content ul, .role-content ol { margin: 0.5rem 0 1rem 1.5rem; }
+.role-content ul, .role-content ol { margin: 0.5rem 0 1rem 0; list-style: none; }
 .role-content li { margin-bottom: 0.3rem; }
 .role-content code {
   background: var(--bg);
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
 }
 
 /* Role Footer */
