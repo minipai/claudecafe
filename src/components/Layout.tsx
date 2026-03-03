@@ -2,7 +2,7 @@ import type { Child } from 'hono/jsx'
 import { css } from '../styles/css.js'
 
 export function Layout({ children, title, showBack }: { children: Child; title?: string; showBack?: boolean }) {
-  const pageTitle = title ? `${title} — Claude Café` : 'Claude Café'
+  const pageTitle = title ? `${title} — The Claude Café` : 'The Claude Café'
   return (
     <html lang="zh-Hant">
       <head>
@@ -18,7 +18,7 @@ export function Layout({ children, title, showBack }: { children: Child; title?:
               {showBack ? <a href="/" class="header-back">← 回到大廳</a> : <span />}
             </div>
             <a href="/" class="site-title">
-              Claude Café
+              The Claude Café
             </a>
             <div class="header-right" />
           </div>

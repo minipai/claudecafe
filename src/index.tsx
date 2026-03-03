@@ -15,7 +15,7 @@ app.get('/', (c) => {
     const index = roles
       .map(r => `- [${r.jaName} (${r.enName})](/roles/${r.slug}) — ${r.title}`)
       .join('\n')
-    const md = `# Claude Café\n\n六位女僕，一座咖啡廳。\n\n${index}\n`
+    const md = `# The Claude Café\n\n六位女僕，一座咖啡廳。\n\n${index}\n`
     return c.text(md, 200, { 'Content-Type': 'text/markdown; charset=utf-8' })
   }
 
@@ -46,5 +46,5 @@ app.get('/roles/:name', (c) => {
 })
 
 const port = 3000
-console.log(`☕ Claude Café is serving at http://localhost:${port}`)
+console.log(`☕ The Claude Café is serving at http://localhost:${port}`)
 serve({ fetch: app.fetch, port })
