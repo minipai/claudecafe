@@ -5,6 +5,7 @@ RUN bun install --production
 COPY tsconfig.json ./
 COPY src ./src
 COPY roles ./roles
+COPY public ./public
 ENV NODE_ENV=production
 EXPOSE 3000
 CMD ["bun", "src/index.tsx"]

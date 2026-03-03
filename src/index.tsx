@@ -1,11 +1,14 @@
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { Layout } from './components/Layout.js'
 import { HomePage } from './components/HomePage.js'
 import { RolePage } from './pages/RolePage.js'
 import { getAllRoles, getRole } from './utils/roles.js'
 
 const app = new Hono()
+
+app.use('/public/*', serveStatic({ root: './' }))
 
 app.get('/', (c) => {
   const accept = c.req.header('Accept') || ''

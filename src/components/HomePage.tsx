@@ -13,6 +13,9 @@ export function HomePage({ roles }: { roles: Role[] }) {
           <MaidCard role={role} />
         ))}
       </div>
+      <footer class="site-footer">
+        <a href="https://www.flaticon.com/free-icon/bow_12575123" title="bow icons">Ribbon icons created by Nur syifa fauziah - Flaticon</a>
+      </footer>
     </div>
   )
 }

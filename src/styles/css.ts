@@ -60,9 +60,16 @@ body {
   justify-self: end;
 }
 
+.site-logo {
+  height: 1.2em;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+
 .site-title {
   display: flex;
   align-items: center;
+  gap: 0.4rem;
   color: var(--header-text);
   text-decoration: none;
   font-size: 1.2rem;
@@ -259,6 +266,23 @@ main {
 
 .role-footer-note a:hover {
   text-decoration: underline;
+}
+
+/* Site Footer */
+.site-footer {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  font-size: 0.7rem;
+}
+
+.site-footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+  opacity: 0.4;
+}
+
+.site-footer a:hover {
+  opacity: 0.8;
 }
 
 /* RWD */
