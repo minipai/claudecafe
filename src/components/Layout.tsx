@@ -1,5 +1,4 @@
 import type { Child } from 'hono/jsx'
-import { css } from '../styles/css.js'
 
 export function Layout({ children, title, showBack }: { children: Child; title?: string; showBack?: boolean }) {
   const pageTitle = title ? `${title} — The Claude Café` : 'The Claude Café'
@@ -13,7 +12,7 @@ export function Layout({ children, title, showBack }: { children: Child; title?:
         <link rel="icon" type="image/png" sizes="32x32" href="/public/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/public/favicon-16x16.png" />
         <link rel="apple-touch-icon" href="/public/apple-touch-icon.png" />
-        <style dangerouslySetInnerHTML={{ __html: css }} />
+        <link rel="stylesheet" href="/public/styles.css" />
       </head>
       <body>
         <header class="site-header">

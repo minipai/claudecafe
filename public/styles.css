@@ -1,4 +1,3 @@
-export const css = /* css */ `
 :root {
   --bg: #faf6f0;
   --bg-card: #ffffff;
@@ -27,7 +26,7 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: rgba(250, 246, 240, 0.6);
+  background: rgb(from var(--bg) r g b / 0.6);
   pointer-events: none;
   z-index: 0;
 }
@@ -104,7 +103,7 @@ main {
 .hero {
   text-align: center;
   margin: 0 auto;
-  background: rgba(250, 246, 240, 0.85);
+  background: rgb(from var(--bg) r g b / 0.85);
   padding: 3rem;
 }
 
@@ -119,12 +118,11 @@ main {
   font-size: 1.05rem;
 }
 
-
 /* Maid List */
 .maid-list {
   display: flex;
   flex-direction: column;
-  background: rgba(250, 246, 240, 0.85);
+  background: rgb(from var(--bg) r g b / 0.85);
 }
 
 .maid-row {
@@ -145,10 +143,6 @@ main {
   transform: translateX(5px);
 }
 
-.maid-info {
-  transition: transform 0.25s ease;
-}
-
 .maid-row:hover {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5) 5%, rgba(255, 255, 255, 0.5) 60%, transparent);
 }
@@ -157,6 +151,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  transition: transform 0.25s ease;
 }
 
 .maid-info-primary {
@@ -201,7 +196,6 @@ main {
 .maid-detail {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 0;
   padding: 2rem;
   box-shadow: 1px 2px 6px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02);
   position: relative;
@@ -344,5 +338,3 @@ main {
 .not-found-back a:hover {
   text-decoration: underline;
 }
-
-`;
