@@ -16,10 +16,25 @@ export const css = /* css */ `
 
 body {
   font-family: "Noto Serif TC", "Noto Serif JP", Georgia, "Times New Roman", serif;
-  background: var(--bg);
+  background: var(--bg) url('/public/maid-bg.png') no-repeat -180px -80px / auto 1800px;
   color: var(--text);
   line-height: 1.8;
   min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(250, 246, 240, 0.6);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Header */
@@ -82,13 +97,15 @@ body {
 main {
   max-width: 960px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 2rem 10px;
 }
 
 /* Hero */
 .hero {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin: 0 auto;
+  background: rgba(250, 246, 240, 0.85);
+  padding: 3rem;
 }
 
 .hero h1 {
@@ -102,11 +119,12 @@ main {
   font-size: 1.05rem;
 }
 
+
 /* Maid List */
 .maid-list {
   display: flex;
   flex-direction: column;
-  border-top: 1px dashed var(--border);
+  background: rgba(250, 246, 240, 0.85);
 }
 
 .maid-row {
@@ -117,6 +135,18 @@ main {
   text-decoration: none;
   color: var(--text);
   border-bottom: 1px dashed var(--border);
+}
+
+.maid-row:first-child {
+  border-top: 1px dashed var(--border);
+}
+
+.maid-row:hover .maid-info {
+  transform: translateX(5px);
+}
+
+.maid-info {
+  transition: transform 0.25s ease;
 }
 
 .maid-row:hover {
@@ -264,7 +294,7 @@ main {
 /* Site Footer */
 .site-footer {
   text-align: center;
-  padding: 2rem 1.5rem;
+  padding: 4rem 1.5rem 2rem;
   font-size: 0.7rem;
   font-family: var(--font-sans);
 }
@@ -315,17 +345,4 @@ main {
   text-decoration: underline;
 }
 
-/* RWD */
-@media (max-width: 600px) {
-  .site-title { font-size: 1.4rem; }
-  .hero h1 { font-size: 1.5rem; }
-  main { padding: 1rem; }
-  .maid-detail { padding: 1.2rem; }
-  .header-back { font-size: 0; line-height: 0; padding: 0.7rem 1.2rem; min-width: 44px; min-height: 44px; justify-content: center; }
-  .header-back::before { content: '←'; font-size: 1rem; line-height: normal; }
-  .maid-info-primary { flex-direction: column; gap: 0.2rem; }
-  .maid-en-name { display: none; }
-  .maid-detail { overflow: hidden; margin: -1rem; border: none; border-bottom: 1px solid var(--border); box-shadow: none; border-radius: 0; }
-  .maid-detail::before, .maid-detail::after { display: none; }
-}
-`
+`;
