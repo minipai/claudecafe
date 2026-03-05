@@ -338,3 +338,31 @@ main {
 .not-found-back a:hover {
   text-decoration: underline;
 }
+
+/* Focus-visible — dark background (header) */
+.header-back:focus-visible,
+.site-title:focus-visible {
+  outline: 2px solid var(--header-text);
+  outline-offset: -2px;
+}
+
+/* Focus-visible — light background */
+.maid-row:focus-visible,
+.maid-cta a:focus-visible,
+.site-footer a:focus-visible,
+.not-found-back a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.maid-row:focus-visible {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5) 5%, rgba(255, 255, 255, 0.5) 60%, transparent);
+}
+
+.maid-row:focus-visible .maid-info {
+  transform: translateX(5px);
+}
+
+.maid-row:focus-visible .maid-name {
+  color: var(--accent-bold);
+}
