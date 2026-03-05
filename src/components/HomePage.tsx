@@ -20,7 +20,7 @@ export function HomePage({ maids }: { maids: Maid[] }) {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Ribbon icons created by Nur syifa fauziah - Flaticon
+          Ribbon icon by Nur syifa fauziah
         </a>
       </footer>
     </div>
