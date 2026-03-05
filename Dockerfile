@@ -7,5 +7,5 @@ COPY src ./src
 COPY cafe ./cafe
 COPY public ./public
 ENV NODE_ENV=production
-EXPOSE 3000
+EXPOSE 5050
 CMD ["bun", "src/index.tsx"]
