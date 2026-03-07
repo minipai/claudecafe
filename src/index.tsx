@@ -11,9 +11,15 @@ const app = new Hono();
 
 app.use("/public/*", async (c, next) => {
   await next();
-  c.header("Cache-Control", "public, max-age=86400, immutable");
+  c.header("Cache-Control", "public, max-age=86400");
 });
 app.use("/public/*", serveStatic({ root: "./" }));
+app.use("*", async (c, next) => {
+  await next();
+  if (!c.res.headers.has("Cache-Control")) {
+    c.header("Cache-Control", "public, max-age=300");
+  }
+});
 
 app.get("/", (c) => {
   const accept = c.req.header("Accept") || "";
@@ -54,7 +60,7 @@ app.get("/:name", (c) => {
   }
 
   return c.html(
-    <Layout title={`${maid.jaName} (${maid.enName})`} showBack>
+    <Layout title={`${maid.jaName} (${maid.enName})`} description={`${maid.title}「${maid.quote}」`} showBack>
       <MaidPage maid={maid} />
     </Layout>,
   );

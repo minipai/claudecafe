@@ -25,13 +25,14 @@ function parseMaid(slug: string, raw: string): Maid {
 }
 
 let maidsCache: Maid[] | null = null
+const isDev = process.env.NODE_ENV !== 'production'
 
 function getCafeDir(): string {
   return join(import.meta.dirname, '../../cafe')
 }
 
 export function getAllMaids(): Maid[] {
-  if (maidsCache) return maidsCache
+  if (maidsCache && !isDev) return maidsCache
 
   const dir = getCafeDir()
   const files = readdirSync(dir).filter(f => f.endsWith('.md')).sort()

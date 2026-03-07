@@ -7,14 +7,16 @@ const DEFAULT_DESCRIPTION =
 export function Layout({
   children,
   title,
+  description,
   showBack,
 }: {
   children: Child;
   title?: string;
+  description?: string;
   showBack?: boolean;
 }) {
   const pageTitle = title ? `${title} — The Claude Café` : "The Claude Café";
-  const ogDescription = DEFAULT_DESCRIPTION;
+  const ogDescription = description || DEFAULT_DESCRIPTION;
   return (
     <html lang="zh-Hant">
       <head>
@@ -22,8 +24,10 @@ export function Layout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{pageTitle}</title>
         <meta property="og:title" content={pageTitle} />
+        <meta name="description" content={ogDescription} />
         <meta property="og:description" content={ogDescription} />
         <meta property="og:image" content={`${SITE_URL}/public/og-image.png`} />
+        <meta property="og:url" content={SITE_URL} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <link rel="icon" href="/public/favicon.ico" />
@@ -50,9 +54,7 @@ export function Layout({
                 <a href="/" class="header-back">
                   ←&nbsp;<span class="header-back-text">café</span>
                 </a>
-              ) : (
-                <span />
-              )}
+              ) : null}
             </div>
             <a href="/" class="site-title">
               <img src="/public/bow.png" alt="" class="site-logo" />
