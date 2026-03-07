@@ -9,11 +9,11 @@ import { getAllMaids, getMaid } from "./utils/maids.js";
 
 const app = new Hono();
 
-app.use("/public/*", async (c, next) => {
+app.use("/assets/*", async (c, next) => {
   await next();
   c.header("Cache-Control", "public, max-age=86400");
 });
-app.use("/public/*", serveStatic({ root: "./" }));
+app.use("/assets/*", serveStatic({ root: "./src/" }));
 app.use("*", async (c, next) => {
   await next();
   if (!c.res.headers.has("Cache-Control")) {

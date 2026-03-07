@@ -28,7 +28,7 @@
 body {
     font-family:
         "Noto Serif TC", "Noto Serif JP", Georgia, "Times New Roman", serif;
-    background: var(--bg) url("/public/maid-bg.png") no-repeat -180px -80px /
+    background: var(--bg) url("/assets/maid-bg.png") no-repeat -180px -80px /
         auto 1800px;
     color: var(--text);
     line-height: 1.8;

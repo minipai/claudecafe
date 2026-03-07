@@ -26,25 +26,25 @@ export function Layout({
         <meta property="og:title" content={pageTitle} />
         <meta name="description" content={ogDescription} />
         <meta property="og:description" content={ogDescription} />
-        <meta property="og:image" content={`${SITE_URL}/public/og-image.png`} />
+        <meta property="og:image" content={`${SITE_URL}/assets/og-image.png`} />
         <meta property="og:url" content={SITE_URL} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <link rel="icon" href="/public/favicon.ico" />
+        <link rel="icon" href="/assets/favicon.ico" />
         <link
           rel="icon"
           type="image/png"
           sizes="32x32"
-          href="/public/favicon-32x32.png"
+          href="/assets/favicon-32x32.png"
         />
         <link
           rel="icon"
           type="image/png"
           sizes="16x16"
-          href="/public/favicon-16x16.png"
+          href="/assets/favicon-16x16.png"
         />
-        <link rel="apple-touch-icon" href="/public/apple-touch-icon.png" />
-        <link rel="stylesheet" href="/public/styles.css" />
+        <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+        <link rel="stylesheet" href="/assets/styles.css" />
       </head>
       <body>
         <header class="site-header">
@@ -57,7 +57,7 @@ export function Layout({
               ) : null}
             </div>
             <a href="/" class="site-title">
-              <img src="/public/bow.png" alt="" class="site-logo" />
+              <img src="/assets/bow.png" alt="" class="site-logo" />
               The Claude Café
             </a>
             <div class="header-right" />

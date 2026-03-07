@@ -22,7 +22,7 @@ export function MaidPage({ maid }: { maid: Maid }) {
         </header>
         <div class="maid-content" dangerouslySetInnerHTML={{ __html: html }} />
       </article>
-      <script src="/public/copy.js" defer />
+      <script src="/assets/copy.js" defer />
     </div>
   )
 }
