@@ -77,7 +77,7 @@ body > * {
     font-family: var(--font-sans);
     font-size: var(--fs-sm);
     opacity: 0.8;
-    padding: 0.7rem 1.5rem;
+    padding: 0.7rem 0 0.7rem 1.5rem;
 }
 
 .header-back:hover {
@@ -117,8 +117,9 @@ main {
 .hero {
     text-align: center;
     margin: 0 auto;
-    background: rgb(from var(--bg) r g b / 0.85);
     padding: 3rem;
+    filter: drop-shadow(0 0 8px var(--bg)) drop-shadow(0 0 8px var(--bg))
+        drop-shadow(0 0 16px var(--bg)) drop-shadow(0 0 16px var(--bg));
 }
 
 .hero h1 {
@@ -130,6 +131,18 @@ main {
 .hero p {
     color: var(--text-muted);
     font-size: var(--fs-md);
+}
+
+@media (max-width: 1500px) {
+    .hero {
+        margin-top: 100px;
+        background: none;
+        padding: 3rem 1rem;
+    }
+
+    .maid-page {
+        margin-top: 130px;
+    }
 }
 
 /* Maid List */
@@ -212,6 +225,10 @@ main {
     font-style: italic;
 }
 
+.maid-page {
+    overflow: hidden;
+}
+
 /* Maid Detail */
 .maid-detail {
     background: var(--bg-card);
@@ -230,9 +247,9 @@ main {
     border: 50px solid transparent;
     border-top: 50px solid var(--bg);
     top: -60px;
-    left: -65px;
+    right: -65px;
     box-shadow: 0 -7px 6px -9px rgba(0, 0, 0, 0.5);
-    transform: rotate(135deg);
+    transform: rotate(-135deg);
 }
 
 .maid-detail::after {
@@ -242,9 +259,9 @@ main {
     border: 50px solid transparent;
     border-bottom: 50px solid var(--bg);
     bottom: -60px;
-    right: -65px;
+    left: -65px;
     box-shadow: 0 7px 6px -9px rgba(0, 0, 0, 0.5);
-    transform: rotate(135deg);
+    transform: rotate(-135deg);
 }
 
 .maid-header {
@@ -306,6 +323,8 @@ main {
     margin-bottom: 1.5rem;
     font-size: var(--fs-xs);
     color: var(--text-muted);
+    filter: drop-shadow(0 0 8px var(--bg)) drop-shadow(0 0 8px var(--bg))
+        drop-shadow(0 0 16px var(--bg)) drop-shadow(0 0 16px var(--bg));
 }
 
 .maid-cta code {
@@ -412,4 +431,10 @@ main {
 
 .maid-row:focus-visible .maid-name {
     color: var(--accent-bold);
+}
+
+@media (max-width: 499px) {
+    .header-back-text {
+        display: none;
+    }
 }

@@ -1,11 +1,20 @@
-import type { Child } from 'hono/jsx'
+import type { Child } from "hono/jsx";
 
-const SITE_URL = 'https://claudecafe.dev'
-const DEFAULT_DESCRIPTION = 'Give your Claude a maid persona. Browse, pick, and make it yours.'
+const SITE_URL = "https://claudecafe.dev";
+const DEFAULT_DESCRIPTION =
+  "Give your Claude a maid persona. Browse, pick, and make it yours.";
 
-export function Layout({ children, title, showBack }: { children: Child; title?: string; showBack?: boolean }) {
-  const pageTitle = title ? `${title} — The Claude Café` : 'The Claude Café'
-  const ogDescription = DEFAULT_DESCRIPTION
+export function Layout({
+  children,
+  title,
+  showBack,
+}: {
+  children: Child;
+  title?: string;
+  showBack?: boolean;
+}) {
+  const pageTitle = title ? `${title} — The Claude Café` : "The Claude Café";
+  const ogDescription = DEFAULT_DESCRIPTION;
   return (
     <html lang="zh-Hant">
       <head>
@@ -18,8 +27,18 @@ export function Layout({ children, title, showBack }: { children: Child; title?:
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <link rel="icon" href="/public/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/public/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/public/favicon-16x16.png" />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/public/favicon-32x32.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/public/favicon-16x16.png"
+        />
         <link rel="apple-touch-icon" href="/public/apple-touch-icon.png" />
         <link rel="stylesheet" href="/public/styles.css" />
       </head>
@@ -27,7 +46,13 @@ export function Layout({ children, title, showBack }: { children: Child; title?:
         <header class="site-header">
           <div class="site-header-inner">
             <div class="header-left">
-              {showBack ? <a href="/" class="header-back">← café</a> : <span />}
+              {showBack ? (
+                <a href="/" class="header-back">
+                  ←&nbsp;<span class="header-back-text">café</span>
+                </a>
+              ) : (
+                <span />
+              )}
             </div>
             <a href="/" class="site-title">
               <img src="/public/bow.png" alt="" class="site-logo" />
@@ -39,5 +64,5 @@ export function Layout({ children, title, showBack }: { children: Child; title?:
         <main>{children}</main>
       </body>
     </html>
-  )
+  );
 }
