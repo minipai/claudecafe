@@ -10,15 +10,11 @@ export function MaidPage({ maid }: { maid: Maid }) {
         <p>Add to your <code>CLAUDE.md</code> to make Claude this maid — <a href="#" id="hire-btn" data-md={maid.rawMd}>copy source</a></p>
       </div>
       <article class="maid-detail">
-        <header class="maid-header">
-          <div class="maid-info">
-            <div class="maid-info-primary">
-              <h1 class="maid-name">{maid.jaName}</h1>
-              <span class="maid-traits">{maid.title}</span>
-            </div>
-            <p class="maid-quote">「{maid.quote}」</p>
-          </div>
+        <header class="maid-grid maid-header">
+          <h1 class="maid-name">{maid.jaName}</h1>
+          <span class="maid-traits">{maid.title}</span>
           <span class="maid-en-name">{maid.enName}</span>
+          <p class="maid-quote">「{maid.quote}」</p>
         </header>
         <div class="maid-content" dangerouslySetInnerHTML={{ __html: html }} />
       </article>

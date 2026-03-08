@@ -152,10 +152,34 @@ main {
     background: rgb(from var(--bg) r g b / 0.85);
 }
 
+/* Shared grid: desktop 4-col, mobile 2-col */
+.maid-grid {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: baseline;
+    gap: 0 0.5rem;
+}
+
+.maid-grid .maid-name {
+    grid-column: 1;
+    grid-row: 1;
+}
+.maid-grid .maid-traits {
+    grid-column: 2;
+    grid-row: 1;
+}
+.maid-grid .maid-en-name {
+    grid-column: 4;
+    grid-row: 1 / -1;
+    align-self: start;
+}
+.maid-grid .maid-quote {
+    grid-column: 1 / -1;
+    grid-row: 2;
+}
+
 .maid-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
     padding: 0.8rem 0.5rem;
     text-decoration: none;
     color: var(--text);
@@ -164,10 +188,6 @@ main {
 
 .maid-row:first-child {
     border-top: 1px dashed var(--border);
-}
-
-.maid-row:hover .maid-info {
-    transform: translateX(5px);
 }
 
 .maid-row:hover {
@@ -180,19 +200,6 @@ main {
     );
 }
 
-.maid-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    transition: transform 0.25s ease;
-}
-
-.maid-info-primary {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-}
-
 .maid-name {
     font-size: var(--fs-md);
     font-weight: bold;
@@ -200,12 +207,9 @@ main {
 }
 
 .maid-en-name {
-    margin-left: auto;
     font-family: var(--font-sans);
     font-size: var(--fs-xs);
     color: var(--text-muted);
-    flex-shrink: 0;
-    align-self: flex-start;
     opacity: 0.3;
     transition: opacity 0.15s ease;
 }
@@ -265,9 +269,6 @@ main {
 }
 
 .maid-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid var(--border);
@@ -426,10 +427,6 @@ main {
     );
 }
 
-.maid-row:focus-visible .maid-info {
-    transform: translateX(5px);
-}
-
 .maid-row:focus-visible .maid-name {
     color: var(--accent-bold);
 }
@@ -437,5 +434,30 @@ main {
 @media (max-width: 499px) {
     .header-back-text {
         display: none;
+    }
+}
+
+@media (max-width: 599px) {
+    .maid-grid {
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto auto;
+    }
+
+    .maid-grid .maid-name {
+        grid-row: 1;
+    }
+    .maid-grid .maid-en-name {
+        grid-column: 2;
+        grid-row: 1;
+        opacity: 0.5;
+        align-self: center;
+    }
+    .maid-grid .maid-traits {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+    .maid-grid .maid-quote {
+        grid-column: 1 / -1;
+        grid-row: 3;
     }
 }
