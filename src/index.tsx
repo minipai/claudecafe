@@ -13,13 +13,13 @@ import { getAllPosts, getPost } from "./utils/blog.js";
 
 const app = new Hono();
 
-app.use("/assets/*", serveStatic({ root: "./src/" }));
 app.use("*", async (c, next) => {
   await next();
   if (!c.res.headers.has("Cache-Control")) {
     c.header("Cache-Control", "public, max-age=1800");
   }
 });
+app.use("/assets/*", serveStatic({ root: "./src/" }));
 
 app.get("/robots.txt", (c) => {
   return c.text("User-agent: *\nAllow: /\n");
