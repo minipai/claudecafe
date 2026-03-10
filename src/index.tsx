@@ -21,6 +21,10 @@ app.use("*", async (c, next) => {
   }
 });
 
+app.get("/robots.txt", (c) => {
+  return c.text("User-agent: *\nAllow: /\n");
+});
+
 app.get("/", (c) => {
   const accept = c.req.header("Accept") || "";
   const maids = getAllMaids();
