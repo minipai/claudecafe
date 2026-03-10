@@ -47,6 +47,7 @@ export function Layout({
           href="/assets/favicon-16x16.png"
         />
         <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+        <link rel="preload" as="image" href="/assets/maid-bg.png" />
         <link rel="stylesheet" href="/assets/styles.css" />
       </head>
       <body>
