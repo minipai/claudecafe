@@ -1,5 +1,5 @@
 ---
-title: 用 CLAUDE.md 的 import 讓女僕換班
+title: 想換女僕？跟她說一聲就好啦
 slug: maid-shift-change
 date: 2026-03-09
 author: くろこ

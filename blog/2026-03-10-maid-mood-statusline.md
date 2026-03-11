@@ -1,5 +1,5 @@
 ---
-title: 讓女僕在 status line 上顯示心情
+title: 女僕的心情，ご主人様隨時都看得到喔☆
 slug: maid-mood-statusline
 date: 2026-03-10
 author: くるみ
