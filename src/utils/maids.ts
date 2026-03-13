@@ -11,15 +11,23 @@ export interface Maid {
   rawMd: string
 }
 
+interface MaidFrontmatter {
+  name?: string
+  id?: string
+  personality?: string
+  quote?: string
+}
+
 function parseMaid(slug: string, raw: string): Maid {
   const { data, content } = matter(raw)
+  const fm = data as MaidFrontmatter
 
   return {
     slug,
-    jaName: data.name ?? slug,
-    enName: data.id ?? slug.charAt(0).toUpperCase() + slug.slice(1),
-    title: data.personality ?? '',
-    quote: data.quote ?? '',
+    jaName: fm.name ?? slug,
+    enName: fm.id ?? slug.charAt(0).toUpperCase() + slug.slice(1),
+    title: fm.personality ?? '',
+    quote: fm.quote ?? '',
     rawMd: content,
   }
 }
@@ -35,10 +43,16 @@ export function getAllMaids(): Maid[] {
   if (maidsCache && !isDev) return maidsCache
 
   const dir = getCafeDir()
-  const files = readdirSync(dir).filter(f => f.endsWith('.md')).sort()
+  let files: string[]
+  try {
+    files = readdirSync(dir).filter(f => f.endsWith('.md')).sort()
+  } catch {
+    console.error(`[maids] cannot read directory: ${dir}`)
+    return []
+  }
 
   maidsCache = files.map(f => {
-    const slug = f.replace('.md', '')
+    const slug = f.replace(/\.md$/, '')
     const raw = readFileSync(join(dir, f), 'utf-8')
     return parseMaid(slug, raw)
   })

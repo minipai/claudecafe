@@ -8,5 +8,10 @@ Hono + JSX (SSR), gray-matter, marked, TypeScript
 
 ## Key Concepts
 
-- `roles/*.md` 的 frontmatter (id, name, personality, quote) 是網站 metadata；body 是 persona 指令。
+- `cafe/*.md` 的 frontmatter (id, name, personality, quote) 是網站 metadata；body 是 persona 指令。
 - 「copy source」只複製 body，貼到 CLAUDE.md 即可運作。
+
+## Content Directories
+
+- `cafe/` — 角色定義檔 (`*.md`)。每個檔案 = 一位女僕，frontmatter 供網站渲染，body 是實際 persona 指令。
+- `blog/` — 部落格文章 (`*.md`)。frontmatter 含 title / date / author，body 是文章內容，以 marked 渲染成 HTML。

@@ -7,7 +7,7 @@ export function MaidPage({ maid }: { maid: Maid }) {
   return (
     <div class="maid-page">
       <div class="maid-cta">
-        <p>Add to your <code>CLAUDE.md</code> to make Claude this maid — <a href="#" id="hire-btn" data-md={maid.rawMd}>copy source</a></p>
+        <p>Add to your <code>CLAUDE.md</code> to make Claude this maid — <button type="button" id="hire-btn" data-md={maid.rawMd}>copy source</button></p>
       </div>
       <article class="maid-detail">
         <header class="maid-grid maid-header">

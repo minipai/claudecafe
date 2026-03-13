@@ -560,14 +560,15 @@ main {
     font-weight: bold;
 }
 
-.maid-cta a {
+.maid-cta button {
+    all: unset;
     color: var(--accent);
-    text-decoration: none;
+    cursor: pointer;
     font-weight: bold;
     white-space: nowrap;
 }
 
-.maid-cta a:hover {
+.maid-cta button:hover {
     text-decoration: underline;
 }
 
@@ -634,7 +635,7 @@ main {
 
 /* Focus-visible — light background */
 .maid-row:focus-visible,
-.maid-cta a:focus-visible,
+.maid-cta button:focus-visible,
 .site-footer a:focus-visible,
 .not-found-back a:focus-visible {
     outline: 2px solid var(--accent);

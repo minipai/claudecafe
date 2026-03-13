@@ -10,13 +10,21 @@ export interface BlogPost {
   content: string
 }
 
+interface PostFrontmatter {
+  slug?: string
+  title?: string
+  date?: Date | string
+  author?: string
+}
+
 function parsePost(slug: string, raw: string): BlogPost {
   const { data, content } = matter(raw)
+  const fm = data as PostFrontmatter
   return {
-    slug: data.slug ?? slug,
-    title: data.title ?? slug,
-    date: data.date instanceof Date ? data.date.toISOString().slice(0, 10) : data.date ? String(data.date).slice(0, 10) : '',
-    author: data.author ?? '',
+    slug: fm.slug ?? slug,
+    title: fm.title ?? slug,
+    date: fm.date instanceof Date ? fm.date.toISOString().slice(0, 10) : fm.date ? String(fm.date).slice(0, 10) : '',
+    author: fm.author ?? '',
     content,
   }
 }
@@ -32,10 +40,16 @@ export function getAllPosts(): BlogPost[] {
   if (postsCache && !isDev) return postsCache
 
   const dir = getBlogDir()
-  const files = readdirSync(dir).filter(f => f.endsWith('.md')).sort()
+  let files: string[]
+  try {
+    files = readdirSync(dir).filter(f => f.endsWith('.md')).sort()
+  } catch {
+    console.error(`[blog] cannot read directory: ${dir}`)
+    return []
+  }
 
   postsCache = files.map(f => {
-    const slug = f.replace('.md', '')
+    const slug = f.replace(/\.md$/, '')
     const raw = readFileSync(join(dir, f), 'utf-8')
     return parsePost(slug, raw)
   })
