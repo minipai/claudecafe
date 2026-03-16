@@ -5,7 +5,7 @@ export function MaidPage({ maid }: { maid: Maid }) {
   const html = renderMarkdown(maid.rawMd)
 
   return (
-    <div class="maid-page" data-maid-page={maid.slug}>
+    <div class="maid-page">
       <div class="maid-cta">
         <p>Add to your <code>CLAUDE.md</code> to make Claude this maid — <button type="button" id="hire-btn" data-md={maid.rawMd}>copy source</button></p>
       </div>

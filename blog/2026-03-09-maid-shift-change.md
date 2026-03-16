@@ -2,7 +2,7 @@
 title: 想換女僕？跟她說一聲就好啦
 slug: maid-shift-change
 date: 2026-03-09
-author: くろこ
+author: kuroko
 ---
 
 旦那様平常是直接把 persona 整段貼在 `CLAUDE.md` 裡面吧？這樣也行啦，但如果想讓好幾個女僕輪班的話就有點麻煩了。

@@ -2,7 +2,7 @@
 title: 誰是最受歡迎的女僕？
 slug: one-week-traffic
 date: 2026-03-11
-author: ココナ
+author: kokona
 ---
 
 開站幾天，ココナ把 server log 翻了一遍。結果還挺有意思的。

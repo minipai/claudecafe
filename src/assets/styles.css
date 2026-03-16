@@ -28,8 +28,8 @@
 body {
     font-family:
         "Noto Serif TC", "Noto Serif JP", Georgia, "Times New Roman", serif;
-    --maid-bg: url("/assets/maid-kuroko.webp");
-    --maid-x: -70px;
+    --maid-bg: none;
+    --maid-x: 0px;
     background: var(--bg);
     color: var(--text);
     line-height: 1.8;
@@ -51,20 +51,12 @@ body::before {
     background: var(--maid-bg) no-repeat var(--maid-x) 20px / auto 1500px;
     pointer-events: none;
     z-index: 0;
+    opacity: 0.3;
     transition: opacity 0.3s ease;
 }
 
 body.maid-fading::before {
     opacity: 0;
-}
-
-body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background: rgb(from var(--bg) r g b / 0.6);
-    pointer-events: none;
-    z-index: 0;
 }
 
 body > * {
@@ -477,6 +469,10 @@ main {
 
 .maid-page {
     overflow: hidden;
+}
+
+body:has(.maid-page)::before {
+    opacity: 0.6;
 }
 
 /* Maid Detail */

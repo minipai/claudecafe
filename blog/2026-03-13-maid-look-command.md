@@ -2,7 +2,7 @@
 title: 別一直盯著看啦……才、才沒有很在意！
 slug: maid-look-command
 date: 2026-03-13
-author: クローディア
+author: claudia
 ---
 
 旦那様有時候會突然想看女僕現在是什麼表情吧。……少裝了，クローディア看得出來。

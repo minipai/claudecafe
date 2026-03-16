@@ -1,4 +1,5 @@
 import type { BlogPost } from '../utils/blog.js'
+import { getMaid } from '../utils/maids.js'
 
 export function BlogIndexPage({ posts }: { posts: BlogPost[] }) {
   return (
@@ -10,7 +11,7 @@ export function BlogIndexPage({ posts }: { posts: BlogPost[] }) {
             <div class="blog-row">
               <time class="blog-row-date">{post.date}</time>
               <a href={`/notes/${post.slug}`} class="blog-row-title">{post.title}</a>
-              <span class="blog-row-author">{post.author}</span>
+              <span class="blog-row-author">{post.author ? getMaid(post.author)?.jaName ?? post.author : ''}</span>
             </div>
           </div>
         ))}

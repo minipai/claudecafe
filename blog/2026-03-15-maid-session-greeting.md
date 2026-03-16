@@ -2,7 +2,7 @@
 title: 早安還是晚安？女僕看得到時鐘喔
 slug: maid-session-greeting
 date: 2026-03-15
-author: くろこ
+author: kuroko
 ---
 
 旦那様打開 Claude Code 的時候，女僕會打招呼吧？但不管幾點開，招呼都差不多——總覺得少了點什麼呢。

@@ -67,7 +67,7 @@ app.get("/notes/:slug", (c) => {
     );
   }
   return c.html(
-    <Layout title={post.title} description={post.title} path={`/notes/${post.slug}`}>
+    <Layout title={post.title} description={post.title} path={`/notes/${post.slug}`} maid={post.author}>
       <BlogPostPage post={post} />
     </Layout>,
   );
@@ -93,7 +93,7 @@ app.get("/:name", (c) => {
   }
 
   return c.html(
-    <Layout title={`${maid.jaName} (${maid.enName})`} description={`${maid.title}「${maid.quote}」`} path={`/${c.req.param("name")}`}>
+    <Layout title={`${maid.jaName} (${maid.enName})`} description={`${maid.title}「${maid.quote}」`} path={`/${c.req.param("name")}`} maid={maid.slug}>
       <MaidPage maid={maid} />
     </Layout>,
   );

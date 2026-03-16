@@ -9,11 +9,13 @@ export function Layout({
   title,
   description,
   path,
+  maid,
 }: {
   children: Child;
   title?: string;
   description?: string;
   path?: string;
+  maid?: string;
 }) {
   const pageTitle = title ? `${title} — The Claude Café` : "The Claude Café";
   const ogDescription = description || DEFAULT_DESCRIPTION;
@@ -47,10 +49,10 @@ export function Layout({
           href="/assets/favicon-16x16.png"
         />
         <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
-        <link rel="preload" as="image" href="/assets/maid-kuroko.webp" />
+        {/* maid bg images loaded by maid-bg.js */}
         <link rel="stylesheet" href="/assets/styles.css" />
       </head>
-      <body>
+      <body {...(maid ? { 'data-maid': maid } : {})}>
         <header class="site-header">
           <div class="site-header-inner">
             <div class="header-left">
