@@ -47,7 +47,7 @@ export function Layout({
           href="/assets/favicon-16x16.png"
         />
         <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
-        <link rel="preload" as="image" href="/assets/maid-bg.png" />
+        <link rel="preload" as="image" href="/assets/maid-kuroko.webp" />
         <link rel="stylesheet" href="/assets/styles.css" />
       </head>
       <body>
@@ -68,6 +68,7 @@ export function Layout({
           </div>
         </header>
         <main>{children}</main>
+        <script src="/assets/maid-bg.js" defer />
       </body>
     </html>
   );

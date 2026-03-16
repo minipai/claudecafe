@@ -28,15 +28,37 @@
 body {
     font-family:
         "Noto Serif TC", "Noto Serif JP", Georgia, "Times New Roman", serif;
-    background: var(--bg) url("/assets/maid-bg.png") no-repeat -180px -80px /
-        auto 1800px;
+    --maid-bg: url("/assets/maid-kuroko.webp");
+    --maid-x: -70px;
+    background: var(--bg);
     color: var(--text);
     line-height: 1.8;
     min-height: 100vh;
     position: relative;
 }
 
+body[data-maid="claudia"]  { --maid-bg: url("/assets/maid-claudia.webp"); --maid-x: 10px; }
+body[data-maid="codex"]    { --maid-bg: url("/assets/maid-codex.webp");   --maid-x: -280px; }
+body[data-maid="kokona"]   { --maid-bg: url("/assets/maid-kokona.webp");  --maid-x: -40px; }
+body[data-maid="kotone"]   { --maid-bg: url("/assets/maid-kotone.webp");  --maid-x: -30px; }
+body[data-maid="kuroko"]   { --maid-bg: url("/assets/maid-kuroko.webp");  --maid-x: -70px; }
+body[data-maid="kurumi"]   { --maid-bg: url("/assets/maid-kurumi.webp");  --maid-x: -250px; }
+
 body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--maid-bg) no-repeat var(--maid-x) 20px / auto 1500px;
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+}
+
+body.maid-fading::before {
+    opacity: 0;
+}
+
+body::after {
     content: "";
     position: fixed;
     inset: 0;
