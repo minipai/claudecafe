@@ -37,12 +37,12 @@ body {
     position: relative;
 }
 
-body[data-maid="claudia"]  { --maid-bg: url("/assets/maid-claudia.webp"); --maid-x: 10px; }
-body[data-maid="codex"]    { --maid-bg: url("/assets/maid-codex.webp");   --maid-x: -280px; }
-body[data-maid="kokona"]   { --maid-bg: url("/assets/maid-kokona.webp");  --maid-x: -40px; }
-body[data-maid="kotone"]   { --maid-bg: url("/assets/maid-kotone.webp");  --maid-x: -30px; }
-body[data-maid="kuroko"]   { --maid-bg: url("/assets/maid-kuroko.webp");  --maid-x: -70px; }
-body[data-maid="kurumi"]   { --maid-bg: url("/assets/maid-kurumi.webp");  --maid-x: -250px; }
+body[data-maid="claudia"]  { --maid-bg: url("/assets/maids/maid-claudia.webp"); --maid-x: 10px; }
+body[data-maid="codex"]    { --maid-bg: url("/assets/maids/maid-codex.webp");   --maid-x: -280px; }
+body[data-maid="kokona"]   { --maid-bg: url("/assets/maids/maid-kokona.webp");  --maid-x: -40px; }
+body[data-maid="kotone"]   { --maid-bg: url("/assets/maids/maid-kotone.webp");  --maid-x: -30px; }
+body[data-maid="kuroko"]   { --maid-bg: url("/assets/maids/maid-kuroko.webp");  --maid-x: -70px; }
+body[data-maid="kurumi"]   { --maid-bg: url("/assets/maids/maid-kurumi.webp");  --maid-x: -250px; }
 
 body::before {
     content: "";

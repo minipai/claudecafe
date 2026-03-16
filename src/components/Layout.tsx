@@ -35,20 +35,20 @@ export function Layout({
         <meta property="og:url" content={SITE_URL} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <link rel="icon" href="/assets/favicon.ico" />
+        <link rel="icon" href="/assets/icons/favicon.ico" />
         <link
           rel="icon"
           type="image/png"
           sizes="32x32"
-          href="/assets/favicon-32x32.png"
+          href="/assets/icons/favicon-32x32.png"
         />
         <link
           rel="icon"
           type="image/png"
           sizes="16x16"
-          href="/assets/favicon-16x16.png"
+          href="/assets/icons/favicon-16x16.png"
         />
-        <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
         {/* maid bg images loaded by maid-bg.js */}
         <link rel="stylesheet" href="/assets/styles.css" />
       </head>
@@ -63,7 +63,7 @@ export function Layout({
               ) : null}
             </div>
             <a href="/" class="site-title">
-              <img src="/assets/bow.png" alt="" class="site-logo" />
+              <img src="/assets/icons/bow.png" alt="" class="site-logo" />
               The Claude Café
             </a>
             <div class="header-right" />
