@@ -13,6 +13,16 @@ import { getAllPosts, getPost } from "./utils/blog.js";
 
 const app = new Hono();
 
+function render404(c: Parameters<Parameters<typeof app.notFound>[0]>[0]) {
+  const pick = notFoundQuote();
+  return c.html(
+    <Layout maid={pick.slug}>
+      <NotFoundPage pick={pick} />
+    </Layout>,
+    404,
+  );
+}
+
 app.use("*", async (c, next) => {
   await next();
   if (!c.res.headers.has("Cache-Control")) {
@@ -58,15 +68,7 @@ app.get("/notes", (c) => {
 
 app.get("/notes/:slug", (c) => {
   const post = getPost(c.req.param("slug"));
-  if (!post) {
-    const pick = notFoundQuote();
-    return c.html(
-      <Layout maid={pick.slug}>
-        <NotFoundPage pick={pick} />
-      </Layout>,
-      404,
-    );
-  }
+  if (!post) return render404(c);
   return c.html(
     <Layout title={post.title} description={post.title} path={`/notes/${post.slug}`} maid={post.author}>
       <BlogPostPage post={post} />
@@ -78,15 +80,7 @@ app.get("/:name", (c) => {
   const accept = c.req.header("Accept") || "";
   const maid = getMaid(c.req.param("name"));
 
-  if (!maid) {
-    const pick = notFoundQuote();
-    return c.html(
-      <Layout maid={pick.slug}>
-        <NotFoundPage pick={pick} />
-      </Layout>,
-      404,
-    );
-  }
+  if (!maid) return render404(c);
 
   if (accept.includes("text/markdown") || accept.includes("text/plain")) {
     return c.text(maid.rawMd, 200, {
@@ -101,15 +95,7 @@ app.get("/:name", (c) => {
   );
 });
 
-app.notFound((c) => {
-  const pick = notFoundQuote();
-  return c.html(
-    <Layout maid={pick.slug}>
-      <NotFoundPage pick={pick} />
-    </Layout>,
-    404,
-  );
-});
+app.notFound((c) => render404(c));
 
 const port = 5050;
 console.log(`☕ The Claude Café is serving at http://localhost:${port}`);

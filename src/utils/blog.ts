@@ -1,6 +1,5 @@
-import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import matter from 'gray-matter'
+import { loadContentDir } from './content.js'
 
 export interface BlogPost {
   slug: string
@@ -10,53 +9,29 @@ export interface BlogPost {
   content: string
 }
 
-interface PostFrontmatter {
-  slug?: string
-  title?: string
-  date?: Date | string
-  author?: string
-}
+const cache: { items: BlogPost[] | null } = { items: null }
 
-function parsePost(slug: string, raw: string): BlogPost {
-  const { data, content } = matter(raw)
-  const fm = data as PostFrontmatter
+function parsePost(slug: string, data: Record<string, unknown>, content: string): BlogPost {
+  const date = data.date
   return {
-    slug: fm.slug ?? slug,
-    title: fm.title ?? slug,
-    date: fm.date instanceof Date ? fm.date.toISOString().slice(0, 10) : fm.date ? String(fm.date).slice(0, 10) : '',
-    author: fm.author ?? '',
+    slug: (data.slug as string) ?? slug,
+    title: (data.title as string) ?? slug,
+    date: date instanceof Date ? date.toISOString().slice(0, 10) : date ? String(date).slice(0, 10) : '',
+    author: (data.author as string) ?? '',
     content,
   }
 }
 
-let postsCache: BlogPost[] | null = null
-const isDev = process.env.NODE_ENV !== 'production'
-
-function getBlogDir(): string {
-  return join(import.meta.dirname, '../../blog')
-}
-
 export function getAllPosts(): BlogPost[] {
-  if (postsCache && !isDev) return postsCache
-
-  const dir = getBlogDir()
-  let files: string[]
-  try {
-    files = readdirSync(dir).filter(f => f.endsWith('.md')).sort()
-  } catch {
-    console.error(`[blog] cannot read directory: ${dir}`)
-    return []
-  }
-
-  postsCache = files.map(f => {
-    const slug = f.replace(/\.md$/, '')
-    const raw = readFileSync(join(dir, f), 'utf-8')
-    return parsePost(slug, raw)
-  })
-
+  const posts = loadContentDir(
+    join(import.meta.dirname, '../../blog'),
+    'blog',
+    parsePost,
+    cache,
+  )
   // newest first
-  postsCache.sort((a, b) => b.date.localeCompare(a.date))
-  return postsCache
+  posts.sort((a, b) => b.date.localeCompare(a.date))
+  return posts
 }
 
 export function getPost(slug: string): BlogPost | undefined {
