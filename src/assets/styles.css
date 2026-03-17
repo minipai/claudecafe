@@ -382,6 +382,45 @@ body:has(.blog-page)::before {
     max-width: none;
     width: 100%;
     margin: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.blog-index-list .blog-row {
+    text-decoration: none;
+    color: inherit;
+}
+
+.blog-index-list .blog-row:hover .blog-row-title {
+    color: var(--accent-bold);
+    text-decoration: none;
+}
+
+.blog-index-list .blog-list::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    background: var(--blog-avatar) no-repeat center / cover;
+    opacity: 0;
+    transform: scale(1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    border-radius: 0 999px 999px 0;
+    mask-image: linear-gradient(to right, transparent, black 30%);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 30%);
+}
+
+.blog-index-list .blog-list:hover::after {
+    opacity: 0.6;
+    transform: scale(1.08);
+}
+
+.blog-index-list .blog-list:hover .blog-row-author {
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 
