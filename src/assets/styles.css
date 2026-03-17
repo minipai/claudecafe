@@ -485,7 +485,8 @@ body:has(.blog-page)::before {
     border-top: 1px dashed var(--border);
 }
 
-.maid-row:hover {
+.maid-row:hover,
+.maid-row.active {
     background: linear-gradient(
         90deg,
         transparent,
@@ -509,7 +510,8 @@ body:has(.blog-page)::before {
     transition: opacity 0.15s ease;
 }
 
-.maid-row:hover .maid-name {
+.maid-row:hover .maid-name,
+.maid-row.active .maid-name {
     color: var(--accent-bold);
 }
 
