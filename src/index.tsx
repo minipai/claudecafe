@@ -5,7 +5,7 @@ import { Layout } from "./components/Layout.js";
 import { HomePage } from "./components/HomePage.js";
 import { MaidPage } from "./pages/MaidPage.js";
 
-import { NotFoundPage } from "./pages/NotFoundPage.js";
+import { NotFoundPage, notFoundQuote } from "./pages/NotFoundPage.js";
 import { getAllMaids, getMaid } from "./utils/maids.js";
 import { BlogPostPage } from "./pages/BlogPostPage.js";
 import { BlogIndexPage } from "./pages/BlogIndexPage.js";
@@ -59,9 +59,10 @@ app.get("/notes", (c) => {
 app.get("/notes/:slug", (c) => {
   const post = getPost(c.req.param("slug"));
   if (!post) {
+    const pick = notFoundQuote();
     return c.html(
-      <Layout>
-        <NotFoundPage />
+      <Layout maid={pick.slug}>
+        <NotFoundPage pick={pick} />
       </Layout>,
       404,
     );
@@ -78,9 +79,10 @@ app.get("/:name", (c) => {
   const maid = getMaid(c.req.param("name"));
 
   if (!maid) {
+    const pick = notFoundQuote();
     return c.html(
-      <Layout>
-        <NotFoundPage />
+      <Layout maid={pick.slug}>
+        <NotFoundPage pick={pick} />
       </Layout>,
       404,
     );
@@ -100,9 +102,10 @@ app.get("/:name", (c) => {
 });
 
 app.notFound((c) => {
+  const pick = notFoundQuote();
   return c.html(
-    <Layout>
-      <NotFoundPage />
+    <Layout maid={pick.slug}>
+      <NotFoundPage pick={pick} />
     </Layout>,
     404,
   );

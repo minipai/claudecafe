@@ -530,7 +530,8 @@ body:has(.blog-page)::before {
     overflow: hidden;
 }
 
-body:has(.maid-page)::before {
+body:has(.maid-page)::before,
+body:has(.not-found)::before {
     opacity: 0.6;
 }
 
