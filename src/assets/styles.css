@@ -221,11 +221,26 @@ main {
 .blog-page {
     max-width: 640px;
     margin: 2rem auto;
-    background: rgb(from var(--bg) r g b / 0.85);
 }
 
 .blog-header {
     margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+}
+
+.blog-avatar {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    opacity: 0.7;
+}
+
+body:has(.blog-page)::before {
+    display: none;
 }
 
 .blog-header-meta {
