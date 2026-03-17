@@ -52,11 +52,14 @@ body::before {
     pointer-events: none;
     z-index: 0;
     opacity: 0.3;
-    transition: opacity 0.3s ease;
+    transform: scale(1);
+    transform-origin: center 20%;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 body.maid-fading::before {
     opacity: 0;
+    transform: scale(1.08);
 }
 
 body > * {

@@ -1,5 +1,5 @@
 ;(function () {
-  // Only homepage needs JS (maid/blog pages are SSR'd with data-maid on body)
+  // Only homepage needs the hover-switching logic
   var rows = document.querySelectorAll('.maid-row[data-maid]')
   if (!rows.length) return
 
