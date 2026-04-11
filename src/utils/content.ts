@@ -14,7 +14,7 @@ export function loadContentDir<T>(
 
   let files: string[]
   try {
-    files = readdirSync(dir).filter(f => f.endsWith('.md')).sort()
+    files = readdirSync(dir).filter(f => /^[a-z0-9].*\.md$/.test(f)).sort()
   } catch {
     console.error(`[${label}] cannot read directory: ${dir}`)
     return []
