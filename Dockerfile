@@ -5,6 +5,8 @@ RUN bun install --production --frozen-lockfile
 COPY tsconfig.json ./
 COPY src ./src
 COPY cafe ./cafe
+COPY blog ./blog
+
 ENV NODE_ENV=production
 EXPOSE 5050
 CMD ["bun", "src/index.tsx"]

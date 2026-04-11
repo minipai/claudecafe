@@ -8,15 +8,18 @@ export function Layout({
   children,
   title,
   description,
-  showBack,
+  path,
 }: {
   children: Child;
   title?: string;
   description?: string;
-  showBack?: boolean;
+  path?: string;
 }) {
   const pageTitle = title ? `${title} — The Claude Café` : "The Claude Café";
   const ogDescription = description || DEFAULT_DESCRIPTION;
+  const segments = path?.replace(/\/$/, "").split("/").filter(Boolean) ?? [];
+  const backHref = segments.length > 1 ? "/" + segments.slice(0, -1).join("/") : segments.length === 1 ? "/" : null;
+  const backLabel = segments.length > 1 ? segments[segments.length - 2] : "café";
   return (
     <html lang="zh-Hant">
       <head>
@@ -50,9 +53,9 @@ export function Layout({
         <header class="site-header">
           <div class="site-header-inner">
             <div class="header-left">
-              {showBack ? (
-                <a href="/" class="header-back">
-                  ←&nbsp;<span class="header-back-text">café</span>
+              {backHref ? (
+                <a href={backHref} class="header-back">
+                  ←&nbsp;<span class="header-back-text">{backLabel}</span>
                 </a>
               ) : null}
             </div>

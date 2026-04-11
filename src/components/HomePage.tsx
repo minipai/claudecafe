@@ -1,7 +1,8 @@
 import type { Maid } from "../utils/maids.js";
+import type { BlogPost } from "../utils/blog.js";
 import { MaidCard } from "./MaidCard.js";
 
-export function HomePage({ maids }: { maids: Maid[] }) {
+export function HomePage({ maids, posts }: { maids: Maid[]; posts: BlogPost[] }) {
   return (
     <div class="home">
       <section class="hero">
@@ -13,6 +14,15 @@ export function HomePage({ maids }: { maids: Maid[] }) {
           <MaidCard maid={maid} />
         ))}
       </div>
+      {posts.length > 0 && (
+        <div class="blog-list">
+          <div class="blog-row">
+            <time class="blog-row-date">{posts[0].date}</time>
+            <a href={`/notes/${posts[0].slug}`} class="blog-row-title">{posts[0].title}</a>
+            <a href="/notes" class="blog-row-action">Café Note →</a>
+          </div>
+        </div>
+      )}
       <footer class="site-footer">
         <a
           href="https://www.flaticon.com/free-icon/bow_12575123"

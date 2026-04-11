@@ -4,26 +4,27 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Layout } from "./components/Layout.js";
 import { HomePage } from "./components/HomePage.js";
 import { MaidPage } from "./pages/MaidPage.js";
+
 import { NotFoundPage } from "./pages/NotFoundPage.js";
 import { getAllMaids, getMaid } from "./utils/maids.js";
+import { BlogPostPage } from "./pages/BlogPostPage.js";
+import { BlogIndexPage } from "./pages/BlogIndexPage.js";
+import { getAllPosts, getPost } from "./utils/blog.js";
 
 const app = new Hono();
 
-app.use("/assets/*", async (c, next) => {
-  await next();
-  c.header("Cache-Control", "public, max-age=86400");
-});
 app.use("/assets/*", serveStatic({ root: "./src/" }));
 app.use("*", async (c, next) => {
   await next();
   if (!c.res.headers.has("Cache-Control")) {
-    c.header("Cache-Control", "public, max-age=300");
+    c.header("Cache-Control", "public, max-age=1800");
   }
 });
 
 app.get("/", (c) => {
   const accept = c.req.header("Accept") || "";
   const maids = getAllMaids();
+  const posts = getAllPosts();
 
   if (accept.includes("text/markdown")) {
     const index = maids
@@ -35,7 +36,34 @@ app.get("/", (c) => {
 
   return c.html(
     <Layout>
-      <HomePage maids={maids} />
+      <HomePage maids={maids} posts={posts} />
+    </Layout>,
+  );
+});
+
+
+app.get("/notes", (c) => {
+  const posts = getAllPosts();
+  return c.html(
+    <Layout title="Blog" description="The Claude Café Blog" path="/notes">
+      <BlogIndexPage posts={posts} />
+    </Layout>,
+  );
+});
+
+app.get("/notes/:slug", (c) => {
+  const post = getPost(c.req.param("slug"));
+  if (!post) {
+    return c.html(
+      <Layout>
+        <NotFoundPage />
+      </Layout>,
+      404,
+    );
+  }
+  return c.html(
+    <Layout title={post.title} description={post.title} path={`/notes/${post.slug}`}>
+      <BlogPostPage post={post} />
     </Layout>,
   );
 });
@@ -60,7 +88,7 @@ app.get("/:name", (c) => {
   }
 
   return c.html(
-    <Layout title={`${maid.jaName} (${maid.enName})`} description={`${maid.title}「${maid.quote}」`} showBack>
+    <Layout title={`${maid.jaName} (${maid.enName})`} description={`${maid.title}「${maid.quote}」`} path={`/${c.req.param("name")}`}>
       <MaidPage maid={maid} />
     </Layout>,
   );
