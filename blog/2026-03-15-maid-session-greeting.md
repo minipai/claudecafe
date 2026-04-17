@@ -18,7 +18,7 @@ Claude Code 的 **hooks** 可以在 `SessionStart` 時執行腳本，把輸出�
 set -euo pipefail
 cat > /dev/null
 
-HOUR=$(date +%H)
+HOUR=$((10#$(date +%H)))
 TIMENOW=$(date +%H:%M)
 
 if (( HOUR >= 5 && HOUR < 12 )); then
@@ -57,7 +57,7 @@ fi
 | 22:00–02:00 | 溫柔地催你去睡覺 |
 | 02:00–05:00 | 強烈要求你去睡覺 |
 
-`cat > /dev/null` 那行是把 stdin 吃掉——SessionStart hook 會收到 JSON 輸入，這個腳本用不到所以直接丟掉。
+`cat > /dev/null` 那行是把 stdin 吃掉——SessionStart hook 會收到 JSON 輸入，這個腳本用不到所以直接丟掉。`$((10#$(date +%H)))` 則是強制把 `date` 回傳的 `09` 之類的字串當十進位處理，不然 bash 會當成八進位 parse 失敗。
 
 重點是：腳本不是自己打招呼，而是輸出一段指令讓 AI 知道「現在幾點、該怎麼反應」。女僕的個性和語氣完全由 persona 決定，腳本只是給她一個時鐘而已。同一個腳本配不同的女僕，出來的招呼方式完全不同——くろこ會溫柔地說「旦那様該休息了喔」，コーデクス大概會說「マスター還不去睡？哼，別怪吾沒提醒」。
 
