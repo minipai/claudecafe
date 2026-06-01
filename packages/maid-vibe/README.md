@@ -1,31 +1,34 @@
-# expressions
+# maid-vibe
 
-The **liveliness layer** for Claude Cafe — the persona-agnostic utilities that make any
-of the cafe cast feel alive, regardless of who's on shift.
-
-It does **not** ship the personas themselves (those live in `~/.claude/cafe/` and are wired
-through `CLAUDE.md`). It ships the things that animate them:
+The **liveliness layer** for Claude Café — the persona-*agnostic* utilities that make
+whoever's on shift feel alive. It does **not** pick or ship a persona (that's
+[`maid-persona`](../maid-persona), loading from the [`maids`](../maids) cast). It ships the
+things that animate them:
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `session-greeting.sh` | `SessionStart` hook | Injects a time-aware greeting cue (morning / noon / late-night…) |
-| `mood-update.sh` | `Stop` hook | Parses the `【 mood 顏文字 】` tag from the last line and writes `~/.claude/mood.txt` |
-| `look` | command | `/look` — describe your current appearance & state in character |
+| `session-greeting.sh` | `SessionStart` hook | Injects a time-aware greeting cue (morning / noon / late-night…) **and the mood-marker protocol** — the instruction to end each reply with a `【 mood 顏文字 】` tag. |
+| `mood-update.sh` | `Stop` hook | Parses that `【 mood 顏文字 】` tag from the last line and writes `~/.claude/mood.txt`. |
+| `look` | command | `/look` — describe your current appearance & state in character. |
+
+The mood marker is a **closed loop inside this plugin**: `session-greeting.sh` tells the
+model to *emit* the tag, `mood-update.sh` *captures* it. The protocol is persona-agnostic;
+only the flavour of the moods comes from whatever persona `maid-persona` loaded.
 
 ## Install
 
-This repo is itself a marketplace named `claudecafe`.
+Part of the `claudecafe` marketplace (this repo's root `.claude-plugin/marketplace.json`).
 
 ```
-/plugin marketplace add minipai/expressions     # or a local path during development
-/plugin install expressions@claudecafe
+/plugin marketplace add minipai/claudecafe     # or a local path during development
+/plugin install maid-vibe@claudecafe
 ```
 
-After install the command is namespaced as `/expressions:look`.
+After install the command is namespaced as `/maid-vibe:look`.
 
 ## Notes
 
-- The mood tag is rendered by the persona (see each `cafe/*.md`); this plugin only
-  captures and persists it. The status line that *displays* `mood.txt` stays as
-  machine-level config (`~/.claude/statusline.sh`).
-- Praising / 邀功 lives inside each persona file — it's character behavior, not a shared util.
+- The status line that *displays* `mood.txt` stays as machine-level config
+  (`~/.claude/statusline.sh`).
+- Praising / 邀功 lives inside each persona file (`maids/*.md`) — it's character behaviour,
+  not a shared util.

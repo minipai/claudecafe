@@ -1,0 +1,16 @@
+{
+  "description": "Persona loader — injects the on-shift maid's persona at session start.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/load-persona.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

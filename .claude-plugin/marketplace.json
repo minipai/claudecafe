@@ -25,6 +25,15 @@
         "name": "minipai"
       },
       "source": "./packages/maid-vibe"
+    },
+    {
+      "name": "maid-persona",
+      "description": "Puts a maid on shift — injects the chosen persona from the maids cast at session start so Claude speaks in character.",
+      "version": "0.1.0",
+      "author": {
+        "name": "minipai"
+      },
+      "source": "./packages/maid-persona"
     }
   ]
 }

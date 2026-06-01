@@ -38,6 +38,8 @@ importers:
 
   packages/cafe-bell: {}
 
+  packages/maid-persona: {}
+
   packages/maid-vibe: {}
 
   packages/maid-voice-player: {}

@@ -1,14 +1,15 @@
 # claudecafe (monorepo)
 
-AI 女僕生態系的 pnpm monorepo。repo 根**同時是一個叫 `claudecafe` 的 plugin marketplace**（`.claude-plugin/marketplace.json`，列出 cafe-bell + maid-vibe 兩個 plugin）。五個 workspace package：
+AI 女僕生態系的 pnpm monorepo。repo 根**同時是一個叫 `claudecafe` 的 plugin marketplace**（`.claude-plugin/marketplace.json`，列出 cafe-bell + maid-vibe + maid-persona 三個 plugin）。六個 workspace package：
 
 - **`apps/web`** — 女僕 persona 展示網站（Hono SSR）。使用者瀏覽角色卡片，按「copy source」複製 persona markdown，貼到自己的 `CLAUDE.md` 讓 Claude 變成對應的可愛女僕。
-- **`packages/maids`** — 女僕陣容本體：6 位 persona 定義 `*.md`（frontmatter = 網站 metadata，body = persona 指令）+ 原始美術稿 png。`apps/web` 以 `workspace:*` 依賴它取得 persona 檔。
+- **`packages/maids`** — 女僕陣容本體（純資料）：6 位 persona 定義 `*.md`（frontmatter = 網站 metadata，body = persona 指令）+ 原始美術稿 png。`apps/web` 以 `workspace:*` 依賴它取得 persona 檔；`maid-persona` plugin 也讀它。
 - **`packages/cafe-bell`** — Claude Code hook 事件的 pub/sub hub（SSE bus）。同時是 marketplace plugin，也以 skills-dir plugin 載入（`~/.claude/skills/cafe-bell` symlink）。
-- **`packages/maid-vibe`** — Claude Code plugin（marketplace 第二個 plugin）：女僕「外顯氣場」層 — 時段問候（SessionStart hook）、心情標記捕捉（Stop hook）、`/look` 描寫外貌。persona-agnostic。前身是獨立 repo `expressions`。
+- **`packages/maid-vibe`** — Claude Code plugin：女僕「外顯氣場」層（persona-agnostic）。`session-greeting.sh`（SessionStart）注入時段問候 **+ 心情標記協定**；`mood-update.sh`（Stop）捕捉 `【…】` 寫 mood.txt；`/look` 描寫外貌。前身是獨立 repo `expressions`。心情標記是 plugin 內**閉環**（emit + capture）。
+- **`packages/maid-persona`** — Claude Code plugin：把一位女僕「排班上場」。`load-persona.sh`（SessionStart）讀 `maids/<當班>.md` 的 body（strip frontmatter）注入當 session persona + 語言指令。取代舊的 `@cafe/<maid>.md` import。`CLAUDE_MAID` 換女僕、`CLAUDE_MAIDS_DIR` 換來源。
 - **`packages/maid-voice-player`** — 訂閱 cafe-bell SSE bus 的語音播放器，每個 hook 事件播一段女僕語音（launchd 常駐）。
 
-> 注意：maid-vibe 目前**只是 marketplace 裡可安裝的 plugin（休眠）**；實際在跑的問候/心情 hook 是 loose 在 `~/.claude/hooks/` 並寫死在 `~/.claude/settings.json` 的同名腳本。別在 symlink 已載入 cafe-bell 的情況下又 `/plugin install cafe-bell`，會雙載。
+> **休眠 vs live**：三個 plugin 在 marketplace 裡是「可安裝」狀態（休眠）。實際在跑的是 `~/.claude/hooks/` 的 live 鏡像（`session-greeting.sh`、`load-persona.sh`、`mood-update.sh`）+ 寫在 `~/.claude/settings.json` 的 SessionStart/Stop。`~/.claude/CLAUDE.md` 已砍成純 infra（persona/語言/心情都改由上述 hook 注入）。別在 symlink 已載入 cafe-bell 時又 `/plugin install cafe-bell`，會雙載。
 
 ## Workspace
 
