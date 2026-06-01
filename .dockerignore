@@ -1,0 +1,11 @@
+# Build context is the monorepo root. Keep it lean and never ship host
+# node_modules (wrong arch) or VCS/editor cruft into the build.
+**/node_modules
+.git
+**/dist
+notes
+**/.claude
+.claude
+plans
+/out
+**/.DS_Store

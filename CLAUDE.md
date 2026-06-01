@@ -9,8 +9,8 @@ AI 女僕生態系的 pnpm monorepo。三個 workspace package：
 ## Workspace
 
 - pnpm workspace（`pnpm-workspace.yaml` → `apps/*`、`packages/*`）。
-- 根 `pnpm-lock.yaml` 管本地開發；web 的 Docker 部署用 bun，讀 `apps/web/package-lock.json`。
-- 常用：`pnpm install`（根）、`pnpm dev:web`（起站）、`pnpm --filter claudecafe ship`（部署 web）。
+- **單一 lockfile**：根 `pnpm-lock.yaml` 同時管本地開發與 Docker 部署。web 的 image 是多階段 build（`apps/web/Dockerfile`，context = repo 根）：stage 1 用 node+pnpm `--frozen-lockfile` install 後 `pnpm --filter claudecafe --legacy deploy --prod`，stage 2 用 `oven/bun` 跑 deploy bundle。
+- 常用：`pnpm install`（根）、`pnpm dev:web`（起站）、`pnpm --filter claudecafe ship`（部署 web，build context 自動指向 repo 根）。
 - cafe-bell / maid-voice-player 無 npm 依賴，直接用 bun 跑。
 
 ## apps/web

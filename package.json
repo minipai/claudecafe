@@ -4,6 +4,7 @@
   "description": "AI 女僕生態系 monorepo — web 展示站、cafe-bell hook 事件 hub、maid-voice 語音播放器",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "dev": "pnpm --filter claudecafe dev",
     "dev:web": "pnpm --filter claudecafe dev",
