@@ -1,0 +1,30 @@
+{
+  "name": "claudecafe",
+  "owner": {
+    "name": "minipai"
+  },
+  "metadata": {
+    "description": "Claude Cafe — plugins that bring the cast to life.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "cafe-bell",
+      "description": "Pub/sub hub for Claude Code hook events. Forwards every hook to a local SSE bus any consumer (voice player, dashboards) can subscribe to.",
+      "version": "1.0.0",
+      "author": {
+        "name": "minipai"
+      },
+      "source": "./packages/cafe-bell"
+    },
+    {
+      "name": "maid-vibe",
+      "description": "The liveliness layer — time-aware greeting, mood tracking, and a /look command that work across any persona.",
+      "version": "0.1.0",
+      "author": {
+        "name": "minipai"
+      },
+      "source": "./packages/maid-vibe"
+    }
+  ]
+}

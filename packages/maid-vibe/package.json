@@ -1,0 +1,8 @@
+{
+  "name": "maid-vibe",
+  "version": "0.1.0",
+  "description": "Claude Code plugin — the liveliness layer (time-aware greeting, mood capture, /look). Persona-agnostic.",
+  "private": true,
+  "type": "module",
+  "license": "ISC"
+}

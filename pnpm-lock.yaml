@@ -19,6 +19,9 @@ importers:
       hono:
         specifier: ^4.12.3
         version: 4.12.23
+      maids:
+        specifier: workspace:*
+        version: link:../../packages/maids
       marked:
         specifier: ^17.0.3
         version: 17.0.6
@@ -35,7 +38,11 @@ importers:
 
   packages/cafe-bell: {}
 
+  packages/maid-vibe: {}
+
   packages/maid-voice-player: {}
+
+  packages/maids: {}
 
 packages:
 

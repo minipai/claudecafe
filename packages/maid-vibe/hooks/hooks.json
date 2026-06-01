@@ -1,0 +1,27 @@
+{
+  "description": "Liveliness hooks — time-aware greeting on session start, mood capture on stop.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-greeting.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/mood-update.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
