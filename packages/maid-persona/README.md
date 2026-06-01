@@ -11,18 +11,33 @@ the part that picks *who's* on shift; `maid-vibe` animates whoever that is.
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `hooks/load-persona.sh` | `SessionStart` hook | Reads the on-shift maid's `*.md` from the `maids` package, strips the frontmatter, and injects the body as the session persona (plus the response-language directive). |
+| `hooks/load-persona.sh` | `SessionStart` hook | Reads the on-shift maid's `*.md` from the plugin's bundled `vendor/` dir, strips the frontmatter, and injects the body as the session persona (plus the response-language directive). |
 
-The cast itself lives in the [`maids`](../maids) package (the same persona files
-the website serves via "copy source"). This plugin only *loads* one of them — it
-ships no personas of its own.
+## Self-contained — vendored cast (build step)
+
+The runtime hook is **pure bash** and reads `${CLAUDE_PLUGIN_ROOT}/vendor/<maid>.md`. Nothing
+external is needed: it works straight from the marketplace cache with **no env var, no repo path,
+no symlink, and no `node`/`bun`** (hooks run in a non-interactive shell that may not have a JS
+runtime on PATH — e.g. an nvm/`~/.bun` install).
+
+`vendor/` is **generated**, not hand-maintained. `build.ts` resolves the `@claudecafe/maids`
+package (a `devDependency` — so it's the package, not a `../maids` path) and copies the persona
+`*.md` in. It is **git-ignored**; regenerate after editing the cast:
+
+```sh
+pnpm --filter @claudecafe/maid-persona build    # bun build.ts -> vendor/
+```
+
+> ⚠️ `/plugin install` copies files but does **not** run a build. This repo's marketplace is a
+> *directory* source, so the (git-ignored) `vendor/` is copied from the working tree as long as
+> you ran `build` before (re)installing. **Build before installing.** (For a git-source
+> marketplace you'd instead commit `vendor/`.)
 
 ## Config
 
 | Env var | Default | Meaning |
 |---------|---------|---------|
 | `CLAUDE_MAID` | `kurumi` | Which maid is on shift (matches a `<slug>.md` in the cast). |
-| `CLAUDE_MAIDS_DIR` | sibling `maids` package | Where the persona `*.md` live. |
 
 ## Notes
 

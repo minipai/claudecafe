@@ -10,6 +10,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@claudecafe/maids':
+        specifier: workspace:*
+        version: link:../../packages/maids
       '@hono/node-server':
         specifier: ^1.19.9
         version: 1.19.14(hono@4.12.23)
@@ -19,9 +22,6 @@ importers:
       hono:
         specifier: ^4.12.3
         version: 4.12.23
-      maids:
-        specifier: workspace:*
-        version: link:../../packages/maids
       marked:
         specifier: ^17.0.3
         version: 17.0.6
@@ -38,7 +38,11 @@ importers:
 
   packages/cafe-bell: {}
 
-  packages/maid-persona: {}
+  packages/maid-persona:
+    devDependencies:
+      '@claudecafe/maids':
+        specifier: workspace:*
+        version: link:../maids
 
   packages/maid-vibe: {}
 

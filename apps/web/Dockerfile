@@ -22,7 +22,7 @@ RUN pnpm install --frozen-lockfile
 # Source, then prune to a self-contained prod bundle for the web app only.
 # --legacy: pnpm v10 needs it to deploy non-injected workspace packages.
 COPY . .
-RUN pnpm --filter claudecafe --legacy deploy --prod /out
+RUN pnpm --filter @claudecafe/web --legacy deploy --prod /out
 
 FROM oven/bun:1-alpine
 WORKDIR /app

@@ -6,9 +6,9 @@
   "type": "module",
   "packageManager": "pnpm@10.24.0",
   "scripts": {
-    "dev": "pnpm --filter claudecafe dev",
-    "dev:web": "pnpm --filter claudecafe dev",
-    "ship": "pnpm --filter claudecafe ship",
+    "dev": "pnpm --filter @claudecafe/web dev",
+    "dev:web": "pnpm --filter @claudecafe/web dev",
+    "ship": "pnpm --filter @claudecafe/web ship",
     "check": "pnpm -r check"
   },
   "license": "ISC"

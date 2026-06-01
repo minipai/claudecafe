@@ -1,8 +1,14 @@
 {
-  "name": "maid-persona",
-  "version": "0.1.0",
-  "description": "Claude Code plugin — puts a maid on shift. A SessionStart hook injects the chosen persona (from the `maids` package) so Claude speaks in character.",
+  "name": "@claudecafe/maid-persona",
+  "version": "0.1.1",
+  "description": "Claude Code plugin — puts a maid on shift. A SessionStart hook injects the chosen persona (vendored from the @claudecafe/maids cast at build time) so Claude speaks in character.",
   "private": true,
   "type": "module",
+  "scripts": {
+    "build": "bun build.ts"
+  },
+  "devDependencies": {
+    "@claudecafe/maids": "workspace:*"
+  },
   "license": "ISC"
 }
