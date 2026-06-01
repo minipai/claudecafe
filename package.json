@@ -1,25 +1,14 @@
 {
-  "name": "claudecafe",
+  "name": "claudecafe-monorepo",
   "version": "1.0.0",
-  "description": "",
+  "description": "AI 女僕生態系 monorepo — web 展示站、cafe-bell hook 事件 hub、maid-voice 語音播放器",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/index.tsx",
-    "start": "bun src/index.tsx",
-    "ship": "bash scripts/ship.sh"
+    "dev": "pnpm --filter claudecafe dev",
+    "dev:web": "pnpm --filter claudecafe dev",
+    "ship": "pnpm --filter claudecafe ship",
+    "check": "pnpm -r check"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@hono/node-server": "^1.19.9",
-    "gray-matter": "^4.0.3",
-    "hono": "^4.12.3",
-    "marked": "^17.0.3"
-  },
-  "devDependencies": {
-    "@types/node": "^25.3.3",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
-  }
+  "license": "ISC"
 }
