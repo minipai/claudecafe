@@ -1,7 +1,7 @@
 {
   "name": "maid-vibe",
   "version": "0.1.0",
-  "description": "The liveliness layer — time-aware greeting, mood tracking, and a /look command that make any persona feel alive. Persona-agnostic.",
+  "description": "The liveliness layer — time-aware greeting, a mood-marker reply cue, and a /look command that make any persona feel alive. Persona-agnostic.",
   "author": {
     "name": "minipai"
   }

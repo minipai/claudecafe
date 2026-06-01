@@ -7,13 +7,14 @@ things that animate them:
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `session-greeting.sh` | `SessionStart` hook | Injects a time-aware greeting cue (morning / noon / late-night…) **and the mood-marker protocol** — the instruction to end each reply with a `【 mood 顏文字 】` tag. |
-| `mood-update.sh` | `Stop` hook | Parses that `【 mood 顏文字 】` tag from the last line and writes `~/.claude/mood.txt`. |
+| `session-greeting.sh` | `SessionStart` hook | Injects a time-aware greeting cue (morning / noon / late-night…) **and the mood-marker cue** — the instruction to end each reply with a `【 mood 顏文字 】` tag. |
 | `look` | command | `/look` — describe your current appearance & state in character. |
 
-The mood marker is a **closed loop inside this plugin**: `session-greeting.sh` tells the
-model to *emit* the tag, `mood-update.sh` *captures* it. The protocol is persona-agnostic;
-only the flavour of the moods comes from whatever persona `maid-persona` loaded.
+The mood marker is purely a **response-style flourish** — the cue tells the model to *emit*
+a `【 mood 顏文字 】` tag at the end of each reply. It is not captured or persisted (the old
+`mood-update.sh` Stop hook and `~/.claude/mood.txt` status-line display were removed). The
+cue is persona-agnostic; only the flavour of the moods comes from whatever persona
+`maid-persona` loaded.
 
 ## Install
 
@@ -28,7 +29,5 @@ After install the command is namespaced as `/maid-vibe:look`.
 
 ## Notes
 
-- The status line that *displays* `mood.txt` stays as machine-level config
-  (`~/.claude/statusline.sh`).
 - Praising / 邀功 lives inside each persona file (`maids/*.md`) — it's character behaviour,
   not a shared util.

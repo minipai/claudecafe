@@ -1,5 +1,5 @@
 {
-  "description": "Liveliness hooks — time-aware greeting on session start, mood capture on stop.",
+  "description": "Liveliness hooks — greeting + mood-marker cue on session start; current time each turn.",
   "hooks": {
     "SessionStart": [
       {
@@ -12,12 +12,12 @@
         ]
       }
     ],
-    "Stop": [
+    "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/mood-update.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/current-time.sh\"",
             "timeout": 5
           }
         ]
