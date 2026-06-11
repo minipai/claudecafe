@@ -5,11 +5,19 @@
 # contained, so it works from the marketplace cache with no external link, no env
 # var, no repo path, and no `node` dependency (hooks run in a non-interactive
 # shell that may not have node/bun on PATH).
-#   CLAUDE_MAID  which maid is on shift (default: kurumi)
+# Shift order: CLAUDE_MAID env (one-shot override) > ~/.claude/maid-on-shift
+# (written by the /maid command) > claudia. "none" = nobody on shift (no persona
+# injected — for users who bring their own persona via CLAUDE.md).
 set -euo pipefail
 cat > /dev/null   # drain the hook payload on stdin
 
-MAID="${CLAUDE_MAID:-kurumi}"
+STATE_FILE="$HOME/.claude/maid-on-shift"
+MAID="${CLAUDE_MAID:-}"
+if [ -z "$MAID" ] && [ -f "$STATE_FILE" ]; then
+  MAID="$(tr -d '[:space:]' < "$STATE_FILE")"
+fi
+MAID="${MAID:-claudia}"
+[ "$MAID" = "none" ] && exit 0   # nobody on shift -> stay in the default voice
 CAST_DIR="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/vendor"
 FILE="$CAST_DIR/$MAID.md"
 

@@ -18,22 +18,13 @@
       "source": "./packages/cafe-bell"
     },
     {
-      "name": "maid-vibe",
-      "description": "The liveliness layer — time-aware greeting, a mood-marker reply cue, and a /look command that work across any persona.",
+      "name": "cafe",
+      "description": "Claude Café in one plugin — puts a maid on shift (/maid to switch or go off-duty with none) plus the liveliness layer (time-aware greeting, mood-marker cue, per-turn time, /look).",
       "version": "0.1.1",
       "author": {
         "name": "minipai"
       },
-      "source": "./packages/maid-vibe"
-    },
-    {
-      "name": "maid-persona",
-      "description": "Puts a maid on shift — injects the chosen persona from the maids cast at session start so Claude speaks in character.",
-      "version": "0.1.1",
-      "author": {
-        "name": "minipai"
-      },
-      "source": "./packages/maid-persona"
+      "source": "./packages/cafe"
     }
   ]
 }

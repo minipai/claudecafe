@@ -36,15 +36,13 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/cafe-bell: {}
-
-  packages/maid-persona:
+  packages/cafe:
     devDependencies:
       '@claudecafe/maids':
         specifier: workspace:*
         version: link:../maids
 
-  packages/maid-vibe: {}
+  packages/cafe-bell: {}
 
   packages/maid-voice-player: {}
 

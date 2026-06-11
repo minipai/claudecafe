@@ -1,8 +1,0 @@
-{
-  "name": "maid-persona",
-  "version": "0.1.1",
-  "description": "Puts a maid on shift — injects the chosen persona from the maids cast at session start so Claude speaks in character.",
-  "author": {
-    "name": "minipai"
-  }
-}
