@@ -11,7 +11,7 @@
     {
       "name": "cafe-bell",
       "description": "Pub/sub hub for Claude Code hook events. Forwards every hook to a local SSE bus any consumer (voice player, dashboards) can subscribe to.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": {
         "name": "minipai"
       },
