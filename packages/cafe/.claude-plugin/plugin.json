@@ -1,6 +1,6 @@
 {
   "name": "cafe",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Claude Café in one plugin — puts a maid on shift (persona at session start, /maid to switch or go off-duty) plus the liveliness layer (time-aware greeting, mood-marker cue, per-turn time, /look).",
   "author": {
     "name": "minipai"

@@ -1,6 +1,6 @@
 {
   "name": "@claudecafe/cafe",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Claude Code plugin — Claude Café in one: persona on shift (vendored from the @claudecafe/maids cast at build time, /maid to switch) plus the liveliness layer (greeting, mood cue, per-turn time, /look).",
   "private": true,
   "type": "module",

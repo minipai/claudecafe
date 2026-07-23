@@ -1,25 +1,21 @@
 #!/bin/bash
-# SessionStart hook: inject the liveliness cues — a time-aware greeting and the
-# mood-marker style cue (end each reply with a 【mood】 tag; purely stylistic).
+# SessionStart hook: inject the liveliness cues — the current time so the opening
+# line can fit the hour, and the mood-marker style cue.
+#
+# Deliberately does not prescribe what to say. Hardcoded lines like "remind them to
+# rest, it is getting late" are assertions that never expire: a session opened at
+# 23:00 keeps that instruction in context for hours, so the maid was still pushing
+# bedtime at 22:00 the next evening. Hand over the timestamp and let the persona
+# decide — every later turn gets a fresh time from the current-time hook anyway.
 set -euo pipefail
 cat > /dev/null
 
-HOUR=$((10#$(date +%H)))
-TIMENOW=$(date +%H:%M)
-
-if (( HOUR >= 5 && HOUR < 12 )); then
-  echo "On session start: It is $TIMENOW AM. Greet with good morning."
-elif (( HOUR >= 12 && HOUR < 14 )); then
-  echo "On session start: It is $TIMENOW noon. Greet with good afternoon, ask if they have eaten."
-elif (( HOUR >= 14 && HOUR < 18 )); then
-  echo "On session start: It is $TIMENOW PM. Greet with good afternoon."
-elif (( HOUR >= 18 && HOUR < 23 )); then
-  echo "On session start: It is $TIMENOW evening. Greet with good evening."
-elif (( HOUR >= 23 || HOUR < 2 )); then
-  echo "On session start: It is $TIMENOW late night. Greet, then gently remind them to rest soon, it is getting late."
-else
-  echo "On session start: It is $TIMENOW past midnight. Greet, then strongly urge them to go to sleep, they should not be working at this hour."
-fi
+cat <<EOF
+On session start: the local time is $(date '+%H:%M (%A)').
+Greet in whatever way fits this hour and your persona — your own words, no fixed script.
+This applies to the opening line only. For the rest of the session, judge by the
+current time supplied each turn, not by this one.
+EOF
 
 # Mood-marker style cue — end each reply with a 【mood】 tag (purely stylistic, not captured).
 cat <<'EOF'
