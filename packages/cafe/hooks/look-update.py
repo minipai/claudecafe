@@ -153,14 +153,14 @@ def build_prompt(maid_id, turns, tasks, tools, cwd, ctx, sdir):
 def main():
     if os.environ.get("CLAUDE_MAID_SUB"):
         return
-    maid_id = on_shift()
-    if not maid_id:
-        return
-
     try:
         payload = json.load(sys.stdin)
     except Exception:
         payload = {}
+
+    maid_id = on_shift(payload.get("session_id"))
+    if not maid_id:
+        return
 
     # 每個 session 一份狀態，同時開好幾個視窗才不會互相蓋掉
     sdir = state_dir(payload.get("session_id"))

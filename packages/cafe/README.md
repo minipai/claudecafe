@@ -5,8 +5,8 @@ and `maid-vibe` (the liveliness layer). Commands namespace as `/cafe:maid` and `
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `load-persona.sh` | `SessionStart` hook | Puts a maid on shift: injects the chosen persona's body (frontmatter stripped) from the bundled `vendor/` cast. Shift order: `CLAUDE_MAID` env (one-shot override) → `~/.claude/maid-on-shift` (written by `/maid`) → `claudia`. `none` = nobody on shift (no persona injected — bring your own via `CLAUDE.md`). |
-| `maid` | command | `/maid [name\|none]` — switch who's on duty: takes effect immediately in the current session and is remembered for the next one. |
+| `load-persona.sh` | `SessionStart` hook | Puts a maid on shift: injects the chosen persona's body (frontmatter stripped) from the bundled `vendor/` cast. Shift order: `CLAUDE_MAID` env → this session's `on-shift` file → `~/.claude/maid-on-shift` → `claudia`. `none` = nobody on shift (no persona injected — bring your own via `CLAUDE.md`). |
+| `maid` | command | `/maid [name\|none]` — switch who's on duty **in this window**: takes effect immediately and is remembered for next time. |
 | `session-greeting.sh` | `SessionStart` hook | Hands over the local time so the opening line can fit the hour, **and the mood-marker cue** — end each reply with a `【 mood 顏文字 】` tag. Deliberately prescribes no wording: a hardcoded "it is getting late" never expires and keeps nagging hours later. |
 | `current-time.sh` | `UserPromptSubmit` hook | Surfaces the real current time each turn, so the clock never goes stale. |
 | `look` | command | `/look` — describe your current appearance & state in character. |
@@ -18,6 +18,22 @@ and `maid-vibe` (the liveliness layer). Commands namespace as `/cafe:maid` and `
 The mood marker is a **response-style flourish** for the reply itself; the `Stop` hook
 additionally captures it for the status line. The cues are persona-agnostic; only the
 flavour comes from whoever is on shift.
+
+## One maid per window
+
+Shift state has two layers, so two windows can run different maids at once:
+
+| Scope | File | Written by |
+|-------|------|------------|
+| This window | `~/.claude/maid-state/<session_id>/on-shift` | `/maid` |
+| Default roster | `~/.claude/maid-on-shift` | you |
+
+Resolution order is `CLAUDE_MAID` env → this window → default roster → `claudia`, so
+`CLAUDE_MAID=kokona claude` still works as a one-shot override at launch.
+
+`/maid` only ever writes the per-window file — a handover is a here-and-now thing and
+shouldn't reach into other windows that are mid-task. Edit the roster file yourself to
+change who greets you by default.
 
 ## Status line
 

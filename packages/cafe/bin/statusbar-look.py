@@ -13,10 +13,10 @@ from maidstate import on_shift, payload_from_stdin, read, state_dir
 
 
 def main():
-    if not on_shift():
-        return
     idx = int(sys.argv[1]) - 1 if len(sys.argv) > 1 else 0
     session = payload_from_stdin().get("session_id")
+    if not on_shift(session):
+        return
     lines = [l for l in read(f"{state_dir(session, create=False)}/look.txt").splitlines() if l.strip()]
     if idx >= len(lines):
         return

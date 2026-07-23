@@ -23,10 +23,10 @@ def display_name(maid_id):
 
 
 def main():
-    maid_id = on_shift()
+    session = payload_from_stdin().get("session_id")
+    maid_id = on_shift(session)
     if not maid_id:
         return
-    session = payload_from_stdin().get("session_id")
     parts = [display_name(maid_id)]
     mood = read(f"{state_dir(session, create=False)}/mood.txt").strip()
     if mood:

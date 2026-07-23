@@ -47,9 +47,16 @@ def read(path):
         return ""
 
 
-def on_shift():
-    """回傳當班女僕 id，沒人當班時回 None。"""
-    maid = read(SHIFT_FILE).strip().lower()
+def on_shift(session_id=None):
+    """回傳當班女僕 id，沒人當班時回 None。
+
+    優先序：CLAUDE_MAID 環境變數 > 這個 session 的排班 > 全域排班。
+    session 專屬那層讓不同視窗可以各自派不同的女僕。
+    """
+    maid = (os.environ.get("CLAUDE_MAID", "")
+            or (read(f"{state_dir(session_id, create=False)}/on-shift")
+                if session_id else "")
+            or read(SHIFT_FILE)).strip().lower()
     return maid if maid and maid != "none" else None
 
 
