@@ -1,5 +1,5 @@
 {
-  "description": "Café hooks — persona on shift + greeting & mood-marker cue on session start; current time each turn.",
+  "description": "Café hooks — persona on shift + greeting & mood-marker cue on session start; current time each turn; mood and appearance captured for the status line.",
   "hooks": {
     "SessionStart": [
       {
@@ -13,6 +13,16 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-greeting.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/link-bin.sh\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/look-reset.py\"",
+            "timeout": 5
           }
         ]
       }
@@ -24,6 +34,22 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/current-time.sh\"",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/mood-update.py\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/look-update.py\"",
+            "timeout": 10
           }
         ]
       }

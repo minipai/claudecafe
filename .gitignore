@@ -1,3 +1,4 @@
 node_modules/
 notes/
 vendor/
+__pycache__/

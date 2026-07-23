@@ -7,12 +7,37 @@ and `maid-vibe` (the liveliness layer). Commands namespace as `/cafe:maid` and `
 |-----------|------|--------------|
 | `load-persona.sh` | `SessionStart` hook | Puts a maid on shift: injects the chosen persona's body (frontmatter stripped) from the bundled `vendor/` cast. Shift order: `CLAUDE_MAID` env (one-shot override) → `~/.claude/maid-on-shift` (written by `/maid`) → `claudia`. `none` = nobody on shift (no persona injected — bring your own via `CLAUDE.md`). |
 | `maid` | command | `/maid [name\|none]` — switch who's on duty: takes effect immediately in the current session and is remembered for the next one. |
-| `session-greeting.sh` | `SessionStart` hook | Injects a time-aware greeting cue (morning / noon / late-night…) **and the mood-marker cue** — end each reply with a `【 mood 顏文字 】` tag. |
-| `current-time.sh` | `UserPromptSubmit` hook | Surfaces the real current time each turn, so the greeting's clock never goes stale. |
+| `session-greeting.sh` | `SessionStart` hook | Hands over the local time so the opening line can fit the hour, **and the mood-marker cue** — end each reply with a `【 mood 顏文字 】` tag. Deliberately prescribes no wording: a hardcoded "it is getting late" never expires and keeps nagging hours later. |
+| `current-time.sh` | `UserPromptSubmit` hook | Surfaces the real current time each turn, so the clock never goes stale. |
 | `look` | command | `/look` — describe your current appearance & state in character. |
+| `mood-update.py` | `Stop` hook | Pulls the `【 mood 顏文字 】` tag off the last reply into `mood.txt`, for the status line. |
+| `look-update.py` | `Stop` hook | Every `CTX_STEP` (50k) tokens of context growth, has the maid on shift "check the mirror": forks a background `claude -p --model haiku` that writes a scene line and a line of dialogue to `look.txt`. |
+| `look-reset.py` | `SessionStart` hook | Clears this session's state (a fresh shift starts tidy) and sweeps state dirs older than 7 days. |
+| `link-bin.sh` | `SessionStart` hook | Keeps `~/.claude/bin/cafe` symlinked at this version's `bin/`, so status-line config survives version bumps. |
 
-The mood marker is purely a **response-style flourish** — emitted, never captured or
-persisted. The cues are persona-agnostic; only the flavour comes from whoever is on shift.
+The mood marker is a **response-style flourish** for the reply itself; the `Stop` hook
+additionally captures it for the status line. The cues are persona-agnostic; only the
+flavour comes from whoever is on shift.
+
+## Status line
+
+Optional, and the one part that needs an external tool:
+[ccstatusline](https://github.com/sirmalloc/ccstatusline). The widgets read from
+`~/.claude/maid-state/<session_id>/` — one set of state per session, so several windows
+never overwrite each other.
+
+Add three **Custom Command** widgets pointing at the symlink (never at the versioned
+plugin path — that breaks on every update):
+
+```
+~/.claude/bin/cafe/statusbar-maid.py     # name + current mood
+~/.claude/bin/cafe/statusbar-look.py 1   # scene description
+~/.claude/bin/cafe/statusbar-look.py 2   # line of dialogue
+```
+
+`look-update.py` scales the maid's dishevelment to how long this shift has run — see
+`STAGES` in that file (`~80k / 160k / 240k / 320k+` of context). Nobody on shift means
+every widget prints nothing and the rows collapse.
 
 ## vendor/ is a build artifact
 
