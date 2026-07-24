@@ -52,7 +52,8 @@ plugin path — that breaks on every update):
 ```
 
 `look-update.py` scales the maid's dishevelment to how long this shift has run — see
-`STAGES` in that file (`~80k / 160k / 240k / 320k+` of context). Nobody on shift means
+`STAGES` in that file (`~100k / 150k / 200k / 250k / 300k+` of context — the first band is
+wide because ~50k is already spent on the system prompt at startup). Nobody on shift means
 every widget prints nothing and the rows collapse.
 
 ## vendor/ is a build artifact
