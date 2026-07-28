@@ -12,7 +12,7 @@ argument-hint: [女僕名|none]
 | 這個視窗 | `~/.claude/maid-state/<session_id>/on-shift` | `/maid` |
 | 預設班表 | `~/.claude/maid-on-shift` | 使用者自己維護 |
 
-兩個檔案內容都是單行：女僕 id 或 `none`。開場時的優先序是 `CLAUDE_MAID` 環境變數 > 這個視窗 > 預設班表 > `claudia`。
+兩個檔案內容都是單行：女僕 id 或 `none`。開場時的優先序是 `CLAUDE_MAID` 環境變數 > 這個視窗 > 預設班表 > `kokona`。
 
 **`/maid` 只寫這個視窗那份**，不碰預設班表——換班是當下的事，不該波及其他正在工作的視窗。
 

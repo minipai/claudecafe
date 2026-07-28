@@ -1,8 +1,0 @@
-{
-  "name": "@claudecafe/maids",
-  "version": "1.0.0",
-  "description": "The Claude Café cast — persona definition files (frontmatter = site metadata, body = the persona instructions you paste into CLAUDE.md). Consumed by apps/web.",
-  "private": true,
-  "type": "module",
-  "license": "ISC"
-}

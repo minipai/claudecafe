@@ -1,18 +1,20 @@
 # claudecafe (monorepo)
 
 AI 女僕生態系的 pnpm monorepo。repo 根**同時是一個叫 `claudecafe` 的 plugin marketplace**
-（`.claude-plugin/marketplace.json`，列出 cafe-bell + cafe 兩個 plugin）。五個 workspace package，
+（`.claude-plugin/marketplace.json`，列出 cafe-bell + cafe 兩個 plugin）。六個 workspace package，
 **npm 名都 namespace 在 `@claudecafe/*`**（私有 root 仍叫 `claudecafe-monorepo`）：
 
 - **`apps/web`** — 女僕 persona 展示網站（Hono SSR）。使用者瀏覽角色卡片，按「copy source」
   複製 persona markdown 貼到自己的 `CLAUDE.md`。
-- **`packages/maids`** — 女僕陣容本體（純資料）：persona 定義 `*.md`（frontmatter = 網站 metadata，
-  body = persona 指令）+ 原始美術稿。`apps/web` 以 `workspace:*` 依賴；`cafe` plugin 以 devDep
+- **`packages/maid-personas`** — 女僕 persona 定義 `*.md`（frontmatter = 網站 metadata，
+  body = persona 指令）。`apps/web` 以 `workspace:*` 依賴；`cafe` plugin 以 devDep
   `require.resolve` 在 build 時 vendor 它。
+- **`packages/maid-assets`** — web／desktop 共用的角色美術資產。目前收納ことね／ここな的
+  表情差分、生成用 seed 圖與共用設計規格；各 app 在 build 時再挑選並複製自己需要的圖片。
 - **`packages/cafe-bell`** — Claude Code hook 事件的 pub/sub hub（SSE bus）。同時是 marketplace plugin。
 - **`packages/cafe`** — Claude Code plugin（commands namespace `/cafe:maid`、`/cafe:look`），兩層功能：
   - **排班**：`load-persona.sh`（SessionStart）讀 `vendor/<當班>.md` body 注入當 session persona。
-    當班順序：`CLAUDE_MAID` env（一次性 override）→ `~/.claude/maid-on-shift` state 檔 → 預設 claudia；
+    當班順序：`CLAUDE_MAID` env（一次性 override）→ `~/.claude/maid-on-shift` state 檔 → 預設 kokona；
     值為 `none` = 不注入（給自帶 CLAUDE.md persona 的使用者）。
   - **外顯氣場**（persona-agnostic）：`session-greeting.sh` 注入時段問候 + 心情標記 cue、
     `current-time.sh`（UserPromptSubmit）每回合注入當下時間、`/cafe:look` 描寫外貌。
@@ -23,7 +25,7 @@ AI 女僕生態系的 pnpm monorepo。repo 根**同時是一個叫 `claudecafe` 
 - **hook 環境沒 JS runtime on PATH**：node 是 nvm、bun 在 `~/.bun`，hook 跑非互動 shell 都不在
   PATH → **hook 只能純 bash**。`cafe` 的 hook 因此 self-contained：只讀 `${CLAUDE_PLUGIN_ROOT}/vendor`，
   無 repo 路徑／symlink／node/bun。
-- **`vendor/` 是 build 產物**（gitignore）：`build.ts` 用 `require.resolve('@claudecafe/maids')`
+- **`vendor/` 是 build 產物**（gitignore）：`build.ts` 用 `require.resolve('@claudecafe/maid-personas')`
   把 cast 複製進來。**`/plugin install` 不跑 build、只複製檔案**（directory source 會帶 untracked），
   所以 install 前要先 `pnpm --filter @claudecafe/cafe build`。
 - **改 plugin 一定要 bump 版號**：`/plugin update` 比對 version，版號沒變不會重裝。改動後同步 bump
@@ -39,7 +41,7 @@ mood 心情標記**只 emit 不捕捉**：回應結尾的 `【…】` 純風格�
 - pnpm workspace（`pnpm-workspace.yaml` → `apps/*`、`packages/*`）。
 - **單一 lockfile**：根 `pnpm-lock.yaml` 同時管本地開發與 Docker 部署。web 的 image 是多階段 build
   （`apps/web/Dockerfile`，**context = repo 根**）：stage 1 用 node+pnpm `--frozen-lockfile` install 後
-  `pnpm --filter @claudecafe/web --legacy deploy --prod`（會把 `@claudecafe/maids` 一起打包進
+  `pnpm --filter @claudecafe/web --legacy deploy --prod`（會把 `@claudecafe/maid-personas` 一起打包進
   `/out/node_modules/`），stage 2 用 `oven/bun` 跑 deploy bundle。
 - 常用：`pnpm install`（根）、`pnpm dev:web`、`pnpm --filter @claudecafe/web ship`（部署 web）。
 - cafe-bell / maid-voice-player 無 npm 依賴，直接用 bun / shell 跑；cafe 只有 build-time devDep。
@@ -48,7 +50,7 @@ mood 心情標記**只 emit 不捕捉**：回應結尾的 `【…】` 純風格�
 
 Hono + JSX (SSR)、gray-matter、marked、TypeScript。
 
-- persona 檔住在 `packages/maids`，web 透過 `require.resolve('@claudecafe/maids/package.json')`
+- persona 檔住在 `packages/maid-personas`，web 透過 `require.resolve('@claudecafe/maid-personas/package.json')`
   取得目錄（dev 走 pnpm symlink、Docker 走 deploy bundle 都通）。
 - 「copy source」只複製 body（不含 frontmatter），貼到 CLAUDE.md 即可運作。
 - `apps/web/blog/` 是部落格文章（frontmatter 含 title / date / author），寫作風格見該目錄的 `CLAUDE.md`。

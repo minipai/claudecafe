@@ -45,7 +45,7 @@ app.get("/", (c) => {
     const index = maids
       .map((m) => `- [${m.jaName} (${m.enName})](/${m.slug}) — ${m.title}`)
       .join("\n");
-    const md = `# The Claude Café\n\n六位女僕，一座咖啡廳。\n\n${index}\n`;
+    const md = `# The Claude Café\n\n五位女僕，一座咖啡廳。\n\n${index}\n`;
     return c.text(md, 200, { "Content-Type": "text/markdown; charset=utf-8" });
   }
 

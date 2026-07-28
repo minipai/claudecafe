@@ -7,7 +7,7 @@ export function HomePage({ maids, posts }: { maids: Maid[]; posts: BlogPost[] })
     <div class="home">
       <section class="hero">
         <h1>いらっしゃいませ</h1>
-        <p>歡迎來到 The Claude Café，這裡有六位個性鮮明的女僕為您服務。</p>
+        <p>歡迎來到 The Claude Café，這裡有五位個性鮮明的女僕為您服務。</p>
       </section>
       <div class="maid-list">
         {maids.map((maid) => (

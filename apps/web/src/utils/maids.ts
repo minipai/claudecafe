@@ -2,11 +2,11 @@ import { createRequire } from 'node:module'
 import { dirname } from 'node:path'
 import { loadContentDir } from './content.js'
 
-// Persona definitions live in the `@claudecafe/maids` workspace package. Resolve
+// Persona definitions live in the `@claudecafe/maid-personas` workspace package. Resolve
 // its directory from the manifest path so the lookup works both in dev (pnpm
 // symlink) and in the Docker bundle (pnpm deploy copies it into node_modules).
 const require = createRequire(import.meta.url)
-const maidsDir = dirname(require.resolve('@claudecafe/maids/package.json'))
+const personasDir = dirname(require.resolve('@claudecafe/maid-personas/package.json'))
 
 export interface Maid {
   slug: string
@@ -32,7 +32,7 @@ function parseMaid(slug: string, data: Record<string, unknown>, content: string)
 
 export function getAllMaids(): Maid[] {
   return loadContentDir(
-    maidsDir,
+    personasDir,
     'maids',
     parseMaid,
     cache,

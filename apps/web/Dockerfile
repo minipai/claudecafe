@@ -16,7 +16,7 @@ COPY apps/web/package.json apps/web/
 COPY packages/cafe-bell/package.json packages/cafe-bell/
 COPY packages/maid-voice-player/package.json packages/maid-voice-player/
 COPY packages/maid-vibe/package.json packages/maid-vibe/
-COPY packages/maids/package.json packages/maids/
+COPY packages/maid-personas/package.json packages/maid-personas/
 RUN pnpm install --frozen-lockfile
 
 # Source, then prune to a self-contained prod bundle for the web app only.

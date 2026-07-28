@@ -3,7 +3,7 @@
   var rows = document.querySelectorAll('.maid-row[data-maid]')
   if (!rows.length) return
 
-  var slugs = ['claudia', 'codex', 'kokona', 'kotone', 'kuroko', 'kurumi']
+  var slugs = ['kanae', 'kokona', 'kotone', 'kuroko', 'kurumi']
   var index = Math.floor(Math.random() * slugs.length)
   var current = null
   var pending = null
