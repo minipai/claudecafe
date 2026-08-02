@@ -14,8 +14,9 @@ AI 女僕生態系的 pnpm monorepo。repo 根**同時是一個叫 `claudecafe` 
 - **`packages/cafe-bell`** — Claude Code hook 事件的 pub/sub hub（SSE bus）。同時是 marketplace plugin。
 - **`packages/cafe`** — Claude Code plugin（commands namespace `/cafe:maid`、`/cafe:look`），兩層功能：
   - **排班**：`load-persona.sh`（SessionStart）讀 `vendor/<當班>.md` body 注入當 session persona。
-    當班順序：`CLAUDE_MAID` env（一次性 override）→ `~/.claude/maid-on-shift` state 檔 → 預設 kokona；
-    值為 `none` = 不注入（給自帶 CLAUDE.md persona 的使用者）。
+    當班順序：`CLAUDE_MAID` env（一次性 override）→ 本視窗的 `~/.claude/maid-state/<session_id>/on-shift`
+    → 從 vendor 陣容隨機抽一位（抽完寫回該檔，resume 才不會換人）；值為 `none` = 不注入
+    （給自帶 CLAUDE.md persona 的使用者）。
   - **外顯氣場**（persona-agnostic）：`session-greeting.sh` 注入時段問候 + 心情標記 cue、
     `current-time.sh`（UserPromptSubmit）每回合注入當下時間、`/cafe:look` 描寫外貌。
 - **`packages/maid-voice-player`** — 訂閱 cafe-bell SSE bus 的語音播放器（launchd 常駐）。

@@ -5,7 +5,7 @@ and `maid-vibe` (the liveliness layer). Commands namespace as `/cafe:maid` and `
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `load-persona.sh` | `SessionStart` hook | Puts a maid on shift: injects the chosen persona's body (frontmatter stripped) from the bundled `vendor/` cast. Shift order: `CLAUDE_MAID` env → this session's `on-shift` file → `~/.claude/maid-on-shift` → `kokona`. `none` = nobody on shift (no persona injected — bring your own via `CLAUDE.md`). |
+| `load-persona.sh` | `SessionStart` hook | Puts a maid on shift: injects the chosen persona's body (frontmatter stripped) from the bundled `vendor/` cast. Shift order: `CLAUDE_MAID` env → this session's `on-shift` file → a draw from the cast. `none` = nobody on shift (no persona injected — bring your own via `CLAUDE.md`). |
 | `maid` | command | `/maid [name\|none]` — switch who's on duty **in this window**: takes effect immediately and is remembered for next time. |
 | `session-greeting.sh` | `SessionStart` hook | Hands over the local time so the opening line can fit the hour, **and the mood-marker cue** — end each reply with a `【 mood 顏文字 】` tag. Deliberately prescribes no wording: a hardcoded "it is getting late" never expires and keeps nagging hours later. |
 | `current-time.sh` | `UserPromptSubmit` hook | Surfaces the real current time each turn, so the clock never goes stale. |
@@ -21,19 +21,14 @@ flavour comes from whoever is on shift.
 
 ## One maid per window
 
-Shift state has two layers, so two windows can run different maids at once:
+Shift state is a single per-window file, `~/.claude/maid-state/<session_id>/on-shift`,
+written by `/maid` — which is what lets two windows run different maids at once.
 
-| Scope | File | Written by |
-|-------|------|------------|
-| This window | `~/.claude/maid-state/<session_id>/on-shift` | `/maid` |
-| Default roster | `~/.claude/maid-on-shift` | you |
-
-Resolution order is `CLAUDE_MAID` env → this window → default roster → `kokona`, so
-`CLAUDE_MAID=kokona claude` works as a one-shot override at launch.
-
-`/maid` only ever writes the per-window file — a handover is a here-and-now thing and
-shouldn't reach into other windows that are mid-task. Edit the roster file yourself to
-change who greets you by default.
+Resolution order is `CLAUDE_MAID` env → this window → **a draw from the cast**, so
+`CLAUDE_MAID=kokona claude` works as a one-shot override at launch when you'd rather not
+leave it to chance. Nothing else to keep up to date: an unassigned window opens with
+whoever the draw picks, and the draw is written into the window's shift file so resuming
+brings back the same maid rather than rolling again.
 
 ## Status line
 

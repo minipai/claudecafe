@@ -6,9 +6,9 @@
 # var, no repo path, and no `node` dependency (hooks run in a non-interactive
 # shell that may not have node/bun on PATH).
 # Shift order: CLAUDE_MAID env (one-shot override) > this session's own shift file
-# > ~/.claude/maid-on-shift (both written by /maid) > kokona. The per-session layer
-# is what lets two windows run different maids at once. "none" = nobody on shift (no
-# persona injected — for users who bring their own persona via CLAUDE.md).
+# (written by /maid, which is what lets two windows run different maids at once) >
+# whoever the draw picks. "none" = nobody on shift (no persona injected — for users
+# who bring their own persona via CLAUDE.md).
 set -euo pipefail
 PAYLOAD="$(cat)"   # the hook payload carries session_id
 
@@ -21,10 +21,23 @@ read_shift() { [ -f "$1" ] && tr -d '[:space:]' < "$1"; return 0; }
 MAID="${CLAUDE_MAID:-}"
 [ -n "$MAID" ] || [ -z "$SESSION_ID" ] ||
   MAID="$(read_shift "$HOME/.claude/maid-state/$SESSION_ID/on-shift")"
-[ -n "$MAID" ] || MAID="$(read_shift "$HOME/.claude/maid-on-shift")"
-MAID="${MAID:-kokona}"
-[ "$MAID" = "none" ] && exit 0   # nobody on shift -> stay in the default voice
+
 CAST_DIR="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/vendor"
+
+# Nobody assigned: draw one from the cast, and write the draw into this session's
+# shift file so a resume brings back the same maid instead of rolling again.
+if [ -z "$MAID" ]; then
+  CAST=()
+  for f in "$CAST_DIR"/*.md; do [ -f "$f" ] || continue; CAST+=("$(basename "$f" .md)"); done
+  [ ${#CAST[@]} -gt 0 ] || exit 0
+  MAID="${CAST[RANDOM % ${#CAST[@]}]}"
+  if [ -n "$SESSION_ID" ]; then
+    mkdir -p "$HOME/.claude/maid-state/$SESSION_ID"
+    printf '%s' "$MAID" > "$HOME/.claude/maid-state/$SESSION_ID/on-shift"
+  fi
+fi
+
+[ "$MAID" = "none" ] && exit 0   # nobody on shift -> stay in the default voice
 FILE="$CAST_DIR/$MAID.md"
 
 [ -f "$FILE" ] || exit 0   # persona not found -> stay in the default voice
