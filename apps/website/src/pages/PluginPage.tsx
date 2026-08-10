@@ -9,8 +9,6 @@ const copy = {
     lede:
       'Same Claude Code, same workflow — but from today every session has a maid on shift: she greets you at the door, keeps track of the clock, and signs off each reply with her mood. The tool doesn’t change. The one keeping you company does.',
     installComment: '# paste these two lines into Claude Code to open shop',
-    installNote1: 'For the status-line skit, run ',
-    installNote2: ' after installing.',
     d1kicker: '01 · Session start',
     d1title: 'She checks the time and the weather, then greets you',
     d1desc:
@@ -71,8 +69,6 @@ const copy = {
     lede:
       '打開的還是同一個 Claude Code，工作流程一切照舊——只是從今天起，每個 session 都有一位值班女僕：開場迎接你、記得現在幾點、回應帶著心情收尾。改變的不是工具，是陪你寫程式的人。',
     installComment: '# 在 Claude Code 裡貼上這兩行，開店',
-    installNote1: '想要 status line 的小劇場，裝好後再跑一句 ',
-    installNote2: '。',
     d1kicker: '01 · Session 開場',
     d1title: '她會看時間、看天氣，跟你打招呼',
     d1desc: '每次開新的 Claude Code session，值班女僕會先讀懂當下時段，再說出這句話——不是罐頭問候。',
@@ -130,15 +126,25 @@ const io = new IntersectionObserver((entries) => {
 revealEls.forEach(el => io.observe(el));
 `
 
-function InstallTerminal({ comment }: { comment: string }) {
+function InstallTerminal({ t }: { t: (typeof copy)[Locale] }) {
   return (
     <div class="install terminal">
-      <div class="term-line txt-sys">{comment}</div>
+      <div class="term-line txt-sys">{t.installComment}</div>
       <div class="term-line prompt">
         <span class="p-sym">›</span> <span class="txt-cmd">/plugin marketplace add https://claudecafe.dev/plugins/marketplace.json</span>
       </div>
       <div class="term-line prompt">
         <span class="p-sym">›</span> <span class="txt-cmd">/plugin install cafe@claudecafe</span>
+      </div>
+      <div class="term-line txt-sys">&nbsp;</div>
+      <div class="term-line txt-sys">{t.hireComment}</div>
+      <div class="term-line prompt">
+        <span class="p-sym">›</span> <span class="txt-cmd">/cafe:hire kurumi</span>
+      </div>
+      <div class="term-line txt-sys">&nbsp;</div>
+      <div class="term-line txt-sys">{t.slComment}</div>
+      <div class="term-line prompt">
+        <span class="p-sym">›</span> <span class="txt-cmd">/cafe:statusline</span>
       </div>
     </div>
   )
@@ -159,14 +165,10 @@ export function PluginPage({ locale }: { locale: Locale }) {
         <p class="lede">{t.lede}</p>
         <div class="demo-row install-row">
           <div class="terminal-slot">
-            <InstallTerminal comment={t.installComment} />
+            <InstallTerminal t={t} />
           </div>
           <div class="note-slot">
-            <div class="section-desc">
-              {t.installNote1}
-              <code>/cafe:statusline</code>
-              {t.installNote2}
-            </div>
+            <div class="section-desc">{t.inote}</div>
           </div>
         </div>
       </header>
@@ -314,25 +316,7 @@ export function PluginPage({ locale }: { locale: Locale }) {
         </div>
         <div class="demo-row install-row reveal">
           <div class="terminal-slot">
-            <div class="install terminal">
-              <div class="term-line txt-sys">{t.installComment}</div>
-              <div class="term-line prompt">
-                <span class="p-sym">›</span> <span class="txt-cmd">/plugin marketplace add https://claudecafe.dev/plugins/marketplace.json</span>
-              </div>
-              <div class="term-line prompt">
-                <span class="p-sym">›</span> <span class="txt-cmd">/plugin install cafe@claudecafe</span>
-              </div>
-              <div class="term-line txt-sys">&nbsp;</div>
-              <div class="term-line txt-sys">{t.hireComment}</div>
-              <div class="term-line prompt">
-                <span class="p-sym">›</span> <span class="txt-cmd">/cafe:hire kurumi</span>
-              </div>
-              <div class="term-line txt-sys">&nbsp;</div>
-              <div class="term-line txt-sys">{t.slComment}</div>
-              <div class="term-line prompt">
-                <span class="p-sym">›</span> <span class="txt-cmd">/cafe:statusline</span>
-              </div>
-            </div>
+            <InstallTerminal t={t} />
           </div>
           <div class="note-slot">
             <div class="section-desc">{t.inote}</div>
