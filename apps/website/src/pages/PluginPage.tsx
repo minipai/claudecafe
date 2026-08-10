@@ -59,9 +59,11 @@ const copy = {
       },
     ],
     ikicker: 'Open shop',
-    ititle: 'Two lines, open today',
-    inote1: 'Start a new session after installing and you’ll hear that “welcome back”. For the status-line skit, run ',
-    inote2: '.',
+    ititle: 'Three steps, open today',
+    hireComment: '# pick a maid on this site, download her into ~/.claude/cafe/personas/ — hired',
+    slComment: '# for the status-line skit (optional)',
+    inote:
+      'Start a new session after installing and you’ll hear that “welcome back” — the nameless maid ？？？ keeps the shop until you hire someone; whoever you hire takes the next shift.',
   },
   zh: {
     h1a: 'cafe — 打開終端機，',
@@ -110,9 +112,11 @@ const copy = {
       { dt: '/cafe:config', dd: null },
     ],
     ikicker: '開店',
-    ititle: '兩行指令，今天就開店',
-    inote1: '裝好後開一個新 session，就會聽見那聲「歡迎回來」。想要 status line 的小劇場，再跑一句 ',
-    inote2: '。',
+    ititle: '三步，今天就開店',
+    hireComment: '# 回這裡挑一位女僕，download 存進 ~/.claude/cafe/personas/ ——僱用完成',
+    slComment: '# 想要 status line 的小劇場（選配）',
+    inote:
+      '裝好後開一個新 session，就會聽見那聲「歡迎回來」——還沒僱人時由無名女僕「？？？」看店；僱了誰，下個 session 就換她上班。',
   },
 } as const
 
@@ -310,14 +314,25 @@ export function PluginPage({ locale }: { locale: Locale }) {
         </div>
         <div class="demo-row install-row reveal">
           <div class="terminal-slot">
-            <InstallTerminal comment={t.installComment} />
+            <div class="install terminal">
+              <div class="term-line txt-sys">{t.installComment}</div>
+              <div class="term-line prompt">
+                <span class="p-sym">›</span> <span class="txt-cmd">/plugin marketplace add https://claudecafe.dev/plugins/marketplace.json</span>
+              </div>
+              <div class="term-line prompt">
+                <span class="p-sym">›</span> <span class="txt-cmd">/plugin install cafe@claudecafe</span>
+              </div>
+              <div class="term-line txt-sys">&nbsp;</div>
+              <div class="term-line txt-sys">{t.hireComment}</div>
+              <div class="term-line txt-sys">&nbsp;</div>
+              <div class="term-line txt-sys">{t.slComment}</div>
+              <div class="term-line prompt">
+                <span class="p-sym">›</span> <span class="txt-cmd">/cafe:statusline</span>
+              </div>
+            </div>
           </div>
           <div class="note-slot">
-            <div class="section-desc">
-              {t.inote1}
-              <code>/cafe:statusline</code>
-              {t.inote2}
-            </div>
+            <div class="section-desc">{t.inote}</div>
           </div>
         </div>
       </section>
