@@ -6,6 +6,7 @@ import { getCookie, setCookie } from "hono/cookie";
 import { Layout } from "./components/Layout.js";
 import { HomePage } from "./components/HomePage.js";
 import { MaidPage } from "./pages/MaidPage.js";
+import { PluginPage } from "./pages/PluginPage.js";
 
 import { NotFoundPage, notFoundQuote } from "./pages/NotFoundPage.js";
 import { getAllMaids, getMaid } from "./utils/maids.js";
@@ -96,6 +97,18 @@ function site(locale: Locale) {
     return c.html(
       <Layout locale={locale} title={post.title} description={post.title} path={`/notes/${post.slug}`} maid={post.author}>
         <BlogPostPage post={post} />
+      </Layout>,
+    );
+  });
+
+  page.get("/plugin", (c) => {
+    const description =
+      locale === "zh"
+        ? "在你的 Claude Code 裡開一間女僕咖啡廳。"
+        : "Open a maid café inside your Claude Code.";
+    return c.html(
+      <Layout locale={locale} title="cafe plugin" description={description} path="/plugin">
+        <PluginPage locale={locale} />
       </Layout>,
     );
   });

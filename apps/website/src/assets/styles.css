@@ -790,3 +790,271 @@ body:has(.not-found)::before {
         grid-row: 3;
     }
 }
+
+/* Plugin page (/plugin) */
+.plugin-page {
+    --code-bg: #3c2f2f;
+    --code-text: #f0e6d8;
+    --code-dim: #a89a8a;
+    --code-accent: #c9b896;
+    --code-mood: #d8a0a0;
+    --code-sep: #6b5b52;
+}
+
+body:has(.plugin-page)::before {
+    display: none;
+}
+
+.plugin-page .ui-label {
+    font-family: var(--font-sans);
+}
+
+.plugin-hero {
+    padding: 56px 0 20px;
+}
+
+.plugin-h1 {
+    font-size: clamp(30px, 4.6vw, 50px);
+    line-height: 1.32;
+    margin: 0 0 22px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.plugin-h1 .accent {
+    color: var(--accent-bold);
+}
+
+.plugin-page .lede {
+    font-size: 16.5px;
+    color: var(--text-muted);
+    max-width: 640px;
+    margin: 0 0 34px;
+}
+
+.plugin-page section {
+    padding: 44px 0;
+}
+
+.plugin-page .section-head {
+    margin-bottom: 34px;
+    max-width: 620px;
+}
+
+.plugin-page .section-kicker {
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--accent-bold);
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.plugin-page .section-title {
+    font-size: clamp(21px, 2.6vw, 27px);
+    font-weight: 700;
+    margin: 0 0 10px;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+.plugin-page .section-desc {
+    color: var(--text-muted);
+    font-size: 16.5px;
+}
+
+.plugin-page .section-desc code,
+.plugin-page .plain-item dd code,
+.plugin-page .lede code {
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    background: var(--border);
+    color: var(--text);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.88em;
+}
+
+.plugin-page .demo-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 34px;
+    align-items: start;
+}
+
+.plugin-page .demo-row.reverse {
+    grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.plugin-page .demo-row.reverse .terminal-slot {
+    order: 2;
+}
+
+.plugin-page .demo-row.reverse .note-slot {
+    order: 1;
+}
+
+@media (max-width: 820px) {
+    .plugin-page .demo-row,
+    .plugin-page .demo-row.reverse {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .plugin-page .demo-row.reverse .terminal-slot,
+    .plugin-page .demo-row.reverse .note-slot {
+        order: initial;
+    }
+
+    .plugin-page .note-slot {
+        margin-top: 6px;
+    }
+}
+
+.plugin-page .terminal {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 6px;
+    padding: 1rem 1.1rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    font-size: 0.86rem;
+    line-height: 1.5;
+}
+
+.plugin-page .term-line {
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0 0 4px;
+}
+
+.plugin-page .term-line:last-child {
+    margin-bottom: 0;
+}
+
+.plugin-page .prompt {
+    color: var(--code-sep);
+}
+
+.plugin-page .prompt .p-sym {
+    color: var(--code-accent);
+}
+
+.plugin-page .txt-maid {
+    color: var(--code-text);
+}
+
+.plugin-page .txt-sys {
+    color: var(--code-dim);
+    font-style: italic;
+}
+
+.plugin-page .txt-mood {
+    color: var(--code-mood);
+    font-weight: 600;
+}
+
+.plugin-page .txt-cmd {
+    color: var(--code-text);
+    font-weight: 600;
+}
+
+.plugin-page .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    background: var(--code-accent);
+    vertical-align: -2px;
+    margin-left: 2px;
+    animation: plugin-cursor-blink 1s steps(1) infinite;
+}
+
+@keyframes plugin-cursor-blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+.plugin-page .statusline {
+    border-top: 1px dashed var(--code-sep);
+    margin-top: 14px;
+    padding-top: 12px;
+}
+
+.plugin-page .statusline .sl-row {
+    color: var(--code-accent);
+    margin: 4px 0;
+}
+
+.plugin-page .note-slot {
+    padding-top: 2px;
+}
+
+.plugin-page .plain-list {
+    margin: 0;
+    max-width: 720px;
+}
+
+.plugin-page .plain-item {
+    padding: 22px 0;
+    border-bottom: 1px dashed var(--border);
+}
+
+.plugin-page .plain-item:last-child {
+    border-bottom: none;
+}
+
+.plugin-page .plain-item dt {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 16.5px;
+    margin-bottom: 6px;
+}
+
+.plugin-page .plain-item dd {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 16.5px;
+}
+
+.plugin-page .plain-item dd a {
+    color: var(--accent);
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.plugin-page .plain-item dd a:hover {
+    color: var(--accent-bold);
+    text-decoration: underline;
+}
+
+.plugin-page .install-row {
+    margin-top: 34px;
+}
+
+.plugin-page .install {
+    overflow-x: auto;
+}
+
+.plugin-page .install .term-line {
+    white-space: nowrap;
+    margin-bottom: 6px;
+}
+
+.plugin-page .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.plugin-page .reveal.in {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+/* The plugin pill on the homepage — a sibling of the blog pill. */
+.plugin-pill {
+    margin-bottom: 0;
+}
+
+.plugin-pill + .blog-list {
+    margin-top: 0.4rem;
+}

@@ -15,6 +15,13 @@ export function HomePage({ maids, posts, locale }: { maids: Maid[]; posts: BlogP
           <MaidCard maid={maid} locale={locale} />
         ))}
       </div>
+      <div class="blog-list plugin-pill">
+        <div class="blog-row">
+          <span class="blog-row-date">plugin</span>
+          <a href={href(locale, "/plugin")} class="blog-row-title">{ui[locale].pluginPillTitle}</a>
+          <a href={href(locale, "/plugin")} class="blog-row-action">{ui[locale].pluginPillAction}</a>
+        </div>
+      </div>
       {posts.length > 0 && (
         <div class="blog-list">
           <div class="blog-row">
