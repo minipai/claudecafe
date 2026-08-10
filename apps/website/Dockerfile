@@ -1,4 +1,4 @@
-# Multi-stage build. Build context is the MONOREPO ROOT (not apps/web) so the
+# Multi-stage build. Build context is the MONOREPO ROOT (not apps/website) so the
 # image installs from the single source of truth — the root pnpm-lock.yaml —
 # and there is no second (npm/bun) lockfile to drift out of sync.
 #
@@ -12,17 +12,16 @@ WORKDIR /repo
 
 # Manifests first so the install layer caches until deps actually change.
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY apps/web/package.json apps/web/
+COPY apps/website/package.json apps/website/
 COPY packages/cafe-bell/package.json packages/cafe-bell/
 COPY packages/maid-voice-player/package.json packages/maid-voice-player/
-COPY packages/maid-vibe/package.json packages/maid-vibe/
 COPY packages/maid-personas/package.json packages/maid-personas/
 RUN pnpm install --frozen-lockfile
 
 # Source, then prune to a self-contained prod bundle for the web app only.
 # --legacy: pnpm v10 needs it to deploy non-injected workspace packages.
 COPY . .
-RUN pnpm --filter @claudecafe/web --legacy deploy --prod /out
+RUN pnpm --filter @claudecafe/website --legacy deploy --prod /out
 
 FROM oven/bun:1-alpine
 WORKDIR /app

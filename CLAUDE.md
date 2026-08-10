@@ -5,10 +5,10 @@ AI 女僕生態系的 pnpm monorepo。repo 根**同時是一個叫 `claudecafe` 
 package.json 的**名字都 namespace 在 `@claudecafe/*`**（私有 root 仍叫 `claudecafe-monorepo`；
 `packages/cafe` 純 python、無 package.json、不是 workspace 成員）：
 
-- **`apps/web`** — 女僕 persona 展示網站（Hono SSR）。使用者瀏覽角色卡片，按「copy source」
+- **`apps/website`** — 女僕 persona 展示網站（Hono SSR）。使用者瀏覽角色卡片，按「copy source」
   複製 persona markdown 貼到自己的 `CLAUDE.md`。
 - **`packages/maid-personas`** — 女僕 persona 定義 `*.md`（frontmatter = 網站 metadata，
-  body = persona 指令）。`apps/web` 以 `workspace:*` 依賴；`cafe` plugin 的 `build.py`
+  body = persona 指令）。`apps/website` 以 `workspace:*` 依賴；`cafe` plugin 的 `build.py`
   在 build 時直接複製進 plugin 的 maids/（monorepo 相對路徑）。
 - **`packages/maid-assets`** — web／desktop 共用的角色美術資產。目前收納ことね／ここな的
   表情差分、生成用 seed 圖與共用設計規格；各 app 在 build 時再挑選並複製自己需要的圖片。
@@ -45,17 +45,17 @@ mood 心情標記**只 emit 不捕捉**：回應結尾的 `【…】` 純風格�
 
 - pnpm workspace（`pnpm-workspace.yaml` → `apps/*`、`packages/*`）。
 - **單一 lockfile**：根 `pnpm-lock.yaml` 同時管本地開發與 Docker 部署。web 的 image 是多階段 build
-  （`apps/web/Dockerfile`，**context = repo 根**）：stage 1 用 node+pnpm `--frozen-lockfile` install 後
-  `pnpm --filter @claudecafe/web --legacy deploy --prod`（會把 `@claudecafe/maid-personas` 一起打包進
+  （`apps/website/Dockerfile`，**context = repo 根**）：stage 1 用 node+pnpm `--frozen-lockfile` install 後
+  `pnpm --filter @claudecafe/website --legacy deploy --prod`（會把 `@claudecafe/maid-personas` 一起打包進
   `/out/node_modules/`），stage 2 用 `oven/bun` 跑 deploy bundle。
-- 常用：`pnpm install`（根）、`pnpm dev:web`、`pnpm --filter @claudecafe/web ship`（部署 web）。
+- 常用：`pnpm install`（根）、`pnpm dev:web`、`pnpm --filter @claudecafe/website ship`（部署網站）。
 - cafe-bell / maid-voice-player 無 npm 依賴，直接用 bun / shell 跑；cafe 純 python（build 也是）。
 
-## apps/web
+## apps/website
 
 Hono + JSX (SSR)、gray-matter、marked、TypeScript。
 
 - persona 檔住在 `packages/maid-personas`，web 透過 `require.resolve('@claudecafe/maid-personas/package.json')`
   取得目錄（dev 走 pnpm symlink、Docker 走 deploy bundle 都通）。
 - 「copy source」只複製 body（不含 frontmatter），貼到 CLAUDE.md 即可運作。
-- `apps/web/blog/` 是部落格文章（frontmatter 含 title / date / author），寫作風格見該目錄的 `CLAUDE.md`。
+- `apps/website/blog/` 是部落格文章（frontmatter 含 title / date / author），寫作風格見該目錄的 `CLAUDE.md`。

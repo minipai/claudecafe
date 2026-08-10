@@ -17,7 +17,7 @@ echo -e "${GREEN}=== claudecafe Deployment Script ===${NC}"
 # Context is the monorepo root so the build sees the root pnpm-lock.yaml.
 echo -e "${GREEN}[1/3] Building Docker image locally...${NC}"
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-docker build --platform linux/amd64 -f "$REPO_ROOT/apps/web/Dockerfile" -t "$IMAGE_NAME" "$REPO_ROOT"
+docker build --platform linux/amd64 -f "$REPO_ROOT/apps/website/Dockerfile" -t "$IMAGE_NAME" "$REPO_ROOT"
 
 # Transfer image to droplet
 echo -e "${GREEN}[2/3] Transferring image to droplet...${NC}"
