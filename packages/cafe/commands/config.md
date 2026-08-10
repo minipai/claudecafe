@@ -1,6 +1,6 @@
 ---
-description: View or change cafe settings — language, who's on shift, the cast roster, your own personas
-argument-hint: [request, e.g. "lang English" / "maid kurumi" / 換ことね上班]
+description: View or change cafe settings — language, the cast roster, your own personas
+argument-hint: [request, e.g. "lang English" / "maid kurumi" / "retire kotone"]
 ---
 
 The user wants to view or change the cafe plugin's settings. All persistent
@@ -18,6 +18,11 @@ is optional:
 - `festivals` — a path to a JSON festival pack replaces the built-in maid-café
   calendar; `false` drops the festival segment. A pack is one flat object of
   fixed dates: `{"02-14": "西洋情人節"}`.
+- `look` — `false` stops the background status-line scene generation (one of
+  the two features that spend API credit; the other is `diary`).
+- `diary` — `false` skips the handover-diary line at session end.
+- `greeting` — `false` drops the session-start briefing (greeting, weather,
+  diary recap, mood cue); housekeeping still runs.
 
 Individual retirement is per-persona, not in config: `off_duty: true` in a
 persona's frontmatter takes her out of the random draw (an explicit pick still
@@ -37,22 +42,21 @@ Facts you need:
 - A persona file: **lowercase filename = id**, YAML frontmatter with `name:`,
   body = the persona instructions. Same id as a bundled maid overrides her.
 - This window's shift state: `~/.claude/cafe/sessions/<session_id>/on-shift`
-  (find the session by the most recently modified dir, or ask the user).
-- `CLAUDE_MAID` / `CLAUDE_MAID_LANG` env vars override config per run. Other
-  config changes take effect from the next session start — say so when relevant.
+  (read-only here — for showing who's on shift, not for changing it).
+- `CLAUDE_MAID` / `CLAUDE_MAID_LANG` env vars override config per run. Config
+  changes take effect from the next session start — say so when relevant.
+
+This command does **not** switch the maid mid-session: who's on shift is decided
+at session start (`CLAUDE_MAID=kokona claude` for one window, the `maid` config
+key for every window). If asked to swap right now, set the config and point at
+those instead.
 
 With `$ARGUMENTS`: interpret the request (key-value like "lang English", or
-plain language like 「換ことね上班」「只排自訂的女僕」) and apply it.
+plain language like "only my own maids in the draw" / "retire kotone") and
+apply it.
 
 Without arguments: read config.json, personas_dir and the current shift, show a
 short status (who's on shift, lang, who's in the draw pool, who's retired),
-then use AskUserQuestion to offer: switch the on-shift maid / change the
-language / retire or rehire a maid (edit her off_duty frontmatter; for a
-bundled maid, create or delete the stub override) / scaffold a new persona in
-personas_dir.
-
-When the user switches the maid for **this window**: write the id to this
-session's `on-shift` file, then read the new persona (frontmatter stripped) and
-adopt it immediately — the old maid clocks out with one line, the new one
-greets in her own voice. If they want it for every future session instead,
-set `maid` in config.json.
+then use AskUserQuestion to offer: change the language / retire or rehire a
+maid (edit her off_duty frontmatter; for a bundled maid, create or delete the
+stub override) / scaffold a new persona in personas_dir.

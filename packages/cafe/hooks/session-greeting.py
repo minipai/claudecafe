@@ -21,7 +21,8 @@ import urllib.request
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "bin"))
-from maidstate import DIARY, ROOT, lang, payload_from_stdin, prompt, read, state_dir
+from maidstate import (DIARY, ROOT, config, lang, payload_from_stdin, prompt,
+                       read, state_dir)
 
 STALE_DAYS = 7
 
@@ -95,6 +96,11 @@ def main():
                 shutil.rmtree(entry.path, ignore_errors=True)
     except OSError:
         pass
+
+    # config "greeting": false silences the briefing; the tidy above (shift
+    # clock, look cleanup, session sweep) is housekeeping and always runs.
+    if config().get("greeting") is False:
+        return
 
     print(prompt("greeting", time=time.strftime("%H:%M (%A)")))
 

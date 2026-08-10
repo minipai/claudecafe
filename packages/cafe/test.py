@@ -261,6 +261,41 @@ class HookProcessTest(CafeTest):
                                        "CLAUDE_MAID": "kurumi"})
             self.assertEqual((r.returncode, r.stdout.strip()), (0, ""), script)
 
+    # The feature toggles run with PATH restricted to system dirs, so even a
+    # broken toggle can't reach a real `claude` — diary then degrades to its
+    # mechanical fallback line, which the assertion catches.
+    SYS_PATH = {"PATH": "/usr/bin:/bin"}
+
+    def test_greeting_toggle_silences_but_still_tidies(self):
+        set_config({"greeting": False})
+        r = self._run("hooks/session-greeting.py",
+                      stdin=json.dumps({"session_id": "greet-sid"}),
+                      env=self.SYS_PATH)
+        self.assertEqual((r.returncode, r.stdout), (0, ""))
+        # the briefing is silenced, but the shift clock still gets stamped
+        self.assertTrue(os.path.exists(f"{CAFE}/sessions/greet-sid/started-at"))
+
+    def test_diary_toggle_writes_nothing(self):
+        set_config({"diary": False, "maid": "testmaid"})
+        transcript = f"{TEST_HOME}/toggle-transcript.jsonl"
+        write(transcript, json.dumps(
+            {"type": "user", "message": {"content": "hello maid"}}) + "\n")
+        r = self._run("hooks/diary-write.py",
+                      stdin=json.dumps({"session_id": "d-sid",
+                                        "transcript_path": transcript}),
+                      env=self.SYS_PATH)
+        self.assertEqual(r.returncode, 0)
+        self.assertFalse(os.path.exists(maidstate.DIARY))
+
+    def test_look_toggle_skips_before_any_state(self):
+        set_config({"look": False, "maid": "testmaid"})
+        r = self._run("hooks/look-update.py",
+                      stdin=json.dumps({"session_id": "look-sid"}),
+                      env=self.SYS_PATH)
+        self.assertEqual(r.returncode, 0)
+        # bails before state_dir(create=True), so the session dir never appears
+        self.assertFalse(os.path.exists(f"{CAFE}/sessions/look-sid"))
+
     def test_statusbar_row_args(self):
         write(f"{CAFE}/sessions/sid/on-shift", "testmaid")
         write(f"{CAFE}/sessions/sid/look.txt", "scene\nline\n")

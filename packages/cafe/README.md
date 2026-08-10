@@ -8,7 +8,7 @@ for settings; everything else is hooks.
 | Component | Type | What it does |
 |-----------|------|--------------|
 | `load-persona.py` | `SessionStart` hook | Puts a maid on shift: injects the chosen persona's body (frontmatter stripped) plus the reply language. Shift order: `CLAUDE_MAID` env → this session's `on-shift` file → config `maid` → a draw from the pool (your `personas/` + the bundled cast). `none` = nobody on shift (no persona injected — bring your own via `CLAUDE.md`). |
-| `session-greeting.py` | `SessionStart` hook | Hands over the local time (no scripted wording — a hardcoded "it is getting late" never expires), the weather (wttr.in, 2s cap, skipped offline), the recent handover-diary entries, and the mood-marker cue. Also starts the shift tidy: resets the shift clock and last shift's look/mood, and sweeps session state older than 7 days. |
+| `session-greeting.py` | `SessionStart` hook | Hands over the local time (no scripted wording — a hardcoded "it is getting late" never expires), the weather (wttr.in, 2s cap, skipped offline), the recent handover-diary entries, and the mood-marker cue. Also starts the shift tidy: resets the shift clock and last shift's look, and sweeps session state older than 7 days. |
 | `current-time.py` | `UserPromptSubmit` hook | A per-turn status line for the model: current time ｜ hours on shift ｜ today's commits ｜ festival, so the clock never goes stale. |
 | `look-update.py` | `Stop` hook | Has the maid "check the mirror": forks a background `claude -p --model haiku` that writes a scene line + a dialogue line to `look.txt`. The maid's mood is read straight off the transcript (the last `【 word kaomoji 】` marker). Regenerates after every tool-using turn; chat-only turns re-check every 50k tokens of context growth. |
 | `diary-write.py` | `SessionEnd` hook | The maid on shift leaves one line in the shared handover diary — written by a detached background `claude -p --model haiku` from a transcript digest, so it's in her voice. |
@@ -50,6 +50,13 @@ English`). Underneath it's one optional file, `~/.claude/cafe/config.json`
   it; `false` drops the festival segment entirely. A pack is one flat object
   of fixed dates: `{"02-14": "西洋情人節", "10-10": "國慶日"}` — movable feasts
   (lunar calendar, nth-weekday rules) are out of scope.
+- `look` — `false` stops the background mirror shots; the status line falls
+  back to the maid's bare name. This and `diary` are the two features that
+  spend API credit (a `claude -p --model haiku` call each).
+- `diary` — `false` skips the handover-diary line at session end.
+- `greeting` — `false` drops the session-start briefing (greeting, weather,
+  diary recap, mood-marker cue). Housekeeping (shift clock, session sweep)
+  still runs.
 
 Your own personas are `<id>.md` files in personas_dir — same format as the
 bundled ones (frontmatter with `name:`, body = the persona instructions;
@@ -122,9 +129,10 @@ python3 packages/cafe/test.py
 ## Install
 
 Part of the `claudecafe` marketplace (this repo's root `.claude-plugin/marketplace.json`).
+Today that means a local checkout (a public URL marketplace is planned):
 
 ```
-/plugin marketplace add minipai/claudecafe     # or a local path during development
+/plugin marketplace add /path/to/claudecafe
 /plugin install cafe@claudecafe
 ```
 

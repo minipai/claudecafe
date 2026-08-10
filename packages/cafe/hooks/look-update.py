@@ -177,8 +177,8 @@ def main():
         payload = {}
 
     maid_id = on_shift(payload.get("session_id"))
-    if not maid_id:
-        return
+    if not maid_id or maidstate.config().get("look") is False:
+        return  # config "look": false — no background shots, no API spend
 
     # One state dir per session, so several open windows never overwrite each other.
     sdir = state_dir(payload.get("session_id"))

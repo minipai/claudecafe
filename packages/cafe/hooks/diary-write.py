@@ -16,7 +16,7 @@ import time
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "bin"))
-from maidstate import DIARY, claude_bin, lang, on_shift, prompt, read
+from maidstate import DIARY, claude_bin, config, lang, on_shift, prompt, read
 
 CLAUDE = claude_bin()
 MAX_ENTRIES = 200
@@ -84,6 +84,8 @@ def main():
     # write another entry.
     if os.environ.get("CLAUDE_MAID_SUB") or os.environ.get("CLAUDE_MAID_DIARY"):
         return
+    if config().get("diary") is False:
+        return  # config "diary": false — no entry, no API spend
     try:
         payload = json.load(sys.stdin)
     except Exception:
