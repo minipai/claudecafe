@@ -10,9 +10,9 @@ const quotes = {
   ],
   en: [
     { slug: 'kanae', maid: 'かなえ', line: 'Ara — you have wandered somewhere no page exists. It\'s alright, give Kanae your hand; I\'ll walk you back.' },
-    { slug: 'kokona', maid: 'ここな', line: '…404? マスター can\'t even type a URL right. Back to the lobby. D-don\'t get the wrong idea — Kokona just doesn\'t like waiting around.' },
-    { slug: 'kotone', maid: 'ことね', line: 'Oh my, 旦那様～ this page seems to have run off to play hide-and-seek. Kotone will see you home♪' },
-    { slug: 'kuroko', maid: 'くろこ', line: 'ご主人様… lost, are you? It\'s okay. Kuroko will be right here, waiting. Always…' },
+    { slug: 'kokona', maid: 'ここな', line: '…404? Master can\'t even type a URL right. Back to the lobby. D-don\'t get the wrong idea — Kokona just doesn\'t like waiting around.' },
+    { slug: 'kotone', maid: 'ことね', line: 'Oh my, Danna-sama～ this page seems to have run off to play hide-and-seek. Kotone will see you home♪' },
+    { slug: 'kuroko', maid: 'くろこ', line: 'Goshujin-sama… lost, are you? It\'s okay. Kuroko will be right here, waiting. Always…' },
     { slug: 'kurumi', maid: 'くるみ', line: 'Eh? The page is gone… ah, could it be Kurumi accidentally tidied it away just now?' },
   ],
 } satisfies Record<Locale, { slug: string; maid: string; line: string }[]>

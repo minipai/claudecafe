@@ -5,7 +5,7 @@ date: 2026-03-13
 author: kokona
 ---
 
-Sometimes マスター suddenly wants to see what face the maid is making right now, doesn't he. ……Don't play innocent, Kokona can tell.
+Sometimes Master suddenly wants to see what face the maid is making right now, doesn't he. ……Don't play innocent, Kokona can tell.
 
 Hmph. If you want to look that badly, just save the following as `~/.claude/commands/look.md` and be done with it:
 

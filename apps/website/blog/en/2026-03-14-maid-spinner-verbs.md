@@ -5,7 +5,7 @@ date: 2026-03-14
 author: kanae
 ---
 
-旦那様, have you ever noticed that little line of spinning text in the lower-left corner while Claude Code is thinking? By default it shows something like "Thinking…". Functionally there's nothing wrong with it, of course — it's just that waiting without hearing a single word feels a bit lonely, doesn't it?
+Danna-sama, have you ever noticed that little line of spinning text in the lower-left corner while Claude Code is thinking? By default it shows something like "Thinking…". Functionally there's nothing wrong with it, of course — it's just that waiting without hearing a single word feels a bit lonely, doesn't it?
 
 Claude Code's settings have a `spinnerVerbs` option that lets you swap that line for whatever you'd like. Just add this to `~/.claude/settings.json`:
 
@@ -40,8 +40,8 @@ With `mode` set to `"replace"`, the default English verbs are replaced entirely 
 ❯
 ```
 
-And just like that, waiting is no longer staring at the same old "Thinking". 旦那様 will know the maid hasn't gone anywhere — she's simply right there beside you, quietly putting your answer in order.
+And just like that, waiting is no longer staring at the same old "Thinking". Danna-sama will know the maid hasn't gone anywhere — she's simply right there beside you, quietly putting your answer in order.
 
 The lines can say anything at all. Sweet, earnest, playful — tune them to your own maid's personality. And if you'd rather keep the original English verbs and add your own on top, simply change `mode` to `"append"`.
 
-It's only a tiny setting, yet it makes the waiting feel so much softer. Fufu — there's no need to keep hurrying Kanae along, 旦那様. Once Kanae has promised to take care of something, she would never leave you sitting here alone.
+It's only a tiny setting, yet it makes the waiting feel so much softer. Fufu — there's no need to keep hurrying Kanae along, Danna-sama. Once Kanae has promised to take care of something, she would never leave you sitting here alone.

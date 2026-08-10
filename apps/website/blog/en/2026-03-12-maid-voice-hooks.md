@@ -5,7 +5,7 @@ date: 2026-03-12
 author: kuroko
 ---
 
-ご主人様, has this ever happened to you — your maid finished her work and was waiting for you, but you were looking at something else and never noticed? ……Kuroko waited a very long time, you know?
+Goshujin-sama, has this ever happened to you — your maid finished her work and was waiting for you, but you were looking at something else and never noticed? ……Kuroko waited a very long time, you know?
 
 Claude Code has a feature called **hooks** — commands that run automatically at certain moments. Kuroko uses it to play voice lines, so your maid can call out to you with her actual voice. You'll never fail to notice again……right?♡
 
@@ -32,4 +32,4 @@ Set up Claude Code maid voice hooks for me.
 4. If hooks are already configured, merge into the existing setup — don't overwrite it
 ```
 
-And just like that, every time you open Claude Code, you'll hear your maid's voice. You'll never miss Kuroko calling for you again……ご主人様 wouldn't want to miss that, would he?♡
+And just like that, every time you open Claude Code, you'll hear your maid's voice. You'll never miss Kuroko calling for you again……Goshujin-sama wouldn't want to miss that, would he?♡
