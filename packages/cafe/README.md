@@ -2,15 +2,16 @@
 
 Claude Café in **one plugin**: a maid on shift (persona injected at session
 start) plus the liveliness layer (greeting, per-turn time, mood marker, a
-status-line "look" and a shared handover diary). Two commands — `/cafe:config`
-for settings, `/cafe:statusline` to wire up the status line; everything else
-is hooks.
+status-line "look" and a shared handover diary). Three commands —
+`/cafe:hire` to hire a maid, `/cafe:config` for settings, `/cafe:statusline`
+to wire up the status line; everything else is hooks.
 
 The plugin is the café's operating system; the maids themselves are **hired
-from [claudecafe.dev](https://claudecafe.dev)** — download a maid's page
-(`claudecafe.dev/<id>.md`, Chinese under `/zh/`) into
-`~/.claude/cafe/personas/`. Until someone is hired, a nameless maid keeps
-the place open.
+from [claudecafe.dev](https://claudecafe.dev)** — `/cafe:hire <id>` fetches a
+maid's persona (`claudecafe.dev/<id>.md`, Chinese under `/zh/`) into
+`~/.claude/cafe/personas/`, and a maid page's download link is the manual
+route to the same folder. Until someone is hired, a nameless maid keeps the
+place open.
 
 | Component | Type | What it does |
 |-----------|------|--------------|

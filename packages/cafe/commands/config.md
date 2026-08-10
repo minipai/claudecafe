@@ -39,12 +39,9 @@ off_duty: true
 
 Facts you need:
 
-- The draw pool is personas_dir — maids are **hired from claudecafe.dev**
-  (download on a maid's page → save into personas_dir; the Chinese versions
-  live under claudecafe.dev/zh). If the user wants more maids, that's where
-  to send them — or fetch one yourself with
-  `curl https://claudecafe.dev/<id>.md` (Chinese: `/zh/<id>.md`) and save it
-  as `personas_dir/<id>.md`, with their go-ahead.
+- The draw pool is personas_dir — maids are **hired from claudecafe.dev**.
+  `/cafe:hire <id>` does it in one line; browsing a maid's page and using
+  her download link lands in the same place.
 - While personas_dir has nobody on duty, the bundled fallback maid `noname`
   (in `${CLAUDE_PLUGIN_ROOT}/maids/`) keeps the café open.
 - A persona file: **lowercase filename = id**, YAML frontmatter with `name:`,
