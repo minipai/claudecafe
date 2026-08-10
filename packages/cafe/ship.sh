@@ -12,7 +12,9 @@ set -e
 # SHIP_DRY=1 stops after building dist/ (nothing uploaded).
 
 DROPLET="root@134.199.156.190"
-REMOTE_DIR="/var/www/plugins"   # served by Caddy at claudecafe.dev/plugins/
+# Inside caddy's existing RW mount (/opt/caddy-data → /data), so serving
+# /plugins needed only a Caddyfile edit + reload, no container recreation.
+REMOTE_DIR="/opt/caddy-data/plugins"
 BASE_URL="https://claudecafe.dev/plugins"
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
