@@ -6,22 +6,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/load-persona.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/load-persona.py\"",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-greeting.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-greeting.py\"",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/link-bin.sh\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/look-reset.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/link-bin.py\"",
             "timeout": 5
           }
         ]
@@ -32,8 +27,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/current-time.sh\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/current-time.py\"",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/diary-write.py\"",
+            "timeout": 10
           }
         ]
       }
@@ -41,11 +47,6 @@
     "Stop": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/mood-update.py\"",
-            "timeout": 5
-          },
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/look-update.py\"",

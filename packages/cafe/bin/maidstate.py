@@ -1,38 +1,62 @@
 #!/usr/bin/env python3
-"""女僕狀態檔的共用路徑規則。
+"""Shared path rules for the maid state files.
 
-每個 Claude Code session 各有一份狀態，不然同時開好幾個視窗會互相蓋掉。
-session_id 拿不到時退回全域目錄，至少不會壞掉。
+Each Claude Code session gets its own state so several open windows never
+overwrite each other. When no session_id is available, fall back to a global
+dir so nothing breaks.
 """
-import glob
 import json
 import os
 import sys
 
 HOME = os.path.expanduser("~")
-ROOT = f"{HOME}/.claude/maid-state"
-SHIFT_FILE = f"{HOME}/.claude/maid-on-shift"  # 當班女僕是全域的，不分 session
+ROOT = f"{HOME}/.claude/cafe"  # the plugin's one home under ~/.claude, named after it
+CONFIG = f"{ROOT}/config.json"  # all persistent settings in one file
+DIARY = f"{ROOT}/diary.md"  # one shared handover diary for the whole café
 
-# 這支住在 <plugin>/bin/，所以 vendor 就在隔壁。用相對路徑找，版本號怎麼跳都不影響。
+# This file lives in <plugin>/bin/, so vendor/ is next door. Resolved relatively;
+# version bumps in the cache path don't matter.
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
-# 使用者自己寫的 persona 放家目錄，優先於 plugin 內建的——plugin 一更新就會被蓋掉。
-PERSONA_PATHS = (
-    f"{HOME}/.claude/maid-persona/{{id}}.md",
-    f"{PLUGIN_ROOT}/vendor/{{id}}.md",
-)
+def config():
+    """~/.claude/cafe/config.json — every key optional:
+    lang (reply language), maid (fixed pick, "none" = nobody),
+    personas_dir (folder of the user's own personas),
+    builtin_cast (false = the bundled maids sit out the draw entirely).
+    Individual retirement lives in each persona's own frontmatter: off_duty."""
+    try:
+        data = json.load(open(CONFIG, encoding="utf-8"))
+        # A hand-edited file may hold valid JSON that isn't an object; treating
+        # it as one would crash every hook and the status line at once.
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def personas_dir():
+    """Where the user's own personas live; configurable, defaults inside ROOT."""
+    d = str(config().get("personas_dir", "")).strip() or f"{ROOT}/personas"
+    return os.path.expanduser(d)
+
+
+def claude_bin():
+    """Where the claude CLI lives — hooks run on a shell PATH that may not
+    have it, and its install location varies per machine."""
+    import shutil
+    return shutil.which("claude") or f"{HOME}/.local/bin/claude"
 
 
 def state_dir(session_id=None, create=True):
-    """create=False 給唯讀的 statusline widget 用，免得光是刷新就長出一堆空目錄。"""
-    d = f"{ROOT}/{session_id}" if session_id else f"{ROOT}/_global"
+    """create=False is for read-only statusline widgets, so a mere refresh
+    doesn't sprout empty dirs."""
+    d = f"{ROOT}/sessions/{session_id}" if session_id else f"{ROOT}/sessions/_global"
     if create:
         os.makedirs(d, exist_ok=True)
     return d
 
 
 def payload_from_stdin():
-    """statusline widget 與 hook 都是從 stdin 收 session JSON。"""
+    """Statusline widgets and hooks both receive the session JSON on stdin."""
     try:
         return json.load(sys.stdin)
     except Exception:
@@ -47,23 +71,77 @@ def read(path):
         return ""
 
 
-def on_shift(session_id=None):
-    """回傳當班女僕 id，沒人當班時回 None。
+DEFAULT_LANG = "English"
 
-    優先序：CLAUDE_MAID 環境變數 > 這個 session 的排班 > 全域排班。
-    session 專屬那層讓不同視窗可以各自派不同的女僕。
+
+def lang():
+    """The reply language: one free-form sentence dropped verbatim into prompts
+    as $lang. Lets non-Chinese users switch the whole set with one value."""
+    return (os.environ.get("CLAUDE_MAID_LANG", "").strip()
+            or str(config().get("lang", "")).strip()
+            or DEFAULT_LANG)
+
+
+def prompt(template, **values):
+    """Read prompts/<template>.md and fill in the $placeholders."""
+    from string import Template
+    return Template(read(f"{PLUGIN_ROOT}/prompts/{template}.md")).safe_substitute(values).rstrip("\n")
+
+
+def on_shift(session_id=None):
+    """Return the maid id on shift, or None when nobody is.
+
+    Priority: CLAUDE_MAID env > this session's shift file (the draw persisted
+    at session start — what lets different windows run different maids) >
+    config "maid" (a fixed pick instead of the draw).
     """
     maid = (os.environ.get("CLAUDE_MAID", "")
             or (read(f"{state_dir(session_id, create=False)}/on-shift")
                 if session_id else "")
-            or read(SHIFT_FILE)).strip().lower()
+            or str(config().get("maid", ""))).strip().lower()
     return maid if maid and maid != "none" else None
 
 
+def persona_body(path):
+    """The persona instructions: the file minus its YAML frontmatter."""
+    import re
+    return re.sub(r"\A---\n.*?\n---\n", "", read(path), flags=re.S)
+
+
 def persona_file(maid_id):
-    """找 persona 檔，本地的優先。找不到回 None。"""
-    for pattern in PERSONA_PATHS:
-        hits = sorted(glob.glob(pattern.format(id=maid_id)), reverse=True)
-        if hits:
-            return hits[0]
+    """Find the persona file — the user's own folder wins over the bundled
+    vendor/ (which gets overwritten on every plugin update). None if missing.
+    A frontmatter-only file (a pure off_duty retirement stub) doesn't shadow
+    the bundled maid: an explicit pick of a retired maid still loads her."""
+    for d in (personas_dir(), f"{PLUGIN_ROOT}/vendor"):
+        path = f"{d}/{maid_id}.md"
+        if os.path.exists(path) and persona_body(path).strip():
+            return path
     return None
+
+
+def status_lines(session_id):
+    """The two status-line rows: the scene (whose subject is the maid's name,
+    per the look prompt) and the dialogue. Before the first look, fall back to
+    the bare name; nobody on shift returns []."""
+    maid_id = on_shift(session_id)
+    if not maid_id:
+        return []
+    look = [l.strip() for l in
+            read(f"{state_dir(session_id, create=False)}/look.txt").splitlines() if l.strip()]
+    scene = look[0] if look else display_name(maid_id)
+    speech = look[1] if len(look) > 1 else ""
+    if speech and not speech.startswith("「"):
+        speech = f"「{speech}」"  # wrap the dialogue in quotes so it reads as speech
+    return [scene, speech] if speech else [scene]
+
+
+def display_name(maid_id):
+    """Read name: from the persona frontmatter; fall back to the id."""
+    import re
+    path = persona_file(maid_id)
+    if path:
+        m = re.search(r"^name:\s*(.+)$", read(path), re.M)
+        if m:
+            return m.group(1).strip()
+    return maid_id.capitalize()

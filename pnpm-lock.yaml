@@ -36,12 +36,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/cafe:
-    devDependencies:
-      '@claudecafe/maid-personas':
-        specifier: workspace:*
-        version: link:../maid-personas
-
   packages/cafe-bell: {}
 
   packages/maid-assets: {}
