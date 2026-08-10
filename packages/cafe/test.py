@@ -47,22 +47,23 @@ def set_config(data):
 
 
 class CafeTest(unittest.TestCase):
-    """Fresh sandbox state + a fake bundled maids/ with two of the cast per test."""
+    """Fresh sandbox state + a fake bundled cast per test: two maids in English,
+    one of them also translated, which is how a half-translated cast looks."""
 
     def setUp(self):
         shutil.rmtree(CAFE, ignore_errors=True)
         shutil.rmtree(FAKE_PLUGIN, ignore_errors=True)
-        write(f"{FAKE_PLUGIN}/maids/kurumi.md",
+        write(f"{FAKE_PLUGIN}/maids/en/kurumi.md",
               "---\nname: くるみ\n---\nSoft and clingy little maid.\n")
-        write(f"{FAKE_PLUGIN}/maids/kokona.md",
+        write(f"{FAKE_PLUGIN}/maids/en/kokona.md",
               "---\nname: ここな\n---\nCalm and steady maid.\n")
-        for mod in (maidstate, load_persona):
-            self._real_root = mod.PLUGIN_ROOT
-            mod.PLUGIN_ROOT = FAKE_PLUGIN
+        write(f"{FAKE_PLUGIN}/maids/zh/kurumi.md",
+              "---\nname: くるみ\n---\n黏人的小女僕。\n")
+        self._real_root = maidstate.PLUGIN_ROOT
+        maidstate.PLUGIN_ROOT = FAKE_PLUGIN
 
     def tearDown(self):
-        for mod in (maidstate, load_persona):
-            mod.PLUGIN_ROOT = self._real_root
+        maidstate.PLUGIN_ROOT = self._real_root
 
 
 class ConfigTest(CafeTest):
@@ -122,6 +123,36 @@ class PersonaTest(CafeTest):
     def test_missing_persona(self):
         self.assertIsNone(maidstate.persona_file("ghost"))
         self.assertEqual(maidstate.display_name("ghost"), "Ghost")
+
+
+class CastLangTest(CafeTest):
+    """Which translation of the bundled cast goes on shift. A maid written in
+    Chinese answering in English is the worst of both: her sample lines, which
+    are most of what a persona is, are in the wrong language."""
+
+    def test_read_off_the_reply_language(self):
+        self.assertEqual(maidstate.cast_lang(), "en")  # default lang is English
+        set_config({"lang": "繁體中文（台灣用語）"})
+        self.assertEqual(maidstate.cast_lang(), "zh")
+        set_config({"lang": "Chinese"})
+        self.assertEqual(maidstate.cast_lang(), "zh")
+
+    def test_a_language_nobody_is_written_in_falls_to_english(self):
+        set_config({"lang": "日本語"})
+        self.assertEqual(maidstate.cast_lang(), "en")
+        self.assertIn("clingy", maidstate.persona_body(maidstate.persona_file("kurumi")))
+
+    def test_config_beats_the_guess(self):
+        set_config({"lang": "English", "cast_lang": "zh"})
+        self.assertIn("黏人", maidstate.persona_body(maidstate.persona_file("kurumi")))
+
+    def test_an_untranslated_maid_still_exists(self):
+        set_config({"lang": "中文"})
+        # Only kurumi has been translated, so kokona comes back in English
+        # rather than dropping out of the café.
+        self.assertIn("黏人", maidstate.persona_body(maidstate.persona_file("kurumi")))
+        self.assertIn("Calm", maidstate.persona_body(maidstate.persona_file("kokona")))
+        self.assertEqual(load_persona.cast_pool(), ["kokona", "kurumi"])
 
 
 class CastPoolTest(CafeTest):

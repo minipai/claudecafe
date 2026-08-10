@@ -6,11 +6,11 @@ import type { Locale } from '../i18n.js'
 // Persona definitions live in the `@claudecafe/maid-personas` workspace package. Resolve
 // its directory from the manifest path so the lookup works both in dev (pnpm
 // symlink) and in the Docker bundle (pnpm deploy copies it into node_modules).
-// Chinese personas sit at the package root, English translations under en/.
+// One directory per language, named after it.
 const require = createRequire(import.meta.url)
 const personasDir = dirname(require.resolve('@claudecafe/maid-personas/package.json'))
 const localeDirs: Record<Locale, string> = {
-  zh: personasDir,
+  zh: join(personasDir, 'zh'),
   en: join(personasDir, 'en'),
 }
 

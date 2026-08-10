@@ -7,6 +7,7 @@ dir so nothing breaks.
 """
 import json
 import os
+import re
 import sys
 
 HOME = os.path.expanduser("~")
@@ -20,7 +21,8 @@ PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 def config():
     """~/.claude/cafe/config.json — every key optional:
-    lang (reply language), maid (fixed pick, "none" = nobody),
+    lang (reply language), cast_lang (which translation of the bundled cast,
+    normally read off lang), maid (fixed pick, "none" = nobody),
     personas_dir (folder of the user's own personas),
     builtin_cast (false = the bundled maids sit out the draw entirely).
     Individual retirement lives in each persona's own frontmatter: off_duty."""
@@ -83,6 +85,39 @@ def lang():
             or DEFAULT_LANG)
 
 
+DEFAULT_CAST_LANG = "en"
+
+# What a reply language written in Chinese looks like. Only Chinese needs
+# spotting: it is the one language besides English the bundled cast is written
+# in, and everything else falls to the English cast either way.
+CHINESE_LANG = re.compile(r"中文|華語|华语|漢語|汉语|chinese|\bzh\b", re.I)
+
+
+def cast_lang():
+    """Which translation of the bundled cast to put on shift.
+
+    Config `cast_lang` when set; otherwise read off the reply language, since
+    those are the same choice in every ordinary case — a maid written in
+    Chinese answering in English is the worst of both, because a persona is
+    mostly tone by example and the examples are quoted lines.
+    """
+    chosen = str(config().get("cast_lang", "")).strip().lower()
+    if chosen:
+        return chosen
+    return "zh" if CHINESE_LANG.search(lang()) else DEFAULT_CAST_LANG
+
+
+def cast_dirs():
+    """Where the bundled cast is read from: her language first, English behind
+    it — a maid whose translation has not landed yet still exists, the same way
+    the site falls back for a card it cannot show in the language asked for."""
+    dirs = [f"{PLUGIN_ROOT}/maids/{cast_lang()}"]
+    english = f"{PLUGIN_ROOT}/maids/{DEFAULT_CAST_LANG}"
+    if english not in dirs:
+        dirs.append(english)
+    return dirs
+
+
 def prompt(template, **values):
     """Read prompts/<template>.md and fill in the $placeholders."""
     from string import Template
@@ -111,10 +146,10 @@ def persona_body(path):
 
 def persona_file(maid_id):
     """Find the persona file — the user's own folder wins over the bundled
-    bundled maids/ (which gets overwritten on every plugin update). None if missing.
+    maids/ (which gets overwritten on every plugin update). None if missing.
     A frontmatter-only file (a pure off_duty retirement stub) doesn't shadow
     the bundled maid: an explicit pick of a retired maid still loads her."""
-    for d in (personas_dir(), f"{PLUGIN_ROOT}/maids"):
+    for d in (personas_dir(), *cast_dirs()):
         path = f"{d}/{maid_id}.md"
         if os.path.exists(path) and persona_body(path).strip():
             return path

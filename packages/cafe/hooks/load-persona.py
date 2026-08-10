@@ -21,7 +21,7 @@ import sys
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "bin"))
-from maidstate import (PLUGIN_ROOT, config, lang, payload_from_stdin,
+from maidstate import (cast_dirs, config, lang, payload_from_stdin,
                        persona_body, persona_file, personas_dir, read, state_dir)
 
 OFF_DUTY_RE = re.compile(r"^off_duty:\s*(?:true|yes)\b", re.M | re.I)
@@ -38,7 +38,7 @@ def off_duty(body):
 def cast_pool():
     dirs = [personas_dir()]
     if config().get("builtin_cast", True):
-        dirs.append(f"{PLUGIN_ROOT}/maids")
+        dirs.extend(cast_dirs())
     pool = {}
     for d in dirs:
         for f in sorted(glob.glob(f"{d}/*.md")):
