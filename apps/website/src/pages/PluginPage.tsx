@@ -60,7 +60,7 @@ const copy = {
     ],
     ikicker: 'Open shop',
     ititle: 'Three steps, open today',
-    hireComment: '# pick a maid on this site, download her into ~/.claude/cafe/personas/ — hired',
+    hireComment: '# pick a maid on this site, then hire her in one line',
     slComment: '# for the status-line skit (optional)',
     inote:
       'Start a new session after installing and you’ll hear that “welcome back” — the nameless maid ？？？ keeps the shop until you hire someone; whoever you hire takes the next shift.',
@@ -113,7 +113,7 @@ const copy = {
     ],
     ikicker: '開店',
     ititle: '三步，今天就開店',
-    hireComment: '# 回這裡挑一位女僕，download 存進 ~/.claude/cafe/personas/ ——僱用完成',
+    hireComment: '# 回這裡挑一位女僕，一句話僱用',
     slComment: '# 想要 status line 的小劇場（選配）',
     inote:
       '裝好後開一個新 session，就會聽見那聲「歡迎回來」——還沒僱人時由無名女僕「？？？」看店；僱了誰，下個 session 就換她上班。',
@@ -324,6 +324,9 @@ export function PluginPage({ locale }: { locale: Locale }) {
               </div>
               <div class="term-line txt-sys">&nbsp;</div>
               <div class="term-line txt-sys">{t.hireComment}</div>
+              <div class="term-line prompt">
+                <span class="p-sym">›</span> <span class="txt-cmd">/cafe:hire kurumi</span>
+              </div>
               <div class="term-line txt-sys">&nbsp;</div>
               <div class="term-line txt-sys">{t.slComment}</div>
               <div class="term-line prompt">
