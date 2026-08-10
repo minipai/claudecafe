@@ -14,7 +14,7 @@ ROOT = f"{HOME}/.claude/cafe"  # the plugin's one home under ~/.claude, named af
 CONFIG = f"{ROOT}/config.json"  # all persistent settings in one file
 DIARY = f"{ROOT}/diary.md"  # one shared handover diary for the whole café
 
-# This file lives in <plugin>/bin/, so vendor/ is next door. Resolved relatively;
+# This file lives in <plugin>/bin/, so maids/ (the bundled cast) is next door. Resolved relatively;
 # version bumps in the cache path don't matter.
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -111,10 +111,10 @@ def persona_body(path):
 
 def persona_file(maid_id):
     """Find the persona file — the user's own folder wins over the bundled
-    vendor/ (which gets overwritten on every plugin update). None if missing.
+    bundled maids/ (which gets overwritten on every plugin update). None if missing.
     A frontmatter-only file (a pure off_duty retirement stub) doesn't shadow
     the bundled maid: an explicit pick of a retired maid still loads her."""
-    for d in (personas_dir(), f"{PLUGIN_ROOT}/vendor"):
+    for d in (personas_dir(), f"{PLUGIN_ROOT}/maids"):
         path = f"{d}/{maid_id}.md"
         if os.path.exists(path) and persona_body(path).strip():
             return path

@@ -3,7 +3,7 @@
 
     python3 packages/cafe/test.py
 
-Sandbox HOME, no network, no claude CLI, no dependence on vendor/ being built.
+Sandbox HOME, no network, no claude CLI, no dependence on maids/ being built.
 Covers the pure logic where the silent-failure bugs live (shift resolution,
 cast pool, persona files, festival packs, status rows, transcript stats) —
 not the prompt prose or anything an LLM generates.
@@ -47,14 +47,14 @@ def set_config(data):
 
 
 class CafeTest(unittest.TestCase):
-    """Fresh sandbox state + a fake vendor/ with two maids per test."""
+    """Fresh sandbox state + a fake bundled maids/ with two of the cast per test."""
 
     def setUp(self):
         shutil.rmtree(CAFE, ignore_errors=True)
         shutil.rmtree(FAKE_PLUGIN, ignore_errors=True)
-        write(f"{FAKE_PLUGIN}/vendor/kurumi.md",
+        write(f"{FAKE_PLUGIN}/maids/kurumi.md",
               "---\nname: くるみ\n---\nSoft and clingy little maid.\n")
-        write(f"{FAKE_PLUGIN}/vendor/kokona.md",
+        write(f"{FAKE_PLUGIN}/maids/kokona.md",
               "---\nname: ここな\n---\nCalm and steady maid.\n")
         for mod in (maidstate, load_persona):
             self._real_root = mod.PLUGIN_ROOT
@@ -107,7 +107,7 @@ class ShiftTest(CafeTest):
 
 
 class PersonaTest(CafeTest):
-    def test_user_file_wins_over_vendor(self):
+    def test_user_file_wins_over_bundled(self):
         write(f"{CAFE}/personas/kurumi.md", "---\nname: My Kurumi\n---\nMine.\n")
         self.assertEqual(maidstate.display_name("kurumi"), "My Kurumi")
         self.assertEqual(maidstate.persona_body(
@@ -116,7 +116,7 @@ class PersonaTest(CafeTest):
     def test_retirement_stub_does_not_shadow_explicit_pick(self):
         write(f"{CAFE}/personas/kurumi.md", "---\noff_duty: true\n---\n")
         path = maidstate.persona_file("kurumi")
-        self.assertTrue(path.startswith(f"{FAKE_PLUGIN}/vendor"))
+        self.assertTrue(path.startswith(f"{FAKE_PLUGIN}/maids"))
         self.assertIn("clingy", maidstate.persona_body(path))
 
     def test_missing_persona(self):
@@ -125,7 +125,7 @@ class PersonaTest(CafeTest):
 
 
 class CastPoolTest(CafeTest):
-    def test_default_pool_is_vendor(self):
+    def test_default_pool_is_bundled(self):
         self.assertEqual(load_persona.cast_pool(), ["kokona", "kurumi"])
 
     def test_user_persona_joins_and_overrides(self):

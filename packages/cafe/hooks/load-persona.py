@@ -3,7 +3,7 @@
 
 Injects the chosen persona's body (frontmatter stripped) plus the reply
 language. The draw pool is the user's own personas_dir plus the bundled
-vendor/ cast (drop the bundled ones wholesale with config
+bundled maids/ cast (drop the bundled ones wholesale with config
 {"builtin_cast": false}); a user file with the same id overrides the bundled
 one, and a persona whose frontmatter says off_duty: true sits out the draw —
 so retiring one bundled maid is a tiny same-id override stub. Shift order:
@@ -38,7 +38,7 @@ def off_duty(body):
 def cast_pool():
     dirs = [personas_dir()]
     if config().get("builtin_cast", True):
-        dirs.append(f"{PLUGIN_ROOT}/vendor")
+        dirs.append(f"{PLUGIN_ROOT}/maids")
     pool = {}
     for d in dirs:
         for f in sorted(glob.glob(f"{d}/*.md")):

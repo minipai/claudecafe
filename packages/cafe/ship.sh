@@ -2,7 +2,7 @@
 set -e
 
 # Ship the cafe plugin to the public shelf at claudecafe.dev/plugins/:
-# run the tests, build vendor/, zip a versioned archive, regenerate the
+# run the tests, build maids/, zip a versioned archive, regenerate the
 # public marketplace.json (archive source + sha256) and upload both.
 #
 # Published zips are immutable — same version twice aborts; bump the version
@@ -38,7 +38,7 @@ fi
 
 # Stage only what the plugin needs at runtime (no build/test tooling).
 rm -rf "$DIST" && mkdir -p "$DIST/stage"
-for item in .claude-plugin bin hooks commands prompts vendor README.md; do
+for item in .claude-plugin bin hooks commands prompts maids README.md; do
     cp -R "$PLUGIN/$item" "$DIST/stage/$item"
 done
 find "$DIST/stage" -type d -name __pycache__ -exec rm -rf {} +

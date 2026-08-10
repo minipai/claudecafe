@@ -37,8 +37,8 @@ off_duty: true
 
 Facts you need:
 
-- Bundled ids: the `*.md` filenames in `${CLAUDE_PLUGIN_ROOT}/vendor/` (if that
-  variable isn't expanded, use the newest `~/.claude/plugins/cache/*/cafe/*/vendor/`).
+- Bundled ids: the `*.md` filenames in `${CLAUDE_PLUGIN_ROOT}/maids/` (if that
+  variable isn't expanded, use the newest `~/.claude/plugins/cache/*/cafe/*/maids/`).
 - A persona file: **lowercase filename = id**, YAML frontmatter with `name:`,
   body = the persona instructions. Same id as a bundled maid overrides her.
 - This window's shift state: `~/.claude/cafe/sessions/<session_id>/on-shift`

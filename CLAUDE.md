@@ -9,16 +9,16 @@ package.json 的**名字都 namespace 在 `@claudecafe/*`**（私有 root 仍叫
   複製 persona markdown 貼到自己的 `CLAUDE.md`。
 - **`packages/maid-personas`** — 女僕 persona 定義 `*.md`（frontmatter = 網站 metadata，
   body = persona 指令）。`apps/web` 以 `workspace:*` 依賴；`cafe` plugin 的 `build.py`
-  在 build 時直接複製 vendor 它（monorepo 相對路徑）。
+  在 build 時直接複製進 plugin 的 maids/（monorepo 相對路徑）。
 - **`packages/maid-assets`** — web／desktop 共用的角色美術資產。目前收納ことね／ここな的
   表情差分、生成用 seed 圖與共用設計規格；各 app 在 build 時再挑選並複製自己需要的圖片。
 - **`packages/cafe-bell`** — Claude Code hook 事件的 pub/sub hub（SSE bus）。同時是 marketplace plugin。
 - **`packages/cafe`** — Claude Code plugin（hooks ＋ 唯一的 `/cafe:config` 設定命令；設定住
   `~/.claude/cafe/config.json`：lang／maid／personas_dir／builtin_cast，單人退休用 persona
   frontmatter `off_duty: true`，內建的用同 id stub 蓋掉），兩層功能：
-  - **排班**：`load-persona.py`（SessionStart）讀 `vendor/<當班>.md` body 注入當 session persona。
+  - **排班**：`load-persona.py`（SessionStart）讀 `maids/<當班>.md` body 注入當 session persona。
     當班順序：`CLAUDE_MAID` env（一次性 override）→ 本視窗的 `~/.claude/cafe/sessions/<session_id>/on-shift`
-    → 從 vendor 陣容隨機抽一位（抽完寫回該檔，resume 才不會換人）；值為 `none` = 不注入
+    → 從內建陣容隨機抽一位（抽完寫回該檔，resume 才不會換人）；值為 `none` = 不注入
     （給自帶 CLAUDE.md persona 的使用者）。
   - **外顯氣場**（persona-agnostic）：`session-greeting.py` 注入時段問候 + 心情標記 cue、
     `current-time.py`（UserPromptSubmit）每回合注入當下時間、Stop hook 背景生成 status line 的
@@ -29,8 +29,8 @@ package.json 的**名字都 namespace 在 `@claudecafe/*`**（私有 root 仍叫
 
 - **hook 環境沒 JS runtime on PATH**：node 是 nvm、bun 在 `~/.bun`，hook 跑非互動 shell 都不在
   PATH → **hook 只能用系統自帶的 bash／python3**。`cafe` 的 hook 因此 self-contained：純 python3
-  stdlib、只讀 `${CLAUDE_PLUGIN_ROOT}/vendor`，無 repo 路徑／symlink／node/bun。
-- **`vendor/` 是 build 產物**（gitignore）：`build.py` 把 `packages/maid-personas` 的 cast
+  stdlib、只讀 `${CLAUDE_PLUGIN_ROOT}/maids`，無 repo 路徑／symlink／node/bun。
+- **`maids/` 是 build 產物**（gitignore）：`build.py` 把 `packages/maid-personas` 的 cast
   複製進來。**`/plugin install` 不跑 build、只複製檔案**（directory source 會帶 untracked），
   所以 install 前要先 `python3 packages/cafe/build.py`。
 - **改 plugin 一定要 bump 版號**：`/plugin update` 比對 version，版號沒變不會重裝。改動後同步 bump
