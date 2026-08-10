@@ -113,6 +113,12 @@ python3 packages/cafe/build.py
 installing/updating, or the plugin ships without its cast. Everything is plain
 `python3` (hooks run in a non-interactive shell with no node/bun on PATH).
 
+Before installing or bumping, run the logic tests (sandbox HOME, no network):
+
+```
+python3 packages/cafe/test.py
+```
+
 ## Install
 
 Part of the `claudecafe` marketplace (this repo's root `.claude-plugin/marketplace.json`).

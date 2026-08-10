@@ -25,7 +25,8 @@ def config():
     builtin_cast (false = the bundled maids sit out the draw entirely).
     Individual retirement lives in each persona's own frontmatter: off_duty."""
     try:
-        data = json.load(open(CONFIG, encoding="utf-8"))
+        with open(CONFIG, encoding="utf-8") as f:
+            data = json.load(f)
         # A hand-edited file may hold valid JSON that isn't an object; treating
         # it as one would crash every hook and the status line at once.
         return data if isinstance(data, dict) else {}

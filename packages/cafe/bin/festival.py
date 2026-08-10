@@ -39,7 +39,8 @@ def load_pack():
         return None
     if isinstance(setting, str) and setting.strip():
         try:
-            pack = json.load(open(os.path.expanduser(setting.strip()), encoding="utf-8"))
+            with open(os.path.expanduser(setting.strip()), encoding="utf-8") as f:
+                pack = json.load(f)
         except Exception:
             return None  # a broken custom pack degrades to silence, not a crash
         return pack if isinstance(pack, dict) else None
