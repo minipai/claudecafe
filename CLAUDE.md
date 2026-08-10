@@ -57,5 +57,9 @@ Hono + JSX (SSR)、gray-matter、marked、TypeScript。
 
 - persona 檔住在 `packages/maid-personas`，web 透過 `require.resolve('@claudecafe/maid-personas/package.json')`
   取得目錄（dev 走 pnpm symlink、Docker 走 deploy bundle 都通）。
+- **i18n**：英文站在根路徑、中文站在 `/zh/`（`src/i18n.ts` 的 `href()` 組網址；hreflang 互指、
+  切換鈕帶 `?lang=` 種 cookie，cookie 只在根路徑 `/` 導向 `/zh`）。英文內容＝翻譯檔：persona 在
+  `packages/maid-personas/en/`、部落格在 `apps/website/blog/en/`（同檔名），缺檔自動 fallback 中文版。
+  cafe plugin 的 `build.py` 只掃 top-level `*.md`，不會把 `en/` 抓進 plugin cast。
 - 「copy source」只複製 body（不含 frontmatter），貼到 CLAUDE.md 即可運作。
 - `apps/website/blog/` 是部落格文章（frontmatter 含 title / date / author），寫作風格見該目錄的 `CLAUDE.md`。

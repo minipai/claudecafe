@@ -1,12 +1,18 @@
 import { createRequire } from 'node:module'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 import { loadContentDir } from './content.js'
+import type { Locale } from '../i18n.js'
 
 // Persona definitions live in the `@claudecafe/maid-personas` workspace package. Resolve
 // its directory from the manifest path so the lookup works both in dev (pnpm
 // symlink) and in the Docker bundle (pnpm deploy copies it into node_modules).
+// Chinese personas sit at the package root, English translations under en/.
 const require = createRequire(import.meta.url)
 const personasDir = dirname(require.resolve('@claudecafe/maid-personas/package.json'))
+const localeDirs: Record<Locale, string> = {
+  zh: personasDir,
+  en: join(personasDir, 'en'),
+}
 
 export interface Maid {
   slug: string
@@ -17,7 +23,10 @@ export interface Maid {
   rawMd: string
 }
 
-const cache: { items: Maid[] | null } = { items: null }
+const caches: Record<Locale, { items: Maid[] | null }> = {
+  zh: { items: null },
+  en: { items: null },
+}
 
 function parseMaid(slug: string, data: Record<string, unknown>, content: string): Maid {
   return {
@@ -30,15 +39,15 @@ function parseMaid(slug: string, data: Record<string, unknown>, content: string)
   }
 }
 
-export function getAllMaids(): Maid[] {
-  return loadContentDir(
-    personasDir,
-    'maids',
-    parseMaid,
-    cache,
-  )
+export function getAllMaids(locale: Locale = 'zh'): Maid[] {
+  const maids = loadContentDir(localeDirs[locale], 'maids', parseMaid, caches[locale])
+  if (locale === 'zh') return maids
+  // A maid whose translation hasn't landed yet still exists — show her
+  // Chinese card rather than dropping her from the café.
+  const bySlug = new Map(maids.map(m => [m.slug, m]))
+  return getAllMaids('zh').map(m => bySlug.get(m.slug) ?? m)
 }
 
-export function getMaid(name: string): Maid | undefined {
-  return getAllMaids().find(m => m.slug === name || m.enName.toLowerCase() === name.toLowerCase())
+export function getMaid(name: string, locale: Locale = 'zh'): Maid | undefined {
+  return getAllMaids(locale).find(m => m.slug === name || m.enName.toLowerCase() === name.toLowerCase())
 }

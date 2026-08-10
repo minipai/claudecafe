@@ -1,25 +1,26 @@
 import type { Maid } from "../utils/maids.js";
 import type { BlogPost } from "../utils/blog.js";
 import { MaidCard } from "./MaidCard.js";
+import { href, ui, type Locale } from "../i18n.js";
 
-export function HomePage({ maids, posts }: { maids: Maid[]; posts: BlogPost[] }) {
+export function HomePage({ maids, posts, locale }: { maids: Maid[]; posts: BlogPost[]; locale: Locale }) {
   return (
     <div class="home">
       <section class="hero">
         <h1>いらっしゃいませ</h1>
-        <p>歡迎來到 The Claude Café，這裡有五位個性鮮明的女僕為您服務。</p>
+        <p>{ui[locale].heroLead}</p>
       </section>
       <div class="maid-list">
         {maids.map((maid) => (
-          <MaidCard maid={maid} />
+          <MaidCard maid={maid} locale={locale} />
         ))}
       </div>
       {posts.length > 0 && (
         <div class="blog-list">
           <div class="blog-row">
             <time class="blog-row-date">{posts[0].date}</time>
-            <a href={`/notes/${posts[0].slug}`} class="blog-row-title">{posts[0].title}</a>
-            <a href="/notes" class="blog-row-action">Café Note →</a>
+            <a href={href(locale, `/notes/${posts[0].slug}`)} class="blog-row-title">{posts[0].title}</a>
+            <a href={href(locale, "/notes")} class="blog-row-action">Café Note →</a>
           </div>
         </div>
       )}

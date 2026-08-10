@@ -105,6 +105,22 @@ body > * {
 
 .header-right {
     justify-self: end;
+    display: flex;
+}
+
+.lang-switch {
+    display: flex;
+    align-items: center;
+    color: var(--header-text);
+    text-decoration: none;
+    font-family: var(--font-sans);
+    font-size: var(--fs-sm);
+    opacity: 0.8;
+    padding: 0.7rem 1.5rem 0.7rem 0;
+}
+
+.lang-switch:hover {
+    opacity: 1;
 }
 
 .site-logo {
