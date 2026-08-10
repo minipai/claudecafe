@@ -5,9 +5,9 @@ AI 女僕生態系的 pnpm monorepo。repo 根**同時是一個叫 `claudecafe` 
 package.json 的**名字都 namespace 在 `@claudecafe/*`**（私有 root 仍叫 `claudecafe-monorepo`；
 `packages/cafe` 純 python、無 package.json、不是 workspace 成員）：
 
-- **`apps/website`** — 女僕 persona 展示網站（Hono SSR），同時是**僱用管道**：按「copy source」
-  複製 persona markdown，貼進 `CLAUDE.md` 或存成 `~/.claude/cafe/personas/<id>.md`（cafe plugin
-  的抽班池）。
+- **`apps/website`** — 女僕 persona 展示網站（Hono SSR），同時是**僱用管道**：`/<id>.md` 路由
+  serve 含 frontmatter 的完整 persona 檔——download 存進 `~/.claude/cafe/personas/`（cafe plugin
+  的抽班池），或存下來從自己的 `CLAUDE.md` 用 `@路徑` link。
 - **`packages/maid-personas`** — 女僕 persona 定義 `*.md`（frontmatter = 網站 metadata，
   body = persona 指令），`zh/`＋`en/` 一語言一目錄。只有 `apps/website` 用（`workspace:*`）；
   cafe plugin 不打包陣容。
@@ -60,6 +60,6 @@ Hono + JSX (SSR)、gray-matter、marked、TypeScript。
 - **i18n**：英文站在根路徑、中文站在 `/zh/`（`src/i18n.ts` 的 `href()` 組網址；hreflang 互指、
   切換鈕帶 `?lang=` 種 cookie，cookie 只在根路徑 `/` 導向 `/zh`）。英文內容＝翻譯檔：persona 在
   `packages/maid-personas/en/`、部落格在 `apps/website/blog/en/`（同檔名），缺檔自動 fallback 中文版。
-- 「copy source」只複製 body（不含 frontmatter），貼到 CLAUDE.md 即可運作；存成
-  `~/.claude/cafe/personas/<id>.md` 則進 cafe plugin 的抽班池（僱用）。
+- maid 頁的 CTA：整句是 `/<id>.md` 的連結、旁邊 download 連結直接下載——都含 frontmatter
+  （cafe plugin 的 status line 讀 `name:`）。頁面本身 render 時仍只顯示 body。
 - `apps/website/blog/` 是部落格文章（frontmatter 含 title / date / author），寫作風格見該目錄的 `CLAUDE.md`。

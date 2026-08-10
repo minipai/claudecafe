@@ -6,9 +6,10 @@ status-line "look" and a shared handover diary). One command, `/cafe:config`,
 for settings; everything else is hooks.
 
 The plugin is the café's operating system; the maids themselves are **hired
-from [claudecafe.dev](https://claudecafe.dev)** — press "copy source" on a
-maid's page and save it as `~/.claude/cafe/personas/<id>.md`. Until someone
-is hired, a nameless maid keeps the place open.
+from [claudecafe.dev](https://claudecafe.dev)** — download a maid's page
+(`claudecafe.dev/<id>.md`, Chinese under `/zh/`) into
+`~/.claude/cafe/personas/`. Until someone is hired, a nameless maid keeps
+the place open.
 
 | Component | Type | What it does |
 |-----------|------|--------------|

@@ -21,6 +21,9 @@ export interface Maid {
   title: string
   quote: string
   rawMd: string
+  /** The whole file, frontmatter included — what /<slug>.md serves, so a
+   * downloaded persona keeps her name: for the cafe plugin's status line. */
+  sourceMd: string
 }
 
 const caches: Record<Locale, { items: Maid[] | null }> = {
@@ -28,7 +31,7 @@ const caches: Record<Locale, { items: Maid[] | null }> = {
   en: { items: null },
 }
 
-function parseMaid(slug: string, data: Record<string, unknown>, content: string): Maid {
+function parseMaid(slug: string, data: Record<string, unknown>, content: string, raw: string): Maid {
   return {
     slug,
     jaName: (data.name as string) ?? slug,
@@ -36,6 +39,7 @@ function parseMaid(slug: string, data: Record<string, unknown>, content: string)
     title: (data.personality as string) ?? '',
     quote: (data.quote as string) ?? '',
     rawMd: content,
+    sourceMd: raw,
   }
 }
 

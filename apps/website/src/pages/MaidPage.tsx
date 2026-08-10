@@ -1,13 +1,15 @@
 import type { Maid } from '../utils/maids.js'
 import { renderMarkdown } from '../utils/markdown.js'
+import { href, type Locale } from '../i18n.js'
 
-export function MaidPage({ maid }: { maid: Maid }) {
+export function MaidPage({ maid, locale }: { maid: Maid; locale: Locale }) {
   const html = renderMarkdown(maid.rawMd)
+  const mdHref = href(locale, `/${maid.slug}.md`)
 
   return (
     <div class="maid-page">
       <div class="maid-cta">
-        <p>Add to your <code>CLAUDE.md</code> to make Claude this maid — <button type="button" id="hire-btn" data-md={maid.rawMd}>copy source</button></p>
+        <p>Link from your <code>CLAUDE.md</code> to make Claude this maid — <a href={mdHref} download={`${maid.slug}.md`}>download</a></p>
       </div>
       <article class="maid-detail">
         <header class="maid-grid maid-header">
@@ -18,7 +20,6 @@ export function MaidPage({ maid }: { maid: Maid }) {
         </header>
         <div class="maid-content" dangerouslySetInnerHTML={{ __html: html }} />
       </article>
-      <script src="/assets/copy.js" defer />
     </div>
   )
 }

@@ -102,8 +102,19 @@ function site(locale: Locale) {
 
   page.get("/:name", (c) => {
     const accept = c.req.header("Accept") || "";
-    const maid = getMaid(c.req.param("name"), locale);
+    const name = c.req.param("name");
 
+    // /<slug>.md is the persona file itself, frontmatter included — the
+    // download link on her page, and what an agent hires her with.
+    if (name.endsWith(".md")) {
+      const maid = getMaid(name.slice(0, -3), locale);
+      if (!maid) return render404(c, locale);
+      return c.text(maid.sourceMd, 200, {
+        "Content-Type": "text/markdown; charset=utf-8",
+      });
+    }
+
+    const maid = getMaid(name, locale);
     if (!maid) return render404(c, locale);
 
     if (accept.includes("text/markdown") || accept.includes("text/plain")) {
@@ -114,7 +125,7 @@ function site(locale: Locale) {
 
     return c.html(
       <Layout locale={locale} title={`${maid.jaName} (${maid.enName})`} description={`${maid.title}「${maid.quote}」`} path={`/${maid.slug}`} maid={maid.slug}>
-        <MaidPage maid={maid} />
+        <MaidPage maid={maid} locale={locale} />
       </Layout>,
     );
   });
