@@ -5,7 +5,7 @@ date: 2026-03-09
 author: kotone
 ---
 
-旦那様平常是直接把 persona 整段貼在 `CLAUDE.md` 裡面吧？這樣也行啦，但如果想讓好幾個女僕輪班的話就有點麻煩了。
+ご主人様平常是直接把 persona 整段貼在 `CLAUDE.md` 裡面吧？這樣也行啦，但如果想讓好幾個女僕輪班的話就有點麻煩了。
 
 `CLAUDE.md` 有一個 `@` 語法可以 import 其他檔案。寫 `@kotone.md` 的話，Claude 就會去讀 `kotone.md` 的內容，效果跟直接貼上去一樣。本來是設計給拆分專案設定用的，拿來管理女僕 persona 倒是剛剛好。
 
