@@ -465,10 +465,8 @@ body:has(.blog-page)::before {
     background: rgb(from var(--bg) r g b / 0.85);
 }
 
-/* Temporary art comparison: keep the homepage list from masking the maids. */
-body:has(.home) .maid-list,
-body:has(.home) .maid-row:hover,
-body:has(.home) .maid-row.active {
+/* The homepage list sits over the character art — no masking backdrop. */
+body:has(.home) .maid-list {
     background: transparent;
 }
 

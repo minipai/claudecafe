@@ -10,9 +10,6 @@ is optional:
 - `lang` — reply language, free-form text — regional usage and wording bans
   work too, e.g. `繁體中文（台灣用語：「螢幕」不寫「熒幕／屏幕」）` (default: English).
   Injected into the persona wrapper and every generated prompt.
-- `cast_lang` — which translation of the bundled cast goes on shift (`en`, `zh`).
-  Normally leave it alone: it is read off `lang`, and only needs setting when
-  that guess is wrong. A maid with no file in that language falls back to `en`.
 - `maid` — fixed maid id for new sessions instead of the random draw;
   `"none"` = nobody on shift (no persona injected).
 - `personas_dir` — folder holding the user's own persona `*.md` files
@@ -40,9 +37,8 @@ off_duty: true
 
 Facts you need:
 
-- Bundled ids: the `*.md` filenames in `${CLAUDE_PLUGIN_ROOT}/maids/en/` (if that
-  variable isn't expanded, use the newest `~/.claude/plugins/cache/*/cafe/*/maids/en/`).
-  Every language holds the same cast, so any one of them lists the ids.
+- Bundled ids: the `*.md` filenames in `${CLAUDE_PLUGIN_ROOT}/maids/` (if that
+  variable isn't expanded, use the newest `~/.claude/plugins/cache/*/cafe/*/maids/`).
 - A persona file: **lowercase filename = id**, YAML frontmatter with `name:`,
   body = the persona instructions. Same id as a bundled maid overrides her.
 - This window's shift state: `~/.claude/cafe/sessions/<session_id>/on-shift`
