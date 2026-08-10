@@ -2,11 +2,11 @@
 """SessionStart hook: put a maid "on shift".
 
 Injects the chosen persona's body (frontmatter stripped) plus the reply
-language. The draw pool is the user's own personas_dir plus the bundled
-bundled maids/ cast (drop the bundled ones wholesale with config
-{"builtin_cast": false}); a user file with the same id overrides the bundled
-one, and a persona whose frontmatter says off_duty: true sits out the draw —
-so retiring one bundled maid is a tiny same-id override stub. Shift order:
+language. The draw pool is the user's own personas_dir — maids are hired from
+claudecafe.dev (copy source → a file in personas_dir). While nobody is hired,
+the bundled nameless maid keeps the café open (drop her with config
+{"builtin_cast": false}); a user file with the same id overrides her, and a
+persona whose frontmatter says off_duty: true sits out the draw. Shift order:
 CLAUDE_MAID env (one-shot override) > this session's own shift file (the
 persisted draw, which is what lets two windows run different maids at once) >
 config "maid" (a fixed pick — an explicit pick works even off duty) > a draw
@@ -35,10 +35,7 @@ def off_duty(body):
     return bool(OFF_DUTY_RE.search(body[:end if end != -1 else len(body)]))
 
 
-def cast_pool():
-    dirs = [personas_dir()]
-    if config().get("builtin_cast", True):
-        dirs.append(f"{PLUGIN_ROOT}/maids")
+def draw_from(dirs):
     pool = {}
     for d in dirs:
         for f in sorted(glob.glob(f"{d}/*.md")):
@@ -49,6 +46,14 @@ def cast_pool():
             # a stub whose only content is off_duty: true.
             pool.setdefault(mid, f)
     return sorted(mid for mid, f in pool.items() if not off_duty(read(f)))
+
+
+def cast_pool():
+    """The hired maids; while there are none, the bundled nameless maid."""
+    hired = draw_from([personas_dir()])
+    if hired or not config().get("builtin_cast", True):
+        return hired
+    return draw_from([personas_dir(), f"{PLUGIN_ROOT}/maids"])
 
 
 def main():

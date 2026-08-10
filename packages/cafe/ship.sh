@@ -2,8 +2,8 @@
 set -e
 
 # Ship the cafe plugin to the public shelf at claudecafe.dev/plugins/:
-# run the tests, build maids/, zip a versioned archive, regenerate the
-# public marketplace.json (archive source + sha256) and upload both.
+# run the tests, zip a versioned archive, regenerate the public
+# marketplace.json (archive source + sha256) and upload both.
 #
 # Published zips are immutable — same version twice aborts; bump the version
 # (plugin.json + root marketplace.json) instead. Old zips stay up: the shelf
@@ -24,7 +24,6 @@ DIST="$PLUGIN/dist"
 echo "=== cafe plugin ship ==="
 
 python3 "$PLUGIN/test.py" 2>&1 | tail -3
-python3 "$PLUGIN/build.py"
 
 VERSION=$(python3 -c "import json; print(json.load(open('$PLUGIN/.claude-plugin/plugin.json'))['version'])")
 ZIP="cafe-$VERSION.zip"

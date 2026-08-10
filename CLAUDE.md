@@ -5,34 +5,34 @@ AI 女僕生態系的 pnpm monorepo。repo 根**同時是一個叫 `claudecafe` 
 package.json 的**名字都 namespace 在 `@claudecafe/*`**（私有 root 仍叫 `claudecafe-monorepo`；
 `packages/cafe` 純 python、無 package.json、不是 workspace 成員）：
 
-- **`apps/website`** — 女僕 persona 展示網站（Hono SSR）。使用者瀏覽角色卡片，按「copy source」
-  複製 persona markdown 貼到自己的 `CLAUDE.md`。
+- **`apps/website`** — 女僕 persona 展示網站（Hono SSR），同時是**僱用管道**：按「copy source」
+  複製 persona markdown，貼進 `CLAUDE.md` 或存成 `~/.claude/cafe/personas/<id>.md`（cafe plugin
+  的抽班池）。
 - **`packages/maid-personas`** — 女僕 persona 定義 `*.md`（frontmatter = 網站 metadata，
-  body = persona 指令）。`apps/website` 以 `workspace:*` 依賴；`cafe` plugin 的 `build.py`
-  在 build 時直接複製進 plugin 的 maids/（monorepo 相對路徑）。
+  body = persona 指令），`zh/`＋`en/` 一語言一目錄。只有 `apps/website` 用（`workspace:*`）；
+  cafe plugin 不打包陣容。
 - **`packages/maid-assets`** — web／desktop 共用的角色美術資產。目前收納ことね／ここな的
   表情差分、生成用 seed 圖與共用設計規格；各 app 在 build 時再挑選並複製自己需要的圖片。
 - **`packages/cafe-bell`** — Claude Code hook 事件的 pub/sub hub（SSE bus）。同時是 marketplace plugin。
 - **`packages/cafe`** — Claude Code plugin（hooks ＋ 唯一的 `/cafe:config` 設定命令；設定住
   `~/.claude/cafe/config.json`：lang／maid／personas_dir／builtin_cast，單人退休用 persona
   frontmatter `off_duty: true`，內建的用同 id stub 蓋掉），兩層功能：
-  - **排班**：`load-persona.py`（SessionStart）讀 `maids/<當班>.md` body 注入當 session persona。
-    當班順序：`CLAUDE_MAID` env（一次性 override）→ 本視窗的 `~/.claude/cafe/sessions/<session_id>/on-shift`
-    → 從內建陣容隨機抽一位（抽完寫回該檔，resume 才不會換人）；值為 `none` = 不注入
-    （給自帶 CLAUDE.md persona 的使用者）。
+  - **排班**：`load-persona.py`（SessionStart）注入當班 persona 的 body。當班順序：
+    `CLAUDE_MAID` env（一次性 override）→ 本視窗的 `~/.claude/cafe/sessions/<session_id>/on-shift`
+    → 從 personas_dir（使用者僱來的女僕）隨機抽一位（抽完寫回該檔，resume 才不會換人）；
+    一個都沒僱時由內建的無名女僕 `noname`（plugin 唯一自帶的 `maids/noname.md`，checked in）
+    看店，她會自然導流去 claudecafe.dev 僱人；值為 `none` = 不注入（給自帶 CLAUDE.md persona 的使用者）。
   - **外顯氣場**（persona-agnostic）：`session-greeting.py` 注入時段問候 + 心情標記 cue、
     `current-time.py`（UserPromptSubmit）每回合注入當下時間、Stop hook 背景生成 status line 的
     look 場景、SessionEnd 寫交接簿日記。
 - **`packages/maid-voice-player`** — 訂閱 cafe-bell SSE bus 的語音播放器（launchd 常駐）。
 
-## ⚠️ Plugin 開發的四顆雷
+## ⚠️ Plugin 開發的三顆雷
 
 - **hook 環境沒 JS runtime on PATH**：node 是 nvm、bun 在 `~/.bun`，hook 跑非互動 shell 都不在
   PATH → **hook 只能用系統自帶的 bash／python3**。`cafe` 的 hook 因此 self-contained：純 python3
-  stdlib、只讀 `${CLAUDE_PLUGIN_ROOT}/maids`，無 repo 路徑／symlink／node/bun。
-- **`maids/` 是 build 產物**（gitignore）：`build.py` 把 `packages/maid-personas` 的 cast
-  複製進來。**`/plugin install` 不跑 build、只複製檔案**（directory source 會帶 untracked），
-  所以 install 前要先 `python3 packages/cafe/build.py`。
+  stdlib，無 repo 路徑／symlink／node/bun。cafe 也**沒有 build step**——所有出貨的檔案都 checked in
+  （陣容不進 plugin，從網站僱用）。
 - **改 plugin 一定要 bump 版號**：`/plugin update` 比對 version，版號沒變不會重裝。改動後同步 bump
   `packages/<p>/.claude-plugin/plugin.json` ＋ 根 `marketplace.json` 對應 entry（有 `package.json`
   的 plugin 也一起），再 `/plugin marketplace update claudecafe` → `/plugin update <p>@claudecafe`。
@@ -49,7 +49,7 @@ mood 心情標記**只 emit 不捕捉**：回應結尾的 `【…】` 純風格�
   `pnpm --filter @claudecafe/website --legacy deploy --prod`（會把 `@claudecafe/maid-personas` 一起打包進
   `/out/node_modules/`），stage 2 用 `oven/bun` 跑 deploy bundle。
 - 常用：`pnpm install`（根）、`pnpm dev:web`、`pnpm --filter @claudecafe/website ship`（部署網站）。
-- cafe-bell / maid-voice-player 無 npm 依賴，直接用 bun / shell 跑；cafe 純 python（build 也是）。
+- cafe-bell / maid-voice-player 無 npm 依賴，直接用 bun / shell 跑；cafe 純 python、無 build。
 
 ## apps/website
 
@@ -60,6 +60,6 @@ Hono + JSX (SSR)、gray-matter、marked、TypeScript。
 - **i18n**：英文站在根路徑、中文站在 `/zh/`（`src/i18n.ts` 的 `href()` 組網址；hreflang 互指、
   切換鈕帶 `?lang=` 種 cookie，cookie 只在根路徑 `/` 導向 `/zh`）。英文內容＝翻譯檔：persona 在
   `packages/maid-personas/en/`、部落格在 `apps/website/blog/en/`（同檔名），缺檔自動 fallback 中文版。
-  cafe plugin 的 `build.py` 只掃 top-level `*.md`，不會把 `en/` 抓進 plugin cast。
-- 「copy source」只複製 body（不含 frontmatter），貼到 CLAUDE.md 即可運作。
+- 「copy source」只複製 body（不含 frontmatter），貼到 CLAUDE.md 即可運作；存成
+  `~/.claude/cafe/personas/<id>.md` 則進 cafe plugin 的抽班池（僱用）。
 - `apps/website/blog/` 是部落格文章（frontmatter 含 title / date / author），寫作風格見該目錄的 `CLAUDE.md`。

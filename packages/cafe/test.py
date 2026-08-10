@@ -3,7 +3,7 @@
 
     python3 packages/cafe/test.py
 
-Sandbox HOME, no network, no claude CLI, no dependence on maids/ being built.
+Sandbox HOME, no network, no claude CLI.
 Covers the pure logic where the silent-failure bugs live (shift resolution,
 cast pool, persona files, festival packs, status rows, transcript stats) —
 not the prompt prose or anything an LLM generates.
@@ -47,15 +47,13 @@ def set_config(data):
 
 
 class CafeTest(unittest.TestCase):
-    """Fresh sandbox state + a fake bundled maids/ with two of the cast per test."""
+    """Fresh sandbox state + a fake bundled maids/ with the fallback maid."""
 
     def setUp(self):
         shutil.rmtree(CAFE, ignore_errors=True)
         shutil.rmtree(FAKE_PLUGIN, ignore_errors=True)
-        write(f"{FAKE_PLUGIN}/maids/kurumi.md",
-              "---\nname: くるみ\n---\nSoft and clingy little maid.\n")
-        write(f"{FAKE_PLUGIN}/maids/kokona.md",
-              "---\nname: ここな\n---\nCalm and steady maid.\n")
+        write(f"{FAKE_PLUGIN}/maids/noname.md",
+              "---\nname: ？？？\n---\nThe maid with no name.\n")
         for mod in (maidstate, load_persona):
             self._real_root = mod.PLUGIN_ROOT
             mod.PLUGIN_ROOT = FAKE_PLUGIN
@@ -108,16 +106,16 @@ class ShiftTest(CafeTest):
 
 class PersonaTest(CafeTest):
     def test_user_file_wins_over_bundled(self):
-        write(f"{CAFE}/personas/kurumi.md", "---\nname: My Kurumi\n---\nMine.\n")
-        self.assertEqual(maidstate.display_name("kurumi"), "My Kurumi")
+        write(f"{CAFE}/personas/noname.md", "---\nname: My Maid\n---\nMine.\n")
+        self.assertEqual(maidstate.display_name("noname"), "My Maid")
         self.assertEqual(maidstate.persona_body(
-            maidstate.persona_file("kurumi")).strip(), "Mine.")
+            maidstate.persona_file("noname")).strip(), "Mine.")
 
     def test_retirement_stub_does_not_shadow_explicit_pick(self):
-        write(f"{CAFE}/personas/kurumi.md", "---\noff_duty: true\n---\n")
-        path = maidstate.persona_file("kurumi")
+        write(f"{CAFE}/personas/noname.md", "---\noff_duty: true\n---\n")
+        path = maidstate.persona_file("noname")
         self.assertTrue(path.startswith(f"{FAKE_PLUGIN}/maids"))
-        self.assertIn("clingy", maidstate.persona_body(path))
+        self.assertIn("no name", maidstate.persona_body(path))
 
     def test_missing_persona(self):
         self.assertIsNone(maidstate.persona_file("ghost"))
@@ -125,24 +123,29 @@ class PersonaTest(CafeTest):
 
 
 class CastPoolTest(CafeTest):
-    def test_default_pool_is_bundled(self):
-        self.assertEqual(load_persona.cast_pool(), ["kokona", "kurumi"])
+    def test_empty_cafe_falls_back_to_noname(self):
+        self.assertEqual(load_persona.cast_pool(), ["noname"])
 
-    def test_user_persona_joins_and_overrides(self):
+    def test_hiring_anyone_relieves_noname(self):
         write(f"{CAFE}/personas/mymaid.md", "---\nname: M\n---\nbody\n")
-        self.assertEqual(load_persona.cast_pool(), ["kokona", "kurumi", "mymaid"])
+        self.assertEqual(load_persona.cast_pool(), ["mymaid"])
 
-    def test_off_duty_variants_and_stub_retirement(self):
+    def test_everyone_retired_brings_noname_back(self):
         for value in ("true", "True", "yes"):
-            write(f"{CAFE}/personas/kurumi.md", f"---\noff_duty: {value}\n---\n")
-            self.assertEqual(load_persona.cast_pool(), ["kokona"], value)
+            write(f"{CAFE}/personas/mymaid.md", f"---\noff_duty: {value}\n---\n")
+            self.assertEqual(load_persona.cast_pool(), ["noname"], value)
+
+    def test_stub_retires_noname_too(self):
+        write(f"{CAFE}/personas/noname.md", "---\noff_duty: true\n---\n")
+        self.assertEqual(load_persona.cast_pool(), [])
 
     def test_uppercase_filename_skipped(self):
         write(f"{CAFE}/personas/MyMaid.md", "---\nname: M\n---\nbody\n")
-        self.assertEqual(load_persona.cast_pool(), ["kokona", "kurumi"])
+        self.assertEqual(load_persona.cast_pool(), ["noname"])
 
     def test_builtin_cast_false(self):
         set_config({"builtin_cast": False})
+        self.assertEqual(load_persona.cast_pool(), [])
         write(f"{CAFE}/personas/mymaid.md", "---\nname: M\n---\nbody\n")
         self.assertEqual(load_persona.cast_pool(), ["mymaid"])
 
@@ -184,8 +187,8 @@ class StatusLinesTest(CafeTest):
         self.assertEqual(maidstate.status_lines("sid"), [])
 
     def test_bare_name_before_first_look(self):
-        write(f"{CAFE}/sessions/sid/on-shift", "kurumi")
-        self.assertEqual(maidstate.status_lines("sid"), ["くるみ"])
+        write(f"{CAFE}/sessions/sid/on-shift", "noname")
+        self.assertEqual(maidstate.status_lines("sid"), ["？？？"])
 
     def test_look_rows_and_quote_wrap(self):
         write(f"{CAFE}/sessions/sid/on-shift", "kurumi")

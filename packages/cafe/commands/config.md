@@ -14,7 +14,8 @@ is optional:
   `"none"` = nobody on shift (no persona injected).
 - `personas_dir` — folder holding the user's own persona `*.md` files
   (default `~/.claude/cafe/personas`).
-- `builtin_cast` — `false` removes all bundled maids from the draw pool.
+- `builtin_cast` — `false` drops the bundled fallback maid (`noname`), so an
+  empty personas_dir means nobody on shift instead of her.
 - `festivals` — a path to a JSON festival pack replaces the built-in maid-café
   calendar; `false` drops the festival segment. A pack is one flat object of
   fixed dates: `{"02-14": "西洋情人節"}`.
@@ -26,8 +27,8 @@ is optional:
 
 Individual retirement is per-persona, not in config: `off_duty: true` in a
 persona's frontmatter takes her out of the random draw (an explicit pick still
-works). To retire a **bundled** maid, write a same-id stub in personas_dir —
-the override wins:
+works). The fallback maid retires the same way — a `noname.md` stub in
+personas_dir containing only that frontmatter:
 
 ```
 ---
@@ -37,10 +38,16 @@ off_duty: true
 
 Facts you need:
 
-- Bundled ids: the `*.md` filenames in `${CLAUDE_PLUGIN_ROOT}/maids/` (if that
-  variable isn't expanded, use the newest `~/.claude/plugins/cache/*/cafe/*/maids/`).
+- The draw pool is personas_dir — maids are **hired from claudecafe.dev**
+  ("copy source" on a maid's page → save as `personas_dir/<id>.md`; the
+  Chinese versions live under claudecafe.dev/zh). If the user wants more
+  maids, that's where to send them — or fetch a page yourself with
+  `curl -H "Accept: text/markdown" https://claudecafe.dev/<id>` and save it,
+  with their go-ahead.
+- While personas_dir has nobody on duty, the bundled fallback maid `noname`
+  (in `${CLAUDE_PLUGIN_ROOT}/maids/`) keeps the café open.
 - A persona file: **lowercase filename = id**, YAML frontmatter with `name:`,
-  body = the persona instructions. Same id as a bundled maid overrides her.
+  body = the persona instructions.
 - This window's shift state: `~/.claude/cafe/sessions/<session_id>/on-shift`
   (read-only here — for showing who's on shift, not for changing it).
 - `CLAUDE_MAID` / `CLAUDE_MAID_LANG` env vars override config per run. Config
@@ -57,6 +64,6 @@ apply it.
 
 Without arguments: read config.json, personas_dir and the current shift, show a
 short status (who's on shift, lang, who's in the draw pool, who's retired),
-then use AskUserQuestion to offer: change the language / retire or rehire a
-maid (edit her off_duty frontmatter; for a bundled maid, create or delete the
-stub override) / scaffold a new persona in personas_dir.
+then use AskUserQuestion to offer: hire a maid from claudecafe.dev / change
+the language / retire or rehire a maid (edit her off_duty frontmatter) /
+scaffold a new persona in personas_dir.

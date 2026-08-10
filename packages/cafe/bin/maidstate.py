@@ -14,15 +14,16 @@ ROOT = f"{HOME}/.claude/cafe"  # the plugin's one home under ~/.claude, named af
 CONFIG = f"{ROOT}/config.json"  # all persistent settings in one file
 DIARY = f"{ROOT}/diary.md"  # one shared handover diary for the whole café
 
-# This file lives in <plugin>/bin/, so maids/ (the bundled cast) is next door. Resolved relatively;
-# version bumps in the cache path don't matter.
+# This file lives in <plugin>/bin/, so maids/ (the bundled fallback maid) is
+# next door. Resolved relatively; version bumps in the cache path don't matter.
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 def config():
     """~/.claude/cafe/config.json — every key optional:
     lang (reply language), maid (fixed pick, "none" = nobody),
     personas_dir (folder of the user's own personas),
-    builtin_cast (false = the bundled maids sit out the draw entirely).
+    builtin_cast (false = drop the bundled fallback maid too, so an empty
+    personas_dir means nobody on shift).
     Individual retirement lives in each persona's own frontmatter: off_duty."""
     try:
         with open(CONFIG, encoding="utf-8") as f:

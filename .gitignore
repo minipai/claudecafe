@@ -1,6 +1,5 @@
 node_modules/
 notes/
-packages/cafe/maids/
 __pycache__/
 
 # desktop 的 vite build 產物。它平常靠 apps/desktop/.gitignore 擋，但那個檔案
