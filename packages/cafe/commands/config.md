@@ -19,8 +19,9 @@ is optional:
 - `festivals` — a path to a JSON festival pack replaces the built-in maid-café
   calendar; `false` drops the festival segment. A pack is one flat object of
   fixed dates: `{"02-14": "西洋情人節"}`.
-- `look` — `false` stops the background status-line scene generation (one of
-  the two features that spend API credit; the other is `diary`).
+- `look` — `true` turns on the background status-line scene generation
+  (default off; it spends API credit, as does `diary`). `/cafe:statusline`
+  is the guided way — it wires the display and sets this key.
 - `diary` — `false` skips the handover-diary line at session end.
 - `greeting` — `false` drops the session-start briefing (greeting, weather,
   diary recap, mood cue); housekeeping still runs.

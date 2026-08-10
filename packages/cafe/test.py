@@ -290,8 +290,8 @@ class HookProcessTest(CafeTest):
         self.assertEqual(r.returncode, 0)
         self.assertFalse(os.path.exists(maidstate.DIARY))
 
-    def test_look_toggle_skips_before_any_state(self):
-        set_config({"look": False, "maid": "testmaid"})
+    def test_look_off_by_default_skips_before_any_state(self):
+        set_config({"maid": "testmaid"})  # no "look" key — opt-in, so it bails
         r = self._run("hooks/look-update.py",
                       stdin=json.dumps({"session_id": "look-sid"}),
                       env=self.SYS_PATH)

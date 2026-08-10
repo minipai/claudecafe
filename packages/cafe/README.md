@@ -2,8 +2,9 @@
 
 Claude Café in **one plugin**: a maid on shift (persona injected at session
 start) plus the liveliness layer (greeting, per-turn time, mood marker, a
-status-line "look" and a shared handover diary). One command, `/cafe:config`,
-for settings; everything else is hooks.
+status-line "look" and a shared handover diary). Two commands — `/cafe:config`
+for settings, `/cafe:statusline` to wire up the status line; everything else
+is hooks.
 
 The plugin is the café's operating system; the maids themselves are **hired
 from [claudecafe.dev](https://claudecafe.dev)** — download a maid's page
@@ -16,7 +17,7 @@ the place open.
 | `load-persona.py` | `SessionStart` hook | Puts a maid on shift: injects the chosen persona's body (frontmatter stripped) plus the reply language. Shift order: `CLAUDE_MAID` env → this session's `on-shift` file → config `maid` → a draw from the maids you've hired into `personas/`; while nobody is hired, the bundled nameless maid keeps the café open. `none` = nobody on shift (no persona injected — bring your own via `CLAUDE.md`). |
 | `session-greeting.py` | `SessionStart` hook | Hands over the local time (no scripted wording — a hardcoded "it is getting late" never expires), the weather (wttr.in, 2s cap, skipped offline), the recent handover-diary entries, and the mood-marker cue. Also starts the shift tidy: resets the shift clock and last shift's look, and sweeps session state older than 7 days. |
 | `current-time.py` | `UserPromptSubmit` hook | A per-turn status line for the model: current time ｜ hours on shift ｜ today's commits ｜ festival, so the clock never goes stale. |
-| `look-update.py` | `Stop` hook | Has the maid "check the mirror": forks a background `claude -p --model haiku` that writes a scene line + a dialogue line to `look.txt`. The maid's mood is read straight off the transcript (the last `【 word kaomoji 】` marker). Regenerates after every tool-using turn; chat-only turns re-check every 50k tokens of context growth. |
+| `look-update.py` | `Stop` hook | Has the maid "check the mirror": forks a background `claude -p --model haiku` that writes a scene line + a dialogue line to `look.txt`. The maid's mood is read straight off the transcript (the last `【 word kaomoji 】` marker). Regenerates after every tool-using turn; chat-only turns re-check every 50k tokens of context growth. Opt-in (`look: true`, set by `/cafe:statusline`) — off, it exits before spending anything. |
 | `diary-write.py` | `SessionEnd` hook | The maid on shift leaves one line in the shared handover diary — written by a detached background `claude -p --model haiku` from a transcript digest, so it's in her voice. |
 | `link-bin.py` | `SessionStart` hook | Keeps `~/.claude/cafe/bin` symlinked at this version's `bin/`, so status-line config survives version bumps. |
 
@@ -57,9 +58,10 @@ English`). Underneath it's one optional file, `~/.claude/cafe/config.json`
   it; `false` drops the festival segment entirely. A pack is one flat object
   of fixed dates: `{"02-14": "西洋情人節", "10-10": "國慶日"}` — movable feasts
   (lunar calendar, nth-weekday rules) are out of scope.
-- `look` — `false` stops the background mirror shots; the status line falls
-  back to the maid's bare name. This and `diary` are the two features that
-  spend API credit (a `claude -p --model haiku` call each).
+- `look` — `true` turns on the background mirror shots (default off — they
+  spend API credit, a `claude -p --model haiku` call each, and are invisible
+  until a status line displays them). `/cafe:statusline` sets this up
+  end to end; without it the status line shows the maid's bare name.
 - `diary` — `false` skips the handover-diary line at session end.
 - `greeting` — `false` drops the session-start briefing (greeting, weather,
   diary recap, mood-marker cue). Housekeeping (shift clock, session sweep)
@@ -93,7 +95,11 @@ same maid. Use `CLAUDE_MAID=kokona claude` as a one-shot override at launch.
 
 ## Status line
 
-Simplest: the native `statusLine` runs one script that prints both rows
+`/cafe:statusline` does the whole thing — it detects your setup (native
+`statusLine`, ccstatusline, or nothing yet), wires the display in, and flips
+`look` on. The manual version, if you'd rather:
+
+The native `statusLine` runs one script that prints both rows
 (the scene's subject is the maid's own name; the dialogue rides below):
 
 ```json
@@ -115,6 +121,8 @@ plugin path — that breaks on every update):
 ```
 
 Nobody on shift means every widget prints nothing and the rows collapse.
+Wiring it by hand? Also set `"look": true` in `~/.claude/cafe/config.json` —
+generation stays off until someone can see it.
 
 ## No build step
 
