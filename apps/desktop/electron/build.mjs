@@ -40,6 +40,8 @@ function stageCafePlugin() {
  */
 export async function buildElectron() {
   stageCafePlugin()
+  // The main process resolves it next to itself, bundled or not.
+  fs.copyFileSync(path.join(here, '../assets/app-icon.png'), path.join(here, '../dist-electron/app-icon.png'))
 
   await build({
     entryPoints: ['electron/main.ts'],

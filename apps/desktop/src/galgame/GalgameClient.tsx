@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { Stage } from './Stage'
 import { SpriteLayer } from './SpriteLayer'
+import { Backdrop } from './Backdrop'
 import { DialogueBox } from './DialogueBox'
 import { ReportView } from './ReportView'
 import { ChatHistory } from './ChatHistory'
@@ -501,10 +502,13 @@ export function GalgameClient() {
   return (
     <>
       <Stage>
+        <Backdrop />
         <TodoBoard todos={historyOpen || readerOpen ? [] : todos} />
         <SpriteLayer expression={expression} fullBody={historyOpen} />
 
-        <div className="absolute bottom-10 left-1/2 z-[6] w-[min(760px,92vw)] -translate-x-1/2">
+        {/* The band above the box is where the whispers float; there is nothing
+            to click there, so the pointer goes through it too. */}
+        <div data-ghost className="absolute bottom-10 left-1/2 z-[6] w-[min(760px,92vw)] -translate-x-1/2">
           <WhisperZone whispers={whispers} />
           {!readerOpen && !historyOpen && !permissionExpanded && (
             <DialogueBox

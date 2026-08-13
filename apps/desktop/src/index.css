@@ -118,8 +118,10 @@
   * {
     @apply border-border outline-ring/50;
     }
+  /* The window itself is transparent, so nothing under the scene may paint a
+     background — what shows through behind her is the master's desktop. */
   body {
-    @apply bg-background text-foreground;
+    @apply bg-transparent text-foreground;
     }
   html {
     @apply font-sans;
@@ -194,16 +196,7 @@
   padding: 0;
 }
 
-/* Dragging the window: the strip at the top of the stage moves it, and anything
-   the master can actually click stays clickable. */
-.titlebar {
-  -webkit-app-region: drag;
-}
+/* The window has no frame and no strip to grab: it is moved by dragging the
+   artwork — ことね or the print behind her — which the main process does by
+   following the cursor. */
 
-button,
-a,
-input,
-textarea,
-[role='button'] {
-  -webkit-app-region: no-drag;
-}

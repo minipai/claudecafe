@@ -1,9 +1,13 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage, screen } from 'electron'
 import { MaidSession } from './maid'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
+
+/** Her, in the Dock. Run from a checkout there is no bundle to take an icon
+ * from, so the app sets its own — otherwise she stands there as Electron. */
+const ICON = path.join(here, 'app-icon.png')
 
 /** One window, one project — the folder is chosen outside the app, like a VS Code window. */
 const cwd = readFolderArg() ?? process.cwd()
@@ -19,8 +23,16 @@ function openWindow() {
     height: 800,
     minWidth: 720,
     minHeight: 560,
-    backgroundColor: '#ffffff',
-    titleBarStyle: 'hiddenInset',
+    icon: ICON,
+    // Nothing behind her at all: no frost, no plate, no window shadow to give
+    // away where the empty half of the window is. What makes that liveable is
+    // the pointer falling through it (see cafe:click-through below).
+    transparent: true,
+    hasShadow: false,
+    backgroundColor: '#00000000',
+    // No frame at all, so no traffic lights hanging over the desktop. She is
+    // the handle: dragging her moves the window (see cafe:drag-start).
+    frame: false,
     webPreferences: {
       preload: path.join(here, 'preload.cjs'),
       additionalArguments: [`--cafe-cwd=${cwd}`],
@@ -37,6 +49,30 @@ function openWindow() {
   ipcMain.on('cafe:new-session', () => session.reset())
   ipcMain.on('cafe:refresh', () => session.refresh())
   ipcMain.on('cafe:configure', (_event, patch) => session.configure(patch))
+  // The scene says when the pointer is over nothing; forwarding keeps the moves
+  // coming, which is how it knows to take the pointer back.
+  ipcMain.on('cafe:click-through', (_event, through: boolean) => {
+    window.setIgnoreMouseEvents(through, { forward: true })
+  })
+
+  // Picking her up. The window follows the cursor from where it was grabbed,
+  // read from the screen rather than from mouse deltas — the window moving out
+  // from under the pointer would otherwise chase its own tail.
+  let carrying: NodeJS.Timeout | null = null
+  ipcMain.on('cafe:drag-start', () => {
+    if (carrying) clearInterval(carrying)
+    const grabbed = screen.getCursorScreenPoint()
+    const from = window.getBounds()
+    carrying = setInterval(() => {
+      const now = screen.getCursorScreenPoint()
+      window.setPosition(from.x + now.x - grabbed.x, from.y + now.y - grabbed.y)
+    }, 16)
+  })
+  ipcMain.on('cafe:drag-end', () => {
+    if (carrying) clearInterval(carrying)
+    carrying = null
+  })
+  window.on('closed', () => carrying && clearInterval(carrying))
   window.on('closed', () => session.close())
 
   const devServer = process.env.VITE_DEV_SERVER_URL
@@ -48,6 +84,9 @@ function openWindow() {
   }
 }
 
-void app.whenReady().then(openWindow)
+void app.whenReady().then(() => {
+  app.dock?.setIcon(nativeImage.createFromPath(ICON))
+  openWindow()
+})
 
 app.on('window-all-closed', () => app.quit())

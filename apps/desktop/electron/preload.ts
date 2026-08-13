@@ -11,6 +11,9 @@ const bridge: CafeBridge = {
   newSession: () => ipcRenderer.send('cafe:new-session'),
   refresh: () => ipcRenderer.send('cafe:refresh'),
   configure: (patch) => ipcRenderer.send('cafe:configure', patch),
+  clickThrough: (through) => ipcRenderer.send('cafe:click-through', through),
+  startDrag: () => ipcRenderer.send('cafe:drag-start'),
+  endDrag: () => ipcRenderer.send('cafe:drag-end'),
   listen: (onEvent) => {
     const forward = (_event: unknown, payload: BridgeEvent) => onEvent(payload)
     ipcRenderer.on('cafe:event', forward)

@@ -59,6 +59,12 @@ export type CafeBridge = {
   /** Change what the session runs as. Model and mode take effect at once; a new
    * effort is picked up on the next turn. */
   configure(patch: Partial<SessionSettings>): void
+  /** Hand the pointer to whatever is behind the window, or take it back. The
+   * window is transparent, so its empty half should not catch clicks. */
+  clickThrough(through: boolean): void
+  /** Picking her up moves the window; letting go puts it down. */
+  startDrag(): void
+  endDrag(): void
   listen(onEvent: (event: BridgeEvent) => void): () => void
 }
 
