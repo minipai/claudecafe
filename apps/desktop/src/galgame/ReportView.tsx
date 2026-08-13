@@ -56,7 +56,9 @@ export function ReportView({ shortline, report, onClose, actions }: ReportViewPr
       >
         <div
           className="report-md mx-auto max-w-[620px]"
-          dangerouslySetInnerHTML={{ __html: marked.parse(report, { async: false }) }}
+          // Line breaks are kept: a slash command prints plain text whose lines
+          // are the layout, and markdown would otherwise run them together.
+          dangerouslySetInnerHTML={{ __html: marked.parse(report, { async: false, breaks: true }) }}
         />
       </div>
 

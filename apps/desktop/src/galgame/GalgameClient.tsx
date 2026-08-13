@@ -7,6 +7,11 @@ import { SpriteLayer } from './SpriteLayer'
 import { Backdrop } from './Backdrop'
 import { DialogueBox } from './DialogueBox'
 import { ReportView } from './ReportView'
+import { UsagePanel } from './UsagePanel'
+import { ContextPanel } from './ContextPanel'
+import { AgentsPanel } from './AgentsPanel'
+import { McpPanel } from './McpPanel'
+import { StatusPanel } from './StatusPanel'
 import { ChatHistory } from './ChatHistory'
 import { DemoRow } from './DemoRow'
 import { InputBar } from './InputBar'
@@ -27,6 +32,7 @@ import {
   isLive,
   newSession,
   query,
+  type CafeCommand,
   type Look,
   type PermissionResult,
   type ModelChoice,
@@ -35,6 +41,11 @@ import {
   type SessionSettings,
   type Todo,
 } from '@/agent'
+
+/** The slash commands this window answers itself, instead of letting the CLI
+ * print a flattened copy of the same figures. */
+const SELF_ANSWERED = ['/usage', '/context', '/agents', '/mcp', '/status'] as const
+type SelfAnswered = (typeof SELF_ANSWERED)[number]
 
 type PermissionRequest = {
   ask: PermissionAsk
@@ -103,6 +114,9 @@ export function GalgameClient() {
   const [compacting, setCompacting] = useState(false)
   const [settings, setSettings] = useState<SessionSettings>({ model: null, effort: 'high', mode: 'default' })
   const [models, setModels] = useState<ModelChoice[]>([])
+  const [commands, setCommands] = useState<CafeCommand[]>([])
+  /** The slash command the window is answering itself, if any. */
+  const [panel, setPanel] = useState<SelfAnswered | null>(null)
   // A real session starts empty; the canned backlog is only there to give the
   // mock something to show.
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
@@ -203,6 +217,8 @@ export function GalgameClient() {
       } else if (event.kind === 'settings') {
         setSettings(event.settings)
         setModels(event.models)
+      } else if (event.kind === 'commands') {
+        setCommands(event.commands)
       } else if (event.kind === 'backlog') {
         setChatMessages(
           event.lines.map((entry) =>
@@ -422,6 +438,17 @@ export function GalgameClient() {
           setLook(msg.look)
           setLookUnread(true)
           break
+        case 'command_output':
+          // The café's own paperwork, handed over on the spot: it is not
+          // dialogue, so nothing is typed into the box and her face stays put.
+          appendEvent(msg.label, 'printed its own answer')
+          setReport({ label: `${msg.label} →`, body: msg.body })
+          setCtaVisible(true)
+          setReaderOpen(true)
+          // Nothing follows it — the turn asked no model and has no result to
+          // put her back on her feet.
+          setPhase('done')
+          break
         case 'todos':
           // The board is part of the scene: it ticks over where it happened,
           // not while the master is still reading two lines back.
@@ -494,9 +521,20 @@ export function GalgameClient() {
     run(prompt)
   }
 
+  /**
+   * A slash command the window answers better than the session does. What
+   * these print in a terminal is a flattening of figures the session will hand
+   * over whole, so the panel asks for those instead of running a turn.
+   */
   function handleSubmit(text: string) {
-    if (!text.trim()) return
-    run(text)
+    const said = text.trim()
+    if (!said) return
+    const answered = SELF_ANSWERED.find((command) => command === said)
+    if (answered) {
+      setPanel(answered)
+      return
+    }
+    run(said)
   }
 
   return (
@@ -504,13 +542,13 @@ export function GalgameClient() {
       <Stage>
         <Backdrop />
         <TodoBoard todos={historyOpen || readerOpen ? [] : todos} />
-        <SpriteLayer expression={expression} fullBody={historyOpen} />
+        <SpriteLayer expression={expression} />
 
         {/* The band above the box is where the whispers float; there is nothing
             to click there, so the pointer goes through it too. */}
         <div data-ghost className="absolute bottom-10 left-1/2 z-[6] w-[min(760px,92vw)] -translate-x-1/2">
           <WhisperZone whispers={whispers} />
-          {!readerOpen && !historyOpen && !permissionExpanded && (
+          {!readerOpen && !permissionExpanded && (
             <DialogueBox
               expression={expression}
               line={line}
@@ -559,6 +597,7 @@ export function GalgameClient() {
                   )}
                   <InputBar
                     isBusy={phase === 'working'}
+                    commands={commands}
                     onSubmit={handleSubmit}
                     onStop={stop}
                   />
@@ -583,6 +622,12 @@ export function GalgameClient() {
           />
         )}
       </AnimatePresence>
+
+      <UsagePanel open={panel === '/usage'} onClose={() => setPanel(null)} />
+      <ContextPanel open={panel === '/context'} onClose={() => setPanel(null)} />
+      <AgentsPanel open={panel === '/agents'} onClose={() => setPanel(null)} />
+      <McpPanel open={panel === '/mcp'} onClose={() => setPanel(null)} />
+      <StatusPanel open={panel === '/status'} onClose={() => setPanel(null)} />
 
       <AnimatePresence>
         {readerOpen && report && (

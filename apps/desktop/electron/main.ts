@@ -49,6 +49,11 @@ function openWindow() {
   ipcMain.on('cafe:new-session', () => session.reset())
   ipcMain.on('cafe:refresh', () => session.refresh())
   ipcMain.on('cafe:configure', (_event, patch) => session.configure(patch))
+  ipcMain.handle('cafe:usage', () => session.usage())
+  ipcMain.handle('cafe:context', () => session.context())
+  ipcMain.handle('cafe:agents', () => session.agents())
+  ipcMain.handle('cafe:mcp', () => session.mcpServers())
+  ipcMain.handle('cafe:status', () => session.status())
   // The scene says when the pointer is over nothing; forwarding keeps the moves
   // coming, which is how it knows to take the pointer back.
   ipcMain.on('cafe:click-through', (_event, through: boolean) => {

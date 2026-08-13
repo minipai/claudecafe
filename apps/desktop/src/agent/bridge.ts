@@ -28,6 +28,76 @@ export type SessionSettings = {
 /** One model the account can actually pick, as the SDK reports it. */
 export type ModelChoice = { value: string; label: string; efforts: SessionSettings['effort'][] }
 
+/** One slash command this folder answers to — the CLI's own list, so it covers
+ * built-ins, the project's commands, its skills and its plugins alike. */
+export type CafeCommand = { name: string; description: string; argumentHint: string }
+
+/** One rate-limit window as the plan reports it — the bars the terminal's
+ * /usage panel draws, with nothing added that was not measured. */
+export type UsageWindow = { label: string; percent: number | null; resetsAt: string | null }
+
+/** What /usage is really made of, taken from the session rather than from the
+ * text the command prints. */
+export type UsageReport = {
+  /** This session: what it cost and what it changed. */
+  cost: number
+  linesAdded: number
+  linesRemoved: number
+  windows: UsageWindow[]
+  /** The last 7 days on this machine, as the CLI scans them — approximate by
+   * its own admission, and absent for accounts with no plan limits. */
+  week: {
+    requests: number
+    sessions: number
+    behaviours: { label: string; pct: number }[]
+    skills: { name: string; pct: number }[]
+    agents: { name: string; pct: number }[]
+  } | null
+}
+
+/** Where the context window has gone, as the session accounts for it. */
+export type ContextReport = {
+  model: string
+  totalTokens: number
+  maxTokens: number
+  percentage: number
+  /** Deferred means loaded on demand — it is counted, but only some of it is
+   * ever in the prompt at once. */
+  categories: { name: string; tokens: number; deferred: boolean }[]
+  memoryFiles: { path: string; tokens: number }[]
+  mcpTools: { name: string; server: string; tokens: number }[]
+}
+
+/** One subagent this folder can call on. */
+export type Subagent = { name: string; description: string; model: string | null }
+
+/** One MCP server, as the session finds it. */
+export type McpServer = {
+  name: string
+  status: 'connected' | 'failed' | 'needs-auth' | 'pending' | 'disabled'
+  /** Where it was configured — project, user, local. */
+  scope: string | null
+  tools: number
+  error: string | null
+}
+
+/** Who she is signed in as and what this window runs on. */
+export type StatusReport = {
+  cwd: string
+  account: {
+    email: string | null
+    organization: string | null
+    plan: string | null
+    /** Which backend the session authenticates against. */
+    provider: string | null
+  }
+  outputStyle: string
+  /** What the session has to work with, counted rather than listed. */
+  commands: number
+  agents: number
+  mcpServers: number
+}
+
 /** A line from the conversation this window reopened on. */
 export type BacklogLine = { role: 'user' | 'assistant' | 'event'; content: string; at: number }
 
@@ -40,6 +110,9 @@ export type BridgeEvent =
    * the backlog survives a reload. */
   | { kind: 'backlog'; lines: BacklogLine[] }
   | { kind: 'settings'; settings: SessionSettings; models: ModelChoice[] }
+  /** What `/` offers. Sent when the session says so — a skill picked up while
+   * she works changes the list mid-conversation. */
+  | { kind: 'commands'; commands: CafeCommand[] }
   | { kind: 'message'; runId: string; message: AgentMessage }
   | { kind: 'ask-permission'; runId: string; askId: string; toolName: string; input: Record<string, unknown> }
   | { kind: 'ask-question'; runId: string; askId: string; question: Question }
@@ -59,6 +132,17 @@ export type CafeBridge = {
   /** Change what the session runs as. Model and mode take effect at once; a new
    * effort is picked up on the next turn. */
   configure(patch: Partial<SessionSettings>): void
+  /** What the plan and this session have been spent on. Null when the session
+   * cannot say — an API key has no plan windows to report. */
+  usage(): Promise<UsageReport | null>
+  /** What is filling the context window right now. */
+  context(): Promise<ContextReport | null>
+  /** The subagents this folder can call on. */
+  agents(): Promise<Subagent[]>
+  /** Every configured MCP server and whether it answered. */
+  mcpServers(): Promise<McpServer[]>
+  /** Who she is signed in as, and what this window is working on. */
+  status(): Promise<StatusReport | null>
   /** Hand the pointer to whatever is behind the window, or take it back. The
    * window is transparent, so its empty half should not catch clicks. */
   clickThrough(through: boolean): void

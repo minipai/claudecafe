@@ -3,8 +3,16 @@ import type { AgentMessage, Report, Todo } from '../src/agent/types'
 import { EXPRESSION_TOOL, REPORT_TOOL } from './tools'
 import { faceFor, type Expression } from '../src/agent/expressions'
 
+/** The model a locally-answered slash command comes back as: the CLI printed it
+ * itself, without asking the model anything. */
+const LOCAL_COMMAND = '<synthetic>'
+
 /** A run's worth of translation state — one turn, from prompt to result. */
 export class Turn {
+  /** Set when the CLI answered the turn itself, so the result that follows is
+   * the same text coming back round and is not said again. */
+  private printed = false
+
   /** The last spoken text block, held back so it can become the result line
    * instead of being said twice — with the face she signed it with, which
    * belongs to that line and not to the one still on screen. */
@@ -24,6 +32,10 @@ export class Turn {
   private mood: string | null = null
   /** The last line already put on screen, so the result does not repeat it. */
   private spoken: string | null = null
+
+  /** The prompt this turn was started with — only read to name the slash
+   * command, when the turn turns out to be one. */
+  constructor(private prompt: string = '') {}
 
   /** Turns one SDK message into however many the galgame UI understands. */
   read(sdk: SDKMessage): AgentMessage[] {
@@ -60,7 +72,24 @@ export class Turn {
     return []
   }
 
+  /**
+   * A slash command the CLI answers by itself — /usage, /context, /model. It
+   * arrives as an assistant message from `<synthetic>`, which is the tell: no
+   * model was asked, so the text is the terminal's, not hers. Every one of them
+   * comes back this way, so they share this one door into the scene.
+   */
+  private readPrinted(sdk: Extract<SDKMessage, { type: 'assistant' }>): AgentMessage[] {
+    this.printed = true
+    const body = sdk.message.content
+      .flatMap((block) => (block.type === 'text' ? [block.text] : []))
+      .join('\n\n')
+      .trim()
+    if (!body) return []
+    return [{ type: 'command_output', label: this.prompt.trim().split(/\s+/)[0], body }]
+  }
+
   private readAssistant(sdk: Extract<SDKMessage, { type: 'assistant' }>): AgentMessage[] {
+    if (sdk.message.model === LOCAL_COMMAND) return this.readPrinted(sdk)
     const out: AgentMessage[] = []
 
     for (const block of sdk.message.content) {
@@ -148,6 +177,12 @@ export class Turn {
   }
 
   private readResult(sdk: Extract<SDKMessage, { type: 'result' }>): AgentMessage[] {
+    // The command printed its own answer; the result is that same text coming
+    // back round, and she never said any of it.
+    if (this.printed) {
+      this.printed = false
+      return []
+    }
     const held = this.pendingLine
     const ending = held ?? (sdk.subtype === 'success' ? readMood(sdk.result) : null)
     const text = ending?.text ?? ''

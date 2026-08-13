@@ -1,13 +1,32 @@
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { query, type Options, type PermissionResult, type Query, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk'
+import {
+  query,
+  type Options,
+  type PermissionResult,
+  type Query,
+  type SDKControlGetUsageResponse,
+  type SDKUserMessage,
+  type SlashCommand,
+} from '@anthropic-ai/claude-agent-sdk'
 import { Turn } from './translate'
 import { cafeTools, EXPRESSION_TOOL, REPORT_TOOL } from './tools'
 import { watchLook } from './look'
 import { forgetSession, lastConversation, rememberSession } from './history'
 import { readGit } from './status'
-import type { BridgeEvent, ModelChoice, SessionSettings } from '../src/agent/bridge'
+import type {
+  BridgeEvent,
+  CafeCommand,
+  ContextReport,
+  McpServer,
+  ModelChoice,
+  SessionSettings,
+  StatusReport,
+  Subagent,
+  UsageReport,
+  UsageWindow,
+} from '../src/agent/bridge'
 import type { Question } from '../src/agent/types'
 
 /** How much context the turn carried: everything the model was handed as prompt. */
@@ -16,6 +35,53 @@ function contextTokens(usage: { input_tokens?: number; cache_read_input_tokens?:
 }
 
 type Emit = (event: BridgeEvent) => void
+
+/** The plan's windows, in the order the terminal lists them: the rolling
+ * session first, then the week, then whatever the week is split by model into. */
+function readWindows(limits: SDKControlGetUsageResponse['rate_limits']): UsageWindow[] {
+  if (!limits) return []
+  const named: UsageWindow[] = [
+    { label: 'Session', percent: limits.five_hour?.utilization ?? null, resetsAt: limits.five_hour?.resets_at ?? null },
+    { label: 'This week', percent: limits.seven_day?.utilization ?? null, resetsAt: limits.seven_day?.resets_at ?? null },
+  ]
+  const perModel = (limits.model_scoped ?? []).map((window) => ({
+    label: `This week · ${window.display_name}`,
+    percent: window.utilization ?? null,
+    resetsAt: window.resets_at ?? null,
+  }))
+  return [...named, ...perModel].filter((window) => window.percent !== null)
+}
+
+/** What the CLI calls a behaviour, said in words rather than in keys. */
+const BEHAVIOUR: Record<string, string> = {
+  cache_miss: 'Sessions running 8+ hours',
+  long_context: 'Turns over 150k context',
+  subagent_heavy: 'Subagent-heavy sessions',
+  high_parallel: '4+ sessions at once',
+  cron: 'Scheduled runs',
+}
+
+function readUsage(report: SDKControlGetUsageResponse): UsageReport {
+  const week = report.behaviors?.week
+  return {
+    cost: report.session.total_cost_usd,
+    linesAdded: report.session.total_lines_added,
+    linesRemoved: report.session.total_lines_removed,
+    windows: readWindows(report.rate_limits),
+    week: week
+      ? {
+          requests: week.request_count,
+          sessions: week.session_count,
+          behaviours: week.behaviors.map((entry) => ({
+            label: BEHAVIOUR[entry.key] ?? entry.key,
+            pct: entry.pct,
+          })),
+          skills: week.skills,
+          agents: week.agents,
+        }
+      : null,
+  }
+}
 
 /** The café plugin staged next to the bundled main process at build time. It is
  * loaded by name, so a copy installed from the marketplace steps aside for it
@@ -47,6 +113,7 @@ export class MaidSession {
   private sessionId: string | null = null
   private settings: SessionSettings = { model: null, effort: 'high', mode: 'default' }
   private models: ModelChoice[] = []
+  private commands: CafeCommand[] = []
 
   constructor(private cwd: string, private emit: Emit) {}
 
@@ -64,6 +131,7 @@ export class MaidSession {
     if (!this.stream) this.open()
     void this.reportStatus()
     this.emit({ kind: 'settings', settings: this.settings, models: this.models })
+    this.emit({ kind: 'commands', commands: this.commands })
   }
 
   /** Model and mode can be turned while she is standing there; effort is fixed
@@ -86,7 +154,7 @@ export class MaidSession {
 
   ask(runId: string, prompt: string) {
     if (!this.stream) this.open()
-    this.runs.push({ runId, turn: new Turn() })
+    this.runs.push({ runId, turn: new Turn(prompt) })
     this.prompts.push(prompt)
   }
 
@@ -159,15 +227,21 @@ export class MaidSession {
       ...(this.settings.model ? { model: this.settings.model } : {}),
     }
     this.stream = query({ prompt: this.prompts, options })
-    // The session answers this as soon as it is connected; waiting for the init
+    // The session answers these as soon as it is connected; waiting for the init
     // message would mean waiting for the master to say something first.
     void this.readModels(this.stream)
+    void this.readCommands(this.stream)
     void this.pump(this.stream)
   }
 
   private async pump(stream: Query) {
     try {
       for await (const sdk of stream) {
+        // A skill discovered while she works changes what `/` offers; the
+        // session pushes the whole list again rather than a delta.
+        if (sdk.type === 'system' && sdk.subtype === 'commands_changed') {
+          this.tellCommands(sdk.commands)
+        }
         if (sdk.type === 'system' && sdk.subtype === 'init') {
           this.sessionId = sdk.session_id
           rememberSession(this.cwd, sdk.session_id)
@@ -203,6 +277,105 @@ export class MaidSession {
       efforts: model.supportedEffortLevels ?? [],
     }))
     this.emit({ kind: 'settings', settings: this.settings, models: this.models })
+  }
+
+  /**
+   * The numbers behind /usage, straight from the session — the same ones the
+   * terminal's panel draws its bars from. The command's own printout is a
+   * flattened summary of this, so the window reads the source instead.
+   */
+  async usage(): Promise<UsageReport | null> {
+    if (!this.stream) this.open()
+    const report = await this.stream
+      ?.usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET()
+      .catch(() => null)
+    return report ? readUsage(report) : null
+  }
+
+  /** Where this conversation's context has gone — the same accounting the
+   * /context command prints, before it is flattened into tables. */
+  async context(): Promise<ContextReport | null> {
+    if (!this.stream) this.open()
+    const report = await this.stream?.getContextUsage().catch(() => null)
+    if (!report) return null
+    return {
+      model: report.model,
+      totalTokens: report.totalTokens,
+      maxTokens: report.maxTokens,
+      percentage: report.percentage,
+      categories: report.categories.map(({ name, tokens, isDeferred }) => ({
+        name,
+        tokens,
+        deferred: isDeferred ?? false,
+      })),
+      memoryFiles: report.memoryFiles.map(({ path: file, tokens }) => ({ path: file, tokens })),
+      mcpTools: report.mcpTools.map(({ name, serverName, tokens }) => ({
+        name,
+        server: serverName,
+        tokens,
+      })),
+    }
+  }
+
+  /** The subagents this folder can call on, as the session resolved them. */
+  async agents(): Promise<Subagent[]> {
+    if (!this.stream) this.open()
+    const agents = (await this.stream?.supportedAgents().catch(() => [])) ?? []
+    return agents.map(({ name, description, model }) => ({
+      name,
+      description,
+      model: model ?? null,
+    }))
+  }
+
+  /** Every configured MCP server and whether it answered — the connection is
+   * the session's, so only the session can say. */
+  async mcpServers(): Promise<McpServer[]> {
+    if (!this.stream) this.open()
+    const servers = (await this.stream?.mcpServerStatus().catch(() => [])) ?? []
+    return servers.map((server) => ({
+      name: server.name,
+      status: server.status,
+      scope: server.scope ?? null,
+      tools: server.tools?.length ?? 0,
+      error: server.error ?? null,
+    }))
+  }
+
+  /** Who the session is signed in as and what it was given to work with. */
+  async status(): Promise<StatusReport | null> {
+    if (!this.stream) this.open()
+    const init = await this.stream?.initializationResult().catch(() => null)
+    if (!init) return null
+    const servers = await this.mcpServers()
+    return {
+      cwd: this.cwd,
+      account: {
+        email: init.account.email ?? null,
+        organization: init.account.organization ?? null,
+        plan: init.account.subscriptionType ?? null,
+        provider: init.account.apiProvider ?? null,
+      },
+      outputStyle: init.output_style,
+      commands: init.commands.length,
+      agents: init.agents.length,
+      mcpServers: servers.filter((server) => server.status === 'connected').length,
+    }
+  }
+
+  /** What `/` offers in this folder: the built-ins, plus whatever its settings,
+   * skills and plugins add — the same list the terminal would show. */
+  private async readCommands(stream: Query) {
+    this.tellCommands(await stream.supportedCommands().catch(() => []))
+  }
+
+  private tellCommands(commands: SlashCommand[]) {
+    this.commands = commands.map(({ name, description, argumentHint }) => ({
+      name,
+      description,
+      argumentHint,
+    }))
+    this.emit({ kind: 'commands', commands: this.commands })
   }
 
   /** The plugin files its looks under the session id, so the window can only

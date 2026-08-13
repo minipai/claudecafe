@@ -15,4 +15,17 @@ export function newSession() {
 
 export { INITIAL_LOOK } from './content'
 export type { AgentMessage, Look, PermissionResult, QueryOptions, Question, Report, Tier, Todo } from './types'
-export type { BacklogLine, CafeBridge, ModelChoice, SessionSettings, SessionStatus } from './bridge'
+export type {
+  BacklogLine,
+  CafeBridge,
+  CafeCommand,
+  ContextReport,
+  McpServer,
+  ModelChoice,
+  SessionSettings,
+  SessionStatus,
+  StatusReport,
+  Subagent,
+  UsageReport,
+  UsageWindow,
+} from './bridge'

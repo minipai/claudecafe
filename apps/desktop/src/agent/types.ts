@@ -26,6 +26,9 @@ export type AgentMessage =
   // expression = the face she signed this line with; it goes on when the line does
   | { type: 'text_delta'; text: string; expression?: Expression }
   | { type: 'look'; look: Look }
+  // The CLI answering a slash command itself — /usage, /context, /model. Not
+  // her voice: label is the command that was typed, body what it printed.
+  | { type: 'command_output'; label: string; body: string }
   | { type: 'thinking'; text: string } // a line of the model's own reasoning
   | { type: 'todos'; todos: Todo[] } // the model's task list, replaced wholesale on every write
   // mood = the 【…】 marker she signed with, for the log
