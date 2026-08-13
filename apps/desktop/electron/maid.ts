@@ -27,7 +27,7 @@ import type {
   UsageReport,
   UsageWindow,
 } from '../src/agent/bridge'
-import type { Question } from '../src/agent/types'
+import type { Attachment, Question } from '../src/agent/types'
 
 /** How much context the turn carried: everything the model was handed as prompt. */
 function contextTokens(usage: { input_tokens?: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null }) {
@@ -152,10 +152,10 @@ export class MaidSession {
     void stream?.return(undefined).catch(() => {})
   }
 
-  ask(runId: string, prompt: string) {
+  ask(runId: string, prompt: string, images: Attachment[] = []) {
     if (!this.stream) this.open()
     this.runs.push({ runId, turn: new Turn(prompt) })
-    this.prompts.push(prompt)
+    this.prompts.push(prompt, images)
   }
 
   answer(askId: string, value: unknown) {
@@ -430,25 +430,36 @@ export class MaidSession {
 
 /** The prompt side of streaming input: an iterable the SDK can sit and wait on. */
 class PromptQueue implements AsyncIterable<SDKUserMessage> {
-  private queued: string[] = []
+  private queued: { text: string; images: Attachment[] }[] = []
   private wake: (() => void) | null = null
 
-  push(text: string) {
-    this.queued.push(text)
+  push(text: string, images: Attachment[] = []) {
+    this.queued.push({ text, images })
     this.wake?.()
     this.wake = null
   }
 
   async *[Symbol.asyncIterator]() {
     for (;;) {
-      const text = this.queued.shift()
-      if (text === undefined) {
+      const said = this.queued.shift()
+      if (said === undefined) {
         await new Promise<void>((resolve) => (this.wake = resolve))
         continue
       }
+      // A prompt with something to look at is a list of blocks — the pictures
+      // first, so what he says about them is read after they are seen.
+      const content = said.images.length
+        ? [
+            ...said.images.map((image) => ({
+              type: 'image' as const,
+              source: { type: 'base64' as const, media_type: image.mediaType as 'image/png', data: image.data },
+            })),
+            { type: 'text' as const, text: said.text },
+          ]
+        : said.text
       yield {
         type: 'user' as const,
-        message: { role: 'user' as const, content: text },
+        message: { role: 'user' as const, content },
         parent_tool_use_id: null,
       }
     }

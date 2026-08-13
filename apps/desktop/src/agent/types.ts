@@ -22,7 +22,10 @@ export type Report = { label: string; body: string }
 export type AgentMessage =
   | { type: 'system'; subtype: 'init' | 'compact_boundary' } // compact_boundary fires after the history is summarised
   // label = 地の文 narration line; silent = already has its own place on screen
-  | { type: 'tool_use'; name: string; label: string; input?: Record<string, unknown>; silent?: boolean }
+  // id = the call this is, so what comes back can be put with it
+  | { type: 'tool_use'; id: string; name: string; label: string; input?: Record<string, unknown>; silent?: boolean }
+  // What the tool answered, for the call of the same id
+  | { type: 'tool_result'; id: string; output: string; failed: boolean }
   // expression = the face she signed this line with; it goes on when the line does
   | { type: 'text_delta'; text: string; expression?: Expression }
   | { type: 'look'; look: Look }
@@ -45,8 +48,13 @@ export type Question = {
   multiSelect: boolean
 }
 
+/** An image handed to her with the prompt — a screenshot off the clipboard, a
+ * file dropped on the scene. `data` is base64 without the data-URL preamble. */
+export type Attachment = { mediaType: string; data: string }
+
 export type QueryOptions = {
   prompt: string
+  images?: Attachment[]
   abortController?: AbortController
   canUseTool?: (toolName: string, input: Record<string, unknown>) => Promise<PermissionResult>
   /** Answers back to AskUserQuestion — the picked option labels. */

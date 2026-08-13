@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { ArrowDown, Plus, Shrink, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowDown, ChevronRight, Plus, Shrink, X } from 'lucide-react'
 import { marked } from 'marked'
 import { Button } from '@/components/ui/button'
 import {
@@ -47,6 +47,17 @@ export function ChatHistory({
   onCompact,
   onNewSession,
 }: ChatHistoryProps) {
+  /** Which tool answers the master has opened — his reading, not the log's. */
+  const [opened, setOpened] = useState<Set<number>>(new Set())
+
+  function toggle(id: number) {
+    setOpened((current) => {
+      const next = new Set(current)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
+  }
+
   // Everything before the last compaction now lives on as a summary, so it is dimmed.
   const lastBoundary = messages.map((message) => message.role).lastIndexOf('boundary')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -110,6 +121,8 @@ export function ChatHistory({
                   const nextStartsTurn = messages[index + 1]?.role === 'user'
 
                   if (isEvent) {
+                    const answered = message.output !== undefined && message.output !== ''
+                    const shown = opened.has(message.id)
                     return (
                       <article
                         key={message.id}
@@ -124,14 +137,35 @@ export function ChatHistory({
                         )}
                         <span
                           aria-hidden="true"
-                          className="absolute top-[9px] left-[123px] z-10 size-[5px] rounded-full bg-border"
+                          className={`absolute top-[9px] left-[123px] z-10 size-[5px] rounded-full ${
+                            message.failed ? 'bg-destructive' : 'bg-border'
+                          }`}
                         />
-                        <div className="flex items-baseline gap-2 text-xs text-muted-foreground">
-                          <span>{message.content}</span>
+                        {/* A call that has been answered opens: what came back is
+                            the half of the record that says whether it worked. */}
+                        <button
+                          type="button"
+                          disabled={!answered}
+                          onClick={() => toggle(message.id)}
+                          className="flex w-full items-baseline gap-2 text-left text-xs text-muted-foreground disabled:cursor-default"
+                        >
+                          {answered && (
+                            <ChevronRight
+                              className={`size-3 shrink-0 self-center transition-transform ${shown ? 'rotate-90' : ''}`}
+                            />
+                          )}
+                          <span className={message.failed ? 'text-destructive' : undefined}>
+                            {message.content}
+                          </span>
                           {message.detail && (
                             <code className="truncate font-mono text-[11px] opacity-80">{message.detail}</code>
                           )}
-                        </div>
+                        </button>
+                        {answered && shown && (
+                          <pre className="mt-1.5 max-h-64 overflow-auto rounded-md border border-border bg-muted/60 px-3 py-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-foreground/80">
+                            {message.output}
+                          </pre>
+                        )}
                       </article>
                     )
                   }

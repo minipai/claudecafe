@@ -36,7 +36,7 @@ export async function* query(options: QueryOptions): AsyncGenerator<AgentMessage
   options.abortController?.signal.addEventListener('abort', abort, { once: true })
 
   try {
-    bridge.start(runId, options.prompt)
+    bridge.start(runId, options.prompt, options.images ?? [])
     yield* inbox
   } finally {
     stopListening()

@@ -14,7 +14,7 @@ export function newSession() {
 }
 
 export { INITIAL_LOOK } from './content'
-export type { AgentMessage, Look, PermissionResult, QueryOptions, Question, Report, Tier, Todo } from './types'
+export type { AgentMessage, Attachment, Look, PermissionResult, QueryOptions, Question, Report, Tier, Todo } from './types'
 export type {
   BacklogLine,
   CafeBridge,

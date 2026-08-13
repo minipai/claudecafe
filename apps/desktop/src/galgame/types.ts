@@ -22,4 +22,9 @@ export type ChatMessage = {
   report?: Report
   detail?: string
   createdAt: number
+  /** The tool call this row recorded, so its answer can be put with it. */
+  toolId?: string
+  /** What the tool answered — folded away until the master opens the row. */
+  output?: string
+  failed?: boolean
 }

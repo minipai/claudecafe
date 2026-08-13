@@ -32,6 +32,7 @@ import {
   isLive,
   newSession,
   query,
+  type Attachment,
   type CafeCommand,
   type Look,
   type PermissionResult,
@@ -178,11 +179,23 @@ export function GalgameClient() {
   }, [])
 
   /** Things that happened between the spoken lines — tools, permissions, interruptions. */
-  const appendEvent = useCallback((content: string, detail?: string) => {
+  const appendEvent = useCallback((content: string, detail?: string, toolId?: string) => {
     setChatMessages((current) => [
       ...current,
-      createChatMessage('event', content, undefined, Date.now(), detail),
+      { ...createChatMessage('event', content, undefined, Date.now(), detail), toolId },
     ])
+  }, [])
+
+  /** What a tool answered, put on the row that recorded the call. */
+  const recordResult = useCallback((toolId: string, output: string, failed: boolean) => {
+    setChatMessages((current) => {
+      let at = current.length - 1
+      while (at >= 0 && current[at].toolId !== toolId) at--
+      if (at < 0) return current
+      const withResult = [...current]
+      withResult[at] = { ...current[at], output, failed }
+      return withResult
+    })
   }, [])
 
   function pushWhisper(text: string, kind: Whisper['kind']) {
@@ -386,11 +399,15 @@ export function GalgameClient() {
   }
 
   // ---- consume the agent stream, drive the choreography off whatever it yields ----
-  async function run(prompt: string) {
+  async function run(prompt: string, images: Attachment[] = []) {
     appendChatMessage('user', prompt)
+    // The picture itself is hers to look at; the log records that it was handed
+    // over, which is what the master will want to remember later.
+    if (images.length) appendEvent(`Handed over ${images.length === 1 ? 'an image' : `${images.length} images`}`)
     // The input clears itself on submit; his words float up the scene instead
-    // of vanishing between the typing and her answer.
-    pushWhisper(prompt, 'master')
+    // of vanishing between the typing and her answer. A picture sent with
+    // nothing said still floats something, or the scene looks like it missed it.
+    pushWhisper(prompt || '📎', 'master')
     setPhase('working')
     // The master has moved the scene on himself: anything of hers still waiting
     // to be clicked through belongs to the question before this one.
@@ -404,7 +421,7 @@ export function GalgameClient() {
     running.current++
 
     try {
-      await consume(controller, prompt)
+      await consume(controller, prompt, images)
     } catch (error) {
       // Anything the agent throws — a dropped connection, a refused request —
       // lands here. The scene stays put and the failure is reported as a toast.
@@ -423,8 +440,8 @@ export function GalgameClient() {
     }
   }
 
-  async function consume(controller: AbortController, prompt: string) {
-    for await (const msg of query({ prompt, abortController: controller, canUseTool, askUser })) {
+  async function consume(controller: AbortController, prompt: string, images: Attachment[]) {
+    for await (const msg of query({ prompt, images, abortController: controller, canUseTool, askUser })) {
       switch (msg.type) {
         case 'system':
           break
@@ -460,7 +477,7 @@ export function GalgameClient() {
         case 'tool_use': {
           // The log is a record and keeps real time; the whisper and the face
           // belong to the scene, so they wait for the master to reach them.
-          appendEvent(msg.label || msg.name)
+          appendEvent(msg.label || msg.name, undefined, msg.id)
           if (msg.name === 'set_expression') {
             act(() => setExpression(msg.input?.expression as Expression))
           } else if (!msg.silent) {
@@ -468,6 +485,12 @@ export function GalgameClient() {
           }
           break
         }
+        case 'tool_result':
+          recordResult(msg.id, msg.output, msg.failed)
+          // A tool that failed is worth saying out loud in the scene; the rest
+          // is only worth having on the record.
+          if (msg.failed) act(() => pushWhisper('That did not work', 'tool'))
+          break
         case 'result':
           // The log keeps her line the way she wrote it, mood marker and all —
           // the scene is what strips it, to put the marker on her face instead.
@@ -526,15 +549,15 @@ export function GalgameClient() {
    * these print in a terminal is a flattening of figures the session will hand
    * over whole, so the panel asks for those instead of running a turn.
    */
-  function handleSubmit(text: string) {
+  function handleSubmit(text: string, images: Attachment[] = []) {
     const said = text.trim()
-    if (!said) return
+    if (!said && !images.length) return
     const answered = SELF_ANSWERED.find((command) => command === said)
     if (answered) {
       setPanel(answered)
       return
     }
-    run(said)
+    run(said, images)
   }
 
   return (

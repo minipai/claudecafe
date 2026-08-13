@@ -133,6 +133,7 @@ export class Turn {
         // place on screen already and should not also whisper past as narration.
         out.push({
           type: 'tool_use',
+          id: block.id,
           name: block.name === EXPRESSION_TOOL ? 'set_expression' : block.name,
           label,
           input,
@@ -143,15 +144,30 @@ export class Turn {
     return out
   }
 
-  /** The tool answers "Task #3 created successfully" — that number is how every
-   * later update refers to the task, so the board cannot list it before then. */
+  /**
+   * What the tools answered. Every answer is passed on under the id of the call
+   * it belongs to — the log is where the master goes to see what actually came
+   * back, not just what she went off to do.
+   *
+   * One of them is also read here: TaskCreate answers "Task #3 created
+   * successfully", and that number is how every later update refers to the
+   * task, so the board cannot list it before then.
+   */
   private readToolResults(sdk: Extract<SDKMessage, { type: 'user' }>): AgentMessage[] {
     const content = sdk.message.content
     if (typeof content === 'string') return []
+    const out: AgentMessage[] = []
     let opened = false
 
     for (const block of content) {
       if (block.type !== 'tool_result') continue
+      out.push({
+        type: 'tool_result',
+        id: block.tool_use_id,
+        output: readOutput(block.content),
+        failed: block.is_error === true,
+      })
+
       const subject = this.opening.get(block.tool_use_id)
       if (!subject) continue
       this.opening.delete(block.tool_use_id)
@@ -160,7 +176,7 @@ export class Turn {
       this.tasks.set(numbered[1], { content: subject, status: 'pending' })
       opened = true
     }
-    return opened ? [this.todoList()] : []
+    return opened ? [...out, this.todoList()] : out
   }
 
   /**
@@ -294,6 +310,28 @@ const FALLBACK_LABEL = 'View full report →'
 function openingLine(text: string) {
   const first = text.split('\n').find((line) => line.trim() && !line.startsWith('#'))?.trim() ?? ''
   return first.length > 120 ? `${first.slice(0, 118)}…` : first || 'Done — the write-up is ready.'
+}
+
+/** As much of a tool's answer as is worth keeping in a window. A grep over a
+ * repository answers with more than anyone reads; the rest is said to be there
+ * rather than carried around. */
+const KEPT = 4000
+
+function readOutput(content: unknown): string {
+  const text =
+    typeof content === 'string'
+      ? content
+      : Array.isArray(content)
+        ? content
+            .map((block) => {
+              const part = block as { type?: string; text?: string }
+              if (part.type === 'text') return part.text ?? ''
+              return part.type === 'image' ? '[image]' : ''
+            })
+            .filter(Boolean)
+            .join('\n')
+        : ''
+  return text.length > KEPT ? `${text.slice(0, KEPT)}\n…(${text.length - KEPT} more characters)` : text
 }
 
 /** Thinking arrives as a paragraph; the whisper band wants one thought at a time. */

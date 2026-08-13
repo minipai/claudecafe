@@ -2,6 +2,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, ipcMain, nativeImage, screen } from 'electron'
 import { MaidSession } from './maid'
+import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
@@ -43,7 +44,9 @@ function openWindow() {
     if (!window.isDestroyed()) window.webContents.send('cafe:event', event)
   })
 
-  ipcMain.on('cafe:start', (_event, runId: string, prompt: string) => session.ask(runId, prompt))
+  ipcMain.on('cafe:start', (_event, runId: string, prompt: string, images: Attachment[]) =>
+    session.ask(runId, prompt, images),
+  )
   ipcMain.on('cafe:answer', (_event, askId: string, value: unknown) => session.answer(askId, value))
   ipcMain.on('cafe:interrupt', () => session.interrupt())
   ipcMain.on('cafe:new-session', () => session.reset())

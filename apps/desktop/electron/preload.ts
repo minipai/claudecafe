@@ -1,11 +1,11 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { BridgeEvent, CafeBridge } from '../src/agent/bridge'
 
 const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? ''
 
 const bridge: CafeBridge = {
   cwd: folderArg.slice('--cafe-cwd='.length),
-  start: (runId, prompt) => ipcRenderer.send('cafe:start', runId, prompt),
+  start: (runId, prompt, images) => ipcRenderer.send('cafe:start', runId, prompt, images),
   answer: (askId, value) => ipcRenderer.send('cafe:answer', askId, value),
   interrupt: () => ipcRenderer.send('cafe:interrupt'),
   newSession: () => ipcRenderer.send('cafe:new-session'),
@@ -17,6 +17,7 @@ const bridge: CafeBridge = {
   mcpServers: () => ipcRenderer.invoke('cafe:mcp'),
   status: () => ipcRenderer.invoke('cafe:status'),
   clickThrough: (through) => ipcRenderer.send('cafe:click-through', through),
+  pathFor: (file) => webUtils.getPathForFile(file),
   startDrag: () => ipcRenderer.send('cafe:drag-start'),
   endDrag: () => ipcRenderer.send('cafe:drag-end'),
   listen: (onEvent) => {

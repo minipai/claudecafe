@@ -1,4 +1,4 @@
-import type { AgentMessage, Look, Question } from './types'
+import type { AgentMessage, Attachment, Look, Question } from './types'
 
 /**
  * The wire between the window and the Electron main process, where the real
@@ -121,7 +121,7 @@ export type BridgeEvent =
 export type CafeBridge = {
   /** The folder this window was opened on. One window, one project. */
   cwd: string
-  start(runId: string, prompt: string): void
+  start(runId: string, prompt: string, images: Attachment[]): void
   answer(askId: string, value: unknown): void
   interrupt(runId: string): void
   /** Drop the conversation and start a fresh one on the next prompt. */
@@ -146,6 +146,8 @@ export type CafeBridge = {
   /** Hand the pointer to whatever is behind the window, or take it back. The
    * window is transparent, so its empty half should not catch clicks. */
   clickThrough(through: boolean): void
+  /** Where a dropped file lives, which only the main world can say. */
+  pathFor(file: File): string
   /** Picking her up moves the window; letting go puts it down. */
   startDrag(): void
   endDrag(): void

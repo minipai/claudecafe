@@ -45,8 +45,11 @@ const TIER_HINTS: Record<string, Tier> = {
 /** The agent changes the sprite's expression by calling a custom tool —
  * mirrors a `tool()`-registered set_expression in the real SDK. */
 function setExpression(expression: string): AgentMessage {
-  return { type: 'tool_use', name: 'set_expression', label: '', input: { expression } }
+  return { type: 'tool_use', id: `mock-${mockCall++}`, name: 'set_expression', label: '', input: { expression } }
 }
+
+/** The mock has no real calls to number, but the scene keys results off the id. */
+let mockCall = 0
 
 /** The plan demo pins plan mode; a real client sets permissionMode: 'plan' instead. */
 function isPlanned(prompt: string) {
@@ -193,7 +196,7 @@ export async function* query({
       }
     }
 
-    yield { type: 'tool_use', name: whisper.name, label: whisper.label }
+    yield { type: 'tool_use', id: `mock-${mockCall++}`, name: whisper.name, label: whisper.label }
     yield { type: 'todos', todos: todosAt(index + 1) }
     // 中場重拍一次 look —— 真 adapter 裡是「做完一段工作就重拍」
     if (whisper === HEAVY_WHISPERS[1]) {
