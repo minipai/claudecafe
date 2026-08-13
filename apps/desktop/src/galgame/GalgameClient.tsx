@@ -12,6 +12,7 @@ import { ContextPanel } from './ContextPanel'
 import { AgentsPanel } from './AgentsPanel'
 import { McpPanel } from './McpPanel'
 import { StatusPanel } from './StatusPanel'
+import { CommandBar } from './CommandBar'
 import { ChatHistory } from './ChatHistory'
 import { DemoRow } from './DemoRow'
 import { InputBar } from './InputBar'
@@ -32,6 +33,7 @@ import {
   isLive,
   newSession,
   query,
+  workingDirectory,
   type Attachment,
   type CafeCommand,
   type Look,
@@ -118,6 +120,12 @@ export function GalgameClient() {
   const [commands, setCommands] = useState<CafeCommand[]>([])
   /** The slash command the window is answering itself, if any. */
   const [panel, setPanel] = useState<SelfAnswered | null>(null)
+  /** The conversation she is on, as the session last reported it. */
+  const [conversation, setConversation] = useState<string | null>(null)
+  /** The folder she is on. It changes under the window when she is sent
+   * elsewhere, so it is state rather than something read once at startup. */
+  const [folder, setFolder] = useState(workingDirectory ?? '')
+  const [switching, setSwitching] = useState(false)
   // A real session starts empty; the canned backlog is only there to give the
   // mock something to show.
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
@@ -230,9 +238,21 @@ export function GalgameClient() {
       } else if (event.kind === 'settings') {
         setSettings(event.settings)
         setModels(event.models)
+      } else if (event.kind === 'folder') {
+        setFolder(event.cwd)
       } else if (event.kind === 'commands') {
         setCommands(event.commands)
       } else if (event.kind === 'backlog') {
+        setConversation(event.sessionId)
+        // Nothing has been said where she has just arrived: she opens up the way
+        // she does at the start of any session, rather than standing there with
+        // the last folder's line still in the box.
+        if (!event.lines.length) {
+          setChatMessages([createChatMessage('assistant', GREETING)])
+          setExpression('neutral')
+          cut(GREETING)
+          return
+        }
         setChatMessages(
           event.lines.map((entry) =>
             createChatMessage(entry.role, entry.content, undefined, entry.at),
@@ -252,6 +272,18 @@ export function GalgameClient() {
     window.cafe?.refresh()
     return stop
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** ⌘K is where she is sent somewhere else — another folder, or back into a
+   * conversation this one has had. */
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      if (event.key !== 'k' || !(event.metaKey || event.ctrlKey)) return
+      event.preventDefault()
+      setSwitching(true)
+    }
+    window.addEventListener('keydown', shortcut)
+    return () => window.removeEventListener('keydown', shortcut)
   }, [])
 
   /**
@@ -557,6 +589,10 @@ export function GalgameClient() {
       setPanel(answered)
       return
     }
+    if (said === '/resume' || said === '/cd') {
+      setSwitching(true)
+      return
+    }
     run(said, images)
   }
 
@@ -587,6 +623,7 @@ export function GalgameClient() {
               utility={
                 <SessionPlaque
                   onOpenHistory={() => setHistoryOpen(true)}
+                  onSwitch={() => setSwitching(true)}
                   settings={settings}
                   models={models}
                   onChange={(patch) => {
@@ -630,7 +667,7 @@ export function GalgameClient() {
           )}
         </div>
 
-        <StatusBar />
+        <StatusBar folder={folder} />
       </Stage>
 
       <AnimatePresence>
@@ -651,6 +688,33 @@ export function GalgameClient() {
       <AgentsPanel open={panel === '/agents'} onClose={() => setPanel(null)} />
       <McpPanel open={panel === '/mcp'} onClose={() => setPanel(null)} />
       <StatusPanel open={panel === '/status'} onClose={() => setPanel(null)} />
+      <CommandBar
+        open={switching}
+        folder={folder}
+        conversation={conversation}
+        doing={{
+          onNewSession: startNewSession,
+          onOpenHistory: () => setHistoryOpen(true),
+          onCompact: compactSession,
+          onOpenPanel: setPanel,
+          mode: settings.mode,
+          onMode: (mode) => {
+            setSettings((current) => ({ ...current, mode }))
+            window.cafe?.configure({ mode })
+          },
+        }}
+        onClose={(moved) => {
+          setSwitching(false)
+          if (!moved) return
+          // Whatever she was in the middle of belongs to where he just left;
+          // the scene starts over with what comes back.
+          clearSpeech()
+          setPhase('idle')
+          setTodos([])
+          setReport(null)
+          setCtaVisible(false)
+        }}
+      />
 
       <AnimatePresence>
         {readerOpen && report && (

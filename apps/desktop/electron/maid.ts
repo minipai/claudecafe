@@ -13,7 +13,7 @@ import {
 import { Turn } from './translate'
 import { cafeTools, EXPRESSION_TOOL, REPORT_TOOL } from './tools'
 import { watchLook } from './look'
-import { forgetSession, lastConversation, rememberSession } from './history'
+import { conversationBacklog, forgetSession, lastConversation, listConversations, rememberSession } from './history'
 import { readGit } from './status'
 import type {
   BridgeEvent,
@@ -83,6 +83,15 @@ function readUsage(report: SDKControlGetUsageResponse): UsageReport {
   }
 }
 
+/** What was last said in this folder, when the window has no note of its own —
+ * the master works in a terminal too, and arriving there should pick that up. */
+function newestConversation(cwd: string) {
+  const newest = listConversations(cwd)[0]
+  if (!newest) return null
+  const backlog = conversationBacklog(cwd, newest.sessionId)
+  return backlog ? { sessionId: newest.sessionId, backlog } : null
+}
+
 /** The café plugin staged next to the bundled main process at build time. It is
  * loaded by name, so a copy installed from the marketplace steps aside for it
  * rather than greeting the master twice. */
@@ -120,14 +129,24 @@ export class MaidSession {
   /** The window is listening: open the session and tell it everything that is
    * already true — the folder's state, what was said last time, what it runs as. */
   refresh() {
+    this.emit({ kind: 'folder', cwd: this.cwd })
     // The window asking is a window with nothing in it — a reload, a hot reload,
-    // a second window on the same folder. What was said lives in the transcript,
-    // so it is sent every time, not only the first time the session is learned.
-    const previous = lastConversation(this.cwd)
+    // or the same window arriving on another folder. What was said lives in the
+    // transcript, so it is sent every time, not only the first time the session
+    // is learned. A folder this app has never opened still has whatever the
+    // master said there in a terminal, so the newest of those is picked up.
+    const previous = lastConversation(this.cwd) ?? newestConversation(this.cwd)
     if (previous) {
       this.sessionId ??= previous.sessionId
-      this.emit({ kind: 'backlog', lines: previous.backlog })
+      rememberSession(this.cwd, previous.sessionId)
     }
+    // Sent even when there is nothing: arriving somewhere new must clear what
+    // was on screen, not leave the last folder's conversation standing.
+    this.emit({
+      kind: 'backlog',
+      sessionId: previous?.sessionId ?? null,
+      lines: previous?.backlog ?? [],
+    })
     if (!this.stream) this.open()
     void this.reportStatus()
     this.emit({ kind: 'settings', settings: this.settings, models: this.models })
@@ -169,12 +188,31 @@ export class MaidSession {
     void this.stream?.interrupt().catch(() => {})
   }
 
+  /** The conversations held in this folder, for the master to pick from. */
+  conversations() {
+    return listConversations(this.cwd)
+  }
+
+  /**
+   * Go back to a conversation this folder has had. The connection is dropped
+   * rather than told — the SDK resumes a session when it opens, so the next
+   * prompt is what picks it up, with everything that was said already on screen.
+   */
+  resume(sessionId: string) {
+    if (sessionId === this.sessionId) return
+    this.close()
+    this.sessionId = sessionId
+    rememberSession(this.cwd, sessionId)
+    this.emit({ kind: 'backlog', sessionId, lines: conversationBacklog(this.cwd, sessionId) ?? [] })
+    void this.reportStatus(null)
+  }
+
   /** Throw the conversation away — the next prompt starts a blank one. */
   reset() {
     this.close()
     this.sessionId = null
     forgetSession(this.cwd)
-    this.emit({ kind: 'backlog', lines: [] })
+    this.emit({ kind: 'backlog', sessionId: null, lines: [] })
     void this.reportStatus(null)
   }
 

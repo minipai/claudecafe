@@ -98,6 +98,9 @@ export type StatusReport = {
   mcpServers: number
 }
 
+/** One conversation this folder has had, as the transcripts remember it. */
+export type Conversation = { sessionId: string; opening: string; at: number }
+
 /** A line from the conversation this window reopened on. */
 export type BacklogLine = { role: 'user' | 'assistant' | 'event'; content: string; at: number }
 
@@ -108,8 +111,11 @@ export type BridgeEvent =
   | { kind: 'look'; look: Look }
   /** The conversation as the transcript has it — sent on refresh, which is how
    * the backlog survives a reload. */
-  | { kind: 'backlog'; lines: BacklogLine[] }
+  | { kind: 'backlog'; sessionId: string | null; lines: BacklogLine[] }
   | { kind: 'settings'; settings: SessionSettings; models: ModelChoice[] }
+  /** The folder she is on now — it changes under the window when she is sent
+   * somewhere else, so nothing may read it once and keep it. */
+  | { kind: 'folder'; cwd: string }
   /** What `/` offers. Sent when the session says so — a skill picked up while
    * she works changes the list mid-conversation. */
   | { kind: 'commands'; commands: CafeCommand[] }
@@ -143,6 +149,16 @@ export type CafeBridge = {
   mcpServers(): Promise<McpServer[]>
   /** Who she is signed in as, and what this window is working on. */
   status(): Promise<StatusReport | null>
+  /** The conversations held in this folder, newest first. */
+  conversations(): Promise<Conversation[]>
+  /** The folders she has been opened on, most recent first. */
+  folders(): Promise<string[]>
+  /** Send her to another folder — this window, a fresh conversation there. */
+  switchFolder(cwd: string): void
+  /** Go back to one of them; the backlog comes back with it. */
+  resume(sessionId: string): void
+  /** Ask for a folder that is not in the list, and go there. */
+  openFolder(): Promise<string | null>
   /** Hand the pointer to whatever is behind the window, or take it back. The
    * window is transparent, so its empty half should not catch clicks. */
   clickThrough(through: boolean): void

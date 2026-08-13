@@ -20,6 +20,7 @@ export type {
   CafeBridge,
   CafeCommand,
   ContextReport,
+  Conversation,
   McpServer,
   ModelChoice,
   SessionSettings,

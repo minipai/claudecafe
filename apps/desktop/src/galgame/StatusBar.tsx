@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { workingDirectory, type SessionStatus } from '@/agent'
+import { type SessionStatus } from '@/agent'
 import { WORKING_DIRECTORY } from './content'
 
 /**
@@ -13,16 +13,18 @@ import { WORKING_DIRECTORY } from './content'
  * pill: the scene has enough round things in it already, and it slides under
  * the dialogue box, which is the thing being looked at.
  */
-export function StatusBar() {
+/** `folder` is passed in rather than read once: she can be sent elsewhere while
+ * the window stays put, and the status line may never lag behind where she is. */
+export function StatusBar({ folder }: { folder: string }) {
   const status = useLiveStatus()
   const elapsed = useElapsed()
-  const folder = workingDirectory ?? WORKING_DIRECTORY
+  const shown = folder || WORKING_DIRECTORY
   const changed = status && (status.added > 0 || status.removed > 0)
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-2.5 z-[5] flex justify-center">
       <div className="pointer-events-auto flex items-center gap-2.5 rounded-b-lg bg-card/90 px-4 py-1.5 font-mono text-sm font-medium text-foreground/90 shadow-[0_1px_10px_rgba(0,0,0,0.06)] backdrop-blur-md">
-        <span title={folder}>{folder.split('/').pop()}</span>
+        <span title={shown}>{shown.split('/').pop()}</span>
         {status?.branch && (
           <>
             <span className="text-foreground/30">·</span>

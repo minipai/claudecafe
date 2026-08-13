@@ -1,4 +1,4 @@
-import { ChevronDown, History, Settings } from 'lucide-react'
+import { ChevronDown, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import {
@@ -8,57 +8,13 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
 import type { ModelChoice, SessionSettings } from '@/agent'
 
-/** The permission modes, worded as the CLI words them. */
-const MODES: { value: SessionSettings['mode']; label: string }[] = [
-  { value: 'default', label: 'default' },
-  { value: 'auto', label: 'auto' },
-  { value: 'acceptEdits', label: 'accept edits' },
-  { value: 'plan', label: 'plan mode' },
-]
-
 /** Every level the SDK takes; a model that supports fewer narrows this. */
 const EFFORTS: SessionSettings['effort'][] = ['low', 'medium', 'high', 'xhigh', 'max']
-
-function SettingSubmenu({
-  label,
-  value,
-  items,
-  onPick,
-}: {
-  label: string
-  value: string
-  items: { value: string; label: string }[]
-  onPick: (item: string) => void
-}) {
-  const formatValue = (item: string) => items.find((i) => i.value === item)?.label ?? item
-  return (
-    <DropdownMenuSub>
-      <DropdownMenuSubTrigger className="[&>svg:last-child]:ml-1">
-        <span>{label}</span>
-        <span className="ml-auto max-w-24 truncate text-right text-xs text-muted-foreground">
-          {formatValue(value)}
-        </span>
-      </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent>
-        <DropdownMenuRadioGroup value={value} onValueChange={onPick}>
-          {items.map((item) => (
-            <DropdownMenuRadioItem key={item.value} value={item.value}>
-              {item.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuSubContent>
-    </DropdownMenuSub>
-  )
-}
 
 function VisibleSetting({
   label,
@@ -108,11 +64,15 @@ function VisibleSetting({
  */
 export function SessionPlaque({
   onOpenHistory,
+  onSwitch,
   settings,
   models,
   onChange,
 }: {
   onOpenHistory: () => void
+  /** The command bar: where she is sent somewhere, started over, or asked to
+   * show her books. */
+  onSwitch: () => void
   settings: SessionSettings
   models: ModelChoice[]
   onChange: (patch: Partial<SessionSettings>) => void
@@ -147,29 +107,18 @@ export function SessionPlaque({
         onPick={(value) => onChange({ effort: value as SessionSettings['effort'] })}
       />
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="h-8 w-8"
-            aria-label="Open session settings"
-            title="Session settings"
-          >
-            <Settings />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" side="top" sideOffset={8} className="w-64">
-          <DropdownMenuLabel>Session settings</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <SettingSubmenu
-            label="Mode"
-            value={settings.mode}
-            items={MODES}
-            onPick={(value) => onChange({ mode: value as SessionSettings['mode'] })}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Everything else she can be asked to do is in the command bar, so the
+          plaque points at it rather than keeping a second copy of the list. */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 px-2 font-mono text-[11px] text-muted-foreground"
+        aria-label="Open the command bar"
+        title="Everything else (⌘K)"
+        onClick={onSwitch}
+      >
+        ⌘K
+      </Button>
     </ButtonGroup>
   )
 }
