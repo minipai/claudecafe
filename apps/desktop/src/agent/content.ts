@@ -4,6 +4,14 @@ export const SHORT_ANSWER = '喔～那個 API 預設 timeout 是 30 秒喔，不
 
 export const MEDIUM_INTRO = '讓ことね看一下這段～'
 
+export const MEDIUM_ANSWER = `這段是 \`debounceQueue()\` 啦～它做的事情很單純：
+
+- 把短時間內連續進來的寫入請求先收集起來
+- 等 \`200ms\` 沒有新請求才真的送出去
+- 避免同一個 session 被連續巴好幾次，浪費資源
+
+簡單說就是幫您把「咚咚咚」打字產生的雜訊請求合併成一次送出，省資源又不會漏資料～`
+
 export const HEAVY_INTRO = '收到！ことね馬上去查～'
 
 export const HEAVY_DONE_LINE = '寫好了喔！ご主人様過目～'
@@ -49,6 +57,9 @@ export const longSessionPool = {
 
 > ＊闔上了筆記本，滿意地點點頭＊ —— 以上就是這次的調查報告，ご主人様辛苦了！
 `
+
+/** In a real session she writes the link's wording herself, per report. */
+export const HEAVY_REPORT = { label: '看看ことね查到什麼 →', body: HEAVY_REPORT_MD }
 
 export const FAILURE_MESSAGE = 'Connection to the agent was lost.'
 

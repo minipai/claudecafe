@@ -47,8 +47,10 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
 
   if (toolName === 'Edit' || toolName === 'Write') {
     const filePath = String(input.file_path ?? '')
+    // Edit swaps one passage for another; Write hands over a whole file, so
+    // everything in it counts as added.
     const before = String(input.old_string ?? '')
-    const after = String(input.new_string ?? '')
+    const after = String(toolName === 'Write' ? (input.content ?? '') : (input.new_string ?? ''))
     return {
       kind: 'edit',
       title: filePath,

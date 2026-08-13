@@ -1,13 +1,33 @@
 import type { Expression } from './types'
-import kotoneNeutral from '../assets/kotone-neutral.webp'
-import kotoneFocused from '../assets/kotone-focused.webp'
-import kotoneHappy from '../assets/kotone-happy.webp'
+import neutral from '../assets/kotone-neutral.webp'
+import happy from '../assets/kotone-happy.webp'
+import curious from '../assets/kotone-curious.webp'
+import thinking from '../assets/kotone-thinking.webp'
+import focused from '../assets/kotone-focused.webp'
+import proud from '../assets/kotone-proud.webp'
+import embarrassed from '../assets/kotone-embarrassed.webp'
+import frustrated from '../assets/kotone-frustrated.webp'
+import confused from '../assets/kotone-confused.webp'
+import surprised from '../assets/kotone-surprised.webp'
+import sad from '../assets/kotone-sad.webp'
+import flirty from '../assets/kotone-flirty.webp'
+import horny from '../assets/kotone-horny.webp'
 import { cn } from '@/lib/utils'
 
 const SPRITE: Record<Expression, string> = {
-  neutral: kotoneNeutral,
-  focused: kotoneFocused,
-  happy: kotoneHappy,
+  neutral,
+  happy,
+  curious,
+  thinking,
+  focused,
+  proud,
+  embarrassed,
+  frustrated,
+  confused,
+  surprised,
+  sad,
+  flirty,
+  horny,
 }
 
 /**

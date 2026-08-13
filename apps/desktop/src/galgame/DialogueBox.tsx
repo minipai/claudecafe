@@ -1,24 +1,32 @@
 import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
+import { marked } from 'marked'
 import { Button } from '@/components/ui/button'
 import { NamePlate } from './NamePlate'
 import { InnerVoice } from './InnerVoice'
 import type { Look } from '@/agent'
+import type { Pace } from './useSpeech'
 import type { Expression } from './types'
-import { cn } from '@/lib/utils'
+
+/** Auto-play reads at his pace; skip runs to the end of what she has said. */
+const PACES: Pace[] = ['auto', 'skip']
 
 type DialogueBoxProps = {
   expression: Expression
   line: string
   isTyping: boolean
+  /** An answer with shape to it — markdown, laid out in place of the typed line. */
+  laidOut: string | null
   isLoading: boolean
-  showAdvanceTri: boolean
-  showMedium: boolean
-  mediumContent: ReactNode
-  ctaVisible: boolean
-  isClickable: boolean
+  /** She has more lines behind this one, waiting for the master to click on. */
+  hasMore: boolean
+  onAdvance: () => void
+  /** Who is turning the pages — him, or the scene itself. */
+  pace: Pace
+  onPace: (pace: Pace) => void
+  /** The words she wrote on the link to her report; absent while there is none. */
+  cta: string | null
   onOpenReport: () => void
-  onClick: () => void
   footer: ReactNode
   utility: ReactNode
   unreadLook: Look | null
@@ -36,14 +44,14 @@ export function DialogueBox({
   expression,
   line,
   isTyping,
+  laidOut,
   isLoading,
-  showAdvanceTri,
-  showMedium,
-  mediumContent,
-  ctaVisible,
-  isClickable,
+  hasMore,
+  onAdvance,
+  pace,
+  onPace,
+  cta,
   onOpenReport,
-  onClick,
   footer,
   utility,
   unreadLook,
@@ -62,31 +70,56 @@ export function DialogueBox({
       </div>
       <div className="absolute -top-4 right-4 z-10">{utility}</div>
 
-      <motion.div
-        layout
-        className={cn('relative overflow-hidden px-6.5 pt-7 pb-4', isClickable && 'cursor-pointer')}
-        onClick={onClick}
-      >
-        {showMedium ? (
-          <div className="text-base leading-[1.9] text-foreground">{mediumContent}</div>
-        ) : (
-          <div className="relative">
+      {/* The bottom padding leaves room for the corner controls, so they sit in
+          the margin rather than against what she just said. */}
+      <motion.div layout className="relative overflow-hidden px-6.5 pt-7 pb-9">
+          {laidOut ? (
+            <div
+              className="report-md text-base leading-[1.9] text-foreground"
+              dangerouslySetInnerHTML={{ __html: marked.parse(laidOut, { async: false }) }}
+            />
+          ) : (
             <div className="min-h-[2.2em] text-lg leading-[1.8] text-foreground">
               {line}
               {isTyping && (
                 <span className="ml-0.5 inline-block h-[1em] w-0.5 -translate-y-0.5 animate-[caret-blink_1s_step-end_infinite] bg-foreground align-middle" />
               )}
             </div>
-            <div
-              className={cn(
-                'absolute right-1 bottom-2 h-0 w-0 border-t-[9px] border-r-[7px] border-l-[7px] border-t-foreground border-r-transparent border-l-transparent opacity-0',
-                showAdvanceTri && !isLoading && 'animate-[tri-blink_1.1s_ease-in-out_infinite] opacity-100',
-              )}
-            />
-          </div>
-        )}
+          )}
 
-        {ctaVisible && (
+          {/* Who turns the page, in the corner she turns it from: AUTO and SKIP
+              hand the turning over, and the triangle is the master doing it
+              himself — the only thing to press, since her line is dialogue and
+              not a button. */}
+          <div className="absolute right-6 bottom-3 flex items-center gap-1.5">
+            {PACES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={pace === option}
+                title={option === 'auto' ? 'Turn pages automatically' : 'Run to the end of what she has said'}
+                onClick={() => onPace(pace === option ? 'manual' : option)}
+                className={`rounded px-1.5 py-1 font-mono text-[10px] leading-none tracking-[0.14em] uppercase transition-colors ${
+                  pace === option
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground/50 hover:text-foreground'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+            {/* The triangle comes and goes; its place does not, or the two
+                beside it would shuffle every time she finishes a line. */}
+            <span className="flex h-5 w-5 items-center justify-center">
+              {hasMore && !isTyping && (
+                <button type="button" aria-label="Next line" onClick={onAdvance} className="p-1">
+                  <span className="block h-0 w-0 animate-[tri-blink_1.1s_ease-in-out_infinite] border-t-[8px] border-r-[6px] border-l-[6px] border-t-foreground border-r-transparent border-l-transparent" />
+                </button>
+              )}
+            </span>
+          </div>
+
+        {cta && (
           <div className="mt-3 flex gap-2.5">
             <Button
               variant="link"
@@ -97,7 +130,7 @@ export function DialogueBox({
                 onOpenReport()
               }}
             >
-              View full report →
+              {cta}
             </Button>
           </div>
         )}

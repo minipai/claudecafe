@@ -10,10 +10,11 @@ import {
   HEAVY_DENIED_LINE,
   HEAVY_DONE_LINE,
   HEAVY_INTRO,
-  HEAVY_REPORT_MD,
+  HEAVY_REPORT,
   HEAVY_WHISPERS,
   LOOK_BY_TIER,
   LOOK_HEAVY_WORKING,
+  MEDIUM_ANSWER,
   MEDIUM_INTRO,
   PLAN_APPROVED_LINE,
   PLAN_INTRO,
@@ -110,12 +111,13 @@ export async function* query({
     return
   }
 
+
   if (tier === 'medium') {
     yield { type: 'text_delta', text: MEDIUM_INTRO }
     await sleep(1000, signal)
     if (signal?.aborted) return
     yield setExpression('happy')
-    yield { type: 'result', tier, line: MEDIUM_INTRO }
+    yield { type: 'result', tier, line: MEDIUM_ANSWER }
     yield { type: 'look', look: LOOK_BY_TIER.medium }
     return
   }
@@ -200,7 +202,7 @@ export async function* query({
   }
 
   if (stoppedEarly) {
-    yield { type: 'result', tier, line: stoppedEarly, report: HEAVY_REPORT_MD }
+    yield { type: 'result', tier, line: stoppedEarly, report: HEAVY_REPORT }
     yield { type: 'look', look: LOOK_HEAVY_WORKING }
     return
   }
@@ -209,6 +211,6 @@ export async function* query({
   if (signal?.aborted) return
   yield { type: 'todos', todos: todosAt(TODO_STEPS.length) }
   yield setExpression('happy')
-  yield { type: 'result', tier, line: HEAVY_DONE_LINE, report: HEAVY_REPORT_MD }
+  yield { type: 'result', tier, line: HEAVY_DONE_LINE, report: HEAVY_REPORT }
   yield { type: 'look', look: LOOK_BY_TIER.heavy }
 }

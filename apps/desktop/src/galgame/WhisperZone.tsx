@@ -3,7 +3,8 @@ import type { Whisper } from './types'
 import { cn } from '@/lib/utils'
 
 /**
- * Tool narration and stray thoughts, floating just above the dialogue box —
+ * What the master just said, tool narration and stray thoughts, floating just
+ * above the dialogue box —
  * anchored to it, so they stay clear of it however tall it grows.
  */
 export function WhisperZone({ whispers }: { whispers: Whisper[] }) {
@@ -15,9 +16,9 @@ export function WhisperZone({ whispers }: { whispers: Whisper[] }) {
             key={w.id}
             className={cn(
               'px-3.5 py-1 text-sm tracking-[.01em] text-muted-foreground shadow-sm',
-              w.kind === 'thought'
-                ? 'rounded-2xl border border-dashed border-border bg-card/80 italic'
-                : 'rounded-full border border-border bg-card',
+              w.kind === 'thought' && 'rounded-2xl border border-dashed border-border bg-card/80 italic',
+              w.kind === 'tool' && 'rounded-full border border-border bg-card',
+              w.kind === 'master' && 'rounded-full bg-primary text-primary-foreground',
             )}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}

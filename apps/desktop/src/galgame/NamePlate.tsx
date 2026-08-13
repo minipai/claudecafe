@@ -1,11 +1,5 @@
 import { Spinner } from '@/components/ui/spinner'
-import type { Expression } from './types'
-
-const KAOMOJI: Record<Expression, string> = {
-  neutral: '•ᴗ•',
-  happy: '(˶ˆᗜˆ˵)',
-  focused: '(๑•̀ ᴗ•́)૭✧',
-}
+import { KAOMOJI, type Expression } from '@/agent/expressions'
 
 /**
  * Galgame-style speaker plate floating over the dialogue frame's top-left

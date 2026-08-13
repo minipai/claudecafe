@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { ChevronDown, History, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -15,23 +14,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const MODELS = ['Fable 5', 'Opus 5', 'Sonnet 5']
-const MODES = ['auto', 'plan']
-const EFFORTS = ['low', 'medium', 'high']
+import type { ModelChoice, SessionSettings } from '@/agent'
+
+/** The permission modes, worded as the CLI words them. */
+const MODES: { value: SessionSettings['mode']; label: string }[] = [
+  { value: 'default', label: 'default' },
+  { value: 'auto', label: 'auto' },
+  { value: 'acceptEdits', label: 'accept edits' },
+  { value: 'plan', label: 'plan mode' },
+]
+
+/** Every level the SDK takes; a model that supports fewer narrows this. */
+const EFFORTS: SessionSettings['effort'][] = ['low', 'medium', 'high', 'xhigh', 'max']
 
 function SettingSubmenu({
   label,
   value,
   items,
   onPick,
-  formatValue = (item) => item,
 }: {
   label: string
   value: string
-  items: string[]
+  items: { value: string; label: string }[]
   onPick: (item: string) => void
-  formatValue?: (item: string) => string
 }) {
+  const formatValue = (item: string) => items.find((i) => i.value === item)?.label ?? item
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger className="[&>svg:last-child]:ml-1">
@@ -43,8 +50,8 @@ function SettingSubmenu({
       <DropdownMenuSubContent>
         <DropdownMenuRadioGroup value={value} onValueChange={onPick}>
           {items.map((item) => (
-            <DropdownMenuRadioItem key={item} value={item}>
-              {formatValue(item)}
+            <DropdownMenuRadioItem key={item.value} value={item.value}>
+              {item.label}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
@@ -61,9 +68,10 @@ function VisibleSetting({
 }: {
   label: string
   value: string
-  items: string[]
+  items: { value: string; label: string }[]
   onPick: (item: string) => void
 }) {
+  const shown = items.find((item) => item.value === value)?.label ?? value
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -72,9 +80,9 @@ function VisibleSetting({
           size="sm"
           className="h-8 px-2 text-xs text-muted-foreground"
           aria-label={`Switch ${label}, currently ${value}`}
-          title={`${label}：${value}`}
+          title={`${label}：${shown}`}
         >
-          {value}
+          {shown}
           <ChevronDown className="size-3 opacity-55" />
         </Button>
       </DropdownMenuTrigger>
@@ -83,8 +91,8 @@ function VisibleSetting({
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup value={value} onValueChange={onPick}>
           {items.map((item) => (
-            <DropdownMenuRadioItem key={item} value={item}>
-              {item}
+            <DropdownMenuRadioItem key={item.value} value={item.value}>
+              {item.label}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
@@ -93,11 +101,24 @@ function VisibleSetting({
   )
 }
 
-/** Dialogue-frame utility pill: backlog beside a compact session-settings menu. */
-export function SessionPlaque({ onOpenHistory }: { onOpenHistory: () => void }) {
-  const [model, setModel] = useState(MODELS[0])
-  const [mode, setMode] = useState(MODES[0])
-  const [effort, setEffort] = useState(EFFORTS[2])
+/**
+ * Dialogue-frame utility pill: backlog beside a compact session-settings menu.
+ * Every choice in here is one the session actually takes — the models are the
+ * ones the account can run, and picking one changes the session on the spot.
+ */
+export function SessionPlaque({
+  onOpenHistory,
+  settings,
+  models,
+  onChange,
+}: {
+  onOpenHistory: () => void
+  settings: SessionSettings
+  models: ModelChoice[]
+  onChange: (patch: Partial<SessionSettings>) => void
+}) {
+  const current = models.find((model) => model.value === (settings.model ?? 'default'))
+  const efforts = current?.efforts.length ? current.efforts : EFFORTS
 
   return (
     <ButtonGroup className="h-8">
@@ -113,8 +134,18 @@ export function SessionPlaque({ onOpenHistory }: { onOpenHistory: () => void }) 
         LOG
       </Button>
 
-      <VisibleSetting label="Model" value={model} items={MODELS} onPick={setModel} />
-      <VisibleSetting label="Effort" value={effort} items={EFFORTS} onPick={setEffort} />
+      <VisibleSetting
+        label="Model"
+        value={settings.model ?? 'default'}
+        items={models.map((model) => ({ value: model.value, label: model.label }))}
+        onPick={(value) => onChange({ model: value === 'default' ? null : value })}
+      />
+      <VisibleSetting
+        label="Effort"
+        value={settings.effort}
+        items={efforts.map((level) => ({ value: level as string, label: level as string }))}
+        onPick={(value) => onChange({ effort: value as SessionSettings['effort'] })}
+      />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -131,7 +162,12 @@ export function SessionPlaque({ onOpenHistory }: { onOpenHistory: () => void }) 
         <DropdownMenuContent align="end" side="top" sideOffset={8} className="w-64">
           <DropdownMenuLabel>Session settings</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <SettingSubmenu label="Mode" value={mode} items={MODES} onPick={setMode} />
+          <SettingSubmenu
+            label="Mode"
+            value={settings.mode}
+            items={MODES}
+            onPick={(value) => onChange({ mode: value as SessionSettings['mode'] })}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
     </ButtonGroup>

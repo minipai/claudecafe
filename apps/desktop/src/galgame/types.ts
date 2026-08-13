@@ -1,12 +1,16 @@
-export type Expression = 'neutral' | 'focused' | 'happy'
+import type { Report } from '@/agent'
+
+export type { Expression } from '@/agent/expressions'
 
 export type Phase = 'idle' | 'working' | 'done'
 
 export type Whisper = {
   id: number
   text: string
-  /** `thought` is the model reasoning out loud; `tool` is what it did. */
-  kind: 'tool' | 'thought'
+  /** `thought` is the model reasoning out loud, `tool` is what it did, and
+   * `master` is what ご主人様 just said — his own words, so the scene shows
+   * them going in rather than swallowing them. */
+  kind: 'tool' | 'thought' | 'master'
 }
 
 /** `event` rows are the things that happened between the lines — tools that
@@ -15,7 +19,7 @@ export type ChatMessage = {
   id: number
   role: 'user' | 'assistant' | 'event' | 'boundary'
   content: string
-  report?: string
+  report?: Report
   detail?: string
   createdAt: number
 }

@@ -193,3 +193,17 @@
   background: none;
   padding: 0;
 }
+
+/* Dragging the window: the strip at the top of the stage moves it, and anything
+   the master can actually click stays clickable. */
+.titlebar {
+  -webkit-app-region: drag;
+}
+
+button,
+a,
+input,
+textarea,
+[role='button'] {
+  -webkit-app-region: no-drag;
+}

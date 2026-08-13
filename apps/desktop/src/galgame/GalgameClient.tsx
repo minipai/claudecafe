@@ -15,18 +15,23 @@ import { TodoBoard } from './TodoBoard'
 import { WhisperZone } from './WhisperZone'
 import { StatusBar } from './StatusBar'
 import { SessionPlaque } from './SessionPlaque'
-import { MEDIUM_ANSWER_TRANSCRIPT, MediumAnswer } from './MediumAnswer'
-import { useTypewriter } from './useTypewriter'
+import { useSpeech, type Hooks } from './useSpeech'
+import { faceFor } from '@/agent/expressions'
 import { readPermission, type PermissionAsk } from './permission'
 import { toast } from 'sonner'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
-import { AGENT_ERROR_TITLE, GREETING, IDLE_NUDGE, INTERRUPTED_LINE } from './content'
+import { AGENT_ERROR_TITLE, GREETING, INTERRUPTED_LINE } from './content'
 import {
   INITIAL_LOOK,
+  isLive,
+  newSession,
   query,
   type Look,
   type PermissionResult,
+  type ModelChoice,
   type Question,
+  type Report,
+  type SessionSettings,
   type Todo,
 } from '@/agent'
 
@@ -46,7 +51,7 @@ let chatMessageId = 0
 function createChatMessage(
   role: ChatMessage['role'],
   content: string,
-  report?: string,
+  report?: Report,
   createdAt = Date.now(),
   detail?: string,
 ): ChatMessage {
@@ -58,6 +63,11 @@ function createChatMessage(
     detail,
     createdAt,
   }
+}
+
+/** Her line as she wrote it: the mood marker belongs on the record. */
+function signed(line: string, mood?: string) {
+  return mood ? `${line} ${mood}` : line
 }
 
 function createPreviewHistory() {
@@ -76,12 +86,13 @@ export function GalgameClient() {
   const [readerOpen, setReaderOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [expression, setExpression] = useState<Expression>('neutral')
-  const [showSpinner, setShowSpinner] = useState(false)
-  const [showMedium, setShowMedium] = useState(false)
   const [ctaVisible, setCtaVisible] = useState(false)
+  const [laidOut, setLaidOut] = useState<string | null>(null)
   const [whispers, setWhispers] = useState<Whisper[]>([])
-  const [look, setLook] = useState<Look>(INITIAL_LOOK)
-  const [report, setReport] = useState('')
+  // A real look is shot by the plugin once there is work to shoot; until then
+  // there is nothing to peek at. The mock opens with a canned one.
+  const [look, setLook] = useState<Look | null>(isLive ? null : INITIAL_LOOK)
+  const [report, setReport] = useState<Report | null>(null)
   const [lookUnread, setLookUnread] = useState(true)
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequest | null>(null)
   const [permissionExpanded, setPermissionExpanded] = useState(false)
@@ -89,25 +100,67 @@ export function GalgameClient() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [changingSession, setChangingSession] = useState(false)
   const [compacting, setCompacting] = useState(false)
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(createPreviewHistory)
+  const [settings, setSettings] = useState<SessionSettings>({ model: null, effort: 'high', mode: 'default' })
+  const [models, setModels] = useState<ModelChoice[]>([])
+  // A real session starts empty; the canned backlog is only there to give the
+  // mock something to show.
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
+    isLive ? () => [createChatMessage('assistant', GREETING)] : createPreviewHistory,
+  )
   const lastLineRef = useRef(GREETING)
   const abortControllerRef = useRef<AbortController | null>(null)
   const alwaysAllowRef = useRef(false)
   const permissionRef = useRef<PermissionRequest | null>(null)
+  const running = useRef(0)
+  /** Whether there has been a turn to skip to the end of since skip went on. */
+  const ranWhileSkipping = useRef(false)
 
-  const { line, isDone, typeLine: rawTypeLine } = useTypewriter()
+  const {
+    line,
+    isDone,
+    say: queueLine,
+    act,
+    cut: cutIn,
+    clear: clearSpeech,
+    advance,
+    hasMore,
+    pace,
+    setPace,
+  } = useSpeech()
 
-  function typeLine(text: string, onDone?: () => void) {
+  /** Behind whatever she is already saying. One block of hers is one line —
+   * she already writes them as separate things. */
+  function say(text: string, hooks?: Hooks) {
     lastLineRef.current = text
-    rawTypeLine(text, onDone)
+    queueLine(text, hooks)
+  }
+
+  /** Straight into the box — a question, an interruption, a new session. */
+  function cut(text: string) {
+    lastLineRef.current = text
+    cutIn(text)
   }
 
   const appendChatMessage = useCallback(
-    (role: ChatMessage['role'], content: string, report?: string) => {
+    (role: ChatMessage['role'], content: string, report?: Report) => {
       setChatMessages((current) => [...current, createChatMessage(role, content, report)])
     },
     [],
   )
+
+  /** The mood marker arrives with the result, after the line it belongs to is
+   * already in the log. */
+  const signLast = useCallback((mood?: string) => {
+    if (!mood) return
+    setChatMessages((current) => {
+      let last = current.length - 1
+      while (last >= 0 && current[last].role !== 'assistant') last--
+      if (last < 0) return current
+      const signedMessages = [...current]
+      signedMessages[last] = { ...current[last], content: signed(current[last].content, mood) }
+      return signedMessages
+    })
+  }, [])
 
   /** Things that happened between the spoken lines — tools, permissions, interruptions. */
   const appendEvent = useCallback((content: string, detail?: string) => {
@@ -122,35 +175,76 @@ export function GalgameClient() {
     setWhispers((prev) => [...prev, { id, text, kind }])
     setTimeout(() => {
       setWhispers((prev) => prev.filter((w) => w.id !== id))
-    }, kind === 'thought' ? 3200 : 2400)
+    }, kind === 'tool' ? 2400 : 3200)
   }
 
-  function bounceTo(expr: Expression) {
-    setExpression(expr)
+  /** The face that came with a line goes on as the line does, not when it was
+   * written — she may have said three things since. */
+  function wear(expr?: Expression) {
+    if (expr) setExpression(expr)
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    typeLine(GREETING)
+    cut(GREETING)
   }, [])
 
+  /**
+   * What belongs to the window rather than to a run: the look (shot in the
+   * background, minutes after the turn that prompted it), the settings, and the
+   * backlog — which comes from the transcript, so a reload gets it back.
+   */
+  useEffect(() => {
+    const stop = window.cafe?.listen((event) => {
+      if (event.kind === 'look') {
+        setLook(event.look)
+        setLookUnread(true)
+      } else if (event.kind === 'settings') {
+        setSettings(event.settings)
+        setModels(event.models)
+      } else if (event.kind === 'backlog') {
+        setChatMessages(
+          event.lines.map((entry) =>
+            createChatMessage(entry.role, entry.content, undefined, entry.at),
+          ),
+        )
+        // Her last line comes back to the box the way the scene wants it —
+        // marker off, and worn on her face instead.
+        const last = [...event.lines].reverse().find((entry) => entry.role === 'assistant')
+        if (last) {
+          const marker = last.content.match(/【[^【】]*】\s*$/)
+          const face = marker && faceFor(marker[0])
+          if (face) setExpression(face)
+          cut(marker ? last.content.slice(0, marker.index).trim() : last.content)
+        }
+      }
+    })
+    window.cafe?.refresh()
+    return stop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * Skipping is a run to the end, not a setting: once she has stopped working
+   * and there is nothing left waiting, the scene comes back to hand. Armed
+   * before a prompt it stays armed — there was never a run to reach the end of.
+   */
+  useEffect(() => {
+    if (phase === 'working') {
+      ranWhileSkipping.current = true
+      return
+    }
+    if (!ranWhileSkipping.current || hasMore || !isDone) return
+    ranWhileSkipping.current = false
+    if (pace === 'skip') setPace('manual')
+  }, [phase, hasMore, isDone, pace, setPace])
+
+  /** Only the reader blocks the scene now — a prompt sent while she is working
+   * just queues up behind the one she is on. */
   function isBusy() {
-    return phase === 'working' || readerOpen
+    return readerOpen
   }
 
-  function goIdle(bounce: boolean) {
-    setPhase('idle')
-    if (bounce) bounceTo('neutral')
-    else setExpression('neutral')
-    setShowSpinner(false)
-    setCtaVisible(false)
-    typeLine(GREETING)
-  }
-
-  function collapseMedium() {
-    setShowMedium(false)
-    goIdle(true)
-  }
 
   function askPermission(request: PermissionRequest | null) {
     permissionRef.current = request
@@ -161,12 +255,17 @@ export function GalgameClient() {
   async function canUseTool(toolName: string, input: Record<string, unknown>) {
     if (alwaysAllowRef.current) return { behavior: 'allow' as const }
     const ask = readPermission(toolName, input)
-    // A question that blocks the run outranks whatever panel is open — come back
-    // to the scene so it can actually be answered.
-    setHistoryOpen(false)
+    // The question waits its turn like anything else she says — what she said on
+    // the way to asking it is often the reason the answer is yes. The buttons
+    // only appear once the master has clicked through to the question itself.
     return new Promise<PermissionResult>((resolve) => {
-      askPermission({ ask, resolve })
-      typeLine(ask.askLine)
+      say(ask.askLine, {
+        halt: true,
+        onShow: () => {
+          setHistoryOpen(false)
+          askPermission({ ask, resolve })
+        },
+      })
     })
   }
 
@@ -182,10 +281,14 @@ export function GalgameClient() {
 
   /** AskUserQuestion: she asks, the footer turns into the choice branch. */
   async function askUser(question: Question) {
-    setHistoryOpen(false)
     return new Promise<string[]>((resolve) => {
-      setChoiceRequest({ question, resolve })
-      typeLine(question.question)
+      say(question.question, {
+        halt: true,
+        onShow: () => {
+          setHistoryOpen(false)
+          setChoiceRequest({ question, resolve })
+        },
+      })
     })
   }
 
@@ -207,9 +310,7 @@ export function GalgameClient() {
     })
     appendEvent('Interrupted by ご主人様')
     setPhase('idle')
-    setExpression('neutral')
-    setShowSpinner(false)
-    typeLine(INTERRUPTED_LINE)
+    say(INTERRUPTED_LINE)
     appendChatMessage('assistant', INTERRUPTED_LINE)
   }
 
@@ -223,24 +324,23 @@ export function GalgameClient() {
     abortControllerRef.current?.abort()
     permissionRef.current?.resolve({ behavior: 'deny' })
     askPermission(null)
+    newSession()
     setChangingSession(true)
 
     window.setTimeout(() => {
       setPhase('idle')
       setReaderOpen(false)
       setHistoryOpen(false)
-      setShowMedium(false)
-      setCtaVisible(false)
-      setShowSpinner(false)
+        setCtaVisible(false)
       setTodos([])
-      setReport('')
+      setReport(null)
       setChatMessages([createChatMessage('assistant', GREETING)])
       setExpression('neutral')
-      setLook(INITIAL_LOOK)
+      setLook(isLive ? null : INITIAL_LOOK)
       setLookUnread(true)
       alwaysAllowRef.current = false
       setChoiceRequest(null)
-      typeLine(GREETING)
+      cut(GREETING)
       setChangingSession(false)
     }, 340)
   }
@@ -271,14 +371,20 @@ export function GalgameClient() {
   // ---- consume the agent stream, drive the choreography off whatever it yields ----
   async function run(prompt: string) {
     appendChatMessage('user', prompt)
+    // The input clears itself on submit; his words float up the scene instead
+    // of vanishing between the typing and her answer.
+    pushWhisper(prompt, 'master')
     setPhase('working')
-    setShowMedium(false)
+    // The master has moved the scene on himself: anything of hers still waiting
+    // to be clicked through belongs to the question before this one.
+    clearSpeech()
+    setLaidOut(null)
     setCtaVisible(false)
     setTodos([])
-    bounceTo('focused')
 
     const controller = new AbortController()
     abortControllerRef.current = controller
+    running.current++
 
     try {
       await consume(controller, prompt)
@@ -292,9 +398,11 @@ export function GalgameClient() {
       })
       appendEvent('Run failed', message)
       setPhase('idle')
-      setShowSpinner(false)
-      setExpression('neutral')
       askPermission(null)
+    } finally {
+      // Another prompt may still be queued behind this one; the scene is only
+      // done working once the last of them is.
+      if (--running.current > 0) setPhase('working')
     }
   }
 
@@ -304,43 +412,66 @@ export function GalgameClient() {
         case 'system':
           break
         case 'text_delta':
-          setShowSpinner(true)
-          typeLine(msg.text)
+          // Into the log the moment she says it — the log is the conversation as
+          // it happens, not a summary written at the end of the turn.
+          appendChatMessage('assistant', msg.text)
+          say(msg.text, { onShow: () => wear(msg.expression) })
           break
         case 'look':
           setLook(msg.look)
           setLookUnread(true)
           break
         case 'todos':
-          setTodos(msg.todos)
+          // The board is part of the scene: it ticks over where it happened,
+          // not while the master is still reading two lines back.
+          act(() => setTodos(msg.todos))
           break
         case 'thinking':
-          pushWhisper(msg.text, 'thought')
+          act(() => pushWhisper(msg.text, 'thought'))
           break
         case 'tool_use': {
-          if (msg.name === 'set_expression') {
-            setExpression(msg.input?.expression as Expression)
-            break
-          }
+          // The log is a record and keeps real time; the whisper and the face
+          // belong to the scene, so they wait for the master to reach them.
           appendEvent(msg.label || msg.name)
-          pushWhisper(msg.label, 'tool')
+          if (msg.name === 'set_expression') {
+            act(() => setExpression(msg.input?.expression as Expression))
+          } else if (!msg.silent) {
+            act(() => pushWhisper(msg.label, 'tool'))
+          }
           break
         }
         case 'result':
-          setShowSpinner(false)
-          if (msg.tier === 'light') {
-            appendChatMessage('assistant', msg.line)
-            typeLine(msg.line)
-            setPhase('idle')
-          } else if (msg.tier === 'medium') {
-            appendChatMessage('assistant', MEDIUM_ANSWER_TRANSCRIPT)
-            setShowMedium(true)
-            setPhase('idle')
-          } else {
-            appendChatMessage('assistant', msg.line, msg.report)
+          // The log keeps her line the way she wrote it, mood marker and all —
+          // the scene is what strips it, to put the marker on her face instead.
+          // A line already spoken is already logged; all the result adds is the
+          // mood she signed off with.
+          if (msg.said) signLast(msg.mood)
+          else appendChatMessage('assistant', signed(msg.line, msg.mood), msg.report)
+          if (msg.tier === 'heavy') {
             setPhase('done')
-            setReport(msg.report ?? '')
-            typeLine(msg.line, () => setCtaVisible(true))
+            setReport(msg.report ?? null)
+            if (msg.said) setCtaVisible(true)
+            else
+              say(msg.line, {
+                onShow: () => wear(msg.expression),
+                onDone: () => setCtaVisible(true),
+              })
+            break
+          }
+          setPhase('idle')
+          // Already on screen: the result is just the record of what she said.
+          if (msg.said) break
+          if (msg.tier === 'medium') {
+            // Laid out rather than typed, but it still waits its turn behind
+            // anything she said on the way here.
+            say(msg.line, {
+              onShow: () => {
+                wear(msg.expression)
+                setLaidOut(msg.line)
+              },
+            })
+          } else {
+            say(msg.line, { onShow: () => wear(msg.expression) })
           }
           break
       }
@@ -357,23 +488,13 @@ export function GalgameClient() {
     setReaderOpen(false)
   }
 
-  function handleDialogueClick() {
-    if (phase === 'done') {
-      openReport()
-    } else if (showMedium) {
-      collapseMedium()
-    } else if (phase === 'idle') {
-      typeLine(IDLE_NUDGE)
-    }
-  }
-
   function tryRun(prompt: string) {
     if (isBusy()) return
     run(prompt)
   }
 
   function handleSubmit(text: string) {
-    if (isBusy() || !text.trim()) return
+    if (!text.trim()) return
     run(text)
   }
 
@@ -389,16 +510,26 @@ export function GalgameClient() {
             <DialogueBox
               expression={expression}
               line={line}
+              laidOut={laidOut}
               isTyping={!isDone}
-              isLoading={showSpinner}
-              showAdvanceTri={isDone}
-              showMedium={showMedium}
-              mediumContent={<MediumAnswer />}
-              ctaVisible={ctaVisible}
-              isClickable={phase === 'idle' || phase === 'done'}
+              isLoading={phase === 'working'}
+              hasMore={hasMore}
+              onAdvance={advance}
+              pace={pace}
+              onPace={setPace}
+              cta={ctaVisible ? (report?.label ?? null) : null}
               onOpenReport={openReport}
-              onClick={handleDialogueClick}
-              utility={<SessionPlaque onOpenHistory={() => setHistoryOpen(true)} />}
+              utility={
+                <SessionPlaque
+                  onOpenHistory={() => setHistoryOpen(true)}
+                  settings={settings}
+                  models={models}
+                  onChange={(patch) => {
+                    setSettings((current) => ({ ...current, ...patch }))
+                    window.cafe?.configure(patch)
+                  }}
+                />
+              }
               unreadLook={lookUnread ? look : null}
               onLookRead={() => setLookUnread(false)}
               footer={
@@ -417,11 +548,12 @@ export function GalgameClient() {
                       onDeny={() => resolvePermission('deny')}
                       onExpand={() => setPermissionExpanded(true)}
                     />
-                  ) : (
+                  ) : isLive ? null : (
+                    // The demo buttons drive the canned mock; with a real agent
+                    // on the other end there is nothing for them to stand in for.
                     <DemoRow isDisabled={isBusy()} onSelect={tryRun} />
                   )}
                   <InputBar
-                    isDisabled={isBusy()}
                     isBusy={phase === 'working'}
                     onSubmit={handleSubmit}
                     onStop={stop}
@@ -449,11 +581,11 @@ export function GalgameClient() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {readerOpen && (
+        {readerOpen && report && (
           <ReportView
             key="report"
             shortline={lastLineRef.current}
-            report={report}
+            report={report.body}
             onClose={closeReport}
           />
         )}

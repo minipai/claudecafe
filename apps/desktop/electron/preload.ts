@@ -1,0 +1,21 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import type { BridgeEvent, CafeBridge } from '../src/agent/bridge'
+
+const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? ''
+
+const bridge: CafeBridge = {
+  cwd: folderArg.slice('--cafe-cwd='.length),
+  start: (runId, prompt) => ipcRenderer.send('cafe:start', runId, prompt),
+  answer: (askId, value) => ipcRenderer.send('cafe:answer', askId, value),
+  interrupt: () => ipcRenderer.send('cafe:interrupt'),
+  newSession: () => ipcRenderer.send('cafe:new-session'),
+  refresh: () => ipcRenderer.send('cafe:refresh'),
+  configure: (patch) => ipcRenderer.send('cafe:configure', patch),
+  listen: (onEvent) => {
+    const forward = (_event: unknown, payload: BridgeEvent) => onEvent(payload)
+    ipcRenderer.on('cafe:event', forward)
+    return () => ipcRenderer.off('cafe:event', forward)
+  },
+}
+
+contextBridge.exposeInMainWorld('cafe', bridge)
