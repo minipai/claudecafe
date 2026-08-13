@@ -80,6 +80,12 @@ function createChatMessage(
   }
 }
 
+/** A notification is a glance, not a read: enough of her line to know what it
+ * was about. */
+function shorten(line: string) {
+  return line.length > 160 ? `${line.slice(0, 158)}…` : line
+}
+
 /** Her line as she wrote it: the mood marker belongs on the record. */
 function signed(line: string, mood?: string) {
   return mood ? `${line} ${mood}` : line
@@ -133,7 +139,10 @@ export function GalgameClient() {
   )
   const lastLineRef = useRef(GREETING)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const alwaysAllowRef = useRef(false)
+  /** What she has been told she may keep doing without asking again. Kept by
+   * what was actually allowed — one yes to a command is not a yes to all of
+   * them, and never to her editing files. */
+  const alwaysAllowRef = useRef(new Set<string>())
   const permissionRef = useRef<PermissionRequest | null>(null)
   const running = useRef(0)
   /** Whether there has been a turn to skip to the end of since skip went on. */
@@ -315,8 +324,8 @@ export function GalgameClient() {
   }
 
   async function canUseTool(toolName: string, input: Record<string, unknown>) {
-    if (alwaysAllowRef.current) return { behavior: 'allow' as const }
     const ask = readPermission(toolName, input)
+    if (alwaysAllowRef.current.has(ask.standing)) return { behavior: 'allow' as const }
     // The question waits its turn like anything else she says — what she said on
     // the way to asking it is often the reason the answer is yes. The buttons
     // only appear once the master has clicked through to the question itself.
@@ -326,6 +335,9 @@ export function GalgameClient() {
         onShow: () => {
           setHistoryOpen(false)
           askPermission({ ask, resolve })
+          // She has stopped on this and cannot go on without an answer, so it
+          // follows the master wherever he is looking.
+          window.cafe?.notify(ask.title, true)
         },
       })
     })
@@ -334,9 +346,14 @@ export function GalgameClient() {
   function resolvePermission(behavior: 'allow' | 'deny', always = false) {
     const request = permissionRef.current
     if (!request) return
-    if (always) alwaysAllowRef.current = true
-    const verdict = behavior === 'allow' ? (always ? 'Allowed for this session' : 'Allowed') : 'Denied'
-    appendEvent(`${verdict}: ${request.ask.title}`, request.ask.command)
+    if (always) alwaysAllowRef.current.add(request.ask.standing)
+    const verdict =
+      behavior === 'allow'
+        ? always
+          ? `Allowed for this session: ${request.ask.standing}`
+          : 'Allowed'
+        : 'Denied'
+    appendEvent(always && behavior === 'allow' ? verdict : `${verdict}: ${request.ask.title}`, request.ask.command)
     askPermission(null)
     request.resolve({ behavior })
   }
@@ -349,6 +366,7 @@ export function GalgameClient() {
         onShow: () => {
           setHistoryOpen(false)
           setChoiceRequest({ question, resolve })
+          window.cafe?.notify(question.question, true)
         },
       })
     })
@@ -400,7 +418,7 @@ export function GalgameClient() {
       setExpression('neutral')
       setLook(isLive ? null : INITIAL_LOOK)
       setLookUnread(true)
-      alwaysAllowRef.current = false
+      alwaysAllowRef.current = new Set()
       setChoiceRequest(null)
       cut(GREETING)
       setChangingSession(false)
@@ -524,6 +542,9 @@ export function GalgameClient() {
           if (msg.failed) act(() => pushWhisper('That did not work', 'tool'))
           break
         case 'result':
+          // Done, and he is somewhere else: what she ended on is worth hearing
+          // there rather than sitting unread in a window behind everything.
+          window.cafe?.notify(shorten(msg.line), false)
           // The log keeps her line the way she wrote it, mood marker and all —
           // the scene is what strips it, to put the marker on her face instead.
           // A line already spoken is already logged; all the result adds is the

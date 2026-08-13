@@ -9,6 +9,10 @@ export type PermissionKind = 'plan' | 'edit' | 'command' | 'generic'
  */
 export type PermissionAsk = {
   kind: PermissionKind
+  /** What a standing "allow" covers. The tool by name, and for a command the
+   * program it runs — saying yes to `git status` once is not saying yes to
+   * every command she will ever think of. */
+  standing: string
   title: string
   /** What ことね says while she waits for an answer. */
   askLine: string
@@ -35,6 +39,7 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
     const plan = String(input.plan ?? '')
     return {
       kind: 'plan',
+      standing: 'ExitPlanMode',
       title: 'Plan ready for review',
       askLine: planAskLine(),
       allowLabel: 'Start working',
@@ -53,6 +58,7 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
     const after = String(toolName === 'Write' ? (input.content ?? '') : (input.new_string ?? ''))
     return {
       kind: 'edit',
+      standing: toolName,
       title: filePath,
       askLine: editAskLine(filePath),
       allowLabel: 'Allow',
@@ -66,6 +72,7 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
     const command = String(input.command ?? '')
     return {
       kind: 'command',
+      standing: `Bash ${command.trim().split(/\s+/)[0] ?? ''}`.trim(),
       title: String(input.description ?? 'Run a command'),
       askLine: permissionAskLine(command),
       allowLabel: 'Allow',
@@ -77,6 +84,7 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
 
   return {
     kind: 'generic',
+    standing: toolName,
     title: toolName,
     askLine: permissionAskLine(toolName),
     allowLabel: 'Allow',

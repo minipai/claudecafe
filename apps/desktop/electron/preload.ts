@@ -21,6 +21,7 @@ const bridge: CafeBridge = {
   switchFolder: (cwd) => ipcRenderer.send('cafe:switch-folder', cwd),
   resume: (sessionId) => ipcRenderer.send('cafe:resume', sessionId),
   openFolder: () => ipcRenderer.invoke('cafe:open-folder'),
+  notify: (body, waiting) => ipcRenderer.send('cafe:notify', body, waiting),
   clickThrough: (through) => ipcRenderer.send('cafe:click-through', through),
   pathFor: (file) => webUtils.getPathForFile(file),
   startDrag: () => ipcRenderer.send('cafe:drag-start'),

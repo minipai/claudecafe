@@ -159,6 +159,9 @@ export type CafeBridge = {
   resume(sessionId: string): void
   /** Ask for a folder that is not in the list, and go there. */
   openFolder(): Promise<string | null>
+  /** Say something where the master is, when he is not watching the window.
+   * `waiting` means she has stopped and needs an answer. */
+  notify(body: string, waiting: boolean): void
   /** Hand the pointer to whatever is behind the window, or take it back. The
    * window is transparent, so its empty half should not catch clicks. */
   clickThrough(through: boolean): void

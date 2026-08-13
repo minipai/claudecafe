@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, screen, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, Notification, screen, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import { MaidSession } from './maid'
 import { recentFolders, rememberFolder } from './history'
 import type { Attachment } from '../src/agent/types'
@@ -112,6 +112,29 @@ ipcMain.handle('cafe:open-folder', async (event) => {
   if (picked.canceled || !picked.filePaths[0] || !asking) return null
   startShift(asking, picked.filePaths[0]).refresh()
   return picked.filePaths[0]
+})
+
+/**
+ * She is standing on the desktop, not in a terminal: when the master is looking
+ * elsewhere and she finishes — or stops, needing an answer — she says so where
+ * he is. Nothing is sent while the window is in front of him; he can see her.
+ */
+ipcMain.on('cafe:notify', (event, body: string, waiting: boolean) => {
+  const window = windowOf(event)
+  if (!window || window.isFocused()) return
+  const note = new Notification({ title: waiting ? 'ことね is waiting' : 'ことね', body })
+  note.on('click', () => {
+    if (window.isDestroyed()) return
+    window.show()
+    window.focus()
+  })
+  // macOS drops notifications outright when the app has not been allowed to
+  // post them — which is every run from a checkout, since that Electron was
+  // never granted anything. The Dock is not blocked, so she knocks there.
+  note.on('failed', () => app.dock?.bounce('informational'))
+  note.show()
+  // Waiting is not the same as finished: the Dock says so until he comes back.
+  if (waiting) app.dock?.bounce('critical')
 })
 
 // The scene says when the pointer is over nothing; forwarding keeps the moves

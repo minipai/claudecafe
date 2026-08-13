@@ -84,8 +84,8 @@ export function PermissionPrompt({ ask, onAllow, onAlwaysAllow, onDeny, onExpand
           {ask.allowLabel}
         </Button>
         {ask.canAlwaysAllow && (
-          <Button variant="outline" size="sm" onClick={onAlwaysAllow}>
-            Allow for this session
+          <Button variant="outline" size="sm" onClick={onAlwaysAllow} title={`Every ${ask.standing} for the rest of this session`}>
+            Always allow {ask.standing}
           </Button>
         )}
         <Button variant="outline" size="sm" onClick={onDeny}>
