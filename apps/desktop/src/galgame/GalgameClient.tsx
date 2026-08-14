@@ -535,8 +535,13 @@ export function GalgameClient() {
       askPermission(null)
     } finally {
       // Another prompt may still be queued behind this one; the scene is only
-      // done working once the last of them is.
-      if (--running.current > 0) setPhase('working')
+      // done working once the last of them is — and once none are left she is
+      // not working, whatever ended them. Without that last part a run that
+      // finished any way other than by a result (stopped mid-tool, the session
+      // dropped) left the plate spinning with nobody behind it.
+      running.current = Math.max(0, running.current - 1)
+      if (running.current > 0) setPhase('working')
+      else setPhase((standing) => (standing === 'working' ? 'idle' : standing))
     }
   }
 

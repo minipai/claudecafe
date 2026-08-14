@@ -32,7 +32,17 @@ export async function* query(options: QueryOptions): AsyncGenerator<AgentMessage
     }
   })
 
-  const abort = () => bridge.interrupt(runId)
+  /**
+   * Stopped by the master. The session is told, and this run is over here and
+   * now rather than when the session gets round to saying so — an interrupt
+   * that lands on a running tool ends the turn without a result, so the word
+   * that it finished may never come, and a run nobody ever closes leaves the
+   * scene believing she is still working long after she has answered.
+   */
+  const abort = () => {
+    bridge.interrupt(runId)
+    inbox.close()
+  }
   options.abortController?.signal.addEventListener('abort', abort, { once: true })
 
   try {
