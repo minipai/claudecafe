@@ -31,6 +31,28 @@ function stageCafePlugin() {
     path.join(repo, 'packages/maid-personas/zh/kotone.md'),
     path.join(out, 'maids/kotone.md'),
   )
+  dropShiftHook(out)
+}
+
+/**
+ * Who she is does not travel through a hook here. The plugin draws a maid at
+ * session start and injects her persona from python; the window already knows —
+ * the sprite is ことね — so the app puts her persona in the session's system
+ * prompt itself (see maid.ts), which still stands on a Mac with no python3 for
+ * the hooks to run on. This copy therefore loses that one hook, or she would be
+ * introduced twice on the machines that do have one.
+ *
+ * Everything else in the plugin stays: the greeting, the per-turn time, the
+ * mirror and the diary are what the café is, and they degrade quietly.
+ */
+function dropShiftHook(out) {
+  const file = path.join(out, 'hooks/hooks.json')
+  const config = JSON.parse(fs.readFileSync(file, 'utf8'))
+  for (const group of config.hooks.SessionStart) {
+    group.hooks = group.hooks.filter((hook) => !hook.command.includes('load-persona'))
+  }
+  fs.writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`)
+  fs.rmSync(path.join(out, 'hooks/load-persona.py'))
 }
 
 /**

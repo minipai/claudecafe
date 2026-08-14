@@ -96,9 +96,16 @@ function newestConversation(cwd: string) {
   return backlog ? { sessionId: newest.sessionId, backlog } : null
 }
 
-/** The café plugin staged next to the bundled main process at build time. It is
- * loaded by name, so a copy installed from the marketplace steps aside for it
- * rather than greeting the master twice. */
+/**
+ * The café plugin staged next to the bundled main process at build time, so the
+ * window behaves the same on a Mac that has never installed it.
+ *
+ * Its name is what keeps it single. Plugins are keyed by name, and this one is
+ * `cafe` — the same name the marketplace copy has — so a machine with the
+ * plugin installed loads this one and the installed one steps aside (the
+ * session lists exactly one `cafe`, sourced `cafe@inline`, and the SessionStart
+ * hooks fire once). Renaming it would load both and greet the master twice.
+ */
 const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'cafe-plugin')
 
 const SCENE_BRIEF = `You are being watched through a window, not a terminal — the master sees you standing there, one spoken line at a time.
@@ -106,6 +113,27 @@ const SCENE_BRIEF = `You are being watched through a window, not a terminal — 
 - Speak in short replies — a few sentences, the way someone standing there would. A paragraph or two is still fine to say out loud.
 - Only what is genuinely too long to say belongs in the ${REPORT_TOOL} tool: an investigation, a walkthrough, a comparison, anything with headings or code blocks. It puts the body behind a link the master opens when he wants it, and she only says the one line you give it. Never paste something that long into your reply instead.
 - Call ${EXPRESSION_TOOL} when your mood changes, so your face keeps up with the work.`
+
+/**
+ * Everything the session has to be told to be her: who she is, that she is
+ * being watched through a window, and what to answer in.
+ *
+ * Her persona would normally arrive through the plugin's SessionStart hook,
+ * which is python — so the window says it itself, in the system prompt, and the
+ * hook is dropped from the copy the app carries (see build.mjs). On a Mac with
+ * no python3 the café's greeting and mirror go quiet, but the maid is still the
+ * maid; without this she would answer as a plain assistant in her own window.
+ */
+function shiftBrief() {
+  const persona = personaOf(CAFE_PLUGIN)
+  return [
+    persona && `Adopt this persona for the entire session — it overrides the default assistant voice:\n\n${persona}`,
+    SCENE_BRIEF,
+    `Respond in ${replyLanguage()}.`,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+}
 
 /**
  * One conversation with the maid, held open across turns. The SDK is used in
@@ -292,18 +320,17 @@ export class MaidSession {
       // settings, memory and plugins — the same files Claude Code reads.
       settingSources: ['user', 'project', 'local'],
       plugins: [{ type: 'local', path: CAFE_PLUGIN }],
-      // The sprite and the name plate are ことね, so the shift can't be drawn at
-      // random the way a terminal session does — CLAUDE_MAID pins her. What she
-      // speaks is not pinned: that is the café plugin's own setting, and it is
-      // the master's to make. `env` replaces the subprocess environment
-      // outright, hence the spread.
-      // Told, and only then: an untouched window inherits whatever the café is
-      // set to, so the maid in here and the one in his terminal are the same.
+      // Who the café's remaining hooks think is on shift — the mirror and the
+      // diary ask, and the sprite is ことね, so it can't be the random draw a
+      // terminal session gets. What she speaks is not pinned: that is the
+      // café's own setting until ⌘K says otherwise, so an untouched window
+      // answers in the same language his terminal does. `env` replaces the
+      // subprocess environment outright, hence the spread.
       env: { ...process.env, CLAUDE_MAID: 'kotone', ...(chosenSpeech() ? { CLAUDE_MAID_LANG: chosenSpeech() } : {}) },
       // The window is a scene, not a transcript: one spoken line at a time, a
       // face over the name plate, a panel for anything long. She needs to know
       // that, on top of everything Claude Code normally tells her.
-      systemPrompt: { type: 'preset', preset: 'claude_code', append: SCENE_BRIEF },
+      systemPrompt: { type: 'preset', preset: 'claude_code', append: shiftBrief() },
       mcpServers: { cafe: cafeTools },
       resume: this.sessionId ?? undefined,
       permissionMode: this.settings.mode,

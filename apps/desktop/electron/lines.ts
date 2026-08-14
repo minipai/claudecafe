@@ -83,15 +83,39 @@ export async function askForLines(language: string, persona: string): Promise<Li
   }
 }
 
-/** Her own persona, as the app carries it — the lines have to sound like the
- * maid standing there, not like an interface. */
+/**
+ * Her persona — the instructions that make the session ことね rather than an
+ * assistant, and what the window's own lines have to sound like.
+ *
+ * A master who hired her from the café himself has his own copy of her, and
+ * that is the one his terminal reads, so it is read here too: the maid in the
+ * window and the maid in his terminal should not be two different drafts. The
+ * app's own copy stands behind it, which is the whole of it on a machine that
+ * has never heard of the café.
+ */
 export function personaOf(pluginRoot: string) {
+  return bodyOf(path.join(personasDir(), 'kotone.md')) || bodyOf(path.join(pluginRoot, 'maids/kotone.md'))
+}
+
+function bodyOf(file: string) {
   try {
-    const file = fs.readFileSync(path.join(pluginRoot, 'maids/kotone.md'), 'utf8')
-    return file.replace(/^---\n[\s\S]*?\n---\n/, '').trim()
+    return fs.readFileSync(file, 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').trim()
   } catch {
     return ''
   }
+}
+
+/** Where the master keeps the maids he has hired, as the café reads it. */
+function personasDir() {
+  const home = path.join(os.homedir(), '.claude/cafe')
+  try {
+    const config = JSON.parse(fs.readFileSync(path.join(home, 'config.json'), 'utf8'))
+    const told = String(config.personas_dir ?? '').trim()
+    if (told) return told.replace(/^~(?=\/|$)/, os.homedir())
+  } catch {
+    // no café config: the default place, which may not exist either
+  }
+  return path.join(home, 'personas')
 }
 
 function writingBrief(language: string, persona: string) {
