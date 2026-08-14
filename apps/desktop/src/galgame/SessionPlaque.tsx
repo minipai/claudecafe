@@ -1,5 +1,6 @@
 import { ChevronDown, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { fill, text } from '@/i18n'
 import { ButtonGroup } from '@/components/ui/button-group'
 import {
   DropdownMenu,
@@ -35,8 +36,8 @@ function VisibleSetting({
           variant="outline"
           size="sm"
           className="h-8 px-2 text-xs text-muted-foreground"
-          aria-label={`Switch ${label}, currently ${value}`}
-          title={`${label}：${shown}`}
+          aria-label={fill(text().scene.switchSetting, { what: label, value })}
+          title={`${label}: ${shown}`}
         >
           {shown}
           <ChevronDown className="size-3 opacity-55" />
@@ -77,6 +78,7 @@ export function SessionPlaque({
   models: ModelChoice[]
   onChange: (patch: Partial<SessionSettings>) => void
 }) {
+  const t = text().scene
   const current = models.find((model) => model.value === (settings.model ?? 'default'))
   const efforts = current?.efforts.length ? current.efforts : EFFORTS
 
@@ -86,8 +88,8 @@ export function SessionPlaque({
         variant="outline"
         size="sm"
         className="h-8 px-2.5 font-mono text-[11px] tracking-[0.08em] text-muted-foreground"
-        aria-label="Open conversation history"
-        title="Conversation history"
+        aria-label={t.openHistory}
+        title={t.history}
         onClick={onOpenHistory}
       >
         <History className="size-3.5" />
@@ -95,13 +97,13 @@ export function SessionPlaque({
       </Button>
 
       <VisibleSetting
-        label="Model"
+        label={t.model}
         value={settings.model ?? 'default'}
         items={models.map((model) => ({ value: model.value, label: model.label }))}
         onPick={(value) => onChange({ model: value === 'default' ? null : value })}
       />
       <VisibleSetting
-        label="Effort"
+        label={t.effort}
         value={settings.effort}
         items={efforts.map((level) => ({ value: level as string, label: level as string }))}
         onPick={(value) => onChange({ effort: value as SessionSettings['effort'] })}
@@ -113,8 +115,8 @@ export function SessionPlaque({
         variant="outline"
         size="sm"
         className="h-8 px-2 font-mono text-[11px] text-muted-foreground"
-        aria-label="Open the command bar"
-        title="Everything else (⌘K)"
+        aria-label={t.openCommandBar}
+        title={t.commandBar}
         onClick={onSwitch}
       >
         ⌘K

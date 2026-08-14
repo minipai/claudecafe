@@ -1,4 +1,5 @@
 import { CommandPanel, Figure, Heading, Meter, tokens, useAnswer } from './CommandPanel'
+import { fill, text } from '@/i18n'
 import type { ContextReport } from '@/agent'
 
 type ContextPanelProps = {
@@ -12,15 +13,16 @@ type ContextPanelProps = {
  * measured now, not at the end of the last turn like the status line.
  */
 export function ContextPanel({ open, onClose }: ContextPanelProps) {
+  const t = text().panel.context
   const { answer: report, ready } = useAnswer<ContextReport>(open, () => window.cafe!.context())
 
   return (
     <CommandPanel
       open={open}
       title="/context"
-      description="What is filling the context window."
+      description={t.description}
       ready={ready}
-      missing={report ? undefined : 'The session could not report its context.'}
+      missing={report ? undefined : t.missing}
       onClose={onClose}
     >
       {report && (
@@ -30,18 +32,18 @@ export function ContextPanel({ open, onClose }: ContextPanelProps) {
               label={report.model}
               percent={report.percentage}
               note={`${tokens(report.totalTokens)} / ${tokens(report.maxTokens)}`}
-              caption={`${report.percentage}% of the window is in use`}
+              caption={fill(t.inUse, { percent: report.percentage })}
             />
           </section>
 
           <section className="flex flex-col gap-3">
-            <Heading>Where it went</Heading>
+            <Heading>{t.where}</Heading>
             {report.categories.map((category) => (
               <Meter
                 key={category.name}
                 // Deferred means the tools are counted but loaded on demand, so
                 // the row is not the same kind of full as the others.
-                label={category.deferred ? `${category.name} · on demand` : category.name}
+                label={category.deferred ? `${category.name} · ${t.onDemand}` : category.name}
                 percent={(category.tokens / report.maxTokens) * 100}
                 note={tokens(category.tokens)}
               />
@@ -50,7 +52,7 @@ export function ContextPanel({ open, onClose }: ContextPanelProps) {
 
           {report.memoryFiles.length > 0 && (
             <section>
-              <Heading>Memory files</Heading>
+              <Heading>{t.memory}</Heading>
               <div className="flex flex-col gap-1.5">
                 {report.memoryFiles.map((file) => (
                   <Figure key={file.path} label={shorten(file.path)} value={tokens(file.tokens)} />
@@ -61,7 +63,7 @@ export function ContextPanel({ open, onClose }: ContextPanelProps) {
 
           {report.mcpTools.length > 0 && (
             <section>
-              <Heading>MCP tools</Heading>
+              <Heading>{t.mcpTools}</Heading>
               <div className="flex flex-col gap-1.5">
                 {report.mcpTools.map((tool) => (
                   <Figure

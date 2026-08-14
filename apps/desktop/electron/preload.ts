@@ -2,9 +2,15 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { BridgeEvent, CafeBridge } from '../src/agent/bridge'
 
 const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? ''
+const localeArg = process.argv.find((arg) => arg.startsWith('--cafe-locale=')) ?? ''
+const choiceArg = process.argv.find((arg) => arg.startsWith('--cafe-locale-choice=')) ?? ''
 
 const bridge: CafeBridge = {
   cwd: folderArg.slice('--cafe-cwd='.length),
+  locale: localeArg.slice('--cafe-locale='.length),
+  localeChoice: choiceArg.slice('--cafe-locale-choice='.length),
+  setLocale: (choice) => ipcRenderer.send('cafe:set-locale', choice),
+  setSpeech: (language) => ipcRenderer.send('cafe:set-speech', language),
   start: (runId, prompt, images) => ipcRenderer.send('cafe:start', runId, prompt, images),
   answer: (askId, value) => ipcRenderer.send('cafe:answer', askId, value),
   interrupt: () => ipcRenderer.send('cafe:interrupt'),

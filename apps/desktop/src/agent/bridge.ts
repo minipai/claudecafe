@@ -104,8 +104,43 @@ export type Conversation = { sessionId: string; opening: string; at: number }
 /** A line from the conversation this window reopened on. */
 export type BacklogLine = { role: 'user' | 'assistant' | 'event'; content: string; at: number }
 
+/**
+ * Why she cannot work, when the reason is not hers to fix. The window borrows
+ * Claude Code's own login and network, so the master has to be told which of
+ * those is in the way — an unread error string in a dialogue box is not telling.
+ */
+export type Trouble = {
+  reason: 'sign-in' | 'limit' | 'offline'
+  /** What actually came back, kept for the master who wants to see it. */
+  detail: string
+}
+
+/**
+ * The few things the window says as her, when no model is writing. English is
+ * built in; anything else she writes once and the window keeps. Nothing here
+ * takes an argument — what she is asking about is already on screen beside her.
+ */
+export type Lines = {
+  greeting: string
+  interrupted: string
+  commandAsk: string
+  editAsk: string
+  planAsk: string
+  errorTitle: string
+}
+
 export type BridgeEvent =
   | { kind: 'status'; status: SessionStatus }
+  /** The session could not run at all — signed out, out of allowance, offline. */
+  | { kind: 'trouble'; trouble: Trouble }
+  /** Her own wording for what the window says as her, once it is written. */
+  | { kind: 'lines'; lines: Lines }
+  /** What she is speaking, and what the window was told to make her speak —
+   * empty when that is left to the café's own setting. */
+  | { kind: 'speech'; language: string; chosen: string }
+  /** The interface's language changed — the code to draw it in, and what was
+   * picked (which may be `system`). */
+  | { kind: 'locale'; locale: string; choice: string }
   /** A fresh look from the café plugin — shot in the background, so it lands
    * whenever it lands rather than inside a run. */
   | { kind: 'look'; look: Look }
@@ -127,6 +162,15 @@ export type BridgeEvent =
 export type CafeBridge = {
   /** The folder this window was opened on. One window, one project. */
   cwd: string
+  /** The language code the interface is drawn in — `en-AU`, `zh-TW`. Resolved:
+   * following the system is already worked out by the time it gets here. */
+  locale: string
+  /** What was picked, which may be `system`. */
+  localeChoice: string
+  /** Draw the interface in another language, and keep that choice. */
+  setLocale(choice: string): void
+  /** Have her reply in this — free text, empty to follow the café's setting. */
+  setSpeech(language: string): void
   start(runId: string, prompt: string, images: Attachment[]): void
   answer(askId: string, value: unknown): void
   interrupt(runId: string): void

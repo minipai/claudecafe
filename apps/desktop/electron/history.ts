@@ -158,11 +158,73 @@ function knownProjects(): string[] {
   }
 }
 
+/**
+ * Where she was left standing. She is a figure on the desktop, not a document
+ * window: the master puts her somewhere for a reason, and a maid who marches
+ * back to the middle of the screen every morning is one he has to move again.
+ */
+export function rememberBounds(bounds: Electron.Rectangle) {
+  fs.writeFileSync(boundsFile(), JSON.stringify(bounds, null, 2))
+}
+
+export function lastBounds(): Electron.Rectangle | null {
+  try {
+    const saved = JSON.parse(fs.readFileSync(boundsFile(), 'utf8'))
+    const measured = ['x', 'y', 'width', 'height'].every((side) => typeof saved?.[side] === 'number')
+    return measured ? saved : null
+  } catch {
+    return null // never placed, or the note was cleared out
+  }
+}
+
+/**
+ * Which language the interface is drawn in — `system` to follow the machine.
+ * This is a code, not a sentence: it picks one of the translations the app
+ * ships. What she *speaks* is the café's own setting and is nothing to do
+ * with this one.
+ */
+export function rememberLocale(choice: string) {
+  fs.writeFileSync(localeFile(), JSON.stringify({ locale: choice }, null, 2))
+}
+
+export function chosenLocale(): string {
+  try {
+    return String(JSON.parse(fs.readFileSync(localeFile(), 'utf8')).locale || 'system')
+  } catch {
+    return 'system'
+  }
+}
+
+/**
+ * What she should reply in, when the window is told rather than left to the
+ * café's own setting. Free text: it is dropped into her instructions as it
+ * stands, so "Japanese" and "繁體中文（台灣用語）" work the same way. Empty
+ * means the window keeps out of it — the master's terminal maid and this one
+ * then speak the same language, which is the sane default.
+ */
+export function rememberSpeech(language: string) {
+  fs.writeFileSync(speechFile(), JSON.stringify({ language }, null, 2))
+}
+
+export function chosenSpeech(): string {
+  try {
+    return String(JSON.parse(fs.readFileSync(speechFile(), 'utf8')).language || '')
+  } catch {
+    return ''
+  }
+}
+
 /** How many folders the window keeps its own note of, and how many it offers. */
 const FOLDER_LIMIT = 20
 const OFFERED = 40
 
 const foldersFile = () => path.join(app.getPath('userData'), 'folders.json')
+
+const boundsFile = () => path.join(app.getPath('userData'), 'window.json')
+
+const localeFile = () => path.join(app.getPath('userData'), 'locale.json')
+
+const speechFile = () => path.join(app.getPath('userData'), 'speech.json')
 
 const memoryFile = () => path.join(app.getPath('userData'), 'sessions.json')
 

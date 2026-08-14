@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { fill, text } from '@/i18n'
 import type { ChatMessage } from './types'
 
 type ChatHistoryProps = {
@@ -27,7 +28,7 @@ type ChatHistoryProps = {
 }
 
 function formatTime(timestamp: number) {
-  return new Intl.DateTimeFormat('zh-TW', {
+  return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -47,6 +48,7 @@ export function ChatHistory({
   onCompact,
   onNewSession,
 }: ChatHistoryProps) {
+  const t = text()
   /** Which tool answers the master has opened — his reading, not the log's. */
   const [opened, setOpened] = useState<Set<number>>(new Set())
 
@@ -79,13 +81,13 @@ export function ChatHistory({
       <DialogContent showCloseButton={false} className="flex h-[min(760px,86vh)] w-[min(960px,90vw)] max-w-none flex-col gap-0 overflow-hidden border border-border bg-card/80 p-0 shadow-xl backdrop-blur-xl sm:max-w-[960px]">
         <DialogHeader className="flex-row items-center justify-between border-b border-border px-4 py-2.5 text-left">
           <DialogTitle className="text-sm font-medium text-foreground">
-            BACKLOG
+            {t.log.title}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Contains {messages.length} {messages.length === 1 ? 'message' : 'messages'}.
+            {messages.length === 1 ? t.log.oneMessage : fill(t.log.messages, { count: messages.length })}
           </DialogDescription>
           <DialogClose asChild>
-            <Button variant="ghost" size="icon-sm" aria-label="Close conversation history">
+            <Button variant="ghost" size="icon-sm" aria-label={t.log.close}>
               <X />
             </Button>
           </DialogClose>
@@ -98,7 +100,7 @@ export function ChatHistory({
               <div className="relative mx-auto max-w-[760px]">
                 {messages.length === 0 && (
                   <p className="py-10 text-center text-sm text-muted-foreground">
-                    Nothing here yet — this session just started.
+                    {t.log.empty}
                   </p>
                 )}
                 {messages.map((message, index) => {
@@ -206,7 +208,7 @@ export function ChatHistory({
                             isUser ? 'text-foreground/60' : 'text-foreground/85'
                           }`}
                         >
-                          {isUser ? 'ご主人様' : 'ことね'}
+                          {isUser ? t.log.you : t.log.her}
                         </div>
                       </div>
 
@@ -235,11 +237,11 @@ export function ChatHistory({
         <DialogFooter className="mx-0 mb-0 flex-row items-center justify-between rounded-none border-t bg-transparent px-4 py-3 sm:justify-between">
           <div className="flex items-center gap-1">
             <p className="mr-2 text-xs text-muted-foreground">
-              {messages.length} {messages.length === 1 ? 'message' : 'messages'}
+              {messages.length === 1 ? t.log.oneMessage : fill(t.log.messages, { count: messages.length })}
             </p>
             <Button variant="ghost" className="text-xs text-muted-foreground" onClick={jumpToLatest}>
               <ArrowDown data-icon="inline-start" />
-              Jump to latest
+              {t.log.latest}
             </Button>
           </div>
 
@@ -247,27 +249,27 @@ export function ChatHistory({
           <div className="flex items-center gap-1">
             {isAwaitingAnswer && (
               <Button size="sm" className="mr-2 text-xs" onClick={onClose}>
-                Kotone is waiting for an answer
+                {t.log.waiting}
               </Button>
             )}
             <Button
               variant="ghost"
               className="text-xs text-muted-foreground"
               disabled={isBusy || isCompacting}
-              title="Summarise older turns to free up context"
+              title={t.log.compactHint}
               onClick={onCompact}
             >
               <Shrink data-icon="inline-start" />
-              {isCompacting ? 'Compacting…' : 'Compact'}
+              {isCompacting ? t.log.compacting : t.log.compact}
             </Button>
             <Button
               variant="ghost"
               className="text-xs text-muted-foreground"
-              title="Start over in this folder"
+              title={t.log.newSessionHint}
               onClick={onNewSession}
             >
               <Plus data-icon="inline-start" />
-              New session
+              {t.log.newSession}
             </Button>
           </div>
         </DialogFooter>

@@ -1,4 +1,5 @@
-import { editAskLine, permissionAskLine, planAskLine } from './content'
+import { lines } from './content'
+import { text } from '@/i18n'
 
 export type PermissionKind = 'plan' | 'edit' | 'command' | 'generic'
 
@@ -40,10 +41,10 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
     return {
       kind: 'plan',
       standing: 'ExitPlanMode',
-      title: 'Plan ready for review',
-      askLine: planAskLine(),
-      allowLabel: 'Start working',
-      denyLabel: 'Keep planning',
+      title: text().ask.planTitle,
+      askLine: lines().planAsk,
+      allowLabel: text().ask.startWorking,
+      denyLabel: text().ask.keepPlanning,
       canAlwaysAllow: false,
       expand: plan,
       planPreview: firstParagraph(plan),
@@ -60,9 +61,9 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
       kind: 'edit',
       standing: toolName,
       title: filePath,
-      askLine: editAskLine(filePath),
-      allowLabel: 'Allow',
-      denyLabel: 'Deny',
+      askLine: lines().editAsk,
+      allowLabel: text().ask.allow,
+      denyLabel: text().ask.deny,
       canAlwaysAllow: true,
       diff: { filePath, before, after },
     }
@@ -73,10 +74,10 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
     return {
       kind: 'command',
       standing: `Bash ${command.trim().split(/\s+/)[0] ?? ''}`.trim(),
-      title: String(input.description ?? 'Run a command'),
-      askLine: permissionAskLine(command),
-      allowLabel: 'Allow',
-      denyLabel: 'Deny',
+      title: String(input.description ?? text().ask.runCommand),
+      askLine: lines().commandAsk,
+      allowLabel: text().ask.allow,
+      denyLabel: text().ask.deny,
       canAlwaysAllow: true,
       command,
     }
@@ -86,9 +87,9 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
     kind: 'generic',
     standing: toolName,
     title: toolName,
-    askLine: permissionAskLine(toolName),
-    allowLabel: 'Allow',
-    denyLabel: 'Deny',
+    askLine: lines().commandAsk,
+    allowLabel: text().ask.allow,
+    denyLabel: text().ask.deny,
     canAlwaysAllow: true,
   }
 }

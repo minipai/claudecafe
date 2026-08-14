@@ -22,7 +22,7 @@ import {
   PLAN_REJECTED_LINE,
   SHORT_ANSWER,
   TODO_STEPS,
-} from './content'
+} from './content.mock'
 
 function sleep(ms: number, signal?: AbortSignal) {
   return new Promise<void>((resolve) => {
@@ -198,7 +198,7 @@ export async function* query({
 
     yield { type: 'tool_use', id: `mock-${mockCall++}`, name: whisper.name, label: whisper.label }
     yield { type: 'todos', todos: todosAt(index + 1) }
-    // 中場重拍一次 look —— 真 adapter 裡是「做完一段工作就重拍」
+    // A look reshot mid-run — the real adapter shoots one after each piece of work.
     if (whisper === HEAVY_WHISPERS[1]) {
       yield { type: 'look', look: LOOK_HEAVY_WORKING }
     }

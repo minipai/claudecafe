@@ -1,4 +1,5 @@
 import { CommandPanel, useAnswer } from './CommandPanel'
+import { fill, text } from '@/i18n'
 import type { McpServer } from '@/agent'
 
 /** A server that did not answer is the thing worth seeing, so it is coloured;
@@ -17,15 +18,16 @@ const TONE: Record<McpServer['status'], string> = {
  * and a server that failed is why a tool she reached for was not there.
  */
 export function McpPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = text().panel.mcp
   const { answer: servers, ready } = useAnswer<McpServer[]>(open, () => window.cafe!.mcpServers())
 
   return (
     <CommandPanel
       open={open}
       title="/mcp"
-      description="MCP servers and whether they answered."
+      description={t.description}
       ready={ready}
-      missing={servers?.length ? undefined : 'No MCP servers are configured here.'}
+      missing={servers?.length ? undefined : t.missing}
       onClose={onClose}
     >
       <section className="flex flex-col gap-3.5">
@@ -36,7 +38,7 @@ export function McpPanel({ open, onClose }: { open: boolean; onClose: () => void
               <span className={`shrink-0 font-mono text-xs ${TONE[server.status]}`}>{server.status}</span>
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {server.tools} {server.tools === 1 ? 'tool' : 'tools'}
+              {server.tools === 1 ? t.oneTool : fill(t.tools, { count: server.tools })}
               {server.scope && ` · ${server.scope}`}
             </p>
             {server.error && <p className="mt-0.5 text-xs text-destructive">{server.error}</p>}

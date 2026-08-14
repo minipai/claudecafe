@@ -8,7 +8,7 @@ export type Whisper = {
   id: number
   text: string
   /** `thought` is the model reasoning out loud, `tool` is what it did, and
-   * `master` is what ご主人様 just said — his own words, so the scene shows
+   * `master` is what the master just said — his own words, so the scene shows
    * them going in rather than swallowing them. */
   kind: 'tool' | 'thought' | 'master'
 }

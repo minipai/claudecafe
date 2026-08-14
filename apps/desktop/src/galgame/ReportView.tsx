@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { X } from 'lucide-react'
 import { marked } from 'marked'
 import { Button } from '@/components/ui/button'
+import { text } from '@/i18n'
 
 type ReportViewProps = {
   shortline: string
@@ -35,7 +36,7 @@ export function ReportView({ shortline, report, onClose, actions }: ReportViewPr
         className="absolute top-[18px] right-[22px] z-[6]"
         style={{ opacity: contentVisible ? 1 : 0, pointerEvents: contentVisible ? 'auto' : 'none' }}
       >
-        <Button variant="ghost" size="icon-sm" aria-label="Close" onClick={onClose}>
+        <Button variant="ghost" size="icon-sm" aria-label={text().scene.close} onClick={onClose}>
           <X />
         </Button>
       </div>

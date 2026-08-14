@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import type { Attachment } from '@/agent'
+import { text } from '@/i18n'
 
 /** An image on its way to her, with the thumbnail it will be seen as. */
 export type Pending = Attachment & { id: number; preview: string }
@@ -40,7 +41,7 @@ export function Attachments({
           />
           <button
             type="button"
-            aria-label="Remove image"
+            aria-label={text().scene.removeImage}
             onClick={() => onRemove(image.id)}
             className="absolute -top-1.5 -right-1.5 rounded-full border border-border bg-card p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground"
           >

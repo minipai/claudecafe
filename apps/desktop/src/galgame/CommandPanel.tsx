@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { fill, text } from '@/i18n'
 import {
   Dialog,
   DialogClose,
@@ -51,7 +52,7 @@ export function CommandPanel({
           </DialogTitle>
           <DialogDescription className="sr-only">{description}</DialogDescription>
           <DialogClose asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`Close ${title}`}>
+            <Button variant="ghost" size="icon-sm" aria-label={fill(text().panel.close, { what: title })}>
               <X />
             </Button>
           </DialogClose>

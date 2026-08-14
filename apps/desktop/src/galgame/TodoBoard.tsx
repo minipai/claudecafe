@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
 import type { Todo } from '@/agent'
 import { cn } from '@/lib/utils'
+import { text } from '@/i18n'
 
 /**
  * The model's own task list, pinned to the corner while it works. Written
@@ -22,7 +23,7 @@ export function TodoBoard({ todos }: { todos: Todo[] }) {
           transition={{ duration: 0.25 }}
         >
           <div className="mb-2 flex items-baseline justify-between font-mono text-[10px] tracking-[0.12em] text-muted-foreground">
-            <span>TASKS</span>
+            <span>{text().scene.tasks}</span>
             <span className="tabular-nums">
               {done}/{todos.length}
             </span>

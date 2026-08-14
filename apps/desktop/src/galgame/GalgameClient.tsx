@@ -13,6 +13,7 @@ import { AgentsPanel } from './AgentsPanel'
 import { McpPanel } from './McpPanel'
 import { StatusPanel } from './StatusPanel'
 import { CommandBar } from './CommandBar'
+import { TroublePanel } from './TroublePanel'
 import { ChatHistory } from './ChatHistory'
 import { DemoRow } from './DemoRow'
 import { InputBar } from './InputBar'
@@ -27,7 +28,8 @@ import { faceFor } from '@/agent/expressions'
 import { readPermission, type PermissionAsk } from './permission'
 import { toast } from 'sonner'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
-import { AGENT_ERROR_TITLE, GREETING, INTERRUPTED_LINE } from './content'
+import { lines as currentLines, speakThese } from './content'
+import { fill, speakThis, text } from '@/i18n'
 import {
   INITIAL_LOOK,
   isLive,
@@ -42,7 +44,9 @@ import {
   type Question,
   type Report,
   type SessionSettings,
+  type Lines,
   type Todo,
+  type Trouble,
 } from '@/agent'
 
 /** The slash commands this window answers itself, instead of letting the CLI
@@ -91,10 +95,10 @@ function signed(line: string, mood?: string) {
   return mood ? `${line} ${mood}` : line
 }
 
-function createPreviewHistory() {
+function createPreviewHistory(greeting: string) {
   const now = Date.now()
   return [
-    createChatMessage('assistant', GREETING, undefined, now - 10 * 60_000),
+    createChatMessage('assistant', greeting, undefined, now - 10 * 60_000),
     createChatMessage('user', '狀態列有點看不清楚，model 和 effort 還是要留著。', undefined, now - 8 * 60_000),
     createChatMessage('assistant', '好，ことね把文字對比提高，也把操作區重新排整齊了。', undefined, now - 7 * 60_000),
     createChatMessage('user', '可以讓我回看這次的對話嗎？', undefined, now - 3 * 60_000),
@@ -126,18 +130,31 @@ export function GalgameClient() {
   const [commands, setCommands] = useState<CafeCommand[]>([])
   /** The slash command the window is answering itself, if any. */
   const [panel, setPanel] = useState<SelfAnswered | null>(null)
+  /** Why she cannot work at all, when the session says so. */
+  const [trouble, setTrouble] = useState<Trouble | null>(null)
   /** The conversation she is on, as the session last reported it. */
   const [conversation, setConversation] = useState<string | null>(null)
   /** The folder she is on. It changes under the window when she is sent
    * elsewhere, so it is state rather than something read once at startup. */
   const [folder, setFolder] = useState(workingDirectory ?? '')
   const [switching, setSwitching] = useState(false)
+  /** The interface's language, which is not hers: a code, kept so switching it
+   * redraws everything under this component. */
+  const [locale, setLocale] = useState(window.cafe?.localeChoice ?? 'system')
+  /** What she is speaking, as the session reports it — a sentence, not a code. */
+  const [speech, setSpeech] = useState({ language: '', chosen: '' })
   // A real session starts empty; the canned backlog is only there to give the
   // mock something to show.
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
-    isLive ? () => [createChatMessage('assistant', GREETING)] : createPreviewHistory,
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() =>
+    isLive
+      ? [createChatMessage('assistant', currentLines().greeting)]
+      : createPreviewHistory(currentLines().greeting),
   )
-  const lastLineRef = useRef(GREETING)
+  /** Her wording, once the session has written it — English until then. */
+  const [lines, setLines] = useState<Lines>(currentLines)
+  /** The opening as it currently stands, so a later rewrite knows what to replace. */
+  const greetingRef = useRef(currentLines().greeting)
+  const lastLineRef = useRef(currentLines().greeting)
   const abortControllerRef = useRef<AbortController | null>(null)
   /** What she has been told she may keep doing without asking again. Kept by
    * what was actually allowed — one yes to a command is not a yes to all of
@@ -195,11 +212,13 @@ export function GalgameClient() {
     })
   }, [])
 
-  /** Things that happened between the spoken lines — tools, permissions, interruptions. */
-  const appendEvent = useCallback((content: string, detail?: string, toolId?: string) => {
+  /** Things that happened between the spoken lines — tools, permissions,
+   * interruptions. `output` is what it answered, when that is known already;
+   * a tool call gets its answer later, by id. */
+  const appendEvent = useCallback((content: string, detail?: string, toolId?: string, output?: string) => {
     setChatMessages((current) => [
       ...current,
-      { ...createChatMessage('event', content, undefined, Date.now(), detail), toolId },
+      { ...createChatMessage('event', content, undefined, Date.now(), detail), toolId, output },
     ])
   }, [])
 
@@ -231,7 +250,7 @@ export function GalgameClient() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    cut(GREETING)
+    cut(lines.greeting)
   }, [])
 
   /**
@@ -251,15 +270,39 @@ export function GalgameClient() {
         setFolder(event.cwd)
       } else if (event.kind === 'commands') {
         setCommands(event.commands)
+      } else if (event.kind === 'speech') {
+        setSpeech({ language: event.language, chosen: event.chosen })
+      } else if (event.kind === 'locale') {
+        speakThis(event.locale)
+        setLocale(event.choice)
+      } else if (event.kind === 'lines') {
+        // Written after the window opened, so the opening may already be on
+        // screen in English: it is swapped out as long as it is still all she
+        // has said. Anything further down the log stays as it was said.
+        speakThese(event.lines)
+        const stale = greetingRef.current
+        greetingRef.current = event.lines.greeting
+        setLines(event.lines)
+        setChatMessages((current) =>
+          current.length === 1 && current[0].role === 'assistant' && current[0].content === stale
+            ? [createChatMessage('assistant', event.lines.greeting)]
+            : current,
+        )
+        if (lastLineRef.current === stale) cut(event.lines.greeting)
+      } else if (event.kind === 'trouble') {
+        // She cannot work and it is not hers to fix: the panel says whose it is.
+        // Nothing is left spinning behind it — the turn is over either way.
+        setTrouble(event.trouble)
+        setPhase('idle')
       } else if (event.kind === 'backlog') {
         setConversation(event.sessionId)
         // Nothing has been said where she has just arrived: she opens up the way
         // she does at the start of any session, rather than standing there with
         // the last folder's line still in the box.
         if (!event.lines.length) {
-          setChatMessages([createChatMessage('assistant', GREETING)])
+          setChatMessages([createChatMessage('assistant', lines.greeting)])
           setExpression('neutral')
-          cut(GREETING)
+          cut(lines.greeting)
           return
         }
         setChatMessages(
@@ -388,10 +431,10 @@ export function GalgameClient() {
       current?.resolve([])
       return null
     })
-    appendEvent('Interrupted by ご主人様')
+    appendEvent(text().scene.interrupted)
     setPhase('idle')
-    say(INTERRUPTED_LINE)
-    appendChatMessage('assistant', INTERRUPTED_LINE)
+    say(lines.interrupted)
+    appendChatMessage('assistant', lines.interrupted)
   }
 
   /**
@@ -414,13 +457,13 @@ export function GalgameClient() {
         setCtaVisible(false)
       setTodos([])
       setReport(null)
-      setChatMessages([createChatMessage('assistant', GREETING)])
+      setChatMessages([createChatMessage('assistant', lines.greeting)])
       setExpression('neutral')
       setLook(isLive ? null : INITIAL_LOOK)
       setLookUnread(true)
       alwaysAllowRef.current = new Set()
       setChoiceRequest(null)
-      cut(GREETING)
+      cut(lines.greeting)
       setChangingSession(false)
     }, 340)
   }
@@ -436,12 +479,12 @@ export function GalgameClient() {
     try {
       for await (const msg of query({ prompt: '/compact' })) {
         if (msg.type === 'system' && msg.subtype === 'compact_boundary') {
-          setChatMessages((current) => [...current, createChatMessage('boundary', 'compacted')])
-          toast.success('Context compacted', { description: 'Earlier turns are now a summary.' })
+          setChatMessages((current) => [...current, createChatMessage('boundary', text().log.compacted)])
+          toast.success(text().scene.compacted, { description: text().scene.compactedNote })
         }
       }
     } catch (error) {
-      toast.error(AGENT_ERROR_TITLE, {
+      toast.error(currentLines().errorTitle, {
         description: error instanceof Error ? error.message : String(error),
       })
     }
@@ -453,7 +496,13 @@ export function GalgameClient() {
     appendChatMessage('user', prompt)
     // The picture itself is hers to look at; the log records that it was handed
     // over, which is what the master will want to remember later.
-    if (images.length) appendEvent(`Handed over ${images.length === 1 ? 'an image' : `${images.length} images`}`)
+    if (images.length) {
+      appendEvent(
+        images.length === 1
+          ? text().scene.handedOverOne
+          : fill(text().scene.handedOver, { count: images.length }),
+      )
+    }
     // The input clears itself on submit; his words float up the scene instead
     // of vanishing between the typing and her answer. A picture sent with
     // nothing said still floats something, or the scene looks like it missed it.
@@ -476,11 +525,11 @@ export function GalgameClient() {
       // Anything the agent throws — a dropped connection, a refused request —
       // lands here. The scene stays put and the failure is reported as a toast.
       const message = error instanceof Error ? error.message : String(error)
-      toast.error(AGENT_ERROR_TITLE, {
+      toast.error(currentLines().errorTitle, {
         description: message,
-        action: { label: 'Retry', onClick: () => tryRun(prompt) },
+        action: { label: text().scene.retry, onClick: () => tryRun(prompt) },
       })
-      appendEvent('Run failed', message)
+      appendEvent(text().scene.runFailed, message)
       setPhase('idle')
       askPermission(null)
     } finally {
@@ -508,7 +557,9 @@ export function GalgameClient() {
         case 'command_output':
           // The café's own paperwork, handed over on the spot: it is not
           // dialogue, so nothing is typed into the box and her face stays put.
-          appendEvent(msg.label, 'printed its own answer')
+          // The paper itself goes on the record with it: the panel can be shut,
+          // and the log is where the master looks for what was already handed over.
+          appendEvent(msg.label, text().scene.printedAnswer, undefined, msg.body)
           setReport({ label: `${msg.label} →`, body: msg.body })
           setCtaVisible(true)
           setReaderOpen(true)
@@ -539,7 +590,7 @@ export function GalgameClient() {
           recordResult(msg.id, msg.output, msg.failed)
           // A tool that failed is worth saying out loud in the scene; the rest
           // is only worth having on the record.
-          if (msg.failed) act(() => pushWhisper('That did not work', 'tool'))
+          if (msg.failed) act(() => pushWhisper(text().scene.toolFailed, 'tool'))
           break
         case 'result':
           // Done, and he is somewhere else: what she ended on is worth hearing
@@ -586,7 +637,7 @@ export function GalgameClient() {
     setReaderOpen(true)
   }
 
-  // Just fold the panel back down — the spoken line and the 展開全文 link stay,
+  // Just fold the panel back down — the spoken line and its read-more link stay,
   // so the report can be reopened as many times as the master likes.
   function closeReport() {
     setReaderOpen(false)
@@ -691,19 +742,17 @@ export function GalgameClient() {
         <StatusBar folder={folder} />
       </Stage>
 
-      <AnimatePresence>
-        {(readerOpen || permissionExpanded) && (
-          <motion.div
-            key="scrim"
-            className="fixed inset-0 z-[149] bg-black/60"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={readerOpen ? closeReport : () => setPermissionExpanded(false)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Clicking off the reader closes it. Nothing is painted here: the window
+       * is transparent, so a dimmed sheet would darken the desktop behind her
+       * rather than the scene — the reader carries its own solid card. */}
+      {(readerOpen || permissionExpanded) && (
+        <div
+          className="fixed inset-0 z-[149]"
+          onClick={readerOpen ? closeReport : () => setPermissionExpanded(false)}
+        />
+      )}
 
+      <TroublePanel trouble={trouble} onClose={() => setTrouble(null)} />
       <UsagePanel open={panel === '/usage'} onClose={() => setPanel(null)} />
       <ContextPanel open={panel === '/context'} onClose={() => setPanel(null)} />
       <AgentsPanel open={panel === '/agents'} onClose={() => setPanel(null)} />
@@ -712,6 +761,8 @@ export function GalgameClient() {
       <CommandBar
         open={switching}
         folder={folder}
+        locale={locale}
+        speech={speech}
         conversation={conversation}
         doing={{
           onNewSession: startNewSession,

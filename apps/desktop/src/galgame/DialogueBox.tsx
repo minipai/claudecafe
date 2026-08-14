@@ -7,6 +7,7 @@ import { InnerVoice } from './InnerVoice'
 import type { Look } from '@/agent'
 import type { Pace } from './useSpeech'
 import type { Expression } from './types'
+import { text } from '@/i18n'
 
 /** Auto-play reads at his pace; skip runs to the end of what she has said. */
 const PACES: Pace[] = ['auto', 'skip']
@@ -57,6 +58,7 @@ export function DialogueBox({
   unreadLook,
   onLookRead,
 }: DialogueBoxProps) {
+  const t = text().scene
   return (
     <motion.div
       layout
@@ -97,7 +99,7 @@ export function DialogueBox({
                 key={option}
                 type="button"
                 aria-pressed={pace === option}
-                title={option === 'auto' ? 'Turn pages automatically' : 'Run to the end of what she has said'}
+                title={option === 'auto' ? t.autoPace : t.skipPace}
                 onClick={() => onPace(pace === option ? 'manual' : option)}
                 className={`rounded px-1.5 py-1 font-mono text-[10px] leading-none tracking-[0.14em] uppercase transition-colors ${
                   pace === option

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { type SessionStatus } from '@/agent'
-import { WORKING_DIRECTORY } from './content'
 
 /**
  * Session status floating at the bottom edge. Everything here is measured: the
@@ -18,13 +17,14 @@ import { WORKING_DIRECTORY } from './content'
 export function StatusBar({ folder }: { folder: string }) {
   const status = useLiveStatus()
   const elapsed = useElapsed()
-  const shown = folder || WORKING_DIRECTORY
   const changed = status && (status.added > 0 || status.removed > 0)
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-2.5 z-[5] flex justify-center">
       <div className="pointer-events-auto flex items-center gap-2.5 rounded-b-lg bg-card/90 px-4 py-1.5 font-mono text-sm font-medium text-foreground/90 shadow-[0_1px_10px_rgba(0,0,0,0.06)] backdrop-blur-md">
-        <span title={shown}>{shown.split('/').pop()}</span>
+        {/* Nothing stands in for the folder when there is none — the window
+         * always opens on one, so an empty name means the bridge is not there. */}
+        {folder && <span title={folder}>{folder.split('/').pop()}</span>}
         {status?.branch && (
           <>
             <span className="text-foreground/30">·</span>

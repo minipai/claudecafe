@@ -13,7 +13,7 @@ export function newSession() {
   if (isLive) endLiveSession()
 }
 
-export { INITIAL_LOOK } from './content'
+export { INITIAL_LOOK } from './content.mock'
 export type { AgentMessage, Attachment, Look, PermissionResult, QueryOptions, Question, Report, Tier, Todo } from './types'
 export type {
   BacklogLine,
@@ -21,12 +21,14 @@ export type {
   CafeCommand,
   ContextReport,
   Conversation,
+  Lines,
   McpServer,
   ModelChoice,
   SessionSettings,
   SessionStatus,
   StatusReport,
   Subagent,
+  Trouble,
   UsageReport,
   UsageWindow,
 } from './bridge'

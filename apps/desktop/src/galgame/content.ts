@@ -1,25 +1,30 @@
-/** This window is opened on one folder and stays there — same as a VS Code window. */
-export const WORKING_DIRECTORY = '~/Dev/claudecafe'
+import type { Lines } from '@/agent'
 
-export const GREETING =
-  'ご主人様～有什麼吩咐嗎？想問問題、聊聊程式碼，還是要ことね去查個 bug 呢？'
-
-export const IDLE_NUDGE =
-  '嗯～？ご主人様有什麼想問的嗎？儘管在上面打字，或點下面的按鈕試試看喔！'
-
-export const INTERRUPTED_LINE = '咦、被叫停了嗎…好、好的…'
-
-export function permissionAskLine(command: string) {
-  return `ご主人様，ことね想跑 \`${command}\`，可以嗎？`
+/**
+ * What she says when the window is the one talking. English is written here
+ * because the window has to open with something before anyone has signed in;
+ * in any other language she writes them herself and the session hands them over
+ * (see the main process's lines.ts).
+ *
+ * No line takes an argument. The command she is asking about, the file she wants
+ * to change and the plan she wrote are all on the card beside her already —
+ * wedging them into the sentence only makes the sentence untranslatable.
+ */
+export const ENGLISH_LINES: Lines = {
+  greeting: 'Goshujin-sama~ what can Kotone do for you? Ask away, or press ⌘K to send her somewhere else ♪',
+  interrupted: 'Eh, stopping there? O-okay…',
+  commandAsk: 'Goshujin-sama, Kotone would like to run this — may she?',
+  editAsk: 'Kotone would like to change this file~ have a look at what she is changing first?',
+  planAsk: 'The plan is laid out! Does this look right to Goshujin-sama?',
+  errorTitle: 'Kotone tripped over something…',
 }
 
-export function editAskLine(filePath: string) {
-  return `ことね想改 ${filePath} 這個檔案喔，先看一下改哪裡好不好～？`
+let spoken: Lines = ENGLISH_LINES
+
+/** Read at the moment of speaking, never kept: her wording can arrive a second
+ * after the window opens, and whoever asks next should get the new one. */
+export const lines = () => spoken
+
+export function speakThese(written: Lines) {
+  spoken = written
 }
-
-export function planAskLine() {
-  return '計畫排好了喔！ご主人様看看這樣走可以嗎？'
-}
-
-export const AGENT_ERROR_TITLE = 'ことね跌倒了…'
-

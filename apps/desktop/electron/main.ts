@@ -4,7 +4,15 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, Notification, screen, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import { MaidSession } from './maid'
-import { recentFolders, rememberFolder } from './history'
+import {
+  chosenLocale,
+  lastBounds,
+  recentFolders,
+  rememberBounds,
+  rememberFolder,
+  rememberLocale,
+  rememberSpeech,
+} from './history'
 import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -26,6 +34,7 @@ function openWindow(cwd: string) {
   const window = new BrowserWindow({
     width: 960,
     height: 800,
+    ...whereSheStood(),
     minWidth: 720,
     minHeight: 560,
     icon: ICON,
@@ -40,11 +49,31 @@ function openWindow(cwd: string) {
     frame: false,
     webPreferences: {
       preload: path.join(here, 'preload.cjs'),
-      additionalArguments: [`--cafe-cwd=${cwd}`],
+      additionalArguments: [
+        `--cafe-cwd=${cwd}`,
+        `--cafe-locale=${drawnIn()}`,
+        `--cafe-locale-choice=${chosenLocale()}`,
+      ],
     },
   })
 
   startShift(window, cwd)
+
+  // Where she is put down is written as it happens, not only on the way out —
+  // after a force-quit is exactly when coming back to the middle of the screen
+  // is most annoying. Carrying her moves the window sixty times a second, so
+  // the note waits for her to be set down rather than following her across.
+  let settling: NodeJS.Timeout | null = null
+  const noteFrame = () => {
+    if (settling) clearTimeout(settling)
+    settling = setTimeout(() => rememberBounds(window.getBounds()), 400)
+  }
+  window.on('moved', noteFrame)
+  window.on('resized', noteFrame)
+  window.on('close', () => {
+    if (settling) clearTimeout(settling)
+    rememberBounds(window.getBounds())
+  })
 
   window.on('closed', () => {
     shifts.get(window.webContents)?.close()
@@ -61,6 +90,23 @@ function openWindow(cwd: string) {
   }
 }
 
+/**
+ * The frame she was last left in, if it is still somewhere the master can see:
+ * a position saved on a monitor that has since been unplugged would put her off
+ * the edge of the desktop, and only the size survives that.
+ */
+function whereSheStood() {
+  const saved = lastBounds()
+  if (!saved) return {}
+  const onScreen = screen.getAllDisplays().some(({ workArea: area }) =>
+    saved.x < area.x + area.width &&
+    saved.x + saved.width > area.x &&
+    saved.y < area.y + area.height &&
+    saved.y + saved.height > area.y,
+  )
+  return onScreen ? saved : { width: saved.width, height: saved.height }
+}
+
 /** Put a maid on this folder in this window, replacing whoever was on it. */
 function startShift(window: BrowserWindow, cwd: string) {
   shifts.get(window.webContents)?.close()
@@ -70,6 +116,14 @@ function startShift(window: BrowserWindow, cwd: string) {
   shifts.set(window.webContents, session)
   rememberFolder(cwd)
   return session
+}
+
+/** The language code the interface is drawn in. `system` means whatever the
+ * machine is set to, which is what a window handed to someone else should do
+ * before being told otherwise. */
+function drawnIn() {
+  const choice = chosenLocale()
+  return choice === 'system' ? app.getLocale() : choice
 }
 
 /** Which maid the window that sent this is talking to. */
@@ -92,6 +146,19 @@ ipcMain.handle('cafe:mcp', (event) => shiftOf(event)?.mcpServers() ?? [])
 ipcMain.handle('cafe:status', (event) => shiftOf(event)?.status() ?? null)
 ipcMain.handle('cafe:conversations', (event) => shiftOf(event)?.conversations() ?? [])
 ipcMain.handle('cafe:folders', () => recentFolders())
+
+/** Another language for the interface. Nothing reopens: the window redraws, and
+ * the choice is kept for the next start. */
+ipcMain.on('cafe:set-locale', (event, choice: string) => {
+  rememberLocale(choice)
+  windowOf(event)?.webContents.send('cafe:event', { kind: 'locale', locale: drawnIn(), choice })
+})
+
+/** Another language for her — free text, empty to follow the café's setting. */
+ipcMain.on('cafe:set-speech', (event, language: string) => {
+  rememberSpeech(language)
+  shiftOf(event)?.speakIn()
+})
 
 /** Somewhere else to work. The window stays; what is in it starts over on the
  * new folder, with whatever was last said there. */

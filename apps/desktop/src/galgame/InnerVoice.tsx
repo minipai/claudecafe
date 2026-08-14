@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { MessageCircleDashed } from 'lucide-react'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import type { Look } from '@/agent'
+import { text } from '@/i18n'
 
 type InnerVoiceProps = {
   look: Look
@@ -27,7 +28,7 @@ export function InnerVoice({ look, onRead }: InnerVoiceProps) {
     >
       <HoverCardTrigger
         className="pointer-events-auto text-muted-foreground hover:text-foreground"
-        aria-label="Inner monologue"
+        aria-label={text().scene.innerVoice}
         onClick={(e) => e.stopPropagation()}
       >
         <MessageCircleDashed className="size-4.5 animate-pulse" />

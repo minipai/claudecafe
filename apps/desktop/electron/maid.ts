@@ -13,17 +13,21 @@ import {
 import { Turn } from './translate'
 import { cafeTools, EXPRESSION_TOOL, REPORT_TOOL } from './tools'
 import { watchLook } from './look'
+import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
+import { chosenSpeech } from './history'
 import { conversationBacklog, forgetSession, lastConversation, listConversations, rememberSession } from './history'
 import { readGit } from './status'
 import type {
   BridgeEvent,
   CafeCommand,
   ContextReport,
+  Lines,
   McpServer,
   ModelChoice,
   SessionSettings,
   StatusReport,
   Subagent,
+  Trouble,
   UsageReport,
   UsageWindow,
 } from '../src/agent/bridge'
@@ -123,6 +127,9 @@ export class MaidSession {
   private settings: SessionSettings = { model: null, effort: 'high', mode: 'default' }
   private models: ModelChoice[] = []
   private commands: CafeCommand[] = []
+  /** Her own wording for what the window says as her, once it exists. */
+  private lines: Lines | null = null
+  private writingLines = false
 
   constructor(private cwd: string, private emit: Emit) {}
 
@@ -151,6 +158,41 @@ export class MaidSession {
     void this.reportStatus()
     this.emit({ kind: 'settings', settings: this.settings, models: this.models })
     this.emit({ kind: 'commands', commands: this.commands })
+    void this.tellLines()
+    this.emit({ kind: 'speech', language: replyLanguage(), chosen: chosenSpeech() })
+  }
+
+  /** Another language for her. The session carries it in its environment, so it
+   * is reopened on the same conversation, and the window's own lines are asked
+   * for again in the new one. */
+  speakIn() {
+    this.lines = null
+    this.reopen()
+    void this.tellLines()
+    this.emit({ kind: 'speech', language: replyLanguage(), chosen: chosenSpeech() })
+  }
+
+  /**
+   * What the window says as her, in the language the café is set to. English is
+   * the app's own copy and needs no asking; anything else she writes once and
+   * the window keeps it, so this is a file read on every start but a session
+   * only on the first one — or on the first one after the master signs in.
+   */
+  private async tellLines() {
+    if (this.writingLines) return
+    const language = replyLanguage()
+    const kept = knownLines(language)
+    if (kept) {
+      this.lines = kept
+      this.emit({ kind: 'lines', lines: kept })
+      return
+    }
+    this.writingLines = true
+    const written = await askForLines(language, personaOf(CAFE_PLUGIN))
+    this.writingLines = false
+    if (!written) return // nobody to ask yet: English stands, and it asks again later
+    this.lines = written
+    this.emit({ kind: 'lines', lines: written })
   }
 
   /** Model and mode can be turned while she is standing there; effort is fixed
@@ -251,9 +293,13 @@ export class MaidSession {
       settingSources: ['user', 'project', 'local'],
       plugins: [{ type: 'local', path: CAFE_PLUGIN }],
       // The sprite and the name plate are ことね, so the shift can't be drawn at
-      // random the way a terminal session does — CLAUDE_MAID pins her. `env`
-      // replaces the subprocess environment outright, hence the spread.
-      env: { ...process.env, CLAUDE_MAID: 'kotone' },
+      // random the way a terminal session does — CLAUDE_MAID pins her. What she
+      // speaks is not pinned: that is the café plugin's own setting, and it is
+      // the master's to make. `env` replaces the subprocess environment
+      // outright, hence the spread.
+      // Told, and only then: an untouched window inherits whatever the café is
+      // set to, so the maid in here and the one in his terminal are the same.
+      env: { ...process.env, CLAUDE_MAID: 'kotone', ...(chosenSpeech() ? { CLAUDE_MAID_LANG: chosenSpeech() } : {}) },
       // The window is a scene, not a transcript: one spoken line at a time, a
       // face over the name plate, a panel for anything long. She needs to know
       // that, on top of everything Claude Code normally tells her.
@@ -291,6 +337,9 @@ export class MaidSession {
           this.emit({ kind: 'message', runId: run.runId, message })
         }
         if (sdk.type === 'result') {
+          // A turn that came back is proof there is someone to ask, which is
+          // what writing her lines needs and what a signed-out window lacked.
+          if (!this.lines) void this.tellLines()
           this.emit({ kind: 'done', runId: run.runId })
           this.runs.shift()
           void this.reportStatus(contextTokens(sdk.usage))
@@ -300,7 +349,13 @@ export class MaidSession {
       if (this.stream !== stream) return // already replaced by reset()
       this.stream = null
       const message = error instanceof Error ? error.message : String(error)
-      for (const run of this.runs) this.emit({ kind: 'done', runId: run.runId, error: message })
+      // Something the master has to go and fix is explained in a panel; the run
+      // then ends quietly, because a toast saying the same thing twice is noise.
+      const reason = whyStopped(message)
+      if (reason) this.emit({ kind: 'trouble', trouble: { reason, detail: message } })
+      for (const run of this.runs) {
+        this.emit({ kind: 'done', runId: run.runId, error: reason ? undefined : message })
+      }
       this.runs = []
     }
   }
@@ -502,4 +557,18 @@ class PromptQueue implements AsyncIterable<SDKUserMessage> {
       }
     }
   }
+}
+
+/**
+ * What the session died of, as far as the master is concerned. The SDK hands
+ * back whatever the CLI printed, and the three named here are all things he has
+ * to go and fix somewhere else — no amount of asking her again will help.
+ */
+function whyStopped(message: string): Trouble['reason'] | null {
+  const said = message.toLowerCase()
+  if (/login|log in|not authenticated|unauthori[sz]ed|invalid api key|oauth|credentials/.test(said)) return 'sign-in'
+  if (/usage limit|rate limit|quota|credit balance|too low/.test(said)) return 'limit'
+  if (/enotfound|econnrefused|etimedout|network|offline|fetch failed|getaddrinfo/.test(said)) return 'offline'
+  // Everything else keeps its own words: the run reports it, with a retry.
+  return null
 }

@@ -2,6 +2,7 @@ import { FileDiff, ListChecks, Terminal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { diffLines, type PermissionAsk } from './permission'
 import { cn } from '@/lib/utils'
+import { fill, text } from '@/i18n'
 
 type PermissionPromptProps = {
   ask: PermissionAsk
@@ -46,6 +47,7 @@ function Diff({ before, after }: { before: string; after: string }) {
  * a plan — so the choice is never made blind.
  */
 export function PermissionPrompt({ ask, onAllow, onAlwaysAllow, onDeny, onExpand }: PermissionPromptProps) {
+  const t = text().ask
   const Icon = ICON[ask.kind]
 
   return (
@@ -61,7 +63,7 @@ export function PermissionPrompt({ ask, onAllow, onAlwaysAllow, onDeny, onExpand
               className="ml-auto h-auto p-0 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
               onClick={onExpand}
             >
-              Read in full →
+              {t.readIt}
             </Button>
           )}
         </div>
@@ -84,8 +86,13 @@ export function PermissionPrompt({ ask, onAllow, onAlwaysAllow, onDeny, onExpand
           {ask.allowLabel}
         </Button>
         {ask.canAlwaysAllow && (
-          <Button variant="outline" size="sm" onClick={onAlwaysAllow} title={`Every ${ask.standing} for the rest of this session`}>
-            Always allow {ask.standing}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAlwaysAllow}
+            title={fill(t.alwaysAllowHint, { what: ask.standing })}
+          >
+            {fill(t.alwaysAllow, { what: ask.standing })}
           </Button>
         )}
         <Button variant="outline" size="sm" onClick={onDeny}>

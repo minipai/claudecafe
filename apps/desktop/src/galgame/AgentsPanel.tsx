@@ -1,4 +1,5 @@
 import { CommandPanel, useAnswer } from './CommandPanel'
+import { text } from '@/i18n'
 import type { Subagent } from '@/agent'
 
 /**
@@ -7,15 +8,16 @@ import type { Subagent } from '@/agent'
  * roster of this project, not of the app.
  */
 export function AgentsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = text().panel.agents
   const { answer: agents, ready } = useAnswer<Subagent[]>(open, () => window.cafe!.agents())
 
   return (
     <CommandPanel
       open={open}
       title="/agents"
-      description="The subagents this folder can call on."
+      description={t.description}
       ready={ready}
-      missing={agents?.length ? undefined : 'No subagents are configured here.'}
+      missing={agents?.length ? undefined : t.missing}
       onClose={onClose}
     >
       <section className="flex flex-col gap-4">

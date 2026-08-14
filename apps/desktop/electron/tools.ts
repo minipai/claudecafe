@@ -44,7 +44,7 @@ export const cafeTools = createSdkMcpServer({
           .describe(
             'The words written on the link that opens it — a few, in her voice and '
               + "the master's language, naming what is inside. \"Read the whole "
-              + 'investigation →\", "看看ことね查到什麼 →".',
+              + 'investigation →", "看看ことね查到什麼 →".',
           ),
         body: z.string().describe('The writing itself, as markdown.'),
       },

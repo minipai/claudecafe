@@ -1,4 +1,5 @@
 import { CommandPanel, Figure, Heading, Meter, useAnswer } from './CommandPanel'
+import { fill, text } from '@/i18n'
 import type { UsageReport } from '@/agent'
 
 type UsagePanelProps = {
@@ -12,17 +13,16 @@ type UsagePanelProps = {
  * these, and a window can afford the bars the terminal draws.
  */
 export function UsagePanel({ open, onClose }: UsagePanelProps) {
+  const t = text().panel.usage
   const { answer: report, ready } = useAnswer<UsageReport>(open, () => window.cafe!.usage())
 
   return (
     <CommandPanel
       open={open}
       title="/usage"
-      description="Plan limits and what this session has cost."
+      description={t.description}
       ready={ready}
-      missing={
-        report ? undefined : 'This session has no plan limits to report — an API key is billed per request.'
-      }
+      missing={report ? undefined : t.missing}
       onClose={onClose}
     >
       {report && (
@@ -33,21 +33,21 @@ export function UsagePanel({ open, onClose }: UsagePanelProps) {
                 key={window.label}
                 label={window.label}
                 percent={window.percent ?? 0}
-                note={`${window.percent ?? 0}% used`}
-                caption={window.resetsAt ? `Resets ${formatReset(window.resetsAt)}` : undefined}
+                note={fill(t.percentUsed, { percent: window.percent ?? 0 })}
+                caption={window.resetsAt ? fill(t.resets, { when: formatReset(window.resetsAt) }) : undefined}
               />
             ))}
             {report.windows.length === 0 && (
-              <p className="text-sm text-muted-foreground">No plan windows reported.</p>
+              <p className="text-sm text-muted-foreground">{t.noWindows}</p>
             )}
           </section>
 
           <section>
-            <Heading>This session</Heading>
+            <Heading>{t.session}</Heading>
             <div className="flex flex-col gap-1.5">
-              <Figure label="Cost" value={`US$${report.cost.toFixed(2)}`} />
+              <Figure label={t.cost} value={`US$${report.cost.toFixed(2)}`} />
               <Figure
-                label="Code changed"
+                label={t.codeChanged}
                 value={`+${report.linesAdded.toLocaleString()} / −${report.linesRemoved.toLocaleString()} lines`}
               />
             </div>
@@ -56,14 +56,14 @@ export function UsagePanel({ open, onClose }: UsagePanelProps) {
           {report.week && (
             <section>
               <Heading>
-                Last 7 days · {report.week.requests.toLocaleString()} requests ·{' '}
-                {report.week.sessions.toLocaleString()} sessions
+                {fill(t.week, {
+                  requests: report.week.requests.toLocaleString(),
+                  sessions: report.week.sessions.toLocaleString(),
+                })}
               </Heading>
               {/* The CLI's own caveat, kept: this is scanned from the transcripts
                   on this machine, so other devices and claude.ai are missing. */}
-              <p className="mb-3 text-xs text-muted-foreground">
-                Counted from this machine's transcripts, and the shares overlap.
-              </p>
+              <p className="mb-3 text-xs text-muted-foreground">{t.weekNote}</p>
               <div className="flex flex-col gap-1.5">
                 {report.week.behaviours.map((behaviour) => (
                   <Figure key={behaviour.label} label={behaviour.label} value={`${behaviour.pct}%`} />

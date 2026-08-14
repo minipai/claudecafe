@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { CommandMenu } from './CommandMenu'
 import { Attachments, readImage, type Pending } from './Attachments'
+import { text as ui } from '@/i18n'
 import type { Attachment, CafeCommand } from '@/agent'
 
 type InputBarProps = {
@@ -17,6 +18,7 @@ type InputBarProps = {
 /** Typing never stops: a prompt sent while she is working queues behind the
  * one she is on, and the stop button is there to cut her off instead. */
 export function InputBar({ isBusy, commands, onSubmit, onStop }: InputBarProps) {
+  const t = ui().scene
   const [text, setText] = useState('')
   /** Pictures handed over for this prompt, waiting above the input. */
   const [pending, setPending] = useState<Pending[]>([])
@@ -124,15 +126,15 @@ export function InputBar({ isBusy, commands, onSubmit, onStop }: InputBarProps) 
               e.currentTarget.form?.requestSubmit()
             }
           }}
-          placeholder="Say something to ことね…"
+          placeholder={t.say}
           className="min-h-8 resize-none border-none bg-transparent shadow-none focus-visible:ring-0"
         />
         {isBusy ? (
-          <Button type="button" size="icon-sm" aria-label="Stop" onClick={onStop}>
+          <Button type="button" size="icon-sm" aria-label={t.stop} onClick={onStop}>
             <Square fill="currentColor" className="size-2.5" />
           </Button>
         ) : (
-          <Button type="submit" size="icon-sm" disabled={!text.trim() && !pending.length} aria-label="Send">
+          <Button type="submit" size="icon-sm" disabled={!text.trim() && !pending.length} aria-label={t.send}>
             <ArrowUp />
           </Button>
         )}

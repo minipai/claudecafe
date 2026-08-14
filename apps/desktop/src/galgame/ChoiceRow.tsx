@@ -46,7 +46,7 @@ export function ChoiceRow({ question, onAnswer }: ChoiceRowProps) {
 
       {question.multiSelect && (
         <Button variant="link" size="sm" className="h-auto p-0 text-muted-foreground underline underline-offset-4 hover:text-foreground" onClick={() => onAnswer(picks)}>
-          {picks.length > 0 ? `這樣就好（${picks.length}）→` : '都不用 →'}
+          {picks.length > 0 ? `That's all (${picks.length}) →` : 'None of them →'}
         </Button>
       )}
     </div>

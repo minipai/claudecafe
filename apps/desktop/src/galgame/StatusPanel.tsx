@@ -1,4 +1,5 @@
 import { CommandPanel, Figure, Heading, useAnswer } from './CommandPanel'
+import { text } from '@/i18n'
 import type { StatusReport } from '@/agent'
 
 /**
@@ -7,47 +8,48 @@ import type { StatusReport } from '@/agent'
  * guess about itself.
  */
 export function StatusPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = text().panel.status
   const { answer: status, ready } = useAnswer<StatusReport>(open, () => window.cafe!.status())
 
   return (
     <CommandPanel
       open={open}
       title="/status"
-      description="The account and the session this window runs on."
+      description={t.description}
       ready={ready}
-      missing={status ? undefined : 'The session could not report its status.'}
+      missing={status ? undefined : t.missing}
       onClose={onClose}
     >
       {status && (
         <>
           <section>
-            <Heading>Account</Heading>
+            <Heading>{t.account}</Heading>
             <div className="flex flex-col gap-1.5">
-              {status.account.email && <Figure label="Signed in as" value={status.account.email} />}
+              {status.account.email && <Figure label={t.signedInAs} value={status.account.email} />}
               {status.account.organization && (
-                <Figure label="Organization" value={status.account.organization} />
+                <Figure label={t.organization} value={status.account.organization} />
               )}
-              {status.account.plan && <Figure label="Plan" value={status.account.plan} />}
-              {status.account.provider && <Figure label="API" value={status.account.provider} />}
+              {status.account.plan && <Figure label={t.plan} value={status.account.plan} />}
+              {status.account.provider && <Figure label={t.api} value={status.account.provider} />}
             </div>
           </section>
 
           <section>
-            <Heading>This window</Heading>
+            <Heading>{t.window}</Heading>
             <div className="flex flex-col gap-1.5">
               {/* The folder is the one thing about this window that cannot be
                   changed from inside it — it was chosen when she was opened. */}
-              <Figure label="Folder" value={shorten(status.cwd)} />
-              <Figure label="Output style" value={status.outputStyle} />
+              <Figure label={t.folder} value={shorten(status.cwd)} />
+              <Figure label={t.outputStyle} value={status.outputStyle} />
             </div>
           </section>
 
           <section>
-            <Heading>What she has to work with</Heading>
+            <Heading>{t.toWorkWith}</Heading>
             <div className="flex flex-col gap-1.5">
-              <Figure label="Slash commands" value={String(status.commands)} />
-              <Figure label="Subagents" value={String(status.agents)} />
-              <Figure label="MCP servers connected" value={String(status.mcpServers)} />
+              <Figure label={t.commands} value={String(status.commands)} />
+              <Figure label={t.agents} value={String(status.agents)} />
+              <Figure label={t.mcpServers} value={String(status.mcpServers)} />
             </div>
           </section>
         </>
