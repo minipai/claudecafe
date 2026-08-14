@@ -212,8 +212,23 @@ export function ChatHistory({
                         </div>
                       </div>
 
-                      <div className="text-[15px] leading-[1.8] whitespace-pre-wrap text-foreground sm:text-base">
-                        {message.content}
+                      <div className="text-[15px] leading-[1.8] text-foreground sm:text-base">
+                        {/* Her side of the record is read as markdown, the same
+                            as everywhere else she is quoted — the log is where
+                            the long answers with lists and code in them end up.
+                            The master's own words are left exactly as he typed
+                            them: a path with underscores in it is a path, not
+                            an instruction to set something in italics. */}
+                        {isUser ? (
+                          <span className="whitespace-pre-wrap">{message.content}</span>
+                        ) : (
+                          <div
+                            className="report-md text-[15px] leading-[1.8] sm:text-base [&>*:last-child]:mb-0"
+                            dangerouslySetInnerHTML={{
+                              __html: marked.parse(message.content, { async: false, breaks: true }),
+                            }}
+                          />
+                        )}
                         {message.report && (
                           <details className="mt-3 whitespace-normal">
                             <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">

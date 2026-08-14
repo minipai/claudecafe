@@ -82,7 +82,13 @@ export function DialogueBox({
             />
           ) : (
             <div className="min-h-[2.2em] text-lg leading-[1.8] text-foreground">
-              {line}
+              {/* Her line is speech, so only the marks that fit inside a spoken
+                  sentence are read — bold, a code span, a link. Headings and
+                  lists belong to a laid-out answer above, and anything longer
+                  than that she hands over as a report. Without this the box
+                  read markdown when she laid something out and printed the
+                  asterisks when she spoke, which flipped mid-conversation. */}
+              <span dangerouslySetInnerHTML={{ __html: marked.parseInline(line, { async: false }) }} />
               {isTyping && (
                 <span className="ml-0.5 inline-block h-[1em] w-0.5 -translate-y-0.5 animate-[caret-blink_1s_step-end_infinite] bg-foreground align-middle" />
               )}
