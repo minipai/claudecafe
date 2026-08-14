@@ -292,8 +292,9 @@ export function GalgameClient() {
       } else if (event.kind === 'trouble') {
         // She cannot work and it is not hers to fix: the panel says whose it is.
         // Nothing is left spinning behind it — the turn is over either way.
+        // Null is the door opening again, and takes the panel with it.
         setTrouble(event.trouble)
-        setPhase('idle')
+        if (event.trouble) setPhase('idle')
       } else if (event.kind === 'backlog') {
         setConversation(event.sessionId)
         // Nothing has been said where she has just arrived: she opens up the way

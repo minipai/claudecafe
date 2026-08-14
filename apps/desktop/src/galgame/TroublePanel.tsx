@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -18,7 +18,12 @@ const SIGN_IN = 'claude'
 export function TroublePanel({ trouble, onClose }: { trouble: Trouble | null; onClose: () => void }) {
   const t = text().trouble
   const [detailShown, setDetailShown] = useState(false)
+  const [retrying, setRetrying] = useState(false)
   const said = trouble ? t[trouble.reason === 'sign-in' ? 'signIn' : trouble.reason] : null
+
+  // Whatever the retry found — the door open, or shut for the same reason as
+  // before — the answer has arrived, so the button is his again.
+  useEffect(() => setRetrying(false), [trouble])
 
   return (
     <Dialog open={Boolean(trouble)} onOpenChange={(open) => !open && onClose()}>
@@ -39,11 +44,31 @@ export function TroublePanel({ trouble, onClose }: { trouble: Trouble | null; on
           </DialogDescription>
 
           {trouble?.reason === 'sign-in' && (
-            // The one thing to go and type. Shown as a command because that is
-            // what it is — the sign-in lives in the terminal, not in here.
-            <pre className="mt-4 rounded-md border border-border bg-muted/60 px-3 py-2 font-mono text-xs text-foreground/80">
-              {SIGN_IN}
-            </pre>
+            <>
+              {/* The one thing to go and type. Shown as a command because that
+                  is what it is — the sign-in lives in the terminal, not here —
+                  but the button saves him the trip, and the second one is what
+                  he presses on the way back. */}
+              <pre className="mt-4 rounded-md border border-border bg-muted/60 px-3 py-2 font-mono text-xs text-foreground/80">
+                {SIGN_IN}
+              </pre>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => window.cafe?.signIn()}>
+                  {t.signIn.open}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={retrying}
+                  onClick={() => {
+                    setRetrying(true)
+                    window.cafe?.reconnect()
+                  }}
+                >
+                  {retrying ? t.signIn.checking : t.signIn.retry}
+                </Button>
+              </div>
+            </>
           )}
 
           {trouble && (

@@ -1,8 +1,9 @@
+import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, Notification, screen, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import { MaidSession } from './maid'
 import {
   chosenLocale,
@@ -146,6 +147,28 @@ ipcMain.handle('cafe:mcp', (event) => shiftOf(event)?.mcpServers() ?? [])
 ipcMain.handle('cafe:status', (event) => shiftOf(event)?.status() ?? null)
 ipcMain.handle('cafe:conversations', (event) => shiftOf(event)?.conversations() ?? [])
 ipcMain.handle('cafe:folders', () => recentFolders())
+
+/**
+ * The sign-in the window cannot do itself. She works through Claude Code and
+ * borrows its login, which happens in a terminal, so a terminal is opened with
+ * the command already running.
+ *
+ * The command is put on the clipboard first, because driving Terminal is
+ * automation and macOS may well refuse it the first time: then all that opens
+ * is a terminal, and what he has to type is one paste away.
+ */
+ipcMain.on('cafe:sign-in', () => {
+  clipboard.writeText(SIGN_IN)
+  execFile('osascript', ['-e', `tell application "Terminal" to do script "${SIGN_IN}"`, '-e', 'tell application "Terminal" to activate'], (refused) => {
+    if (refused) void shell.openPath('/System/Applications/Utilities/Terminal.app')
+  })
+})
+
+/** He says he has signed in: open the way in again and look. */
+ipcMain.on('cafe:reconnect', (event) => shiftOf(event)?.reconnect())
+
+/** Starting Claude Code is the sign-in — it asks on a machine that has none. */
+const SIGN_IN = 'claude'
 
 /** Another language for the interface. Nothing reopens: the window redraws, and
  * the choice is kept for the next start. */

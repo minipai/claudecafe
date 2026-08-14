@@ -131,8 +131,9 @@ export type Lines = {
 
 export type BridgeEvent =
   | { kind: 'status'; status: SessionStatus }
-  /** The session could not run at all — signed out, out of allowance, offline. */
-  | { kind: 'trouble'; trouble: Trouble }
+  /** The session could not run at all — signed out, out of allowance, offline.
+   * Null when it can again, so a panel about a door that is now open closes. */
+  | { kind: 'trouble'; trouble: Trouble | null }
   /** Her own wording for what the window says as her, once it is written. */
   | { kind: 'lines'; lines: Lines }
   /** What she is speaking, and what the window was told to make her speak —
@@ -182,6 +183,10 @@ export type CafeBridge = {
   /** Change what the session runs as. Model and mode take effect at once; a new
    * effort is picked up on the next turn. */
   configure(patch: Partial<SessionSettings>): void
+  /** Open a terminal on the sign-in the window cannot do itself. */
+  signIn(): void
+  /** Throw the connection away and open it again — he has just signed in. */
+  reconnect(): void
   /** What the plan and this session have been spent on. Null when the session
    * cannot say — an API key has no plan windows to report. */
   usage(): Promise<UsageReport | null>

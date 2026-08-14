@@ -133,6 +133,9 @@ export const en = {
     signIn: {
       title: 'ことね cannot get into the café',
       body: 'This window works through Claude Code, and Claude Code is not signed in on this Mac. Sign in once and she can start her shift.',
+      open: 'Sign in in Terminal',
+      retry: 'Signed in — let her in',
+      checking: 'Trying the door…',
     },
     limit: {
       title: 'The account has run out for now',

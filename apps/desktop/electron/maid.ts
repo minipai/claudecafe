@@ -108,6 +108,10 @@ function newestConversation(cwd: string) {
  */
 const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'cafe-plugin')
 
+/** How long a session gets to say it is connected before the window treats the
+ * silence as a locked door. Normally it answers in a second or two. */
+const WAY_IN_TIMEOUT = 15_000
+
 const SCENE_BRIEF = `You are being watched through a window, not a terminal — the master sees you standing there, one spoken line at a time.
 
 - Speak in short replies — a few sentences, the way someone standing there would. A paragraph or two is still fine to say out loud.
@@ -340,9 +344,46 @@ export class MaidSession {
     this.stream = query({ prompt: this.prompts, options })
     // The session answers these as soon as it is connected; waiting for the init
     // message would mean waiting for the master to say something first.
+    void this.checkWayIn(this.stream)
     void this.readModels(this.stream)
     void this.readCommands(this.stream)
     void this.pump(this.stream)
+  }
+
+  /**
+   * Whether the session got in at all, asked before the master says anything.
+   *
+   * The window borrows Claude Code's login, and a Mac that has never signed in
+   * does not fail — it waits, on a question nobody in this window can see. So
+   * the wait itself is the answer: a session that has not reported in by now is
+   * one nobody is going to answer, and the panel says so while he can still do
+   * something about it, rather than after a turn that never came back.
+   */
+  private async checkWayIn(stream: Query) {
+    const late = Symbol('late')
+    const answered = await Promise.race([
+      stream.initializationResult().catch((error) => error as Error),
+      new Promise<symbol>((resolve) => setTimeout(() => resolve(late), WAY_IN_TIMEOUT)),
+    ])
+    if (this.stream !== stream) return // reopened meanwhile; that one asks for itself
+    if (answered === late) {
+      this.emit({
+        kind: 'trouble',
+        trouble: { reason: 'sign-in', detail: `The session did not report in within ${WAY_IN_TIMEOUT / 1000}s.` },
+      })
+    } else if (answered instanceof Error) {
+      const reason = whyStopped(answered.message) ?? 'sign-in'
+      this.emit({ kind: 'trouble', trouble: { reason, detail: answered.message } })
+    } else {
+      this.emit({ kind: 'trouble', trouble: null }) // in: whatever was on screen is over
+    }
+  }
+
+  /** Try the way in again — he has just gone and signed in somewhere else. The
+   * conversation is kept; only the connection is thrown away and made afresh. */
+  reconnect() {
+    this.reopen()
+    this.open()
   }
 
   private async pump(stream: Query) {
