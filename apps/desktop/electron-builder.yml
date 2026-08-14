@@ -1,0 +1,33 @@
+# Her own app bundle, so she can be kept in the Dock and used while the
+# checkout is being worked on. Personal build for now: ad-hoc signed (see the
+# `package` script), no dmg, no notarization — those belong to handing her to
+# someone else.
+appId: dev.claudecafe.kotone
+productName: Kotone
+copyright: Claude Café
+
+directories:
+  output: release
+  buildResources: assets
+
+files:
+  - dist/**            # the window itself, built by vite
+  - dist-electron/**   # the main process, the preload, and the café plugin
+  - package.json
+
+# No asar. Half of what this app ships is read by something that is not this
+# app — the Agent SDK's own executable, the café plugin the session's subprocess
+# opens — and none of that can be read from inside an archive. Packed with the
+# two of them unpacked, the window still came up with nothing behind it; laid
+# out as plain files, which is exactly how the checkout runs, it works.
+asar: false
+
+mac:
+  category: public.app-category.developer-tools
+  icon: assets/app-icon.png
+  target:
+    - target: dir
+      arch: arm64
+  # No Developer ID yet: the bundle is signed ad-hoc afterwards, which is all
+  # macOS asks of an app that was never downloaded.
+  identity: null

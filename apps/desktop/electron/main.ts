@@ -18,9 +18,21 @@ import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
-/** Her, in the Dock. Run from a checkout there is no bundle to take an icon
- * from, so the app sets its own — otherwise she stands there as Electron. */
-const ICON = path.join(here, 'app-icon.png')
+// Two of her can be open at once — the one being used and the one being worked
+// on — and they must not share a drawer. Everything with her name on it hangs
+// off this: the folder she was last sent to, the window's place on screen, her
+// written lines, and the browser profile underneath them.
+if (!app.isPackaged) app.setName(`${app.getName()} (dev)`)
+
+/**
+ * Her, in the Dock. Run from a checkout there is no bundle to take an icon
+ * from, so the app sets its own — otherwise she stands there as Electron.
+ *
+ * The installed app takes its icon from its bundle, so this one is only ever
+ * the checkout's: the drained-of-colour copy, badged "dev" below, standing next
+ * to the real her in the Dock while she is being worked on.
+ */
+const ICON = path.join(here, app.isPackaged ? 'app-icon.png' : 'app-icon-dev.png')
 
 /** One window, one maid — she is sent to a folder rather than copied onto it,
  * so switching replaces the shift this window is watching. */
@@ -265,6 +277,9 @@ ipcMain.on('cafe:drag-end', (event) => {
 
 void app.whenReady().then(() => {
   app.dock?.setIcon(nativeImage.createFromPath(ICON))
+  // The checkout says so on its own icon, so the one being worked on and the
+  // one being used can sit side by side in the Dock.
+  if (!app.isPackaged) app.dock?.setBadge('dev')
   // Where she was left. A folder given on the command line still wins — that is
   // someone saying where to open her — and with nothing to go on she opens at
   // home rather than wherever the command happened to be run from.

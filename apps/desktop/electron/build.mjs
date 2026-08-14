@@ -62,8 +62,12 @@ function dropShiftHook(out) {
  */
 export async function buildElectron() {
   stageCafePlugin()
-  // The main process resolves it next to itself, bundled or not.
+  // The main process resolves them next to itself, bundled or not. Two icons:
+  // the maid facing the master is the app, and the same maid looking away,
+  // thinking, is the checkout — a different pose rather than a mark on the same
+  // one, because in the Dock at that size a mark is not something you notice.
   fs.copyFileSync(path.join(here, '../assets/app-icon.png'), path.join(here, '../dist-electron/app-icon.png'))
+  fs.copyFileSync(path.join(here, '../assets/app-icon-dev.png'), path.join(here, '../dist-electron/app-icon-dev.png'))
 
   await build({
     entryPoints: ['electron/main.ts'],
