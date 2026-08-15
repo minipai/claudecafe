@@ -32,6 +32,8 @@ export class Turn {
   private mood: string | null = null
   /** The last line already put on screen, so the result does not repeat it. */
   private spoken: string | null = null
+  /** How many tokens she has written this turn, for the line he waits at. */
+  private written = 0
 
   /** The prompt this turn was started with — only read to name the slash
    * command, when the turn turns out to be one. */
@@ -91,6 +93,11 @@ export class Turn {
   private readAssistant(sdk: Extract<SDKMessage, { type: 'assistant' }>): AgentMessage[] {
     if (sdk.message.model === LOCAL_COMMAND) return this.readPrinted(sdk)
     const out: AgentMessage[] = []
+
+    // Each message reports what it cost on its own, so the figure the master
+    // watches while he waits is the sum of them rather than any one of them.
+    this.written += sdk.message.usage?.output_tokens ?? 0
+    out.push({ type: 'progress', outputTokens: this.written })
 
     for (const block of sdk.message.content) {
       if (block.type === 'text') {

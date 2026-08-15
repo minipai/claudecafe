@@ -17,6 +17,13 @@ export const ENGLISH_LINES: Lines = {
   editAsk: 'Kotone would like to change this file~ have a look at what she is changing first?',
   planAsk: 'The plan is laid out! Does this look right to Goshujin-sama?',
   errorTitle: 'Kotone tripped over something…',
+  waiting: [
+    'Just a moment more~ ♡',
+    'Kotone is looking through this…',
+    'Mm — almost there ♪',
+    'This function is being a little difficult…',
+    'Nearly done, Goshujin-sama ♡',
+  ],
 }
 
 let spoken: Lines = ENGLISH_LINES

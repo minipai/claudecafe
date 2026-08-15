@@ -24,6 +24,13 @@ const ENGLISH: Lines = {
   editAsk: 'Kotone would like to change this file~ have a look at what she is changing first?',
   planAsk: 'The plan is laid out! Does this look right to Goshujin-sama?',
   errorTitle: 'Kotone tripped over something…',
+  waiting: [
+    'Just a moment more~ ♡',
+    'Kotone is looking through this…',
+    'Mm — almost there ♪',
+    'This function is being a little difficult…',
+    'Nearly done, Goshujin-sama ♡',
+  ],
 }
 
 /**
@@ -53,7 +60,10 @@ export function replyLanguage() {
 export function knownLines(language: string): Lines | null {
   if (isEnglish(language)) return ENGLISH
   const kept = readKept()[language]
-  return kept ?? null
+  // A note written before she had waiting lines is short of them, and English
+  // ones under a maid speaking something else is not what was kept. Treating it
+  // as unwritten is what gets her to write the missing ones in her own voice.
+  return kept?.waiting?.length ? kept : null
 }
 
 /**
@@ -133,6 +143,7 @@ Return JSON and nothing else, with exactly these keys:
 - "editAsk": she is asking to be allowed to change a file. The file name and the diff are shown beside her, so the line must not name the file.
 - "planAsk": she has finished writing a plan and wants it looked over before she starts.
 - "errorTitle": the title of a small failure notice — a few words, no sentence.
+- "waiting": an array of five short things she says while she is off working and cannot answer yet — the master is watching a timer tick beside them. Nothing about what she is doing: the same five are shown whatever the work is. Keep each under about twenty characters.
 
 One line each, the way she would actually say it. No quotes around the values other than JSON's own.`
 }
@@ -142,15 +153,25 @@ function readAnswer(answer: string): Lines | null {
   if (!body) return null
   try {
     const written = JSON.parse(body) as Record<string, unknown>
-    const lines = Object.fromEntries(
-      Object.keys(ENGLISH).map((key) => [key, typeof written[key] === 'string' ? written[key] : ENGLISH[key as keyof Lines]]),
-    ) as Lines
+    const spoken = SPOKEN.map((key) => [key, typeof written[key] === 'string' ? (written[key] as string) : ENGLISH[key]] as const)
+    // The waiting lines are the one answer that is a list; a reply that gave
+    // none of them keeps the English set rather than leaving her silent there.
+    const waiting = Array.isArray(written.waiting)
+      ? written.waiting.filter((line): line is string => typeof line === 'string' && line.trim() !== '')
+      : []
+    const lines: Lines = {
+      ...(Object.fromEntries(spoken) as Omit<Lines, 'waiting'>),
+      waiting: waiting.length ? waiting : ENGLISH.waiting,
+    }
     // A reply that answered none of it is not worth keeping.
-    return Object.keys(ENGLISH).some((key) => lines[key as keyof Lines] !== ENGLISH[key as keyof Lines]) ? lines : null
+    return spoken.some(([key, line]) => line !== ENGLISH[key]) || waiting.length ? lines : null
   } catch {
     return null
   }
 }
+
+/** Every line she writes as one sentence — all of them but the waiting list. */
+const SPOKEN = ['greeting', 'interrupted', 'commandAsk', 'editAsk', 'planAsk', 'errorTitle'] as const
 
 export const englishLines = () => ENGLISH
 

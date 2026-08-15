@@ -123,6 +123,9 @@ export function GalgameClient() {
   const [permissionExpanded, setPermissionExpanded] = useState(false)
   const [choiceRequest, setChoiceRequest] = useState<ChoiceRequest | null>(null)
   const [todos, setTodos] = useState<Todo[]>([])
+  /** How much she has written since the prompt went in — what the waiting line
+   * counts up while he waits. Reset when a fresh prompt starts it over. */
+  const [outputTokens, setOutputTokens] = useState(0)
   const [changingSession, setChangingSession] = useState(false)
   const [compacting, setCompacting] = useState(false)
   const [settings, setSettings] = useState<SessionSettings>({ model: null, effort: 'high', mode: 'default' })
@@ -534,6 +537,7 @@ export function GalgameClient() {
     setLaidOut(null)
     setCtaVisible(false)
     setTodos([])
+    setOutputTokens(0)
 
     const controller = new AbortController()
     inFlight.current.add(controller)
@@ -600,6 +604,11 @@ export function GalgameClient() {
           break
         case 'thinking':
           act(() => pushWhisper(msg.text, 'thought'))
+          break
+        case 'progress':
+          // A measurement, not a beat: it belongs to the clock running in the
+          // corner and not to the scene the master is clicking through.
+          setOutputTokens(msg.outputTokens)
           break
         case 'tool_use': {
           // The log is a record and keeps real time; the whisper and the face
@@ -712,6 +721,8 @@ export function GalgameClient() {
               laidOut={laidOut}
               isTyping={!isDone}
               isLoading={phase === 'working'}
+              waiting={lines.waiting}
+              outputTokens={outputTokens}
               queued={queued}
               onAdvance={advance}
               pace={pace}

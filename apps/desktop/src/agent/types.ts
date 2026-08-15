@@ -33,6 +33,9 @@ export type AgentMessage =
   // her voice: label is the command that was typed, body what it printed.
   | { type: 'command_output'; label: string; body: string }
   | { type: 'thinking'; text: string } // a line of the model's own reasoning
+  // How much she has written so far this turn, counted the way the terminal
+  // counts it — a running total, not a delta.
+  | { type: 'progress'; outputTokens: number }
   | { type: 'todos'; todos: Todo[] } // the model's task list, replaced wholesale on every write
   // mood = the 【…】 marker she signed with, for the log
   // said = the line is already on screen; the result is only the record of it

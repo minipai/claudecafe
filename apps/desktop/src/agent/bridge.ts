@@ -127,6 +127,9 @@ export type Lines = {
   editAsk: string
   planAsk: string
   errorTitle: string
+  /** What she says while she works, cycled through one at a time. Several,
+   * because a single line repeated on every turn stops reading as her. */
+  waiting: string[]
 }
 
 export type BridgeEvent =

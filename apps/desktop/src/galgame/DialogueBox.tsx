@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { marked } from 'marked'
 import { Button } from '@/components/ui/button'
 import { NamePlate } from './NamePlate'
+import { WaitingLine } from './WaitingLine'
 import { InnerVoice } from './InnerVoice'
 import type { Look } from '@/agent'
 import type { Pace } from './useSpeech'
@@ -16,6 +17,10 @@ type DialogueBoxProps = {
   /** An answer with shape to it — markdown, laid out in place of the typed line. */
   laidOut: string | null
   isLoading: boolean
+  /** Her own words for the wait, cycled through while she works. */
+  waiting: string[]
+  /** How much she has written this turn, as the session counts it. */
+  outputTokens: number
   /** How many lines are behind this one, waiting for the master to click on. */
   queued: number
   onAdvance: () => void
@@ -44,6 +49,8 @@ export function DialogueBox({
   isTyping,
   laidOut,
   isLoading,
+  waiting,
+  outputTokens,
   queued,
   onAdvance,
   pace,
@@ -64,7 +71,7 @@ export function DialogueBox({
       className="relative w-full rounded-xl border border-border bg-card shadow-md"
     >
       <div className="absolute -top-4 left-6 z-10 flex items-center gap-2.5">
-        <NamePlate expression={expression} isLoading={isLoading} />
+        <NamePlate expression={expression} />
         {unreadLook && <InnerVoice look={unreadLook} onRead={onLookRead} />}
       </div>
       <div className="absolute -top-4 right-4 z-10">{utility}</div>
@@ -89,6 +96,16 @@ export function DialogueBox({
               {isTyping && (
                 <span className="ml-0.5 inline-block h-[1em] w-0.5 -translate-y-0.5 animate-[caret-blink_1s_step-end_infinite] bg-foreground align-middle" />
               )}
+            </div>
+          )}
+
+          {/* That she is still at it, in the margin opposite the page-turning:
+              a line of hers, the seconds and what she has written. Its own
+              corner, so it neither covers what she said on the way nor moves
+              when the box grows. */}
+          {isLoading && (
+            <div className="absolute bottom-3 left-6.5">
+              <WaitingLine words={waiting} outputTokens={outputTokens} />
             </div>
           )}
 
