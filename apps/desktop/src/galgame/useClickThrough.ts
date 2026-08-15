@@ -40,11 +40,22 @@ export function useClickThrough() {
       bridge.endDrag()
     }
 
+    /** Once the pointer is handed away no move of it reaches the window, so the
+     * only way back is the cursor read off the screen. Anything drawn under it
+     * takes her out of the wall she has become. */
+    const reachable = (x: number, y: number) => {
+      if (carrying || !through || isEmptyAt(x, y)) return
+      through = false
+      bridge.clickThrough(false)
+    }
+
     window.addEventListener('mousemove', aim)
     window.addEventListener('pointerdown', grab)
     window.addEventListener('pointerup', drop)
     window.addEventListener('blur', drop)
+    const stopFollowing = bridge.followPointer(reachable)
     return () => {
+      stopFollowing()
       window.removeEventListener('mousemove', aim)
       window.removeEventListener('pointerdown', grab)
       window.removeEventListener('pointerup', drop)

@@ -31,6 +31,11 @@ const bridge: CafeBridge = {
   openFolder: () => ipcRenderer.invoke('cafe:open-folder'),
   notify: (body, waiting) => ipcRenderer.send('cafe:notify', body, waiting),
   clickThrough: (through) => ipcRenderer.send('cafe:click-through', through),
+  followPointer: (at) => {
+    const forward = (_event: unknown, x: number, y: number) => at(x, y)
+    ipcRenderer.on('cafe:pointer-at', forward)
+    return () => ipcRenderer.off('cafe:pointer-at', forward)
+  },
   pathFor: (file) => webUtils.getPathForFile(file),
   startDrag: () => ipcRenderer.send('cafe:drag-start'),
   endDrag: () => ipcRenderer.send('cafe:drag-end'),

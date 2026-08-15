@@ -92,6 +92,7 @@ function openWindow(cwd: string) {
     shifts.get(window.webContents)?.close()
     shifts.delete(window.webContents)
     stopCarrying(window)
+    stopWatching(window)
   })
 
   const devServer = process.env.VITE_DEV_SERVER_URL
@@ -241,8 +242,37 @@ ipcMain.on('cafe:notify', (event, body: string, waiting: boolean) => {
 
 // The scene says when the pointer is over nothing; forwarding keeps the moves
 // coming, which is how it knows to take the pointer back.
+//
+// Only macOS forwards them while this app is the front one, and handing the
+// pointer to someone else's window is exactly what stops it being the front
+// one. The scene then hears nothing more, so she never takes the pointer back:
+// she stands there being clicked straight through, and clicking her cannot fix
+// it because the click goes behind her too. While the pointer is being handed
+// away the cursor is read off the screen instead, which does not care whose
+// window is in front.
+const watching = new Map<BrowserWindow, NodeJS.Timeout>()
+
+function stopWatching(window: BrowserWindow) {
+  const looking = watching.get(window)
+  if (looking) clearInterval(looking)
+  watching.delete(window)
+}
+
 ipcMain.on('cafe:click-through', (event, through: boolean) => {
-  windowOf(event)?.setIgnoreMouseEvents(through, { forward: true })
+  const window = windowOf(event)
+  if (!window) return
+  window.setIgnoreMouseEvents(through, { forward: true })
+  stopWatching(window)
+  if (!through) return
+  watching.set(
+    window,
+    setInterval(() => {
+      if (window.isDestroyed()) return stopWatching(window)
+      const now = screen.getCursorScreenPoint()
+      const frame = window.getContentBounds()
+      window.webContents.send('cafe:pointer-at', now.x - frame.x, now.y - frame.y)
+    }, 40),
+  )
 })
 
 // Picking her up. The window follows the cursor from where it was grabbed,

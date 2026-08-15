@@ -217,6 +217,10 @@ export type CafeBridge = {
   /** Hand the pointer to whatever is behind the window, or take it back. The
    * window is transparent, so its empty half should not catch clicks. */
   clickThrough(through: boolean): void
+  /** Where the cursor is, in the window's own coordinates, while the pointer is
+   * being handed away — read off the screen, because a window that ignores the
+   * pointer is told nothing about it once another app is in front. */
+  followPointer(at: (x: number, y: number) => void): () => void
   /** Where a dropped file lives, which only the main world can say. */
   pathFor(file: File): string
   /** Picking her up moves the window; letting go puts it down. */
