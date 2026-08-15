@@ -47,6 +47,10 @@ export function useSpeech() {
   /** How many lines are waiting. Acts in between are not counted: they play on
    * the way to the next line, so on their own there is nothing to click for. */
   const [queued, setQueued] = useState(0)
+  /** Whether what is in the box was said to a question that has already been
+   * moved on from. The line stays — an empty box reads as her having left —
+   * but it is no longer an answer to what was just asked. */
+  const [past, setPast] = useState(false)
   const [pace, setPaceState] = useState<Pace>('manual')
   /** The same thing, readable from inside a beat that is playing right now. */
   const paceRef = useRef<Pace>('manual')
@@ -61,6 +65,7 @@ export function useSpeech() {
   const show = useCallback(
     (beat: Extract<Beat, { kind: 'line' }>) => {
       taken.current = true
+      setPast(false)
       // A question hands the scene back: nothing may carry him past the one
       // line he has to answer himself, so it is typed out like any other.
       if (beat.halt && paceRef.current !== 'manual') setPace('manual')
@@ -113,6 +118,7 @@ export function useSpeech() {
     queue.current = []
     taken.current = false
     setQueued(0)
+    setPast(true)
   }, [])
 
   /** On to the next line, playing whatever happened in between on the way. */
@@ -140,5 +146,5 @@ export function useSpeech() {
     return () => window.clearTimeout(timer)
   }, [pace, isDone, queued, line, advance])
 
-  return { line, isDone, say, act, cut, clear, advance, queued, pace, setPace }
+  return { line, isDone, past, say, act, cut, clear, advance, queued, pace, setPace }
 }

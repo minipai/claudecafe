@@ -16,7 +16,7 @@ export class Turn {
   /** The last spoken text block, held back so it can become the result line
    * instead of being said twice — with the face she signed it with, which
    * belongs to that line and not to the one still on screen. */
-  private pendingLine: { text: string; expression: Expression | null } | null = null
+  private pendingLine: { text: string; expression: Expression | null; marker: string | null } | null = null
   private tasks = new Map<string, Todo>()
   /** Her own checklist, as she last wrote it. Background tasks the SDK reports
    * separately are pinned under it. */
@@ -104,7 +104,7 @@ export class Turn {
         this.flush(out)
         const { text, expression, marker } = readMood(block.text)
         if (marker) this.mood = marker
-        this.pendingLine = text ? { text, expression } : null
+        this.pendingLine = text ? { text, expression, marker } : null
       } else if (block.type === 'thinking') {
         this.flush(out)
         for (const line of splitThought(block.thinking)) out.push({ type: 'thinking', text: line })
@@ -193,8 +193,11 @@ export class Turn {
    */
   private flush(out: AgentMessage[]) {
     if (!this.pendingLine) return
-    const { text, expression } = this.pendingLine
-    out.push({ type: 'text_delta', text, expression: expression ?? undefined })
+    const { text, expression, marker } = this.pendingLine
+    // The marker goes with the line it was written on, not with the end of the
+    // turn: she signs every block she writes, and the one on screen is the one
+    // whose mood is being worn.
+    out.push({ type: 'text_delta', text, expression: expression ?? undefined, mood: marker ?? undefined })
     this.spoken = text
     this.pendingLine = null
   }

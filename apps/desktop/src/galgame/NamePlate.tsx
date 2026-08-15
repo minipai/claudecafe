@@ -1,18 +1,15 @@
-import { KAOMOJI, type Expression } from '@/agent/expressions'
-
 /**
  * Galgame-style speaker plate floating over the dialogue frame's top-left
- * corner. Shows the kaomoji matching the sprite's current expression — that it
- * is her face, whatever she is doing: the waiting line at the foot of the box
- * is the one place that says she is working.
+ * corner. Her name and nothing else: the face she is wearing is on the artwork
+ * behind it, and the mood she signed with is written out at the foot of the box
+ * — a kaomoji here as well was the same thing said three times.
  */
-export function NamePlate({ expression = 'neutral' }: { expression?: Expression }) {
+export function NamePlate() {
   return (
-    <div className="inline-flex items-center gap-2.5 rounded-lg bg-primary px-4 py-1.5 shadow-md">
+    <div className="inline-flex items-center rounded-lg bg-primary px-4 py-1.5 shadow-md">
       <span className="text-sm font-semibold tracking-[0.2em] text-primary-foreground">
         ことね
       </span>
-      <span className="text-xs text-primary-foreground/75">{KAOMOJI[expression]}</span>
     </div>
   )
 }

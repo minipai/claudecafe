@@ -111,6 +111,9 @@ export function GalgameClient() {
   const [readerOpen, setReaderOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [expression, setExpression] = useState<Expression>('neutral')
+  /** The 【…】 she signed her last line with, kept as she wrote it. Empty until
+   * she has signed one — the window has nothing of its own to put there. */
+  const [mood, setMood] = useState<string | null>(null)
   const [ctaVisible, setCtaVisible] = useState(false)
   const [laidOut, setLaidOut] = useState<string | null>(null)
   const [whispers, setWhispers] = useState<Whisper[]>([])
@@ -173,6 +176,7 @@ export function GalgameClient() {
   const {
     line,
     isDone,
+    past,
     say: queueLine,
     act,
     cut: cutIn,
@@ -249,8 +253,11 @@ export function GalgameClient() {
 
   /** The face that came with a line goes on as the line does, not when it was
    * written — she may have said three things since. */
-  function wear(expr?: Expression) {
+  /** The face she signed a line with, put on when that line reaches the box —
+   * the marker as she wrote it, and the artwork it names. */
+  function wear(expr?: Expression, marker?: string) {
     if (expr) setExpression(expr)
+    if (marker) setMood(marker)
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -578,7 +585,7 @@ export function GalgameClient() {
           // Into the log the moment she says it — the log is the conversation as
           // it happens, not a summary written at the end of the turn.
           appendChatMessage('assistant', msg.text)
-          say(msg.text, { onShow: () => wear(msg.expression) })
+          say(msg.text, { onShow: () => wear(msg.expression, msg.mood) })
           break
         case 'look':
           setLook(msg.look)
@@ -643,7 +650,7 @@ export function GalgameClient() {
             if (msg.said) setCtaVisible(true)
             else
               say(msg.line, {
-                onShow: () => wear(msg.expression),
+                onShow: () => wear(msg.expression, msg.mood),
                 onDone: () => setCtaVisible(true),
               })
             break
@@ -656,12 +663,12 @@ export function GalgameClient() {
             // anything she said on the way here.
             say(msg.line, {
               onShow: () => {
-                wear(msg.expression)
+                wear(msg.expression, msg.mood)
                 setLaidOut(msg.line)
               },
             })
           } else {
-            say(msg.line, { onShow: () => wear(msg.expression) })
+            say(msg.line, { onShow: () => wear(msg.expression, msg.mood) })
           }
           break
       }
@@ -716,11 +723,12 @@ export function GalgameClient() {
           <WhisperZone whispers={whispers} />
           {!readerOpen && !permissionExpanded && (
             <DialogueBox
-              expression={expression}
               line={line}
               laidOut={laidOut}
               isTyping={!isDone}
+              isPast={past}
               isLoading={phase === 'working'}
+              mood={mood}
               waiting={lines.waiting}
               outputTokens={outputTokens}
               queued={queued}

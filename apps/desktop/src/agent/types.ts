@@ -27,7 +27,8 @@ export type AgentMessage =
   // What the tool answered, for the call of the same id
   | { type: 'tool_result'; id: string; output: string; failed: boolean }
   // expression = the face she signed this line with; it goes on when the line does
-  | { type: 'text_delta'; text: string; expression?: Expression }
+  // mood = the 【…】 marker itself, shown as she wrote it
+  | { type: 'text_delta'; text: string; expression?: Expression; mood?: string }
   | { type: 'look'; look: Look }
   // The CLI answering a slash command itself — /usage, /context, /model. Not
   // her voice: label is the command that was typed, body what it printed.

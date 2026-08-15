@@ -7,16 +7,18 @@ import { WaitingLine } from './WaitingLine'
 import { InnerVoice } from './InnerVoice'
 import type { Look } from '@/agent'
 import type { Pace } from './useSpeech'
-import type { Expression } from './types'
 import { fill, text } from '@/i18n'
 
 type DialogueBoxProps = {
-  expression: Expression
   line: string
   isTyping: boolean
+  /** Whether the line in the box was said before the question just asked. */
+  isPast: boolean
   /** An answer with shape to it — markdown, laid out in place of the typed line. */
   laidOut: string | null
   isLoading: boolean
+  /** The 【…】 she signed the line in the box with, as she wrote it. */
+  mood: string | null
   /** Her own words for the wait, cycled through while she works. */
   waiting: string[]
   /** How much she has written this turn, as the session counts it. */
@@ -44,11 +46,12 @@ type DialogueBoxProps = {
  * for the heavy tier instead of it being a separate transition.
  */
 export function DialogueBox({
-  expression,
   line,
   isTyping,
+  isPast,
   laidOut,
   isLoading,
+  mood,
   waiting,
   outputTokens,
   queued,
@@ -71,7 +74,7 @@ export function DialogueBox({
       className="relative w-full rounded-xl border border-border bg-card shadow-md"
     >
       <div className="absolute -top-4 left-6 z-10 flex items-center gap-2.5">
-        <NamePlate expression={expression} />
+        <NamePlate />
         {unreadLook && <InnerVoice look={unreadLook} onRead={onLookRead} />}
       </div>
       <div className="absolute -top-4 right-4 z-10">{utility}</div>
@@ -85,7 +88,15 @@ export function DialogueBox({
               dangerouslySetInnerHTML={{ __html: marked.parse(laidOut, { async: false }) }}
             />
           ) : (
-            <div className="min-h-[2.2em] text-lg leading-[1.8] text-foreground">
+            // A line said to the question before this one stays where it is —
+            // an emptied box reads as her having left the room — but it fades
+            // back so it is plainly the last thing she said and not an answer
+            // to what was just asked.
+            <div
+              className={`min-h-[2.2em] text-lg leading-[1.8] transition-colors duration-500 ${
+                isPast ? 'text-foreground/35' : 'text-foreground'
+              }`}
+            >
               {/* Her line is speech, so only the marks that fit inside a spoken
                   sentence are read — bold, a code span, a link. Headings and
                   lists belong to a laid-out answer above, and anything longer
@@ -99,15 +110,18 @@ export function DialogueBox({
             </div>
           )}
 
-          {/* That she is still at it, in the margin opposite the page-turning:
-              a line of hers, the seconds and what she has written. Its own
-              corner, so it neither covers what she said on the way nor moves
-              when the box grows. */}
-          {isLoading && (
-            <div className="absolute bottom-3 left-6.5">
+          {/* The corner opposite the page-turning, and one thing at a time in
+              it: while she works, that she is still at it; when she stops, the
+              mood she signed off with, written out the way she writes it. Both
+              belong to the line rather than over it, so they sit in the margin
+              the box already leaves. */}
+          <div className="absolute bottom-3 left-6.5">
+            {isLoading ? (
               <WaitingLine words={waiting} outputTokens={outputTokens} />
-            </div>
-          )}
+            ) : (
+              mood && <span className="text-sm whitespace-nowrap text-foreground">{mood}</span>
+            )}
+          </div>
 
           {/* Who turns the page, in the corner she turns it from: AUTO hands
               the turning over, and the triangle is the master doing it himself
