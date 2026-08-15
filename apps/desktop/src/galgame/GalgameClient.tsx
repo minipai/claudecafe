@@ -155,7 +155,11 @@ export function GalgameClient() {
   /** The opening as it currently stands, so a later rewrite knows what to replace. */
   const greetingRef = useRef(currentLines().greeting)
   const lastLineRef = useRef(currentLines().greeting)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  /** Every run still in flight. A prompt sent while she is working starts its
+   * own, so stopping her has to reach all of them — with only the newest kept,
+   * the older run carried on and put the plate back to spinning the moment the
+   * stopped one landed. */
+  const inFlight = useRef(new Set<AbortController>())
   /** What she has been told she may keep doing without asking again. Kept by
    * what was actually allowed — one yes to a command is not a yes to all of
    * them, and never to her editing files. */
@@ -432,8 +436,15 @@ export function GalgameClient() {
     appendEvent(`Answered: ${picks.length > 0 ? picks.join(', ') : 'nothing picked'}`)
   }
 
+  /** Every run at once. The count is left to each run's own way out, so a
+   * prompt sent in the moment between the abort and the last of them unwinding
+   * is not counted as finished along with them. */
+  function stopEverything() {
+    for (const controller of inFlight.current) controller.abort()
+  }
+
   function stop() {
-    abortControllerRef.current?.abort()
+    stopEverything()
     permissionRef.current?.resolve({ behavior: 'deny' })
     askPermission(null)
     setChoiceRequest((current) => {
@@ -453,7 +464,7 @@ export function GalgameClient() {
    */
   function startNewSession() {
     if (changingSession) return
-    abortControllerRef.current?.abort()
+    stopEverything()
     permissionRef.current?.resolve({ behavior: 'deny' })
     askPermission(null)
     newSession()
@@ -525,7 +536,7 @@ export function GalgameClient() {
     setTodos([])
 
     const controller = new AbortController()
-    abortControllerRef.current = controller
+    inFlight.current.add(controller)
     running.current++
 
     try {
@@ -547,6 +558,7 @@ export function GalgameClient() {
       // not working, whatever ended them. Without that last part a run that
       // finished any way other than by a result (stopped mid-tool, the session
       // dropped) left the plate spinning with nobody behind it.
+      inFlight.current.delete(controller)
       running.current = Math.max(0, running.current - 1)
       if (running.current > 0) setPhase('working')
       else setPhase((standing) => (standing === 'working' ? 'idle' : standing))
