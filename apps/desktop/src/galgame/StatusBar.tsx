@@ -16,7 +16,7 @@ import { type SessionStatus } from '@/agent'
  * the window stays put, and the status line may never lag behind where she is. */
 export function StatusBar({ folder }: { folder: string }) {
   const status = useLiveStatus()
-  const block = useBlockLeft()
+  const refill = useRefillTime()
   const changed = status && (status.added > 0 || status.removed > 0)
 
   return (
@@ -38,12 +38,13 @@ export function StatusBar({ folder }: { folder: string }) {
             <span>{compact(status.contextTokens)}</span>
           </>
         ) : null}
-        {block && (
+        {refill && (
           <>
             <span className="text-foreground/30">·</span>
-            {/* The plan's own word for the window, kept as the terminal prints
-                it — the master reads the two side by side. */}
-            <span>Block: {block}</span>
+            {/* The hour itself rather than what is left of it: a countdown has
+                to be turned back into a clock time before it means anything,
+                and it is the same hour the terminal prints. */}
+            <span>Reset: {refill}</span>
           </>
         )}
       </div>
@@ -66,44 +67,33 @@ function useLiveStatus() {
 }
 
 /**
- * What is left of the rolling five-hour allowance. The window it counts down to
- * is the plan's, not this window's, so a reload or a resumed conversation reads
- * the same as the terminal does — which is the point of it being here at all.
+ * When the rolling five-hour allowance refills. The window it reads is the
+ * plan's, not this window's, so a reload or a resumed conversation reads the
+ * same as the terminal does — which is the point of it being here at all.
  */
-function useBlockLeft() {
-  const [resetsAt, setResetsAt] = useState<string | null>(null)
-  const [left, setLeft] = useState<string | null>(null)
+function useRefillTime() {
+  const [at, setAt] = useState<string | null>(null)
 
   useEffect(() => {
     // The rolling session window is the first one the plan reports.
     const read = () =>
-      void window.cafe?.usage().then((report) => setResetsAt(report?.windows[0]?.resetsAt ?? null))
+      void window.cafe?.usage().then((report) => setAt(clockTime(report?.windows[0]?.resetsAt)))
     read()
-    // A five-hour window moves slowly; this is only here to pick up the next
-    // one starting, since the countdown itself is done from the time it names.
+    // A five-hour window moves slowly, and the hour it names does not move at
+    // all: this is only here to pick up the next window starting.
     const timer = window.setInterval(read, 5 * 60 * 1000)
     return () => window.clearInterval(timer)
   }, [])
 
-  useEffect(() => {
-    if (!resetsAt) {
-      setLeft(null)
-      return
-    }
-    const tick = () => setLeft(untilReset(resetsAt))
-    tick()
-    const timer = window.setInterval(tick, 30_000)
-    return () => window.clearInterval(timer)
-  }, [resetsAt])
-
-  return left
+  return at
 }
 
-function untilReset(iso: string) {
-  const minutes = Math.floor((new Date(iso).getTime() - Date.now()) / 60000)
-  if (minutes <= 0) return null
-  if (minutes < 60) return `${minutes}m`
-  return `${Math.floor(minutes / 60)}hr ${minutes % 60}m`
+/** The hour it refills at, or nothing for a window that already has. */
+function clockTime(iso: string | null | undefined) {
+  if (!iso) return null
+  const when = new Date(iso)
+  if (when.getTime() <= Date.now()) return null
+  return when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 function compact(tokens: number) {
