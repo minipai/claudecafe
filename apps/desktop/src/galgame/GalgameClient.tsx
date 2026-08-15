@@ -162,8 +162,6 @@ export function GalgameClient() {
   const alwaysAllowRef = useRef(new Set<string>())
   const permissionRef = useRef<PermissionRequest | null>(null)
   const running = useRef(0)
-  /** Whether there has been a turn to skip to the end of since skip went on. */
-  const ranWhileSkipping = useRef(false)
 
   const {
     line,
@@ -173,7 +171,7 @@ export function GalgameClient() {
     cut: cutIn,
     clear: clearSpeech,
     advance,
-    hasMore,
+    queued,
     pace,
     setPace,
   } = useSpeech()
@@ -340,19 +338,29 @@ export function GalgameClient() {
   }, [])
 
   /**
-   * Skipping is a run to the end, not a setting: once she has stopped working
-   * and there is nothing left waiting, the scene comes back to hand. Armed
-   * before a prompt it stays armed — there was never a run to reach the end of.
+   * Space turns the page, the way a galgame does — and it is taken in the
+   * capture pass, before whatever has focus can have it. A line waiting to be
+   * read is the scene asking to be clicked on, and until it has been, Space
+   * belongs to the scene rather than to the composer: one key, one meaning,
+   * wherever the hand happens to be. Once she has nothing left queued it is a
+   * space again.
    */
   useEffect(() => {
-    if (phase === 'working') {
-      ranWhileSkipping.current = true
-      return
+    const turn = (event: KeyboardEvent) => {
+      if (event.key !== ' ' || event.metaKey || event.ctrlKey || event.altKey) return
+      // Mid-composition Space is the IME picking a word, never a page turn.
+      if (event.isComposing) return
+      if (queued === 0 || !isDone) return
+      // Except while something else holds the scene — a report, a folded-out
+      // permission, a panel — where there is no box to turn.
+      if (readerOpen || permissionExpanded || historyOpen || switching || panel) return
+      event.preventDefault()
+      event.stopPropagation()
+      advance()
     }
-    if (!ranWhileSkipping.current || hasMore || !isDone) return
-    ranWhileSkipping.current = false
-    if (pace === 'skip') setPace('manual')
-  }, [phase, hasMore, isDone, pace, setPace])
+    window.addEventListener('keydown', turn, true)
+    return () => window.removeEventListener('keydown', turn, true)
+  }, [queued, isDone, advance, readerOpen, permissionExpanded, historyOpen, switching, panel])
 
   /** Only the reader blocks the scene now — a prompt sent while she is working
    * just queues up behind the one she is on. */
@@ -692,7 +700,7 @@ export function GalgameClient() {
               laidOut={laidOut}
               isTyping={!isDone}
               isLoading={phase === 'working'}
-              hasMore={hasMore}
+              queued={queued}
               onAdvance={advance}
               pace={pace}
               onPace={setPace}

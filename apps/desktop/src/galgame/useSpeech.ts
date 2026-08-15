@@ -8,7 +8,7 @@ import { useTypewriter } from './useTypewriter'
  * what she just did. Acts are not clicked through; they play on the way past.
  *
  * `halt` marks the one kind of line the master cannot be carried past: a
- * question, a permission. Auto-play and skipping both stop there.
+ * question, a permission. Auto-play stops there.
  */
 type Beat =
   | { kind: 'line'; text: string; halt?: boolean; onShow?: () => void; onDone?: () => void }
@@ -16,11 +16,9 @@ type Beat =
 
 export type Hooks = { onShow?: () => void; onDone?: () => void; halt?: boolean }
 
-/** Who is turning the pages: the master, a timer, or nobody at all. */
-export type Pace = 'manual' | 'auto' | 'skip'
+/** Who is turning the pages: the master, or a timer. */
+export type Pace = 'manual' | 'auto'
 
-/** Long enough that the acts in between still register as having happened. */
-const SKIP_PAUSE_MS = 90
 /** Typing already gave him most of the line; this is the beat after the period. */
 const AUTO_PAUSE_MS = 900
 const AUTO_PER_CHAR_MS = 22
@@ -67,7 +65,7 @@ export function useSpeech() {
       // line he has to answer himself, so it is typed out like any other.
       if (beat.halt && paceRef.current !== 'manual') setPace('manual')
       beat.onShow?.()
-      typeLine(beat.text, beat.onDone, paceRef.current === 'skip')
+      typeLine(beat.text, beat.onDone)
     },
     [setPace, typeLine],
   )
@@ -132,18 +130,15 @@ export function useSpeech() {
     }
   }, [show])
 
-  /** Nobody is clicking: the page turns itself, quickly when skipping and at
-   * reading speed on auto. Either way it only ever turns onto a line that is
-   * already waiting — it never pushes her to say more. */
+  /** Nobody is clicking: the page turns itself at reading speed. It only ever
+   * turns onto a line that is already waiting — it never pushes her to say
+   * more. */
   useEffect(() => {
     if (pace === 'manual' || !isDone || queued === 0) return
-    const wait =
-      pace === 'skip'
-        ? SKIP_PAUSE_MS
-        : Math.min(AUTO_MAX_MS, AUTO_PAUSE_MS + line.length * AUTO_PER_CHAR_MS)
+    const wait = Math.min(AUTO_MAX_MS, AUTO_PAUSE_MS + line.length * AUTO_PER_CHAR_MS)
     const timer = window.setTimeout(advance, wait)
     return () => window.clearTimeout(timer)
   }, [pace, isDone, queued, line, advance])
 
-  return { line, isDone, say, act, cut, clear, advance, hasMore: queued > 0, pace, setPace }
+  return { line, isDone, say, act, cut, clear, advance, queued, pace, setPace }
 }

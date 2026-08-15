@@ -8,17 +8,9 @@ export function useTypewriter() {
   const [isDone, setIsDone] = useState(false)
   const timerRef = useRef<number | null>(null)
 
-  /** `instant` is the line arriving already written — skipping past it, the
-   * master having decided he does not need to watch her say this one. */
-  const typeLine = useCallback((text: string, onDone?: () => void, instant = false) => {
+  const typeLine = useCallback((text: string, onDone?: () => void) => {
     if (timerRef.current !== null) window.clearInterval(timerRef.current)
     timerRef.current = null
-    if (instant) {
-      setLine(text)
-      setIsDone(true)
-      onDone?.()
-      return
-    }
     setIsDone(false)
     setLine('')
     let i = 0

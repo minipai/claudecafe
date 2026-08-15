@@ -7,10 +7,7 @@ import { InnerVoice } from './InnerVoice'
 import type { Look } from '@/agent'
 import type { Pace } from './useSpeech'
 import type { Expression } from './types'
-import { text } from '@/i18n'
-
-/** Auto-play reads at his pace; skip runs to the end of what she has said. */
-const PACES: Pace[] = ['auto', 'skip']
+import { fill, text } from '@/i18n'
 
 type DialogueBoxProps = {
   expression: Expression
@@ -19,8 +16,8 @@ type DialogueBoxProps = {
   /** An answer with shape to it — markdown, laid out in place of the typed line. */
   laidOut: string | null
   isLoading: boolean
-  /** She has more lines behind this one, waiting for the master to click on. */
-  hasMore: boolean
+  /** How many lines are behind this one, waiting for the master to click on. */
+  queued: number
   onAdvance: () => void
   /** Who is turning the pages — him, or the scene itself. */
   pace: Pace
@@ -47,7 +44,7 @@ export function DialogueBox({
   isTyping,
   laidOut,
   isLoading,
-  hasMore,
+  queued,
   onAdvance,
   pace,
   onPace,
@@ -95,36 +92,46 @@ export function DialogueBox({
             </div>
           )}
 
-          {/* Who turns the page, in the corner she turns it from: AUTO and SKIP
-              hand the turning over, and the triangle is the master doing it
-              himself — the only thing to press, since her line is dialogue and
-              not a button. */}
+          {/* Who turns the page, in the corner she turns it from: AUTO hands
+              the turning over, and the triangle is the master doing it himself
+              — the only thing to press, since her line is dialogue and not a
+              button. */}
           <div className="absolute right-6 bottom-3 flex items-center gap-1.5">
-            {PACES.map((option) => (
+            {/* A blinking triangle is a thing the master has to have been
+                taught, so it says the rest in words: how many she still has
+                waiting, and the key that brings the next one. It grows out of
+                AUTO's left rather than holding a slot of its own, so nothing
+                beside it moves when it leaves and the corner is empty rather
+                than blank. */}
+            {queued > 0 && !isTyping && (
               <button
-                key={option}
                 type="button"
-                aria-pressed={pace === option}
-                title={option === 'auto' ? t.autoPace : t.skipPace}
-                onClick={() => onPace(pace === option ? 'manual' : option)}
-                className={`rounded px-1.5 py-1 font-mono text-[10px] leading-none tracking-[0.14em] uppercase transition-colors ${
-                  pace === option
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground/50 hover:text-foreground'
-                }`}
+                aria-keyshortcuts="Space"
+                onClick={onAdvance}
+                className="flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 py-1 pr-2 pl-2.5 text-primary transition-colors hover:bg-primary/20"
               >
-                {option}
+                <span className="text-xs leading-none font-medium">
+                  {queued === 1 ? t.oneMore : fill(t.more, { count: queued })}
+                </span>
+                <kbd className="rounded-sm border border-primary/30 px-1 py-0.5 font-mono text-[11px] leading-none">
+                  space
+                </kbd>
+                <span className="block h-0 w-0 animate-[tri-blink_1.1s_ease-in-out_infinite] border-t-[11px] border-r-[7px] border-l-[7px] border-t-primary border-r-transparent border-l-transparent" />
               </button>
-            ))}
-            {/* The triangle comes and goes; its place does not, or the two
-                beside it would shuffle every time she finishes a line. */}
-            <span className="flex h-5 w-5 items-center justify-center">
-              {hasMore && !isTyping && (
-                <button type="button" aria-label="Next line" onClick={onAdvance} className="p-1">
-                  <span className="block h-0 w-0 animate-[tri-blink_1.1s_ease-in-out_infinite] border-t-[8px] border-r-[6px] border-l-[6px] border-t-foreground border-r-transparent border-l-transparent" />
-                </button>
-              )}
-            </span>
+            )}
+            <button
+              type="button"
+              aria-pressed={pace === 'auto'}
+              title={t.autoPace}
+              onClick={() => onPace(pace === 'auto' ? 'manual' : 'auto')}
+              className={`rounded px-1.5 py-1 font-mono text-[10px] leading-none tracking-[0.14em] uppercase transition-colors ${
+                pace === 'auto'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground/50 hover:text-foreground'
+              }`}
+            >
+              auto
+            </button>
           </div>
 
         {cta && (

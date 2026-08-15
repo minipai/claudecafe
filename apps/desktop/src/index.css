@@ -137,8 +137,8 @@
   50% { opacity: 0; }
 }
 @keyframes tri-blink {
-  0%, 100% { opacity: .15; transform: translateY(0); }
-  50% { opacity: 1; transform: translateY(3px); }
+  0%, 100% { opacity: .45; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(4px); }
 }
 /* rendered markdown inside ReportView */
 .report-md {
