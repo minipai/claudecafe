@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button'
 
 type DemoTask = {
-  tag: string
   label: string
   title: string
 }
@@ -11,13 +10,16 @@ type DemoRowProps = {
   onSelect: (prompt: string) => void
 }
 
-/** Each demo prompt doubles as its own tier hint — the mock stream matches on the label text. */
+/**
+ * The errands a visitor can send her on while nothing is behind her. Each one
+ * is a thing you would actually say to her, and the mock stream matches on the
+ * words. Anything else typed into the box gets the truth: there is no model
+ * out here to answer it.
+ */
 const TASKS: DemoTask[] = [
-  { tag: 'S', label: 'Ask a quick question', title: 'Short response: dialogue only' },
-  { tag: 'M', label: 'Explain this code', title: 'Medium response: expands in place' },
-  { tag: 'L', label: 'Investigate a bug', title: 'Long response: opens a full report' },
-  { tag: 'P', label: 'Plan the fix', title: 'Plan mode: hands over a plan for approval first' },
-  { tag: '!', label: 'Simulate a failure', title: 'Error handling: the run fails mid-flight' },
+  { label: 'What can you do?', title: 'She answers for herself — the short path, no tools' },
+  { label: 'Show me all your faces', title: 'The face is hers to pick, turn by turn' },
+  { label: 'What are you up to?', title: 'A peek at what she is doing between errands' },
 ]
 
 export function DemoRow({ isDisabled, onSelect }: DemoRowProps) {
@@ -25,14 +27,14 @@ export function DemoRow({ isDisabled, onSelect }: DemoRowProps) {
     <div className="flex flex-wrap gap-2">
       {TASKS.map((task) => (
         <Button
-          key={task.tag}
+          key={task.label}
           variant="outline"
           size="sm"
           title={task.title}
           disabled={isDisabled}
           onClick={() => onSelect(task.label)}
         >
-          {task.tag}・{task.label}
+          {task.label}
         </Button>
       ))}
     </div>

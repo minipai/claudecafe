@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { Stage } from './Stage'
 import { SpriteLayer } from './SpriteLayer'
-import { Backdrop } from './Backdrop'
 import { DialogueBox } from './DialogueBox'
 import { ReportView } from './ReportView'
 import { UsagePanel } from './UsagePanel'
@@ -99,10 +98,10 @@ function createPreviewHistory(greeting: string) {
   const now = Date.now()
   return [
     createChatMessage('assistant', greeting, undefined, now - 10 * 60_000),
-    createChatMessage('user', '狀態列有點看不清楚，model 和 effort 還是要留著。', undefined, now - 8 * 60_000),
-    createChatMessage('assistant', '好，ことね把文字對比提高，也把操作區重新排整齊了。', undefined, now - 7 * 60_000),
-    createChatMessage('user', '可以讓我回看這次的對話嗎？', undefined, now - 3 * 60_000),
-    createChatMessage('assistant', '可以，打開 LOG 就會看到目前對話的 BACKLOG。', undefined, now - 2 * 60_000),
+    createChatMessage('user', 'the status line is a bit hard to read — keep the model and the effort though', undefined, now - 8 * 60_000),
+    createChatMessage('assistant', 'Done ♪ I raised the contrast, and lined the controls back up neatly.', undefined, now - 7 * 60_000),
+    createChatMessage('user', 'can I read back over what we said earlier?', undefined, now - 3 * 60_000),
+    createChatMessage('assistant', 'Of course — open LOG and the whole conversation is waiting there ♪', undefined, now - 2 * 60_000),
   ]
 }
 
@@ -713,7 +712,6 @@ export function GalgameClient() {
   return (
     <>
       <Stage>
-        <Backdrop />
         <TodoBoard todos={historyOpen || readerOpen ? [] : todos} />
         <SpriteLayer expression={expression} />
 

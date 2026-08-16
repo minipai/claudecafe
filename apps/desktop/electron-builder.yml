@@ -2,8 +2,8 @@
 # checkout is being worked on. Personal build for now: ad-hoc signed (see the
 # `package` script), no dmg, no notarization — those belong to handing her to
 # someone else.
-appId: dev.claudecafe.kotone
-productName: Kotone
+appId: dev.claudecafe.client
+productName: ClaudeCafe
 copyright: Claude Café
 
 directories:

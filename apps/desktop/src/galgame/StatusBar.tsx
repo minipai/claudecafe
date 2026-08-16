@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { type SessionStatus } from '@/agent'
+import { openingStatus, usageReport, type SessionStatus } from '@/agent'
 
 /**
  * Session status floating at the bottom edge. Everything here is measured: the
@@ -18,6 +18,9 @@ export function StatusBar({ folder }: { folder: string }) {
   const status = useLiveStatus()
   const refill = useRefillTime()
   const changed = status && (status.added > 0 || status.removed > 0)
+
+  // A plate with nothing on it is just a white tab hanging off the box.
+  if (!folder && !status?.branch && !changed && !status?.contextTokens && !refill) return null
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-2.5 z-[5] flex justify-center">
@@ -53,7 +56,7 @@ export function StatusBar({ folder }: { folder: string }) {
 }
 
 function useLiveStatus() {
-  const [status, setStatus] = useState<SessionStatus | null>(null)
+  const [status, setStatus] = useState<SessionStatus | null>(openingStatus)
 
   useEffect(() => {
     const stop = window.cafe?.listen((event) => {
@@ -77,7 +80,7 @@ function useRefillTime() {
   useEffect(() => {
     // The rolling session window is the first one the plan reports.
     const read = () =>
-      void window.cafe?.usage().then((report) => setAt(clockTime(report?.windows[0]?.resetsAt)))
+      void usageReport().then((report) => setAt(clockTime(report?.windows[0]?.resetsAt)))
     read()
     // A five-hour window moves slowly, and the hour it names does not move at
     // all: this is only here to pick up the next window starting.

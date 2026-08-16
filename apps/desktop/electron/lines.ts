@@ -18,15 +18,15 @@ import type { Lines } from '../src/agent/bridge'
  * that cannot be translated without being rebuilt.
  */
 const ENGLISH: Lines = {
-  greeting: 'Goshujin-sama~ what can Kotone do for you? Ask away, or press ⌘K to send her somewhere else ♪',
+  greeting: 'Goshujin-sama~ what can I do for you today? Ask away, or press ⌘K to send me somewhere else ♪',
   interrupted: 'Eh, stopping there? O-okay…',
-  commandAsk: 'Goshujin-sama, Kotone would like to run this — may she?',
-  editAsk: 'Kotone would like to change this file~ have a look at what she is changing first?',
+  commandAsk: 'Goshujin-sama, I would like to run this — may I?',
+  editAsk: 'I would like to change this file~ have a look at what I am changing first?',
   planAsk: 'The plan is laid out! Does this look right to Goshujin-sama?',
-  errorTitle: 'Kotone tripped over something…',
+  errorTitle: 'I tripped over something…',
   waiting: [
     'Just a moment more~ ♡',
-    'Kotone is looking through this…',
+    'I am looking through this…',
     'Mm — almost there ♪',
     'This function is being a little difficult…',
     'Nearly done, Goshujin-sama ♡',

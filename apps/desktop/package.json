@@ -1,6 +1,6 @@
 {
   "name": "@claudecafe/desktop",
-  "productName": "Kotone",
+  "productName": "ClaudeCafe",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -8,8 +8,9 @@
     "dev": "vite",
     "app": "node electron/dev.mjs",
     "build:electron": "node electron/build.mjs",
+    "ship:demo": "vite build && wrangler deploy",
     "build": "tsc -b && vite build && node electron/build.mjs",
-    "package": "pnpm build && electron-builder --mac --dir && codesign --force --deep --sign - release/mac-arm64/Kotone.app",
+    "package": "pnpm build && electron-builder --mac --dir && codesign --force --deep --sign - release/mac-arm64/ClaudeCafe.app",
     "preview": "vite preview"
   },
   "dependencies": {

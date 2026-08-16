@@ -1,4 +1,5 @@
 import type { Expression } from './types'
+import { Backdrop } from './Backdrop'
 import neutral from '../assets/kotone-neutral.webp'
 import happy from '../assets/kotone-happy.webp'
 import curious from '../assets/kotone-curious.webp'
@@ -37,10 +38,16 @@ const SPRITE: Record<Expression, string> = {
 export function SpriteLayer({ expression }: { expression: Expression }) {
   return (
     // The window ends where it ends, and with nothing painted behind her that
-    // edge used to cut her off mid-skirt. This fades her out just above it, so
-    // she runs off the bottom of the scene instead of being sliced by it.
-    <div className="pointer-events-none fixed inset-0 z-[2] [mask-image:linear-gradient(to_bottom,#000_calc(100%-130px),transparent_100%)]">
+    // edge used to cut her off mid-skirt. This fades her out above it, so she
+    // runs off the bottom of the scene instead of being sliced by it — and the
+    // fade finishes clear of the edge, because the last of it lingering there
+    // reads as a smudge under the dialogue box rather than as her.
+    <div className="pointer-events-none fixed inset-0 z-[2] [mask-image:linear-gradient(to_bottom,#000_calc(100%-190px),transparent_calc(100%-42px))]">
       <div className="pointer-events-none absolute -bottom-[460px] left-1/2 w-[min(100vw,512px)] -translate-x-1/2 max-sm:-bottom-[100px]">
+        {/* The print hangs off her frame, not off the window, so the two are
+            never pulled apart by a window taller than the one they were laid
+            out in. */}
+        <Backdrop />
         {/* She catches the pointer again — the window is transparent, and a maid
             you can click straight through is a ghost. Only where she is drawn:
             the alpha under the pointer decides (see useClickThrough), which is
@@ -54,7 +61,7 @@ export function SpriteLayer({ expression }: { expression: Expression }) {
             if (event.button !== 0) return
             window.cafe?.startDrag()
           }}
-          className="pointer-events-auto h-auto w-full cursor-grab select-none active:cursor-grabbing"
+          className="pointer-events-auto relative z-[2] h-auto w-full cursor-grab select-none active:cursor-grabbing"
         />
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { CommandPanel, useAnswer } from './CommandPanel'
 import { fill, text } from '@/i18n'
+import { mcpServers } from '@/agent'
 import type { McpServer } from '@/agent'
 
 /** A server that did not answer is the thing worth seeing, so it is coloured;
@@ -19,7 +20,7 @@ const TONE: Record<McpServer['status'], string> = {
  */
 export function McpPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = text().panel.mcp
-  const { answer: servers, ready } = useAnswer<McpServer[]>(open, () => window.cafe!.mcpServers())
+  const { answer: servers, ready } = useAnswer<McpServer[]>(open, () => mcpServers())
 
   return (
     <CommandPanel

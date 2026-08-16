@@ -1,12 +1,15 @@
 import type { AgentMessage, QueryOptions, Tier, Todo } from './types'
 import {
+  ABOUT_ANSWER,
+  ABOUT_INTRO,
   CHOICE_QUESTION,
   EXTRAS_QUESTION,
+  FACE_PARADE,
+  FACE_PARADE_CLOSE,
   HEAVY_THOUGHTS,
   choiceAckLine,
   EDIT_DENIED_LINE,
   EDIT_REQUEST,
-  FAILURE_MESSAGE,
   HEAVY_DENIED_LINE,
   HEAVY_DONE_LINE,
   HEAVY_INTRO,
@@ -16,6 +19,9 @@ import {
   LOOK_HEAVY_WORKING,
   MEDIUM_ANSWER,
   MEDIUM_INTRO,
+  OFF_SCRIPT,
+  PEEK_LINE,
+  PEEK_LOOK,
   PLAN_APPROVED_LINE,
   PLAN_INTRO,
   PLAN_MD,
@@ -37,9 +43,8 @@ function sleep(ms: number, signal?: AbortSignal) {
 
 /** Demo buttons pass their own label as the prompt, so the mock can pin the tier instead of rolling one. */
 const TIER_HINTS: Record<string, Tier> = {
-  'Ask a quick question': 'light',
-  'Explain this code': 'medium',
-  'Investigate a bug': 'heavy',
+  'Explain this to me': 'medium',
+  'Go and catch a bug': 'heavy',
 }
 
 /** The agent changes the sprite's expression by calling a custom tool —
@@ -53,12 +58,20 @@ let mockCall = 0
 
 /** The plan demo pins plan mode; a real client sets permissionMode: 'plan' instead. */
 function isPlanned(prompt: string) {
-  return prompt.includes('Plan the fix')
+  return prompt.includes('Show me the plan first')
 }
 
-/** The failure demo — stands in for a dropped connection or a refused request. */
-function shouldFail(prompt: string) {
-  return prompt.includes('Simulate a failure')
+/** The three demos that are about her rather than about the work. */
+function isAbout(prompt: string) {
+  return prompt.includes('What can you do')
+}
+
+function isFaceParade(prompt: string) {
+  return prompt.includes('Show me all your faces')
+}
+
+function isPeek(prompt: string) {
+  return prompt.includes('What are you up to')
 }
 
 /** The mock hands over the whole list at once; `done` is how many steps are finished. */
@@ -69,13 +82,17 @@ function todosAt(done: number): Todo[] {
   }))
 }
 
-function pickTier(prompt: string): Tier {
+/** Null for anything that is not one of the errands. Rolling a random errand
+ * for it was the old answer, and it made her look like she had misheard. */
+function pickTier(prompt: string): Tier | null {
   for (const [hint, tier] of Object.entries(TIER_HINTS)) {
     if (prompt.includes(hint)) return tier
   }
-  const tiers: Tier[] = ['light', 'medium', 'heavy']
-  return tiers[Math.floor(Math.random() * tiers.length)]
+  return null
 }
+
+/** Cycled rather than random, so asking twice does not get the same excuse. */
+let offScript = 0
 
 /** Mock stand-in for @anthropic-ai/claude-agent-sdk's `query()` — same async-generator shape. */
 export async function* query({
@@ -99,10 +116,53 @@ export async function* query({
   const tier = isPlanned(prompt) ? 'heavy' : pickTier(prompt)
   yield setExpression('focused')
 
-  if (shouldFail(prompt)) {
+  // Asked about herself: no work to do, so no tools and no waiting — she just
+  // answers, which is its own demonstration of the short path.
+  if (isAbout(prompt)) {
+    yield { type: 'text_delta', text: ABOUT_INTRO }
     await sleep(700, signal)
     if (signal?.aborted) return
-    throw new Error(FAILURE_MESSAGE)
+    yield setExpression('proud')
+    yield { type: 'result', tier: 'medium', line: ABOUT_ANSWER }
+    yield { type: 'look', look: LOOK_BY_TIER.medium }
+    return
+  }
+
+  // The parade: the face is the model's to choose turn by turn, and saying so
+  // is nothing next to watching it happen line by line.
+  if (isFaceParade(prompt)) {
+    for (const face of FACE_PARADE) {
+      await sleep(950, signal)
+      if (signal?.aborted) return
+      yield setExpression(face.expression)
+      yield { type: 'text_delta', text: face.line }
+    }
+    await sleep(950, signal)
+    if (signal?.aborted) return
+    yield setExpression('happy')
+    yield { type: 'result', tier: 'light', line: FACE_PARADE_CLOSE }
+    return
+  }
+
+  // The peek is invisible until she has been caught at something, so being
+  // asked is reason enough to shoot one.
+  if (isPeek(prompt)) {
+    await sleep(600, signal)
+    if (signal?.aborted) return
+    yield setExpression('flirty')
+    yield { type: 'look', look: PEEK_LOOK }
+    yield { type: 'result', tier: 'light', line: PEEK_LINE }
+    return
+  }
+
+  // Anything else: there is no model out here to answer it, and a made-up
+  // answer would be the worse first impression. She says so herself.
+  if (!tier) {
+    await sleep(650, signal)
+    if (signal?.aborted) return
+    yield setExpression('embarrassed')
+    yield { type: 'result', tier: 'light', line: OFF_SCRIPT[offScript++ % OFF_SCRIPT.length] }
+    return
   }
 
   if (tier === 'light') {

@@ -1,5 +1,6 @@
 import { CommandPanel, useAnswer } from './CommandPanel'
 import { text } from '@/i18n'
+import { subagents } from '@/agent'
 import type { Subagent } from '@/agent'
 
 /**
@@ -9,7 +10,7 @@ import type { Subagent } from '@/agent'
  */
 export function AgentsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = text().panel.agents
-  const { answer: agents, ready } = useAnswer<Subagent[]>(open, () => window.cafe!.agents())
+  const { answer: agents, ready } = useAnswer<Subagent[]>(open, () => subagents())
 
   return (
     <CommandPanel

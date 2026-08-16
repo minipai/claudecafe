@@ -1,0 +1,17 @@
+{
+  // The window, standing on the open web with nobody behind it: the same build
+  // the app loads, which falls back to the canned café when it finds no bridge.
+  // Nothing runs here — it is the built files and a custom domain, no worker.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "claudecafe-demo",
+  "compatibility_date": "2026-08-15",
+  "assets": {
+    "directory": "./dist"
+  },
+  "routes": [
+    {
+      "pattern": "claudecafe.starcoder.dev",
+      "custom_domain": true
+    }
+  ]
+}

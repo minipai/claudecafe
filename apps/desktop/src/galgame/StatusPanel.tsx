@@ -1,5 +1,6 @@
 import { CommandPanel, Figure, Heading, useAnswer } from './CommandPanel'
 import { text } from '@/i18n'
+import { sessionStatus } from '@/agent'
 import type { StatusReport } from '@/agent'
 
 /**
@@ -9,7 +10,7 @@ import type { StatusReport } from '@/agent'
  */
 export function StatusPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = text().panel.status
-  const { answer: status, ready } = useAnswer<StatusReport>(open, () => window.cafe!.status())
+  const { answer: status, ready } = useAnswer<StatusReport>(open, () => sessionStatus())
 
   return (
     <CommandPanel

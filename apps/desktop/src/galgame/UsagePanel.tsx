@@ -1,5 +1,6 @@
 import { CommandPanel, Figure, Heading, Meter, useAnswer } from './CommandPanel'
 import { fill, text } from '@/i18n'
+import { usageReport } from '@/agent'
 import type { UsageReport } from '@/agent'
 
 type UsagePanelProps = {
@@ -14,7 +15,7 @@ type UsagePanelProps = {
  */
 export function UsagePanel({ open, onClose }: UsagePanelProps) {
   const t = text().panel.usage
-  const { answer: report, ready } = useAnswer<UsageReport>(open, () => window.cafe!.usage())
+  const { answer: report, ready } = useAnswer<UsageReport>(open, () => usageReport())
 
   return (
     <CommandPanel

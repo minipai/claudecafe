@@ -1,5 +1,6 @@
 import { CommandPanel, Figure, Heading, Meter, tokens, useAnswer } from './CommandPanel'
 import { fill, text } from '@/i18n'
+import { contextReport } from '@/agent'
 import type { ContextReport } from '@/agent'
 
 type ContextPanelProps = {
@@ -14,7 +15,7 @@ type ContextPanelProps = {
  */
 export function ContextPanel({ open, onClose }: ContextPanelProps) {
   const t = text().panel.context
-  const { answer: report, ready } = useAnswer<ContextReport>(open, () => window.cafe!.context())
+  const { answer: report, ready } = useAnswer<ContextReport>(open, () => contextReport())
 
   return (
     <CommandPanel
