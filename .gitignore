@@ -6,3 +6,6 @@ __pycache__/
 # 只活在 desktop 分支——main 上沒有，git add -A 就會把整包掃進來（發生過一次）。
 apps/desktop/ui-dist/
 packages/cafe/dist/
+
+# wrangler local state (the r2 simulator, dev cache)
+.wrangler/

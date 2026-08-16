@@ -7,6 +7,7 @@ import { Layout } from "./components/Layout.js";
 import { HomePage } from "./components/HomePage.js";
 import { MaidPage } from "./pages/MaidPage.js";
 import { PluginPage } from "./pages/PluginPage.js";
+import { AppPage } from "./pages/AppPage.js";
 
 import { NotFoundPage, notFoundQuote } from "./pages/NotFoundPage.js";
 import { getAllMaids, getMaid } from "./utils/maids.js";
@@ -97,6 +98,20 @@ function site(locale: Locale) {
     return c.html(
       <Layout locale={locale} title={post.title} description={post.title} path={`/notes/${post.slug}`} maid={post.author}>
         <BlogPostPage post={post} />
+      </Layout>,
+    );
+  });
+
+  page.get("/app", (c) => {
+    const title =
+      locale === "zh" ? "ClaudeCafe — 站在你桌面上的 Claude Code" : "ClaudeCafe — Claude Code, standing on your desktop";
+    const description =
+      locale === "zh"
+        ? "同一個 Claude Code，跑在沒有邊框的視窗裡：一位女僕站在你的桌面上回話、動手前先問你、長答案給你一份報告。可以在頁面上直接試玩。"
+        : "The same Claude Code, in a window with no frame: a maid on your desktop who answers in her own voice, asks before she touches anything, and writes a report when the answer is long. Try her on the page.";
+    return c.html(
+      <Layout locale={locale} title={title} description={description} path="/app">
+        <AppPage locale={locale} />
       </Layout>,
     );
   });

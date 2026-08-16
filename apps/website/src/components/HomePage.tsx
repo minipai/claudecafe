@@ -15,6 +15,7 @@ export function HomePage({ maids, posts, locale }: { maids: Maid[]; posts: BlogP
           <MaidCard maid={maid} locale={locale} />
         ))}
       </div>
+      {/* The app page is not linked from here yet — it is still being cut. */}
       <div class="blog-list plugin-pill">
         <div class="blog-row">
           <span class="blog-row-date">plugin</span>

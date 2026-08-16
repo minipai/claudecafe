@@ -1058,3 +1058,167 @@ body:has(.plugin-page)::before {
 .plugin-pill + .blog-list {
     margin-top: 0.4rem;
 }
+
+
+
+/* The app page. She is the whole argument, so the page is a title, her, and a
+   way to take her home — the café's own quiet typography, nothing framed. */
+.app-page {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.app-head {
+    padding: 52px 0 34px;
+    text-align: center;
+}
+
+.app-h1 {
+    font-size: clamp(30px, 4vw, 44px);
+    color: var(--accent-bold);
+    margin: 0 0 18px;
+}
+
+/* The same voice the café greets people in on the homepage. */
+.app-page .lede {
+    font-size: var(--fs-md);
+    color: var(--text-muted);
+    max-width: 640px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+/* She gets more room than the type does — the window is the picture here. */
+.app-stage {
+    width: min(940px, calc(100vw - 40px));
+    margin-left: calc(50% - min(470px, calc(50vw - 20px)));
+}
+
+/* No border: a frame here would put the window back in the box the app spends
+   its life escaping. Her own background is transparent, so the café's paper
+   shows through and she stands on the page itself.
+
+   She is hung off the bottom edge of her window and stands ~820px tall, so a
+   short frame cuts her head off. The iframe therefore gets a desktop-sized
+   viewport of its own and is scaled into whatever width the page has — the
+   whole window shrinks, nothing is cropped. --demo-scale is measured on the
+   page (see AppPage): CSS cannot divide a length by a length. */
+.app-demo {
+    --demo-w: 1180;
+    --demo-h: 860;
+    --demo-scale: 1;
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--demo-w) / var(--demo-h);
+    overflow: hidden;
+}
+
+.app-demo iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(var(--demo-w) * 1px);
+    height: calc(var(--demo-h) * 1px);
+    border: 0;
+    background: transparent;
+    transform-origin: top left;
+    transform: scale(var(--demo-scale));
+}
+
+.app-caption {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-muted);
+}
+
+.app-demo-hint {
+    opacity: 0.7;
+}
+
+.app-rule {
+    height: 1px;
+    background: var(--border);
+    margin: 52px 0 40px;
+}
+
+/* Taking her home: one line, and that is the whole install. */
+.app-dl-meta {
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.app-paper-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 18px;
+    border-radius: 10px;
+    background: rgb(from var(--bg-card) r g b / 0.75);
+    border: 1px solid var(--border);
+}
+
+.app-paper-line .p-sym {
+    color: var(--accent-bold);
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+}
+
+.app-paper-line code {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--text);
+}
+
+.app-copy {
+    flex: none;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    cursor: pointer;
+}
+
+.app-copy:hover {
+    color: var(--accent-bold);
+    border-color: var(--accent-bold);
+}
+
+.app-dl-note {
+    margin-top: 16px;
+    font-size: 15px;
+    color: var(--text-muted);
+}
+
+/* What she borrows rather than brings — named, not explained. */
+.app-depends {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--text-muted);
+    opacity: 0.85;
+}
+
+.app-depends code {
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    color: var(--text);
+}
+
+@media (max-width: 700px) {
+    .app-stage {
+        width: 100%;
+        margin-left: 0;
+    }
+
+}
+
