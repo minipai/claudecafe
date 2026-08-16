@@ -163,12 +163,18 @@ function commandBeingTyped(text: string) {
   return typed ? typed[1] : null
 }
 
-/** Commands the typed name could still become, the ones that start with it first. */
+/** Commands the typed name could still become: the one it already is first —
+ * `/usage` must not highlight `/usage-credits` — then the ones that start with
+ * it, then the ones that merely contain it. */
 function match(commands: CafeCommand[], typed: string) {
   const wanted = typed.toLowerCase()
-  const starts = commands.filter((command) => command.name.toLowerCase().startsWith(wanted))
-  const contains = commands.filter(
-    (command) => !command.name.toLowerCase().startsWith(wanted) && command.name.toLowerCase().includes(wanted),
-  )
-  return [...starts, ...contains]
+  const ranked = (command: CafeCommand) => {
+    const name = command.name.toLowerCase()
+    return name === wanted ? 0 : name.startsWith(wanted) ? 1 : name.includes(wanted) ? 2 : 3
+  }
+  return commands
+    .map((command) => ({ command, rank: ranked(command) }))
+    .filter(({ rank }) => rank < 3)
+    .sort((a, b) => a.rank - b.rank)
+    .map(({ command }) => command)
 }

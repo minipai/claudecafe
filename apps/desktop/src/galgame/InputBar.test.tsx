@@ -17,6 +17,10 @@ afterEach(() => {
 })
 
 const commands: CafeCommand[] = [
+  // usage-credits deliberately listed before usage: the exactly-typed name
+  // must outrank a longer one that happens to arrive first.
+  { name: 'usage-credits', description: 'Spell out the bill.', argumentHint: '' },
+  { name: 'usage', description: 'Show the meters.', argumentHint: '' },
   { name: 'explain', description: 'Walk the diff.', argumentHint: '[topic]' },
   { name: 'explain-harder', description: 'Walk the diff twice.', argumentHint: '' },
   { name: 'export', description: 'Save the conversation.', argumentHint: '' },
@@ -60,6 +64,15 @@ describe('the slash menu', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(onSubmit).toHaveBeenCalledWith('/explain', [])
     expect(input).toHaveValue('')
+  })
+
+  it('highlights the exactly-typed name over a longer one listed first', () => {
+    // `/usage` with `/usage-credits` earlier in the list: Enter must run
+    // `/usage`, not complete the neighbour it never asked for.
+    const { onSubmit, input } = renderBar()
+    fireEvent.change(input, { target: { value: '/usage' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onSubmit).toHaveBeenCalledWith('/usage', [])
   })
 
   it('still picks an arrowed-to command even when the typed name is complete', () => {
