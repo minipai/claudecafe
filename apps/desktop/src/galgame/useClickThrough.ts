@@ -24,6 +24,12 @@ export function useClickThrough() {
      * arrive. */
     let carrying = false
 
+    // A fresh page — ⌘R, a crash recovered from — starts believing nothing is
+    // being ignored, whatever the main process still thinks. Said again on
+    // mount, the same as it is said on the way out, so the two are never out
+    // of step with each other.
+    bridge.clickThrough(false)
+
     const aim = (event: MouseEvent) => {
       if (carrying) return
       const empty = isEmptyAt(event.clientX, event.clientY)

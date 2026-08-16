@@ -34,6 +34,7 @@ export { INITIAL_LOOK } from './content.mock'
 export type { AgentMessage, Attachment, Look, PermissionResult, QueryOptions, Question, Report, Tier, Todo } from './types'
 export type {
   BacklogLine,
+  BridgeEvent,
   CafeBridge,
   CafeCommand,
   ContextReport,

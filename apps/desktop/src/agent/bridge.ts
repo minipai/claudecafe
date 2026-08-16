@@ -177,7 +177,7 @@ export type CafeBridge = {
   setSpeech(language: string): void
   start(runId: string, prompt: string, images: Attachment[]): void
   answer(askId: string, value: unknown): void
-  interrupt(runId: string): void
+  interrupt(): void
   /** Drop the conversation and start a fresh one on the next prompt. */
   newSession(): void
   /** Open the session and report what is in it — status, backlog, settings.

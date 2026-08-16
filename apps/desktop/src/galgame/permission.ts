@@ -94,6 +94,25 @@ export function readPermission(toolName: string, input: Record<string, unknown>)
   }
 }
 
+/**
+ * What he has already said yes to for good, read against a fresh ask — the
+ * one irreversible decision in the app, so it is worth being exact about.
+ * `Bash pnpm test` and `Bash rm -rf` are both "Bash", but never the same
+ * standing: `readPermission` names the program, not the tool, for exactly
+ * this. Edit and Write are kept apart the same way — a yes to swapping a
+ * passage is not a yes to overwriting the whole file.
+ */
+export function alwaysCovers(standing: ReadonlySet<string>, ask: PermissionAsk): boolean {
+  return standing.has(ask.standing)
+}
+
+/** What to remember an "always allow" as — nothing, for an ask that was never
+ * offered the button in the first place. A plan she has not been let out of
+ * yet is answered once and asked again every time, whatever calls this. */
+export function standingFor(ask: PermissionAsk): string | null {
+  return ask.canAlwaysAllow ? ask.standing : null
+}
+
 type DiffRow = { sign: ' ' | '+' | '-'; text: string }
 
 /** Line diff, longest-common-subsequence style — small enough to keep in-house. */

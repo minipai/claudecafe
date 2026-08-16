@@ -40,7 +40,7 @@ export async function* query(options: QueryOptions): AsyncGenerator<AgentMessage
    * scene believing she is still working long after she has answered.
    */
   const abort = () => {
-    bridge.interrupt(runId)
+    bridge.interrupt()
     inbox.close()
   }
   options.abortController?.signal.addEventListener('abort', abort, { once: true })
@@ -61,9 +61,12 @@ async function answerPermission(
   toolName: string,
   input: Record<string, unknown>,
 ) {
+  // No caller to ask is not a caller who said yes — a run with nothing wired
+  // up to answer for it gets the answer that leaves her hands off things,
+  // not the one that lets her touch everything unwatched.
   const decision: PermissionResult = options.canUseTool
     ? await options.canUseTool(toolName, input)
-    : { behavior: 'allow' }
+    : { behavior: 'deny' }
   bridge.answer(askId, decision)
 }
 
@@ -82,7 +85,7 @@ export function newSession() {
 }
 
 /** A push-to-pull queue: the bridge pushes, the generator pulls. */
-class Inbox<T> {
+export class Inbox<T> {
   private queued: T[] = []
   private wake: (() => void) | null = null
   private closed = false

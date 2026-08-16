@@ -70,7 +70,11 @@ export function listConversations(cwd: string): Conversation[] {
       const file = path.join(folder, name)
       const opening = firstThingSaid(file)
       if (!opening) return []
-      return [{ sessionId: name.replace(/\.jsonl$/, ''), opening, at: fs.statSync(file).mtimeMs }]
+      try {
+        return [{ sessionId: name.replace(/\.jsonl$/, ''), opening, at: fs.statSync(file).mtimeMs }]
+      } catch {
+        return [] // gone between reading it and stamping it
+      }
     })
     .sort((a, b) => b.at - a.at)
     .slice(0, CONVERSATION_LIMIT)
@@ -241,6 +245,9 @@ const BACKLOG_LIMIT = 60
 
 function readBacklog(transcript: string): BacklogLine[] {
   const lines: BacklogLine[] = []
+  // A row with no timestamp of its own belongs right where it was written,
+  // not at "now" — the previous row's stamp is the nearest true thing.
+  let lastAt = 0
 
   for (const raw of transcript.split('\n')) {
     if (!raw.trim()) continue
@@ -254,7 +261,8 @@ function readBacklog(transcript: string): BacklogLine[] {
     if (row.isSidechain || row.isMeta) continue
     if (row.type !== 'user' && row.type !== 'assistant') continue
 
-    const at = Date.parse(row.timestamp ?? '') || Date.now()
+    const at = Date.parse(row.timestamp ?? '') || lastAt
+    lastAt = at
     const content = spokenText(row.message?.content)
     if (content) lines.push({ role: row.type, content, at })
     // What she did between the lines is part of the record too — the live log
@@ -291,8 +299,30 @@ function spokenText(content: string | Block[] | undefined) {
   // The mood marker stays: the log is what she wrote, and the face is the
   // scene's business.
   const trimmed = text.trim()
-  if (/^<[a-z-]+>/.test(trimmed) || /^\(Output language/.test(trimmed)) return ''
+  if (wrapsInTranscriptTag(trimmed) || /^\(Output language/.test(trimmed)) return ''
   return trimmed
+}
+
+/** The wrapper tags Claude Code itself writes into a transcript — a slash
+ * command's name, a background task's notice, a hook's stdout — none of them
+ * anything the master typed. Matched by name rather than by shape, so a line
+ * he actually wrote that happens to start with `<div>` is not mistaken for one. */
+const TRANSCRIPT_WRAPPER_TAGS = new Set([
+  'command-name',
+  'command-message',
+  'command-args',
+  'local-command-stdout',
+  'local-command-stderr',
+  'bash-input',
+  'bash-stdout',
+  'bash-stderr',
+  'task-notification',
+  'task-id',
+])
+
+function wrapsInTranscriptTag(trimmed: string) {
+  const opening = trimmed.match(/^<([a-z-]+)>/)
+  return opening !== null && TRANSCRIPT_WRAPPER_TAGS.has(opening[1])
 }
 
 /** Her tool calls, described the same way the live log describes them. */

@@ -24,6 +24,11 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 // written lines, and the browser profile underneath them.
 if (!app.isPackaged) app.setName(`${app.getName()} (dev)`)
 
+// Electron reads $HOME for nothing — userData comes off the native user
+// directory, which is why the e2e suite (a fake $HOME everywhere else, so a
+// run never touches the real café) has to say so a second time, here.
+if (process.env.CAFE_USERDATA) app.setPath('userData', process.env.CAFE_USERDATA)
+
 /**
  * Her, in the Dock. Run from a checkout there is no bundle to take an icon
  * from, so the app sets its own — otherwise she stands there as Electron.
@@ -88,9 +93,12 @@ function openWindow(cwd: string) {
     rememberBounds(window.getBounds())
   })
 
+  // Read while she is still standing: by 'closed' the window is already torn
+  // down, and asking a destroyed window for its webContents is itself a crash.
+  const contents = window.webContents
   window.on('closed', () => {
-    shifts.get(window.webContents)?.close()
-    shifts.delete(window.webContents)
+    shifts.get(contents)?.close()
+    shifts.delete(contents)
     stopCarrying(window)
     stopWatching(window)
   })

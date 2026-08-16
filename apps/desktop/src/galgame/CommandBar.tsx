@@ -148,6 +148,10 @@ export function CommandBar({
               icon: FolderSearch,
               label: t.bar.browse,
               find: eng.bar.browse,
+              // The native dialog answers on its own time — the bar waits for
+              // it rather than closing itself and leaving the answer to land
+              // out of band, with the reset it deserved already skipped.
+              stay: true,
               run: () => void window.cafe?.openFolder().then((picked) => onClose(Boolean(picked))),
             } satisfies Entry,
             ...folders.map((path): Entry => ({
@@ -231,7 +235,7 @@ export function CommandBar({
             key: `past-${past.sessionId}`,
             icon: Clock,
             label: past.opening,
-            note: past.sessionId === conversation ? 'here' : formatWhen(past.at),
+            note: past.sessionId === conversation ? t.bar.here : formatWhen(past.at),
             here: past.sessionId === conversation,
             run: () => window.cafe?.resume(past.sessionId),
           }))

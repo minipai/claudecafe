@@ -2,3 +2,5 @@ dist/
 *.tsbuildinfo
 dist-electron
 release/
+test-results/
+playwright-report/

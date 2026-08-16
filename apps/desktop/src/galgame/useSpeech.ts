@@ -11,10 +11,22 @@ import { useTypewriter } from './useTypewriter'
  * question, a permission. Auto-play stops there.
  */
 type Beat =
-  | { kind: 'line'; text: string; halt?: boolean; onShow?: () => void; onDone?: () => void }
+  | {
+      kind: 'line'
+      text: string
+      halt?: boolean
+      onShow?: () => void
+      onDone?: () => void
+      /** Called instead of `onShow`, for a beat that never gets there — the
+       * master moved the scene on himself before it was its turn. A line
+       * waiting on an answer (a permission, a question) is a promise on the
+       * other end of the bridge; dropped silently, that promise is never
+       * kept, and whatever asked it sits parked forever. */
+      onDrop?: () => void
+    }
   | { kind: 'act'; play: () => void }
 
-export type Hooks = { onShow?: () => void; onDone?: () => void; halt?: boolean }
+export type Hooks = { onShow?: () => void; onDone?: () => void; halt?: boolean; onDrop?: () => void }
 
 /** Who is turning the pages: the master, or a timer. */
 export type Pace = 'manual' | 'auto'
@@ -62,6 +74,22 @@ export function useSpeech() {
 
   const count = () => queue.current.filter((beat) => beat.kind === 'line').length
 
+  /** Whatever is left is acts, with no line behind them to wait for — nothing
+   * would ever count them as queued, so nothing would ever click through to
+   * them either. */
+  const trailingActs = () => queue.current.length > 0 && queue.current.every((beat) => beat.kind === 'act')
+
+  /** Runs a tail of acts the moment there is nothing left for them to wait
+   * on — once the line ahead of them is done, or the moment they land behind
+   * one already finished. Acts before a further line still wait for the
+   * master to click past what is showing now; these have nothing to wait for. */
+  const drainTail = useCallback(() => {
+    if (!isDone || !trailingActs()) return
+    for (const beat of queue.current) if (beat.kind === 'act') beat.play()
+    queue.current = []
+    setQueued(0)
+  }, [isDone])
+
   const show = useCallback(
     (beat: Extract<Beat, { kind: 'line' }>) => {
       taken.current = true
@@ -79,8 +107,9 @@ export function useSpeech() {
     (beat: Beat) => {
       queue.current.push(beat)
       setQueued(count())
+      drainTail()
     },
-    [],
+    [drainTail],
   )
 
   const say = useCallback(
@@ -115,6 +144,11 @@ export function useSpeech() {
   )
 
   const clear = useCallback(() => {
+    // The master moving the scene on himself drops whatever was still
+    // waiting — but a line with an `onDrop` is not just words: it is a
+    // question with someone still waiting on the other end of it, and
+    // dropping it silently leaves that wait forever unanswered.
+    for (const beat of queue.current) if (beat.kind === 'line') beat.onDrop?.()
     queue.current = []
     taken.current = false
     setQueued(0)
@@ -135,6 +169,13 @@ export function useSpeech() {
       return
     }
   }, [show])
+
+  /** The other half of `drainTail`: acts pushed while the line ahead of them
+   * was still typing have nothing to run at push time — this is what catches
+   * them once that line finishes without anyone having clicked through. */
+  useEffect(() => {
+    drainTail()
+  }, [drainTail])
 
   /** Nobody is clicking: the page turns itself at reading speed. It only ever
    * turns onto a line that is already waiting — it never pushes her to say

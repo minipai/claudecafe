@@ -148,7 +148,7 @@ Return JSON and nothing else, with exactly these keys:
 One line each, the way she would actually say it. No quotes around the values other than JSON's own.`
 }
 
-function readAnswer(answer: string): Lines | null {
+export function readAnswer(answer: string): Lines | null {
   const body = answer.match(/\{[\s\S]*\}/)?.[0]
   if (!body) return null
   try {

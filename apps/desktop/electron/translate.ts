@@ -27,9 +27,6 @@ export class Turn {
   /** Set once she calls the report tool: what the panel shows, and the line she
    * says while handing it over. */
   private report: (Report & { line: string }) | null = null
-  /** The mood marker she signed her last line with, kept for the log — the
-   * scene strips it, but the record should read the way she wrote it. */
-  private mood: string | null = null
   /** The last line already put on screen, so the result does not repeat it. */
   private spoken: string | null = null
   /** How many tokens she has written this turn, for the line he waits at. */
@@ -103,7 +100,6 @@ export class Turn {
       if (block.type === 'text') {
         this.flush(out)
         const { text, expression, marker } = readMood(block.text)
-        if (marker) this.mood = marker
         this.pendingLine = text ? { text, expression, marker } : null
       } else if (block.type === 'thinking') {
         this.flush(out)
@@ -178,7 +174,7 @@ export class Turn {
       const subject = this.opening.get(block.tool_use_id)
       if (!subject) continue
       this.opening.delete(block.tool_use_id)
-      const numbered = typeof block.content === 'string' ? block.content.match(/Task #(\d+)/) : null
+      const numbered = contentText(block.content).match(/Task #(\d+)/)
       if (!numbered) continue
       this.tasks.set(numbered[1], { content: subject, status: 'pending' })
       opened = true
@@ -212,14 +208,18 @@ export class Turn {
     const held = this.pendingLine
     const ending = held ?? (sdk.subtype === 'success' ? readMood(sdk.result) : null)
     const text = ending?.text ?? ''
-    const expression = (held?.expression ?? undefined) || undefined
+    // The face belongs to whichever line is actually ending the turn — the
+    // held one if there was one, or the result text's own marker when the
+    // marker rode along in the result instead of a streamed block.
+    const expression = ending?.expression ?? held?.expression ?? undefined
     // Her last word was already said on the way to a tool call; the result is
     // the same text coming back round, so the scene must not say it twice.
     const said = !held && text === this.spoken
     this.pendingLine = null
     this.spoken = null
-    const mood = this.mood ?? undefined
-    this.mood = null
+    // Only the ending line's own marker signs the result — an earlier line's
+    // mood belongs to that line, not to whatever she ended on.
+    const mood = ending?.marker ?? undefined
 
     // She handed over a report: that is the answer, whatever she said after.
     if (this.report) {
@@ -327,20 +327,26 @@ function openingLine(text: string) {
  * rather than carried around. */
 const KEPT = 4000
 
-function readOutput(content: unknown): string {
-  const text =
-    typeof content === 'string'
+/** The plain text a tool_result actually carries, string or blocks alike —
+ * whatever else reads a tool's answer, the "Task #3 created" number among
+ * them, reads it through here rather than assuming which shape it arrived in. */
+function contentText(content: unknown): string {
+  return typeof content === 'string'
+    ? content
+    : Array.isArray(content)
       ? content
-      : Array.isArray(content)
-        ? content
-            .map((block) => {
-              const part = block as { type?: string; text?: string }
-              if (part.type === 'text') return part.text ?? ''
-              return part.type === 'image' ? '[image]' : ''
-            })
-            .filter(Boolean)
-            .join('\n')
-        : ''
+          .map((block) => {
+            const part = block as { type?: string; text?: string }
+            if (part.type === 'text') return part.text ?? ''
+            return part.type === 'image' ? '[image]' : ''
+          })
+          .filter(Boolean)
+          .join('\n')
+      : ''
+}
+
+function readOutput(content: unknown): string {
+  const text = contentText(content)
   return text.length > KEPT ? `${text.slice(0, KEPT)}\n…(${text.length - KEPT} more characters)` : text
 }
 

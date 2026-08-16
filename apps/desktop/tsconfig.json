@@ -24,6 +24,8 @@
   },
   "include": [
     "src",
-    "electron"
+    "electron",
+    "test",
+    "e2e"
   ]
 }

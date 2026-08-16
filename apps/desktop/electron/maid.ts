@@ -34,7 +34,7 @@ import type {
 import type { Attachment, Question } from '../src/agent/types'
 
 /** How much context the turn carried: everything the model was handed as prompt. */
-function contextTokens(usage: { input_tokens?: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null }) {
+export function contextTokens(usage: { input_tokens?: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null }) {
   return (usage.input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0)
 }
 
@@ -42,7 +42,7 @@ type Emit = (event: BridgeEvent) => void
 
 /** The plan's windows, in the order the terminal lists them: the rolling
  * session first, then the week, then whatever the week is split by model into. */
-function readWindows(limits: SDKControlGetUsageResponse['rate_limits']): UsageWindow[] {
+export function readWindows(limits: SDKControlGetUsageResponse['rate_limits']): UsageWindow[] {
   if (!limits) return []
   const named: UsageWindow[] = [
     { label: 'Session', percent: limits.five_hour?.utilization ?? null, resetsAt: limits.five_hour?.resets_at ?? null },
@@ -65,7 +65,7 @@ const BEHAVIOUR: Record<string, string> = {
   cron: 'Scheduled runs',
 }
 
-function readUsage(report: SDKControlGetUsageResponse): UsageReport {
+export function readUsage(report: SDKControlGetUsageResponse): UsageReport {
   const week = report.behaviors?.week
   return {
     cost: report.session.total_cost_usd,
@@ -149,6 +149,16 @@ export class MaidSession {
   private prompts = new PromptQueue()
   /** Turns waiting their turn — the SDK answers them one at a time, in order. */
   private runs: { runId: string; turn: Turn }[] = []
+  /** Asked for, but not yet handed to the SDK. The CLI reads whatever lands in
+   * `prompts` at once — that is what makes it stdin, not a queue of its own —
+   * so anything typed behind a turn still running has to wait here instead,
+   * or a later stop could never catch it: it would already be on its way in. */
+  private backlog: { runId: string; prompt: string; images: Attachment[] }[] = []
+  /** Results still owed for a turn `interrupt()` already closed out on this
+   * end. The CLI keeps running until its own abort actually catches up, and
+   * whatever it says about that turn in the meantime belongs to nobody —
+   * `pump()` swallows it rather than hand it to whatever is running now. */
+  private deadRuns = 0
   private waiting = new Map<string, (value: unknown) => void>()
   private lastContext: number | null = null
   private lookSessionId: string | null = null
@@ -169,6 +179,11 @@ export class MaidSession {
    * already true — the folder's state, what was said last time, what it runs as. */
   refresh() {
     this.emit({ kind: 'folder', cwd: this.cwd })
+    // The renderer announcing a fresh page does not mean a fresh session —
+    // the connection survives a reload, but whatever was running or parked
+    // on the page that is gone (a permission ask nobody can answer any more)
+    // has to go with it, or it sits there forever with no one watching.
+    this.closeRuns()
     // The window asking is a window with nothing in it — a reload, a hot reload,
     // or the same window arriving on another folder. What was said lives in the
     // transcript, so it is sent every time, not only the first time the session
@@ -220,8 +235,18 @@ export class MaidSession {
       return
     }
     this.writingLines = true
-    const written = await askForLines(language, personaOf(CAFE_PLUGIN))
-    this.writingLines = false
+    let written: Lines | null
+    try {
+      written = await askForLines(language, personaOf(CAFE_PLUGIN))
+    } finally {
+      this.writingLines = false
+    }
+    if (replyLanguage() !== language) {
+      // Told to speak something else again before this trip came back — what
+      // it wrote is for a language nobody asked for any more.
+      void this.tellLines()
+      return
+    }
     if (!written) return // nobody to ask yet: English stands, and it asks again later
     this.lines = written
     this.emit({ kind: 'lines', lines: written })
@@ -238,17 +263,54 @@ export class MaidSession {
   }
 
   /** Drop the connection but keep the conversation: the next prompt reopens it
-   * on the same session id, with whatever the settings now say. */
+   * on the same session id, with whatever the settings now say. Whatever was
+   * running or queued on the connection going away cannot finish on it — the
+   * same closing-out `close()` does for a run, minus the parts of `close()`
+   * that end the conversation itself. */
   private reopen() {
     const stream = this.stream
     this.stream = null
+    this.closeRuns()
+    // The reader on the connection going away must not end up catching a
+    // line typed for the one about to replace it — so it gets a queue of its
+    // own, not the one `closeRuns()` merely emptied.
+    this.prompts = new PromptQueue()
     void stream?.return(undefined).catch(() => {})
   }
 
+  /** Nothing still open here is going to answer for itself, so this says so
+   * on its behalf: every run told done, whatever was still waiting behind
+   * them in `backlog` dropped before it was ever sent to the CLI, and
+   * anything parked on an answer — hers or the master's — resolved with
+   * nothing rather than left hanging. `error` rides along on every `done` so
+   * a run that stopped because the connection itself died can say so.
+   *
+   * The prompt queue is only emptied of what has not been read yet here, not
+   * replaced — the reader on the far end of it may still be the live
+   * connection's own, and a line typed right after this must still reach it.
+   * `reopen()` and `close()`, which are abandoning that reader along with the
+   * connection itself, swap in a fresh queue of their own once this returns. */
+  private closeRuns(error?: string) {
+    for (const run of this.runs) this.emit({ kind: 'done', runId: run.runId, error })
+    this.runs = []
+    this.backlog = []
+    this.prompts.clear()
+    for (const resolve of this.waiting.values()) resolve([])
+    this.waiting.clear()
+  }
+
+  /** A prompt asked for while nothing is running reaches the CLI at once —
+   * the SDK drains `prompts` the instant anything lands in it, which is
+   * exactly what makes `interrupt()` able to catch a queued one at all: it
+   * only has to discard what is still sitting here in `backlog`, never
+   * having been sent, rather than chase something already on its way to
+   * stdin. */
   ask(runId: string, prompt: string, images: Attachment[] = []) {
     if (!this.stream) this.open()
+    const inFlight = this.runs.length > 0
     this.runs.push({ runId, turn: new Turn(prompt) })
-    this.prompts.push(prompt, images)
+    if (inFlight) this.backlog.push({ runId, prompt, images })
+    else this.prompts.push(prompt, images)
   }
 
   answer(askId: string, value: unknown) {
@@ -258,8 +320,21 @@ export class MaidSession {
     resolve(value)
   }
 
+  /** Stop what she is doing — all of it. Every run is closed out here and
+   * now, the one running included: an interrupt that lands mid-tool may never
+   * be answered with a result, and a run left open waiting for one would sit
+   * at the head of the queue jamming every turn after it. Only that one was
+   * ever actually handed to the CLI — everything queued behind it was still
+   * sitting in `backlog`, never sent, so `closeRuns()` dropping it is enough
+   * to keep it from running to completion with nobody watching. The turn
+   * that was running keeps going on the CLI's side until its own abort
+   * catches up, though, and whatever it still says belongs to a turn nothing
+   * here remembers any more — `deadRuns` is what stops `pump()` mistaking
+   * that drift-back for an answer to whatever is asked next. */
   interrupt() {
     void this.stream?.interrupt().catch(() => {})
+    if (this.runs.length) this.deadRuns++
+    this.closeRuns()
   }
 
   /** The conversations held in this folder, for the master to pick from. */
@@ -295,10 +370,11 @@ export class MaidSession {
   close() {
     const stream = this.stream
     this.stream = null
-    for (const run of this.runs) this.emit({ kind: 'done', runId: run.runId })
-    this.runs = []
+    this.closeRuns()
+    // Same reasoning as `reopen()`: the reader on this connection is being
+    // abandoned along with it, so the next one gets a queue nobody else is
+    // still listening to.
     this.prompts = new PromptQueue()
-    this.waiting.clear()
     this.stopWatchingLook?.()
     this.stopWatchingLook = null
     this.lookSessionId = null
@@ -361,10 +437,14 @@ export class MaidSession {
    */
   private async checkWayIn(stream: Query) {
     const late = Symbol('late')
+    let timer!: ReturnType<typeof setTimeout>
     const answered = await Promise.race([
       stream.initializationResult().catch((error) => error as Error),
-      new Promise<symbol>((resolve) => setTimeout(() => resolve(late), WAY_IN_TIMEOUT)),
+      new Promise<symbol>((resolve) => {
+        timer = setTimeout(() => resolve(late), WAY_IN_TIMEOUT)
+      }),
     ])
+    clearTimeout(timer) // answered one way or another — the door does not need watching any more
     if (this.stream !== stream) return // reopened meanwhile; that one asks for itself
     if (answered === late) {
       this.emit({
@@ -389,6 +469,15 @@ export class MaidSession {
   private async pump(stream: Query) {
     try {
       for await (const sdk of stream) {
+        // `reopen()`/`close()` tell the old connection to end with
+        // `stream.return()`, but a `next()` already in flight when that
+        // happens still resolves once more — with a message from a
+        // connection that, as far as this session is concerned, is already
+        // gone. Acting on it here could close out a run belonging to the
+        // one that replaced it, or (system/init) misremember whose session
+        // this is. The captured `stream` local is what makes the check mean
+        // anything — `this.stream` may already be pointed elsewhere.
+        if (this.stream !== stream) return
         // A skill discovered while she works changes what `/` offers; the
         // session pushes the whole list again rather than a delta.
         if (sdk.type === 'system' && sdk.subtype === 'commands_changed') {
@@ -398,6 +487,14 @@ export class MaidSession {
           this.sessionId = sdk.session_id
           rememberSession(this.cwd, sdk.session_id)
           this.followLook(sdk.session_id)
+        }
+        if (this.deadRuns > 0) {
+          // Still owed a result for a turn `interrupt()` already closed out
+          // on this end — everything about it, chunks included, belongs to
+          // nobody now, so it is dropped rather than attributed to whatever
+          // is running next.
+          if (sdk.type === 'result') this.deadRuns--
+          continue
         }
         const run = this.runs[0]
         if (!run) continue
@@ -411,6 +508,11 @@ export class MaidSession {
           this.emit({ kind: 'done', runId: run.runId })
           this.runs.shift()
           void this.reportStatus(contextTokens(sdk.usage))
+          // Nothing was in flight the instant this run's turn was pushed, so
+          // whatever was asked for behind it — held in `backlog` rather than
+          // handed to the CLI — can go now.
+          const next = this.backlog.shift()
+          if (next) this.prompts.push(next.prompt, next.images)
         }
       }
     } catch (error) {
@@ -421,10 +523,10 @@ export class MaidSession {
       // then ends quietly, because a toast saying the same thing twice is noise.
       const reason = whyStopped(message)
       if (reason) this.emit({ kind: 'trouble', trouble: { reason, detail: message } })
-      for (const run of this.runs) {
-        this.emit({ kind: 'done', runId: run.runId, error: reason ? undefined : message })
-      }
-      this.runs = []
+      this.closeRuns(reason ? undefined : message)
+      // Same reasoning as `reopen()`/`close()`: this connection is dead, so
+      // the next one gets a queue nobody else is still listening to.
+      this.prompts = new PromptQueue()
     }
   }
 
@@ -590,7 +692,7 @@ export class MaidSession {
 }
 
 /** The prompt side of streaming input: an iterable the SDK can sit and wait on. */
-class PromptQueue implements AsyncIterable<SDKUserMessage> {
+export class PromptQueue implements AsyncIterable<SDKUserMessage> {
   private queued: { text: string; images: Attachment[] }[] = []
   private wake: (() => void) | null = null
 
@@ -598,6 +700,13 @@ class PromptQueue implements AsyncIterable<SDKUserMessage> {
     this.queued.push({ text, images })
     this.wake?.()
     this.wake = null
+  }
+
+  /** Drop everything not yet handed to the reader. The SDK's own interrupt
+   * only stops the turn already running; whatever is still sitting in this
+   * queue behind it is stopped here instead, before it is ever read. */
+  clear() {
+    this.queued = []
   }
 
   async *[Symbol.asyncIterator]() {
@@ -632,7 +741,7 @@ class PromptQueue implements AsyncIterable<SDKUserMessage> {
  * back whatever the CLI printed, and the three named here are all things he has
  * to go and fix somewhere else — no amount of asking her again will help.
  */
-function whyStopped(message: string): Trouble['reason'] | null {
+export function whyStopped(message: string): Trouble['reason'] | null {
   const said = message.toLowerCase()
   if (/login|log in|not authenticated|unauthori[sz]ed|invalid api key|oauth|credentials/.test(said)) return 'sign-in'
   if (/usage limit|rate limit|quota|credit balance|too low/.test(said)) return 'limit'
