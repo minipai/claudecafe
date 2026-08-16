@@ -1,65 +1,114 @@
 # claudecafe (monorepo)
 
-AI 女僕生態系的 pnpm monorepo。repo 根**同時是一個叫 `claudecafe` 的 plugin marketplace**
-（`.claude-plugin/marketplace.json`，列出 cafe-bell + cafe 兩個 plugin）。六個 package；有 npm
-package.json 的**名字都 namespace 在 `@claudecafe/*`**（私有 root 仍叫 `claudecafe-monorepo`；
-`packages/cafe` 純 python、無 package.json、不是 workspace 成員）：
+A pnpm monorepo for the AI maid ecosystem. The repo root **is also a plugin
+marketplace named `claudecafe`** (`.claude-plugin/marketplace.json`, listing cafe-bell +
+cafe). Seven packages; everything with an npm package.json is **namespaced under
+`@claudecafe/*`** (the private root stays `claudecafe-monorepo`; `packages/cafe` is pure
+python — no package.json, not a workspace member):
 
-- **`apps/website`** — 女僕 persona 展示網站（Hono SSR），同時是**僱用管道**：`/<id>.md` 路由
-  serve 含 frontmatter 的完整 persona 檔——download 存進 `~/.claude/cafe/personas/`（cafe plugin
-  的抽班池），或存下來從自己的 `CLAUDE.md` 用 `@路徑` link。
-- **`packages/maid-personas`** — 女僕 persona 定義 `*.md`（frontmatter = 網站 metadata，
-  body = persona 指令），`zh/`＋`en/` 一語言一目錄。只有 `apps/website` 用（`workspace:*`）；
-  cafe plugin 不打包陣容。
-- **`packages/maid-assets`** — web／desktop 共用的角色美術資產。目前收納ことね／ここな的
-  表情差分、生成用 seed 圖與共用設計規格；各 app 在 build 時再挑選並複製自己需要的圖片。
-- **`packages/cafe-bell`** — Claude Code hook 事件的 pub/sub hub（SSE bus）。同時是 marketplace plugin。
-- **`packages/cafe`** — Claude Code plugin（hooks ＋ 唯一的 `/cafe:config` 設定命令；設定住
-  `~/.claude/cafe/config.json`：lang／maid／personas_dir／builtin_cast，單人退休用 persona
-  frontmatter `off_duty: true`，內建的用同 id stub 蓋掉），兩層功能：
-  - **排班**：`load-persona.py`（SessionStart）注入當班 persona 的 body。當班順序：
-    `CLAUDE_MAID` env（一次性 override）→ 本視窗的 `~/.claude/cafe/sessions/<session_id>/on-shift`
-    → 從 personas_dir（使用者僱來的女僕）隨機抽一位（抽完寫回該檔，resume 才不會換人）；
-    一個都沒僱時由內建的無名女僕 `noname`（plugin 唯一自帶的 `maids/noname.md`，checked in）
-    看店，她會自然導流去 claudecafe.dev 僱人；值為 `none` = 不注入（給自帶 CLAUDE.md persona 的使用者）。
-  - **外顯氣場**（persona-agnostic）：`session-greeting.py` 注入時段問候 + 心情標記 cue、
-    `current-time.py`（UserPromptSubmit）每回合注入當下時間、Stop hook 背景生成 status line 的
-    look 場景、SessionEnd 寫交接簿日記。
-- **`packages/maid-voice-player`** — 訂閱 cafe-bell SSE bus 的語音播放器（launchd 常駐）。
+- **`apps/desktop`** — the maid's window on the desktop (Electron + React + Agent
+  SDK). Transparent and frameless: just a standing portrait that changes expression, and
+  she *is* the agent (`@anthropic-ai/claude-agent-sdk`, borrowing Claude Code's
+  credentials). Only ことね has a full portrait/expression set so far.
+- **`apps/website`** — the persona showcase (Hono SSR), and also the **hiring channel**:
+  the `/<id>.md` route serves the full persona file including frontmatter — download it
+  into `~/.claude/cafe/personas/` (the cafe plugin's draw pool), or keep it anywhere and
+  `@path`-link it from your own `CLAUDE.md`.
+- **`packages/maid-personas`** — the persona definitions `*.md` (frontmatter = site
+  metadata, body = the persona instructions), one directory per language: `zh/` + `en/`.
+  Only `apps/website` depends on it (`workspace:*`); the cafe plugin does not ship the cast.
+- **`packages/maid-assets`** — character artwork shared by web and desktop. Currently holds
+  ことね/ここな expression sheets, generation seed images, and the shared design spec; each
+  app picks and copies the images it needs at build time.
+- **`packages/cafe-bell`** — a pub/sub hub (SSE bus) for Claude Code hook events. Also a
+  marketplace plugin.
+- **`packages/cafe`** — the Claude Code plugin (hooks + three commands: `/cafe:config` for
+  settings, `/cafe:hire` to hire from the site, `/cafe:statusline` to wire the look into the
+  status line; settings live in `~/.claude/cafe/config.json`:
+  lang / maid / personas_dir / builtin_cast / festivals — retire one maid with `off_duty: true`
+  in her frontmatter, shadow a bundled one with a same-id stub). Two layers:
+  - **Shift assignment**: `load-persona.py` (SessionStart) injects the on-shift persona's
+    body. Order: `CLAUDE_MAID` env (one-shot override) → this window's
+    `~/.claude/cafe/sessions/<session_id>/on-shift` → a random draw from personas_dir (the
+    maids the user hired; the draw is written back to that file so a resume keeps the same
+    one). With nobody hired, the bundled nameless maid `noname` keeps the place open
+    (`maids/noname.md`, the plugin's only bundled persona, checked in) and steers the user
+    toward hiring at claudecafe.dev. `none` = inject nothing (for users who bring their own
+    persona in `CLAUDE.md`).
+  - **Liveliness** (persona-agnostic): `session-greeting.py` injects a time-aware greeting +
+    the mood-marker cue, `current-time.py` (UserPromptSubmit) injects the current time every
+    turn, a Stop hook generates the status line's "look" scene in the background, and
+    SessionEnd writes a line in the handover diary.
+- **`packages/maid-voice-player`** — a voice player subscribed to the cafe-bell SSE bus
+  (launchd resident).
 
-## ⚠️ Plugin 開發的三顆雷
+## ⚠️ Three landmines in plugin development
 
-- **hook 環境沒 JS runtime on PATH**：node 是 nvm、bun 在 `~/.bun`，hook 跑非互動 shell 都不在
-  PATH → **hook 只能用系統自帶的 bash／python3**。`cafe` 的 hook 因此 self-contained：純 python3
-  stdlib，無 repo 路徑／symlink／node/bun。cafe 也**沒有 build step**——所有出貨的檔案都 checked in
-  （陣容不進 plugin，從網站僱用）。
-- **改 plugin 一定要 bump 版號**：`/plugin update` 比對 version，版號沒變不會重裝。改動後同步 bump
-  `packages/<p>/.claude-plugin/plugin.json` ＋ 根 `marketplace.json` 對應 entry（有 `package.json`
-  的 plugin 也一起），再 `/plugin marketplace update claudecafe` → `/plugin update <p>@claudecafe`。
-- **改 live 全域 config（`~/.claude/`）前要使用者明確授權。** 兩個 plugin 都從 marketplace
-  install + enable，沒有 loose hook 鏡像或 symlink——不要再手動鋪那些。
+- **Hooks run with no JS runtime on PATH**: node is under nvm, bun under `~/.bun`, and a
+  hook's non-interactive shell has neither → **hooks may only use the system's own
+  bash/python3**. That's why `cafe`'s hooks are self-contained: pure python3 stdlib, no repo
+  paths, no symlinks, no node/bun. cafe also has **no build step** — every shipped file is
+  checked in (the cast isn't bundled; it's hired from the site).
+- **Always bump the version when you change a plugin**: `/plugin update` compares versions
+  and won't reinstall an unchanged one. Bump `packages/<p>/.claude-plugin/plugin.json` and the
+  matching entry in the root `marketplace.json` together (plus `package.json` where a plugin
+  has one), then `/plugin marketplace update claudecafe` → `/plugin update <p>@claudecafe`.
+- **Ask the user before touching the live global config (`~/.claude/`).** Both plugins are
+  installed + enabled from the marketplace — there are no loose hook mirrors or symlinks, and
+  none should be laid down by hand again.
 
-mood 心情標記**只 emit 不捕捉**：回應結尾的 `【…】` 純風格，沒有 Stop hook 或 status line 讀它。
+The mood marker is **emit-only**: the `【…】` at the end of a reply is pure style; no Stop hook
+or status line reads it.
 
 ## Workspace
 
-- pnpm workspace（`pnpm-workspace.yaml` → `apps/*`、`packages/*`）。
-- **單一 lockfile**：根 `pnpm-lock.yaml` 同時管本地開發與 Docker 部署。web 的 image 是多階段 build
-  （`apps/website/Dockerfile`，**context = repo 根**）：stage 1 用 node+pnpm `--frozen-lockfile` install 後
-  `pnpm --filter @claudecafe/website --legacy deploy --prod`（會把 `@claudecafe/maid-personas` 一起打包進
-  `/out/node_modules/`），stage 2 用 `oven/bun` 跑 deploy bundle。
-- 常用：`pnpm install`（根）、`pnpm dev:web`、`pnpm --filter @claudecafe/website ship`（部署網站）。
-- cafe-bell / maid-voice-player 無 npm 依賴，直接用 bun / shell 跑；cafe 純 python、無 build。
+- pnpm workspace (`pnpm-workspace.yaml` → `apps/*`, `packages/*`).
+- **One lockfile**: the root `pnpm-lock.yaml` serves both local development and the Docker
+  deploy. The web image is a multi-stage build (`apps/website/Dockerfile`, **context = repo
+  root**): stage 1 installs with node+pnpm `--frozen-lockfile`, then
+  `pnpm --filter @claudecafe/website --legacy deploy --prod` (which bundles
+  `@claudecafe/maid-personas` into `/out/node_modules/`); stage 2 runs the deploy bundle on
+  `oven/bun`.
+- Common commands: `pnpm install` (root), `pnpm dev:web`,
+  `pnpm --filter @claudecafe/website ship` (deploy the site).
+- cafe-bell / maid-voice-player have no npm dependencies — run them straight with bun/shell;
+  cafe is pure python with no build.
+
+## apps/desktop
+
+Electron (`electron/*.ts`, the main process) + Vite/React 19/Tailwind (`src/`) + Agent SDK.
+
+- **The main process ignores HMR**: any change under `electron/` (SDK session, tools, look
+  watcher, ipc) needs the dev app restarted — `node electron/dev.mjs` (**never pass `--dir=`**, it
+  overwrites the folder she remembers). Only `src/` updates live.
+- **The dev build and the packaged build coexist with separate state**
+  (`~/Library/Application Support/ClaudeCafe` vs `ClaudeCafe (dev)`).
+  `release/mac-arm64/ClaudeCafe.app` is the one the user actually uses — leave it alone when
+  restarting the dev build.
+- **Language split**: the interface is English, but what she says follows the user's language —
+  the handful of lines the window feeds her (greeting, interrupted, asking permission, plan) are
+  generated once at startup per the café config's `lang` and stored in `lines.json` under
+  userData, with English as the built-in fallback (`electron/lines.ts`).
+- Releases go through `scripts/ship.sh` (package → zip → R2 `claudecafe-downloads` =
+  dl.starcoder.dev, versioned and never overwritten) → bump the version in
+  `apps/website/src/pages/AppPage.tsx` by hand → ship the site.
+- **What's still missing before handing it to a stranger is tracked in `notes/NOTES.md`**
+  (signing/notarization, `@` file completion, the persona existing only in Chinese…).
 
 ## apps/website
 
-Hono + JSX (SSR)、gray-matter、marked、TypeScript。
+Hono + JSX (SSR), gray-matter, marked, TypeScript.
 
-- persona 檔住在 `packages/maid-personas`，web 透過 `require.resolve('@claudecafe/maid-personas/package.json')`
-  取得目錄（dev 走 pnpm symlink、Docker 走 deploy bundle 都通）。
-- **i18n**：英文站在根路徑、中文站在 `/zh/`（`src/i18n.ts` 的 `href()` 組網址；hreflang 互指、
-  切換鈕帶 `?lang=` 種 cookie，cookie 只在根路徑 `/` 導向 `/zh`）。英文內容＝翻譯檔：persona 在
-  `packages/maid-personas/en/`、部落格在 `apps/website/blog/en/`（同檔名），缺檔自動 fallback 中文版。
-- maid 頁的 CTA：整句是 `/<id>.md` 的連結、旁邊 download 連結直接下載——都含 frontmatter
-  （cafe plugin 的 status line 讀 `name:`）。頁面本身 render 時仍只顯示 body。
-- `apps/website/blog/` 是部落格文章（frontmatter 含 title / date / author），寫作風格見該目錄的 `CLAUDE.md`。
+- Persona files live in `packages/maid-personas`; the site locates the directory via
+  `require.resolve('@claudecafe/maid-personas/package.json')` (works through the pnpm symlink in
+  dev and through the deploy bundle in Docker).
+- **i18n**: English at the root, Chinese under `/zh/` (`href()` in `src/i18n.ts` builds the
+  URLs; hreflang cross-links, and the switcher's `?lang=` plants a cookie that only redirects
+  `/` → `/zh`). English content = translation files: personas in `packages/maid-personas/en/`,
+  blog posts in `apps/website/blog/en/` (same filename), each falling back to the Chinese
+  version when missing.
+- The maid page's CTA: the whole sentence links to `/<id>.md`, with a download link beside it —
+  both include the frontmatter (the cafe plugin's status line reads `name:`). The page itself
+  still renders the body only.
+- `apps/website/blog/` holds the blog posts (frontmatter: title / date / author); the writing
+  style guide is the `CLAUDE.md` in that directory.

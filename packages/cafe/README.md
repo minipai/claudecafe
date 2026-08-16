@@ -140,13 +140,15 @@ python3 packages/cafe/test.py
 
 ## Install
 
-Part of the `claudecafe` marketplace (this repo's root `.claude-plugin/marketplace.json`).
-Today that means a local checkout (a public URL marketplace is planned):
-
 ```
-/plugin marketplace add /path/to/claudecafe
+/plugin marketplace add https://claudecafe.dev/plugins/marketplace.json
 /plugin install cafe@claudecafe
 ```
+
+Releases are cut with `ship.sh` (bump the version in `.claude-plugin/plugin.json`
+first — published zips are immutable). Working on the plugin itself? Point the
+marketplace at your checkout instead (`/plugin marketplace add /path/to/claudecafe`)
+and skip the shipping round trip.
 
 ## Notes
 
