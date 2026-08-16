@@ -104,6 +104,25 @@ function openWindow(cwd: string) {
   })
 
   const devServer = process.env.VITE_DEV_SERVER_URL
+
+  // A link she writes belongs in the browser. Left alone the window navigates
+  // to it and she is gone — with no frame there is no back button, and the page
+  // has swallowed the café.
+  const openOutside = (url: string) => {
+    if (/^(https?|mailto):/.test(url)) void shell.openExternal(url)
+  }
+  contents.setWindowOpenHandler(({ url }) => {
+    openOutside(url)
+    return { action: 'deny' }
+  })
+  contents.on('will-navigate', (event, url) => {
+    // Vite's full reloads are a navigation to the same address; everything else
+    // is somewhere else entirely.
+    if (devServer && url.startsWith(devServer)) return
+    event.preventDefault()
+    openOutside(url)
+  })
+
   if (devServer) {
     void window.loadURL(devServer)
     window.webContents.openDevTools({ mode: 'detach' })
