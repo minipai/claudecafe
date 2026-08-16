@@ -8,9 +8,11 @@ type CommandMenuProps = {
 }
 
 /**
- * What `/` offers, over the input he is typing it into. The list is the
- * session's own — built-ins, this folder's commands, its skills and plugins —
- * so it is as long as the project makes it and scrolls rather than being cut.
+ * What `/` offers, over the input he is typing it into — floating over it,
+ * not stacked on it: a list that takes part in layout shoves the input around
+ * under the caret every time it opens. The list is the session's own —
+ * built-ins, this folder's commands, its skills and plugins — so it is as
+ * long as the project makes it and scrolls rather than being cut.
  */
 export function CommandMenu({ matches, active, onPick }: CommandMenuProps) {
   const list = useRef<HTMLDivElement>(null)
@@ -25,7 +27,7 @@ export function CommandMenu({ matches, active, onPick }: CommandMenuProps) {
     <div
       ref={list}
       role="listbox"
-      className="mb-2 max-h-64 overflow-y-auto rounded-lg border border-border bg-popover py-1 shadow-md"
+      className="absolute inset-x-0 bottom-full z-20 mb-2 max-h-64 overflow-y-auto rounded-lg border border-border bg-popover py-1 shadow-md"
     >
       {matches.map((command, index) => (
         <button

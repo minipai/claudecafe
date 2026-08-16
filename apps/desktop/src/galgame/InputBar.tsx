@@ -60,6 +60,8 @@ export function InputBar({ isBusy, commands, onSubmit, onStop }: InputBarProps) 
 
   return (
     <div
+      // The anchor the command menu floats up from.
+      className="relative"
       // A picture dropped on the scene is handed to her; a file is named to her.
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
@@ -109,8 +111,16 @@ export function InputBar({ isBusy, commands, onSubmit, onStop }: InputBarProps) 
                 return
               }
               // Enter picks what is highlighted instead of sending: `/pl` is not
-              // a prompt anyone means to send.
-              if ((e.key === 'Enter' || e.key === 'Tab') && !e.nativeEvent.isComposing) {
+              // a prompt anyone means to send. But a name already typed out in
+              // full has nothing left to pick — that Enter falls through and
+              // runs the command.
+              const finished =
+                typing !== null && highlighted.name.toLowerCase() === typing.toLowerCase()
+              if (
+                (e.key === 'Enter' || e.key === 'Tab') &&
+                !e.nativeEvent.isComposing &&
+                !(e.key === 'Enter' && finished)
+              ) {
                 e.preventDefault()
                 pick(highlighted)
                 return
