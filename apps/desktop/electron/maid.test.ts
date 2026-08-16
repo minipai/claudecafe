@@ -44,7 +44,7 @@ vi.mock('./status', () => ({
   readGit: vi.fn(),
 }))
 
-import { contextTokens, MaidSession, PromptQueue, readUsage, readWindows, whyStopped } from './maid'
+import { contextTokens, MaidSession, nameOf, PromptQueue, readUsage, readWindows, whyStopped } from './maid'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
 import { chosenSpeech, conversationBacklog, forgetSession, lastConversation, listConversations, rememberSession } from './history'
@@ -779,5 +779,29 @@ describe('MaidSession — resume/reset/refresh', () => {
 
     expect(events).toContainEqual({ kind: 'done', runId: 'run-1' })
     await expect(parked).resolves.toMatchObject({ behavior: 'deny' })
+  })
+})
+
+describe('nameOf', () => {
+  // The shape supportedModels() actually returns: the default row and an alias
+  // row sharing one resolvedModel, plus rows that stand for themselves.
+  const rows = [
+    { value: 'default', displayName: 'Default (recommended)', resolvedModel: 'claude-opus-5[1m]' },
+    { value: 'opus[1m]', displayName: 'Opus (1M context)', resolvedModel: 'claude-opus-5[1m]' },
+    { value: 'sonnet', displayName: 'Sonnet', resolvedModel: 'claude-sonnet-5' },
+  ] as Parameters<typeof nameOf>[1]
+
+  it('names the default after the model it resolves to', () => {
+    expect(nameOf(rows[0], rows)).toBe('Opus (1M context) (default)')
+  })
+
+  it('leaves the named rows as they are', () => {
+    expect(nameOf(rows[1], rows)).toBe('Opus (1M context)')
+    expect(nameOf(rows[2], rows)).toBe('Sonnet')
+  })
+
+  it('keeps the label it was given when nothing else resolves the same', () => {
+    const alone = [{ value: 'default', displayName: 'Default (recommended)', resolvedModel: 'claude-opus-5' }] as Parameters<typeof nameOf>[1]
+    expect(nameOf(alone[0], alone)).toBe('Default (recommended)')
   })
 })

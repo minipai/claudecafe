@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   query,
+  type ModelInfo,
   type Options,
   type PermissionResult,
   type Query,
@@ -536,7 +537,7 @@ export class MaidSession {
     const models = await stream.supportedModels().catch(() => [])
     this.models = models.map((model) => ({
       value: model.value,
-      label: model.displayName,
+      label: nameOf(model, models),
       efforts: model.supportedEffortLevels ?? [],
     }))
     this.emit({ kind: 'settings', settings: this.settings, models: this.models })
@@ -689,6 +690,17 @@ export class MaidSession {
   private park<T>(askId: string) {
     return new Promise<T>((resolve) => this.waiting.set(askId, resolve as (value: unknown) => void))
   }
+}
+
+/** 'Default (recommended)' says which row to pick, not who answers. The row it
+ * resolves to carries the actual name, so the default borrows it — 'Opus 4.5
+ * (default)' on the plaque instead of a label about labels. */
+export function nameOf(model: ModelInfo, all: ModelInfo[]) {
+  if (model.value !== 'default' || !model.resolvedModel) return model.displayName
+  const resolved = all.find(
+    (other) => other.value !== 'default' && (other.resolvedModel ?? other.value) === model.resolvedModel,
+  )
+  return resolved ? `${resolved.displayName} (default)` : model.displayName
 }
 
 /** The prompt side of streaming input: an iterable the SDK can sit and wait on. */

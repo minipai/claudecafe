@@ -76,6 +76,10 @@ export function useClickThrough() {
 const DRAWN = 24
 
 function isEmptyAt(x: number, y: number) {
+  // An open menu makes the rest of the page pointer-inert so that any click
+  // outside it is its dismissal — which reads as air here. Every click while
+  // it is open belongs to this window, none to whatever is behind it.
+  if (document.body.style.pointerEvents === 'none') return false
   for (const under of document.elementsFromPoint(x, y)) {
     if (under === document.body || under === document.documentElement) break
     if (under instanceof HTMLImageElement && under.dataset.art !== undefined) {
