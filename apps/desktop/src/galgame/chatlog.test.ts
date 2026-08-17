@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createChatMessage, createPreviewHistory, recordToolResult, shorten, signed, signLastMood } from './chatlog'
+import { createChatMessage, createPreviewHistory, glance, recordToolResult, shorten, signed, signLastMood } from './chatlog'
 
 describe('createChatMessage', () => {
   it('assigns increasing ids', () => {
@@ -43,6 +43,22 @@ describe('shorten', () => {
   it('leaves a line exactly at the limit untouched', () => {
     const exact = 'x'.repeat(160)
     expect(shorten(exact)).toBe(exact)
+  })
+})
+
+describe('glance', () => {
+  it('leaves a line short enough to read at a glance alone', () => {
+    expect(glance('fix the login page')).toBe('fix the login page')
+  })
+
+  it('folds a pasted block onto one line — the pill is anchored over her, and a wall of text covers her', () => {
+    expect(glance('first line\n\n  second line\tthird')).toBe('first line second line third')
+  })
+
+  it('clips anything past 90 characters with an ellipsis', () => {
+    const pasted = glance('x'.repeat(500))
+    expect(pasted.length).toBe(89)
+    expect(pasted.endsWith('…')).toBe(true)
   })
 })
 

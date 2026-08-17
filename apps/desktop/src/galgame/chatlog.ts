@@ -26,6 +26,16 @@ export function shorten(line: string) {
   return line.length > 160 ? `${line.slice(0, 158)}…` : line
 }
 
+/**
+ * What fits on a pill floating over the scene. A pasted page of text is still
+ * one thing the master said, and put through whole it covers her — so it goes
+ * up as its opening words, on one line.
+ */
+export function glance(text: string) {
+  const oneLine = text.replace(/\s+/g, ' ').trim()
+  return oneLine.length > 90 ? `${oneLine.slice(0, 88)}…` : oneLine
+}
+
 /** Her line as she wrote it: the mood marker belongs on the record. */
 export function signed(line: string, mood?: string) {
   return mood ? `${line} ${mood}` : line

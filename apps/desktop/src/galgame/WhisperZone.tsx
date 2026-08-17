@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import type { Whisper } from './types'
+import { glance } from './chatlog'
 import { cn } from '@/lib/utils'
 
 /**
@@ -25,7 +26,7 @@ export function WhisperZone({ whispers }: { whispers: Whisper[] }) {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3 }}
           >
-            {w.kind === 'thought' ? `…${w.text}` : w.text}
+            {w.kind === 'thought' ? `…${glance(w.text)}` : glance(w.text)}
           </motion.div>
         ))}
       </AnimatePresence>
