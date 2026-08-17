@@ -12,7 +12,7 @@ const DEMO_URL = 'https://claudecafe.starcoder.dev/'
  *
  * Versioned and never overwritten: the shelf doubles as the archive, and a
  * release nobody can go back to is a release nobody should trust. */
-const DOWNLOAD_URL = 'https://dl.starcoder.dev/ClaudeCafe-0.1.1-arm64.zip'
+const DOWNLOAD_URL = 'https://dl.starcoder.dev/ClaudeCafe-0.1.2-arm64.zip'
 
 /** Fetch and unzip, as one copyable thing. No download button anywhere on the
  * page: a zip that arrives through a browser is quarantined by macOS and this
@@ -30,7 +30,7 @@ const copy = {
       'The same Claude Code you already run — your login, your skills, your MCP servers — with a maid standing in front of it instead of a prompt.',
     demoNote: 'The real window on a canned script. Nothing on your machine is touched.',
     demoHint: 'Best on a desktop-sized screen.',
-    dlMeta: 'macOS · Apple silicon · v0.1.1 · 238 MB',
+    dlMeta: 'macOS · Apple silicon · v0.1.2 · 237 MB',
     dlNote:
       'From a terminal on purpose: this build is signed by nobody, and a zip that arrives through a browser is held back by macOS. Fetched this way, she opens on the first double-click.',
     dependsA: 'Depends on ',
@@ -45,7 +45,7 @@ const copy = {
       '同一個 Claude Code——你的登入、你的 skills、你的 MCP 伺服器——只是站在你面前的是一位女僕，不是一行游標。',
     demoNote: '這就是那個視窗本人，跑的是預錄好的劇本，不會動到你電腦裡的任何東西。',
     demoHint: '在電腦上看最準。',
-    dlMeta: 'macOS · Apple 晶片 · v0.1.1 · 238 MB',
+    dlMeta: 'macOS · Apple 晶片 · v0.1.2 · 237 MB',
     dlNote:
       '只給指令是有原因的：這個版本沒有任何簽名，用瀏覽器下載的壓縮檔會被 macOS 擋下來；用這行抓的不會，第一次雙擊就開得起來。',
     dependsA: '需要 ',
