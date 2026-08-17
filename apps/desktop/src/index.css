@@ -199,6 +199,42 @@
   background: none;
   padding: 0;
 }
+/* A table is a great many small facts pressed side by side. Left bare the
+   columns touch — a price runs straight into the note beside it — so the room
+   between them and a rule under each row is what makes it readable at all. */
+.report-md table {
+  width: 100%;
+  margin-bottom: 1.1rem;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+.report-md th,
+.report-md td {
+  padding: 0.5rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+/* Flush with the body text either side, so the table doesn't sit inset. */
+.report-md th:first-child,
+.report-md td:first-child { padding-left: 0; }
+.report-md th:last-child,
+.report-md td:last-child { padding-right: 0; }
+.report-md th {
+  border-bottom-width: 2px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.report-md tbody tr:last-child td { border-bottom: none; }
+/* The column's own alignment, written into the header rule, wins over the
+   left-hand default above — figures line up on the right where they were asked to. */
+.report-md th[align='center'],
+.report-md td[align='center'] { text-align: center; }
+.report-md th[align='right'],
+.report-md td[align='right'] { text-align: right; }
+.report-md td code { white-space: nowrap; }
 
 /* The window has no frame and no strip to grab: it is moved by dragging the
    artwork — ことね or the print behind her — which the main process does by
