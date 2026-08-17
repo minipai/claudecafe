@@ -1,4 +1,4 @@
-import type { AgentMessage, Attachment, Look, Question } from './types'
+import type { AgentMessage, Attachment, Look, Question, Report } from './types'
 
 /**
  * The wire between the window and the Electron main process, where the real
@@ -102,7 +102,14 @@ export type StatusReport = {
 export type Conversation = { sessionId: string; opening: string; at: number }
 
 /** A line from the conversation this window reopened on. */
-export type BacklogLine = { role: 'user' | 'assistant' | 'event'; content: string; at: number }
+export type BacklogLine = {
+  role: 'user' | 'assistant' | 'event'
+  content: string
+  at: number
+  /** The write-up she handed over on this line, so a reopened log still has the
+   * link that opens it. */
+  report?: Report
+}
 
 /**
  * Why she cannot work, when the reason is not hers to fix. The window borrows

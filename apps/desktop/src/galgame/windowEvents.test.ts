@@ -39,6 +39,8 @@ function createScene(overrides: Partial<WindowScene> = {}): WindowScene {
     setPhase: vi.fn(),
     setConversation: vi.fn(),
     setExpression: vi.fn(),
+    setReport: vi.fn(),
+    setCtaVisible: vi.fn(),
     resetScene: vi.fn(),
     cut: vi.fn(),
     greetingRef: { current: LINES.greeting },
@@ -170,6 +172,34 @@ describe('applyWindowEvent', () => {
     expect(scene.setExpression).toHaveBeenCalledWith('happy')
     // The marker is worn on her face, not left typed in the box.
     expect(scene.cut).toHaveBeenCalledWith('done ♪')
+  })
+
+  it('backlog: the write-up she handed over on her last line comes back with the link that opens it', () => {
+    const scene = createScene()
+    const report = { label: 'read the write-up →', body: '# What I found\n\nplenty' }
+    applyWindowEvent(
+      {
+        kind: 'backlog',
+        sessionId: 'session-1',
+        lines: [
+          { role: 'assistant', content: 'it is all written down~', at: 1, report },
+        ],
+      },
+      scene,
+    )
+    expect(scene.setChatMessages).toHaveBeenCalledWith([expect.objectContaining({ report })])
+    expect(scene.setReport).toHaveBeenLastCalledWith(report)
+    expect(scene.setCtaVisible).toHaveBeenLastCalledWith(true)
+  })
+
+  it('backlog: a conversation that ends on a plain line leaves no link under the box', () => {
+    const scene = createScene()
+    applyWindowEvent(
+      { kind: 'backlog', sessionId: 'session-1', lines: [{ role: 'assistant', content: 'nothing to show', at: 1 }] },
+      scene,
+    )
+    expect(scene.setReport).toHaveBeenLastCalledWith(null)
+    expect(scene.setCtaVisible).toHaveBeenLastCalledWith(false)
   })
 
   it('backlog: leaves her face alone when her last line signed with no mood at all', () => {

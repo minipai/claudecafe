@@ -314,7 +314,7 @@ function hasShape(text: string) {
 }
 
 /** Used when she never wrote a label herself — the panel still needs a way in. */
-const FALLBACK_LABEL = 'View full report →'
+export const FALLBACK_LABEL = 'View full report →'
 
 /** The line said out loud when the body goes to the report panel. */
 function openingLine(text: string) {

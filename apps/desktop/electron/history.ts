@@ -2,7 +2,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { app } from 'electron'
-import { describeTool } from './translate'
+import { REPORT_TOOL } from './tools'
+import { describeTool, FALLBACK_LABEL } from './translate'
 import type { BacklogLine } from '../src/agent/bridge'
 
 /**
@@ -264,7 +265,15 @@ function readBacklog(transcript: string): BacklogLine[] {
     const at = Date.parse(row.timestamp ?? '') || lastAt
     lastAt = at
     const content = spokenText(row.message?.content)
-    if (content) lines.push({ role: row.type, content, at })
+    // A report is written into the call that handed it over, never into
+    // anything she said — read only the text back and the whole write-up is
+    // gone, with nothing on the row to open.
+    const handed = reportHandedOver(row.message?.content)
+    if (handed) {
+      lines.push({ role: 'assistant', content: content || handed.line, at, report: handed.report })
+    } else if (content) {
+      lines.push({ role: row.type, content, at })
+    }
     // What she did between the lines is part of the record too — the live log
     // shows it as it happens, so a reopened one should not come back thinner.
     for (const used of toolsUsed(row.message?.content)) lines.push({ role: 'event', content: used, at })
@@ -323,6 +332,24 @@ const TRANSCRIPT_WRAPPER_TAGS = new Set([
 function wrapsInTranscriptTag(trimmed: string) {
   const opening = trimmed.match(/^<([a-z-]+)>/)
   return opening !== null && TRANSCRIPT_WRAPPER_TAGS.has(opening[1])
+}
+
+/**
+ * The write-up she handed over on this row, if she handed one over. She writes
+ * the body into the call itself and says nothing of it out loud, so the tool
+ * call is the only copy the transcript keeps.
+ */
+function reportHandedOver(content: string | Block[] | undefined) {
+  if (typeof content === 'string' || !content) return null
+  const handing = content.find((block) => block.type === 'tool_use' && block.name === REPORT_TOOL)
+  if (!handing) return null
+  const written = handing.input ?? {}
+  const body = String(written.body ?? '')
+  if (!body) return null
+  return {
+    line: String(written.line ?? ''),
+    report: { label: String(written.label ?? '') || FALLBACK_LABEL, body },
+  }
 }
 
 /** Her tool calls, described the same way the live log describes them. */

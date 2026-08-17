@@ -241,6 +241,8 @@ export function GalgameClient() {
       setPhase,
       setConversation,
       setExpression,
+      setReport,
+      setCtaVisible,
       resetScene,
       cut,
       greetingRef,

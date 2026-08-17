@@ -141,6 +141,41 @@ describe('conversationBacklog', () => {
     expect(backlog[59].content).toBe('msg 69')
   })
 
+  it('brings the write-up back off the call she handed it over on — the transcript keeps no other copy of it', () => {
+    const cwd = '/Users/master/proj'
+    writeTranscript(home, cwd, 'sess', [
+      userRow('how does the login work?'),
+      assistantRow([
+        {
+          type: 'tool_use',
+          name: 'mcp__cafe__report',
+          input: { line: 'All written down~', label: 'read it →', body: '# Login\n\nit goes like this' },
+        },
+      ]),
+    ])
+    const backlog = conversationBacklog(cwd, 'sess')!
+    expect(backlog[1]).toEqual({
+      role: 'assistant',
+      content: 'All written down~',
+      at: expect.any(Number),
+      report: { label: 'read it →', body: '# Login\n\nit goes like this' },
+    })
+  })
+
+  it('keeps what she said out loud as the line, with the write-up hanging off it', () => {
+    const cwd = '/Users/master/proj'
+    writeTranscript(home, cwd, 'sess', [
+      assistantRow([
+        { type: 'text', text: 'Done ♪ 【 開心 (˶ˆᗜˆ˵) 】' },
+        { type: 'tool_use', name: 'mcp__cafe__report', input: { line: 'All written down~', body: 'the body' } },
+      ]),
+    ])
+    const backlog = conversationBacklog(cwd, 'sess')!
+    expect(backlog[0].content).toBe('Done ♪ 【 開心 (˶ˆᗜˆ˵) 】')
+    // No label of her own: the panel still needs a way in.
+    expect(backlog[0].report).toEqual({ label: 'View full report →', body: 'the body' })
+  })
+
   it('is null when the transcript file does not exist', () => {
     expect(conversationBacklog('/nowhere', 'nope')).toBeNull()
   })

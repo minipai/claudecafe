@@ -1,7 +1,7 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { faceFor } from '@/agent/expressions'
 import { speakThis } from '@/i18n'
-import type { BacklogLine, BridgeEvent, CafeCommand, Lines, Look, ModelChoice, SessionSettings, Trouble } from '@/agent'
+import type { BacklogLine, BridgeEvent, CafeCommand, Lines, Look, ModelChoice, Report, SessionSettings, Trouble } from '@/agent'
 import { createChatMessage } from './chatlog'
 import { speakThese } from './content'
 import type { ChatMessage, Expression, Phase } from './types'
@@ -26,6 +26,9 @@ export type WindowScene = {
   setPhase: (phase: Phase) => void
   setConversation: (sessionId: string | null) => void
   setExpression: (expr: Expression) => void
+  /** The write-up behind the link under the box, and whether the link is up. */
+  setReport: (report: Report | null) => void
+  setCtaVisible: (visible: boolean) => void
   /** What is cleared whenever the scene starts over somewhere it was not — a
    * report and the mood it was signed with, and any standing "always allow",
    * which belonged to what she was doing before and does not follow her here. */
@@ -86,6 +89,10 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
     // and any standing "always allow" belonged to whatever she was doing
     // before, not to what is coming back.
     scene.resetScene()
+    // The link under the box opened the last thing she handed over here; what
+    // comes back brings its own, or none.
+    scene.setReport(null)
+    scene.setCtaVisible(false)
     // Nothing has been said where she has just arrived: she opens up the way
     // she does at the start of any session, rather than standing there with
     // the last folder's line still in the box.
@@ -96,7 +103,9 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
       return
     }
     scene.setChatMessages(
-      event.lines.map((entry: BacklogLine) => createChatMessage(entry.role, entry.content, undefined, entry.at)),
+      event.lines.map((entry: BacklogLine) =>
+        createChatMessage(entry.role, entry.content, entry.report, entry.at),
+      ),
     )
     // Her last line comes back to the box the way the scene wants it —
     // marker off, and worn on her face instead.
@@ -106,6 +115,12 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
       const face = marker && faceFor(marker[0])
       if (face) scene.setExpression(face)
       scene.cut(marker ? last.content.slice(0, marker.index).trim() : last.content)
+      // She handed the write-up over as her last act here, so the link that
+      // opens it is still what belongs under the line.
+      if (last.report) {
+        scene.setReport(last.report)
+        scene.setCtaVisible(true)
+      }
     }
   }
 }
