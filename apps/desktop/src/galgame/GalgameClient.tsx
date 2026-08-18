@@ -11,6 +11,7 @@ import { ContextPanel } from './ContextPanel'
 import { AgentsPanel } from './AgentsPanel'
 import { McpPanel } from './McpPanel'
 import { StatusPanel } from './StatusPanel'
+import { KeysPanel } from './KeysPanel'
 import { CommandBar } from './CommandBar'
 import { TroublePanel } from './TroublePanel'
 import { ChatHistory } from './ChatHistory'
@@ -51,8 +52,10 @@ import {
 } from '@/agent'
 
 /** The slash commands this window answers itself, instead of letting the CLI
- * print a flattened copy of the same figures. */
-const SELF_ANSWERED = ['/usage', '/context', '/agents', '/mcp', '/status'] as const
+ * print a flattened copy of the same figures — and `/keys`, which is the
+ * window's own: the CLI has no such command because a terminal has no keys of
+ * its own to explain. */
+const SELF_ANSWERED = ['/usage', '/context', '/agents', '/mcp', '/status', '/keys'] as const
 type SelfAnswered = (typeof SELF_ANSWERED)[number]
 
 type PermissionRequest = {
@@ -711,6 +714,7 @@ export function GalgameClient() {
       <AgentsPanel open={panel === '/agents'} onClose={() => setPanel(null)} />
       <McpPanel open={panel === '/mcp'} onClose={() => setPanel(null)} />
       <StatusPanel open={panel === '/status'} onClose={() => setPanel(null)} />
+      <KeysPanel open={panel === '/keys'} onClose={() => setPanel(null)} />
       <CommandBar
         open={switching}
         folder={folder}

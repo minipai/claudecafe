@@ -5,6 +5,7 @@ import {
   FolderOpen,
   FolderSearch,
   Gauge,
+  Keyboard,
   Languages,
   MessageCircle,
   MessageSquarePlus,
@@ -44,7 +45,7 @@ type Doing = {
   onNewSession: () => void
   onOpenHistory: () => void
   onCompact: () => void
-  onOpenPanel: (command: '/usage' | '/context' | '/agents' | '/mcp' | '/status') => void
+  onOpenPanel: (command: '/usage' | '/context' | '/agents' | '/mcp' | '/status' | '/keys') => void
   /** How much she asks before doing, and how it is changed. */
   mode: SessionSettings['mode']
   onMode: (mode: SessionSettings['mode']) => void
@@ -131,6 +132,7 @@ export function CommandBar({
     { key: 'agents', icon: Users, label: t.bar.agents, find: eng.bar.agents, note: '/agents', run: () => doing.onOpenPanel('/agents') },
     { key: 'mcp', icon: Plug, label: t.bar.mcp, find: eng.bar.mcp, note: '/mcp', run: () => doing.onOpenPanel('/mcp') },
     { key: 'status', icon: UserCog, label: t.bar.status, find: eng.bar.status, note: '/status', run: () => doing.onOpenPanel('/status') },
+    { key: 'keys', icon: Keyboard, label: t.bar.keys, find: eng.bar.keys, note: '/keys', run: () => doing.onOpenPanel('/keys') },
     { key: 'locale', icon: Languages, label: t.bar.locale, find: eng.bar.locale, note: localeNote, into: 'locale' },
     { key: 'speech', icon: MessageCircle, label: t.bar.speech, find: eng.bar.speech, note: speechNote, into: 'speech' },
   ]

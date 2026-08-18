@@ -163,6 +163,16 @@ describe('GalgameClient', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('/keys is answered by the window itself — the keys are written down somewhere findable', async () => {
+    const { bridge } = await mountLive()
+
+    await act(async () => submit('/keys'))
+
+    expect(screen.getByText('Everything said so far')).toBeInTheDocument()
+    // Answered here, not sent to her as a prompt.
+    expect(bridge.start).not.toHaveBeenCalled()
+  })
+
   it('Bug 3 — a folder move empties standing always-allows, so the same command re-asks in the new place', async () => {
     const { bridge, emit } = await mountLive()
 
