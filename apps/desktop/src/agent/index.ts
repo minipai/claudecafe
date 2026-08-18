@@ -1,6 +1,6 @@
 import { query as mockQuery } from './mock'
 import { query as liveQuery, newSession as endLiveSession } from './live'
-import { MOCK_AGENTS, MOCK_CONTEXT, MOCK_MCP, MOCK_SESSION, MOCK_SESSION_CWD, MOCK_STATUS, mockUsage } from './content.mock'
+import { MOCK_AGENTS, MOCK_CONTEXT, MOCK_MCP, MOCK_PERSONA, MOCK_SESSION, MOCK_SESSION_CWD, MOCK_STATUS, mockUsage } from './content.mock'
 
 /** In the browser there is no bridge, so the canned mock keeps standing in. */
 export const isLive = typeof window !== 'undefined' && Boolean(window.cafe)
@@ -25,6 +25,7 @@ export const contextReport = isLive ? () => window.cafe!.context() : async () =>
 export const subagents = isLive ? () => window.cafe!.agents() : async () => MOCK_AGENTS
 export const mcpServers = isLive ? () => window.cafe!.mcpServers() : async () => MOCK_MCP
 export const sessionStatus = isLive ? () => window.cafe!.status() : async () => MOCK_STATUS
+export const maidPersona = isLive ? () => window.cafe!.persona() : async () => MOCK_PERSONA
 
 /** What the bottom plate shows before any turn has been taken — live, this
  * arrives as an event instead. */

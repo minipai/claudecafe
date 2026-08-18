@@ -24,6 +24,7 @@ const bridge: CafeBridge = {
   agents: () => ipcRenderer.invoke('cafe:agents'),
   mcpServers: () => ipcRenderer.invoke('cafe:mcp'),
   status: () => ipcRenderer.invoke('cafe:status'),
+  persona: () => ipcRenderer.invoke('cafe:persona'),
   conversations: () => ipcRenderer.invoke('cafe:conversations'),
   folders: () => ipcRenderer.invoke('cafe:folders'),
   switchFolder: (cwd) => ipcRenderer.send('cafe:switch-folder', cwd),

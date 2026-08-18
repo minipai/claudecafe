@@ -138,6 +138,10 @@ export const zhTW: Text = {
       slash: '她的斜線指令——↑↓ 選、⏎ 帶進來、esc 收起來',
       paste: '直接把剪貼簿裡的截圖給她看',
     },
+    persona: {
+      description: '她身上穿的那份設定——她是誰，寫在她自己的檔案裡。',
+      missing: '這台機器上找不到女僕檔案，所以她是用自己的樣子在回話。',
+    },
     close: '關閉{what}',
   },
   trouble: {
@@ -169,6 +173,7 @@ export const zhTW: Text = {
     tasks: '工作項目',
     history: '對話紀錄（⌘L）',
     openHistory: '打開對話紀錄',
+    openPersona: 'ことね是誰',
     commandBar: '其他所有的事（⌘K）',
     openCommandBar: '打開指令列',
     model: '模型',

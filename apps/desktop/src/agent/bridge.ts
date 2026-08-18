@@ -211,6 +211,9 @@ export type CafeBridge = {
   mcpServers(): Promise<McpServer[]>
   /** Who she is signed in as, and what this window is working on. */
   status(): Promise<StatusReport | null>
+  /** The instructions she is wearing, as markdown. Empty on a machine with no
+   * copy of her anywhere. */
+  persona(): Promise<string>
   /** The conversations held in this folder, newest first. */
   conversations(): Promise<Conversation[]>
   /** The folders she has been opened on, most recent first. */

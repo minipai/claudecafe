@@ -113,7 +113,7 @@ function newestConversation(cwd: string) {
  * session lists exactly one `cafe`, sourced `cafe@inline`, and the SessionStart
  * hooks fire once). Renaming it would load both and greet the master twice.
  */
-const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'cafe-plugin')
+export const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'cafe-plugin')
 
 /** How long a session gets to say it is connected before the window treats the
  * silence as a locked door. Normally it answers in a second or two. */

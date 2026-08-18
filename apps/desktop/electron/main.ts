@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
-import { MaidSession } from './maid'
+import { CAFE_PLUGIN, MaidSession } from './maid'
 import {
   chosenLocale,
   lastBounds,
@@ -14,6 +14,7 @@ import {
   rememberLocale,
   rememberSpeech,
 } from './history'
+import { personaOf } from './lines'
 import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -187,6 +188,9 @@ ipcMain.handle('cafe:mcp', (event) => shiftOf(event)?.mcpServers() ?? [])
 ipcMain.handle('cafe:status', (event) => shiftOf(event)?.status() ?? null)
 ipcMain.handle('cafe:conversations', (event) => shiftOf(event)?.conversations() ?? [])
 ipcMain.handle('cafe:folders', () => recentFolders())
+// Read off disk rather than asked of her: the persona is what the session was
+// opened with, so it is there to show even when there is no session to ask.
+ipcMain.handle('cafe:persona', () => personaOf(CAFE_PLUGIN))
 
 /**
  * The sign-in the window cannot do itself. She works through Claude Code and

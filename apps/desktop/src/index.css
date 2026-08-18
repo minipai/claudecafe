@@ -236,6 +236,13 @@
 .report-md td[align='right'] { text-align: right; }
 .report-md td code { white-space: nowrap; }
 
+/* Her persona file, read in a panel a third the width of a report: the same
+   markdown, with the document's own title and section headings brought down to
+   the size of the thing they are being read in. */
+.persona-md { font-size: 0.875rem; }
+.persona-md h1 { font-size: 1.35rem; margin-bottom: 0.6rem; }
+.persona-md h2 { font-size: 1rem; margin-top: 1.5rem; }
+
 /* The window has no frame and no strip to grab: it is moved by dragging the
    artwork — ことね or the print behind her — which the main process does by
    following the cursor. */

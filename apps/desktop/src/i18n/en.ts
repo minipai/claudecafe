@@ -143,6 +143,10 @@ export const en = {
       slash: 'Her slash commands — ↑↓ picks, ⏎ takes it, esc puts the list away',
       paste: 'Hand her a screenshot straight off the clipboard',
     },
+    persona: {
+      description: 'The instructions she is wearing — who she is, in her own file.',
+      missing: 'No maid file was found on this machine, so she is answering as herself.',
+    },
     close: 'Close {what}',
   },
   trouble: {
@@ -174,6 +178,7 @@ export const en = {
     tasks: 'TASKS',
     history: 'Conversation history (⌘L)',
     openHistory: 'Open conversation history',
+    openPersona: 'Who ことね is',
     commandBar: 'Everything else (⌘K)',
     openCommandBar: 'Open the command bar',
     model: 'Model',

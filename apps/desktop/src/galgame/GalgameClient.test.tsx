@@ -40,6 +40,7 @@ function createBridge() {
     agents: vi.fn().mockResolvedValue([]),
     mcpServers: vi.fn().mockResolvedValue([]),
     status: vi.fn().mockResolvedValue(null),
+    persona: vi.fn().mockResolvedValue('# Personality\n\nYou are ことね, an AI maid.'),
     conversations: vi.fn().mockResolvedValue([]),
     folders: vi.fn().mockResolvedValue([]),
     switchFolder: vi.fn(),
@@ -171,6 +172,15 @@ describe('GalgameClient', () => {
     expect(screen.getByText('Everything said so far')).toBeInTheDocument()
     // Answered here, not sent to her as a prompt.
     expect(bridge.start).not.toHaveBeenCalled()
+  })
+
+  it('her name plate opens the persona she is wearing', async () => {
+    const { bridge } = await mountLive()
+
+    await act(async () => screen.getByLabelText('Who ことね is').click())
+
+    await vi.waitFor(() => expect(screen.getByText('You are ことね, an AI maid.')).toBeInTheDocument())
+    expect(bridge.persona).toHaveBeenCalled()
   })
 
   it('Bug 3 — a folder move empties standing always-allows, so the same command re-asks in the new place', async () => {

@@ -32,6 +32,8 @@ type DialogueBoxProps = {
   /** The words she wrote on the link to her report; absent while there is none. */
   cta: string | null
   onOpenReport: () => void
+  /** Pressing her name plate — it opens the persona she is wearing. */
+  onOpenPersona: () => void
   footer: ReactNode
   utility: ReactNode
   unreadLook: Look | null
@@ -60,6 +62,7 @@ export function DialogueBox({
   onPace,
   cta,
   onOpenReport,
+  onOpenPersona,
   footer,
   utility,
   unreadLook,
@@ -89,7 +92,7 @@ export function DialogueBox({
       className="relative w-full rounded-xl border border-border bg-card shadow-md"
     >
       <div className="absolute -top-4 left-6 z-10 flex items-center gap-2.5">
-        <NamePlate />
+        <NamePlate onOpen={onOpenPersona} />
         {unreadLook && <InnerVoice look={unreadLook} onRead={onLookRead} />}
       </div>
       <div className="absolute -top-4 right-4 z-10">{utility}</div>
