@@ -124,7 +124,7 @@ export function CommandBar({
     { key: 'resume', icon: Clock, label: t.bar.resume, find: eng.bar.resume, into: 'conversation' },
     { key: 'new', icon: MessageSquarePlus, label: t.bar.newSession, find: eng.bar.newSession, run: doing.onNewSession },
     { key: 'mode', icon: ShieldCheck, label: t.bar.mode, find: eng.bar.mode, note: t.mode.note[doing.mode], into: 'mode' },
-    { key: 'log', icon: ScrollText, label: t.bar.log, find: eng.bar.log, run: doing.onOpenHistory },
+    { key: 'log', icon: ScrollText, label: t.bar.log, find: eng.bar.log, note: '⌘L', run: doing.onOpenHistory },
     { key: 'compact', icon: Shrink, label: t.bar.compact, find: eng.bar.compact, run: doing.onCompact },
     { key: 'usage', icon: Gauge, label: t.bar.usage, find: eng.bar.usage, note: '/usage', run: () => doing.onOpenPanel('/usage') },
     { key: 'context', icon: Gauge, label: t.bar.context, find: eng.bar.context, note: '/context', run: () => doing.onOpenPanel('/context') },

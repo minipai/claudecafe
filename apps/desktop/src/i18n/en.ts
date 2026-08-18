@@ -156,7 +156,7 @@ export const en = {
     removeImage: 'Remove image',
     innerVoice: 'Inner monologue',
     tasks: 'TASKS',
-    history: 'Conversation history',
+    history: 'Conversation history (⌘L)',
     openHistory: 'Open conversation history',
     commandBar: 'Everything else (⌘K)',
     openCommandBar: 'Open the command bar',

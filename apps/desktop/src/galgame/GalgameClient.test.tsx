@@ -121,6 +121,48 @@ describe('GalgameClient', () => {
     await vi.waitFor(() => expect(bridge.answer).toHaveBeenCalledWith('ask-1', { behavior: 'deny' }))
   })
 
+  it('Esc cuts her off while she is working, the same as the stop button', async () => {
+    const { bridge } = await mountLive()
+
+    await act(async () => submit('go fix the thing'))
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Escape' })
+    })
+
+    expect(bridge.interrupt).toHaveBeenCalled()
+  })
+
+  it('Esc leaves a question she is waiting on alone — it is answered in the footer, not by stopping her', async () => {
+    const { bridge, emit } = await mountLive()
+
+    await act(async () => submit('run the tests'))
+    const runId = lastRunId(bridge)
+    await act(async () =>
+      emit({ kind: 'ask-permission', runId, askId: 'ask-1', toolName: 'Bash', input: { command: 'git status' } }),
+    )
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Escape' })
+    })
+
+    expect(bridge.interrupt).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Always allow Bash git' })).toBeInTheDocument()
+  })
+
+  it('⌘L opens the log, and closes it again', async () => {
+    await mountLive()
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'l', metaKey: true })
+    })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'l', metaKey: true })
+    })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it('Bug 3 — a folder move empties standing always-allows, so the same command re-asks in the new place', async () => {
     const { bridge, emit } = await mountLive()
 

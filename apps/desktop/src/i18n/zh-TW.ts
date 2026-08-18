@@ -151,7 +151,7 @@ export const zhTW: Text = {
     removeImage: '移除圖片',
     innerVoice: '她心裡的話',
     tasks: '工作項目',
-    history: '對話紀錄',
+    history: '對話紀錄（⌘L）',
     openHistory: '打開對話紀錄',
     commandBar: '其他所有的事（⌘K）',
     openCommandBar: '打開指令列',

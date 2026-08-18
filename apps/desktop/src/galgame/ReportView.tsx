@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { X } from 'lucide-react'
 import { marked } from 'marked'
@@ -20,6 +20,20 @@ type ReportViewProps = {
 export function ReportView({ shortline, report, onClose, actions }: ReportViewProps) {
   const [contentVisible, setContentVisible] = useState(false)
   const [shortlineFaded, setShortlineFaded] = useState(false)
+
+  // Esc leaves the panel, the same as clicking off it. Everything else that
+  // opens over the scene is a dialogue and closes on Esc already; this one is
+  // drawn by hand so that it can morph out of the box she speaks in, and it was
+  // the one thing on screen the key did nothing to.
+  useEffect(() => {
+    const leave = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      event.preventDefault()
+      onClose()
+    }
+    window.addEventListener('keydown', leave)
+    return () => window.removeEventListener('keydown', leave)
+  }, [onClose])
 
   return (
     <motion.div

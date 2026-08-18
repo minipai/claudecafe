@@ -256,16 +256,46 @@ export function GalgameClient() {
   }, [])
 
   /** ⌘K is where she is sent somewhere else — another folder, or back into a
-   * conversation this one has had. */
+   * conversation this one has had. ⌘L is the log, which is otherwise a button
+   * on the plate and a row inside ⌘K — the one panel opened often enough to be
+   * worth a key of its own, and the same key puts it away again. */
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
-      if (event.key !== 'k' || !(event.metaKey || event.ctrlKey)) return
-      event.preventDefault()
-      setSwitching(true)
+      if (!(event.metaKey || event.ctrlKey) || event.altKey) return
+      if (event.key === 'k') {
+        event.preventDefault()
+        setSwitching(true)
+      } else if (event.key === 'l') {
+        event.preventDefault()
+        setHistoryOpen((open) => !open)
+      }
     }
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)
   }, [])
+
+  /**
+   * Esc cuts her off, the way it does in the terminal she came from — the stop
+   * button is otherwise the only way, and it means aiming at a small square
+   * while she is still writing. Only when the scene is hers: a panel takes Esc
+   * to close itself first, and a question she is waiting on is answered in the
+   * footer rather than by stopping everything she was doing to ask it.
+   */
+  useEffect(() => {
+    const interrupt = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      // Mid-composition Esc is the IME dropping what was being spelled out.
+      if (event.isComposing) return
+      if (phase !== 'working') return
+      if (readerOpen || permissionExpanded || historyOpen || switching || panel || trouble) return
+      if (permissionRequest || choiceRequest) return
+      event.preventDefault()
+      stop()
+    }
+    window.addEventListener('keydown', interrupt)
+    return () => window.removeEventListener('keydown', interrupt)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, readerOpen, permissionExpanded, historyOpen, switching, panel, trouble, permissionRequest, choiceRequest])
 
   /**
    * Space turns the page, the way a galgame does — and it is taken in the
