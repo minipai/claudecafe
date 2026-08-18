@@ -309,7 +309,7 @@ function isLongForm(text: string) {
  * more than fits on one line of the box. Said out loud either way, but laid out
  * instead of read as raw characters.
  */
-function hasShape(text: string) {
+export function hasShape(text: string) {
   return text.length > 160 || /(^|\n)\s*[-*+] |(^|\n)\s*\d+\. |`[^`]+`|\*\*[^*]+\*\*/.test(text)
 }
 

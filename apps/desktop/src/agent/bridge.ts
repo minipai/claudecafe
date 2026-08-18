@@ -109,6 +109,9 @@ export type BacklogLine = {
   /** The write-up she handed over on this line, so a reopened log still has the
    * link that opens it. */
   report?: Report
+  /** Written out with shape to it — markdown, laid out in the box rather than
+   * read back as one spoken line. */
+  laidOut?: boolean
 }
 
 /**

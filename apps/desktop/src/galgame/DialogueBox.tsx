@@ -109,7 +109,10 @@ export function DialogueBox({
           {laidOut ? (
             <div
               className="report-md text-base leading-[1.9] text-foreground"
-              dangerouslySetInnerHTML={{ __html: marked.parse(laidOut, { async: false }) }}
+              // Single line breaks are kept, the same as the report panel and
+              // the log: she writes a line per point as often as she leaves a
+              // blank line between them, and run together they read as one.
+              dangerouslySetInnerHTML={{ __html: marked.parse(laidOut, { async: false, breaks: true }) }}
             />
           ) : (
             // A line said to the question before this one stays where it is —

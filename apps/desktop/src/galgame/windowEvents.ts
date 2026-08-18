@@ -28,6 +28,8 @@ export type WindowScene = {
   setExpression: (expr: Expression) => void
   /** The write-up behind the link under the box, and whether the link is up. */
   setReport: (report: Report | null) => void
+  /** An answer with shape to it, laid out in place of the typed line. */
+  setLaidOut: (laidOut: string | null) => void
   setCtaVisible: (visible: boolean) => void
   /** What is cleared whenever the scene starts over somewhere it was not — a
    * report and the mood it was signed with, and any standing "always allow",
@@ -114,7 +116,11 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
       const marker = last.content.match(/【[^【】]*】\s*$/)
       const face = marker && faceFor(marker[0])
       if (face) scene.setExpression(face)
-      scene.cut(marker ? last.content.slice(0, marker.index).trim() : last.content)
+      const spoken = marker ? last.content.slice(0, marker.index).trim() : last.content
+      scene.cut(spoken)
+      // She wrote this one out rather than saying it, so it comes back laid out
+      // rather than typed — read as speech, the paragraphs run together.
+      if (last.laidOut) scene.setLaidOut(spoken)
       // She handed the write-up over as her last act here, so the link that
       // opens it is still what belongs under the line.
       if (last.report) {

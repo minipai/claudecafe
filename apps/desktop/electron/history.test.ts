@@ -106,6 +106,17 @@ describe('conversationBacklog', () => {
     ])
   })
 
+  it('marks an answer she wrote out with shape to it, so the box lays it out again instead of reading it as speech', () => {
+    const cwd = '/Users/master/proj'
+    const written = 'First paragraph.\n\n- one\n- two\n\nAnd **the rest** of it.'
+    writeTranscript(home, cwd, 'sess', [assistantRow('Had a look~'), assistantRow(written)])
+    const backlog = conversationBacklog(cwd, 'sess')
+    expect(backlog).toEqual([
+      { role: 'assistant', content: 'Had a look~', at: expect.any(Number) },
+      { role: 'assistant', content: written, at: expect.any(Number), laidOut: true },
+    ])
+  })
+
   it('drops a slash command wrapped in <command-name>, a tag Claude Code itself writes', () => {
     const cwd = '/Users/master/proj'
     writeTranscript(home, cwd, 'sess', [userRow('<command-name>/compact</command-name>')])

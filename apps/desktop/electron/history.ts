@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { app } from 'electron'
 import { REPORT_TOOL } from './tools'
-import { describeTool, FALLBACK_LABEL } from './translate'
+import { describeTool, FALLBACK_LABEL, hasShape } from './translate'
 import type { BacklogLine } from '../src/agent/bridge'
 
 /**
@@ -271,6 +271,11 @@ function readBacklog(transcript: string): BacklogLine[] {
     const handed = reportHandedOver(row.message?.content)
     if (handed) {
       lines.push({ role: 'assistant', content: content || handed.line, at, report: handed.report })
+    } else if (row.type === 'assistant' && hasShape(content)) {
+      // She wrote this one out rather than said it, and it has to be laid out
+      // again coming back: read as speech, its paragraphs and its list run
+      // together into one wall of text.
+      lines.push({ role: 'assistant', content, at, laidOut: true })
     } else if (content) {
       lines.push({ role: row.type, content, at })
     }

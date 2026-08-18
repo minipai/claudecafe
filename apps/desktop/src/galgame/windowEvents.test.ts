@@ -40,6 +40,7 @@ function createScene(overrides: Partial<WindowScene> = {}): WindowScene {
     setConversation: vi.fn(),
     setExpression: vi.fn(),
     setReport: vi.fn(),
+    setLaidOut: vi.fn(),
     setCtaVisible: vi.fn(),
     resetScene: vi.fn(),
     cut: vi.fn(),
@@ -200,6 +201,30 @@ describe('applyWindowEvent', () => {
     )
     expect(scene.setReport).toHaveBeenLastCalledWith(null)
     expect(scene.setCtaVisible).toHaveBeenLastCalledWith(false)
+  })
+
+  it('backlog: an answer she wrote out comes back laid out, with its marker off it', () => {
+    const scene = createScene()
+    applyWindowEvent(
+      {
+        kind: 'backlog',
+        sessionId: 'session-1',
+        lines: [
+          { role: 'assistant', content: 'first para\n\n- and a list\n\n【 開心 (˶ˆᗜˆ˵) 】', at: 1, laidOut: true },
+        ],
+      },
+      scene,
+    )
+    expect(scene.setLaidOut).toHaveBeenCalledWith('first para\n\n- and a list')
+  })
+
+  it('backlog: a line she simply said comes back as speech, not laid out', () => {
+    const scene = createScene()
+    applyWindowEvent(
+      { kind: 'backlog', sessionId: 'session-1', lines: [{ role: 'assistant', content: 'just words', at: 1 }] },
+      scene,
+    )
+    expect(scene.setLaidOut).not.toHaveBeenCalled()
   })
 
   it('backlog: leaves her face alone when her last line signed with no mood at all', () => {

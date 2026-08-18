@@ -246,6 +246,7 @@ export function GalgameClient() {
       setExpression,
       setReport,
       setCtaVisible,
+      setLaidOut,
       resetScene,
       cut,
       greetingRef,
