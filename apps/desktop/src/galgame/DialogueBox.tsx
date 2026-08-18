@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { marked } from 'marked'
 import { Button } from '@/components/ui/button'
@@ -66,6 +66,21 @@ export function DialogueBox({
   onLookRead,
 }: DialogueBoxProps) {
   const t = text().scene
+  const said = useRef<HTMLDivElement>(null)
+
+  // A laid-out answer arrives whole, so it is put in front of the master at its
+  // beginning rather than wherever the last one was left.
+  useEffect(() => {
+    if (said.current) said.current.scrollTop = 0
+  }, [laidOut])
+
+  // A spoken line is written out a few letters at a time, and what is being
+  // watched is the end of it — so a long one follows the caret down. A laid-out
+  // answer is typed out too, off screen, and must not be dragged along with it.
+  useEffect(() => {
+    if (isTyping && !laidOut && said.current) said.current.scrollTop = said.current.scrollHeight
+  }, [line, isTyping, laidOut])
+
   return (
     <motion.div
       layout
@@ -82,6 +97,15 @@ export function DialogueBox({
       {/* The bottom padding leaves room for the corner controls, so they sit in
           the margin rather than against what she just said. */}
       <motion.div layout className="relative overflow-hidden px-6.5 pt-7 pb-9">
+          {/* She is standing behind this, and the box grows from the bottom
+              edge up. Left to grow, an answer she wrote out in full instead of
+              handing over covers her to the top of the window — so it stops
+              short of her shoulders and what does not fit scrolls. The cap is
+              in pixels because she is hung off the bottom edge too: how far up
+              her shoulders are does not change with the window's height, and
+              the fraction is only there for a window too short for the whole
+              of it. */}
+          <div ref={said} className="max-h-[min(300px,34vh)] overflow-y-auto overscroll-contain">
           {laidOut ? (
             <div
               className="report-md text-base leading-[1.9] text-foreground"
@@ -109,6 +133,7 @@ export function DialogueBox({
               )}
             </div>
           )}
+          </div>
 
           {/* The corner opposite the page-turning, and one thing at a time in
               it: while she works, that she is still at it; when she stops, the
