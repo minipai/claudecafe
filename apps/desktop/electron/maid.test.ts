@@ -805,3 +805,62 @@ describe('nameOf', () => {
     expect(nameOf(alone[0], alone)).toBe('Default (recommended)')
   })
 })
+
+describe('MaidSession — the status line measures the context, not the whole turn', () => {
+  /** One reply of hers, with what the request that produced it carried. */
+  function reply(usage: Record<string, number>, parentToolUseId: string | null = null): SDKMessage {
+    return {
+      type: 'assistant',
+      message: { model: 'claude', content: [{ type: 'text', text: 'ok' }], usage },
+      parent_tool_use_id: parentToolUseId,
+      uuid: 'u',
+      session_id: 's',
+    } as unknown as SDKMessage
+  }
+
+  function statusesFrom(events: BridgeEvent[]) {
+    return events.filter((event) => event.kind === 'status') as Extract<BridgeEvent, { kind: 'status' }>[]
+  }
+
+  it('reports what the last request carried, not the sum of every request in the turn', async () => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-context', emit)
+
+    session.ask('run-1', 'go fix the thing')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+
+    // A turn with tools in it: the same conversation is sent again for every
+    // step, growing a little each time.
+    fakes[0].push(reply({ input_tokens: 4, cache_read_input_tokens: 100_000, cache_creation_input_tokens: 2_000 }))
+    fakes[0].push(reply({ input_tokens: 6, cache_read_input_tokens: 102_000, cache_creation_input_tokens: 1_500 }))
+    // The result adds those up — 205_510 here, and millions on a long turn.
+    fakes[0].push({
+      type: 'result',
+      subtype: 'success',
+      result: 'done',
+      usage: { input_tokens: 10, cache_read_input_tokens: 202_000, cache_creation_input_tokens: 3_500 },
+      uuid: 'u',
+      session_id: 's',
+    } as unknown as SDKMessage)
+
+    await vi.waitFor(() => expect(statusesFrom(events).length).toBeGreaterThan(0))
+    expect(statusesFrom(events).at(-1)!.status.contextTokens).toBe(103_506)
+  })
+
+  it('leaves a subagent’s context out of it — that conversation is its own', async () => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-context-subagent', emit)
+
+    session.ask('run-1', 'send someone to look')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+
+    fakes[0].push(reply({ input_tokens: 4, cache_read_input_tokens: 50_000 }))
+    fakes[0].push(reply({ input_tokens: 9, cache_read_input_tokens: 900_000 }, 'toolu_the_task'))
+    fakes[0].push(resultMessage())
+
+    await vi.waitFor(() => expect(statusesFrom(events).length).toBeGreaterThan(0))
+    expect(statusesFrom(events).at(-1)!.status.contextTokens).toBe(50_004)
+  })
+})

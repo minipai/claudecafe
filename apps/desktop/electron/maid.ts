@@ -34,7 +34,13 @@ import type {
 } from '../src/agent/bridge'
 import type { Attachment, Question } from '../src/agent/types'
 
-/** How much context the turn carried: everything the model was handed as prompt. */
+/**
+ * How much context the last request carried: everything the model was handed as
+ * prompt, cached or not. Read off one reply of hers — the result at the end of a
+ * turn adds up every request the turn made, which for a turn with tools in it is
+ * the same conversation counted over and over, and reads as far past the window
+ * than anything could ever fit in it.
+ */
 export function contextTokens(usage: { input_tokens?: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null }) {
   return (usage.input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0)
 }
@@ -489,6 +495,13 @@ export class MaidSession {
           rememberSession(this.cwd, sdk.session_id)
           this.followLook(sdk.session_id)
         }
+        // Every reply of hers was answered with the whole conversation in front
+        // of it, so the newest one measures what the conversation now costs to
+        // ask anything at all. A subagent's replies are its own context, not
+        // this one's, and are left out of it.
+        if (sdk.type === 'assistant' && !sdk.parent_tool_use_id && sdk.message?.usage) {
+          this.lastContext = contextTokens(sdk.message.usage)
+        }
         if (this.deadRuns > 0) {
           // Still owed a result for a turn `interrupt()` already closed out
           // on this end — everything about it, chunks included, belongs to
@@ -508,7 +521,7 @@ export class MaidSession {
           if (!this.lines) void this.tellLines()
           this.emit({ kind: 'done', runId: run.runId })
           this.runs.shift()
-          void this.reportStatus(contextTokens(sdk.usage))
+          void this.reportStatus()
           // Nothing was in flight the instant this run's turn was pushed, so
           // whatever was asked for behind it — held in `backlog` rather than
           // handed to the CLI — can go now.
