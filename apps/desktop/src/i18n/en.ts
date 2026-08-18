@@ -49,7 +49,9 @@ export const en = {
     auto: 'Decide for herself',
     acceptEdits: 'Edit files without asking',
     plan: 'Plan first, do nothing yet',
-    note: { default: 'default', auto: 'auto', acceptEdits: 'accept edits', plan: 'plan' },
+    bypassPermissions: 'Never ask',
+    dontAsk: 'Never ask, and refuse what is not already allowed',
+    note: { default: 'default', auto: 'auto', acceptEdits: 'accept edits', plan: 'plan', bypassPermissions: 'never asks', dontAsk: 'never asks' },
   },
   ask: {
     allow: 'Allow',

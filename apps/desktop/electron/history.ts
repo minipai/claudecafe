@@ -4,7 +4,7 @@ import path from 'node:path'
 import { app } from 'electron'
 import { REPORT_TOOL } from './tools'
 import { describeTool, FALLBACK_LABEL, hasShape } from './translate'
-import type { BacklogLine } from '../src/agent/bridge'
+import type { BacklogLine, KeptSettings } from '../src/agent/bridge'
 
 /**
  * Which conversation this window is on, and what was said in it.
@@ -219,6 +219,34 @@ export function chosenSpeech(): string {
   }
 }
 
+/**
+ * What she runs as, as the master last set it — which model, how hard she
+ * thinks, and how much she asks first. The window forgot all three every time
+ * it was closed, which on a desktop app reads as it having forgotten rather
+ * than as a fresh start.
+ *
+ * The asking mode is only written down once he has picked one *here*. Left
+ * alone it stays null, and the session is opened without a mode at all: what
+ * he set in his terminal then holds in the window too, the same way her
+ * language does.
+ */
+export function rememberSettings(kept: KeptSettings) {
+  fs.writeFileSync(settingsFile(), JSON.stringify(kept, null, 2))
+}
+
+export function keptSettings(): KeptSettings {
+  try {
+    const kept = JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) as Partial<KeptSettings>
+    return {
+      model: kept.model ?? null,
+      effort: kept.effort ?? null,
+      mode: kept.mode ?? null,
+    }
+  } catch {
+    return { model: null, effort: null, mode: null }
+  }
+}
+
 /** How many folders the window keeps its own note of, and how many it offers. */
 const FOLDER_LIMIT = 20
 const OFFERED = 40
@@ -230,6 +258,8 @@ const boundsFile = () => path.join(app.getPath('userData'), 'window.json')
 const localeFile = () => path.join(app.getPath('userData'), 'locale.json')
 
 const speechFile = () => path.join(app.getPath('userData'), 'speech.json')
+
+const settingsFile = () => path.join(app.getPath('userData'), 'settings.json')
 
 const memoryFile = () => path.join(app.getPath('userData'), 'sessions.json')
 

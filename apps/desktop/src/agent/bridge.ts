@@ -21,8 +21,20 @@ export type SessionSettings = {
   /** null = whatever the CLI is configured to use. */
   model: string | null
   effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
-  /** The CLI's permission modes, minus bypass — this window asks for itself. */
-  mode: 'default' | 'auto' | 'acceptEdits' | 'plan'
+  /** The CLI's permission modes. The window only offers four of them — the two
+   * that skip asking are not something to hand over on a click — but it has to
+   * be able to *say* the other two, because the master's terminal may well be
+   * set to one and the window follows that until it is told otherwise. */
+  mode: 'default' | 'auto' | 'acceptEdits' | 'plan' | 'bypassPermissions' | 'dontAsk'
+}
+
+/** What the master has turned this window to, kept between launches. A null is
+ * something he has never touched: the model and the effort are then the
+ * session's own, and the asking mode is whatever his terminal is set to. */
+export type KeptSettings = {
+  model: string | null
+  effort: SessionSettings['effort'] | null
+  mode: SessionSettings['mode'] | null
 }
 
 /** One model the account can actually pick, as the SDK reports it. */

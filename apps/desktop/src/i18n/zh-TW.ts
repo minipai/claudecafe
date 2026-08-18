@@ -44,7 +44,9 @@ export const zhTW: Text = {
     auto: '讓她自己決定',
     acceptEdits: '改檔案不用問',
     plan: '先規劃，先別動手',
-    note: { default: '預設', auto: '自動', acceptEdits: '直接改檔', plan: '規劃' },
+    bypassPermissions: '完全不問',
+    dontAsk: '完全不問，沒批准過的就直接拒絕',
+    note: { default: '預設', auto: '自動', acceptEdits: '直接改檔', plan: '規劃', bypassPermissions: '完全不問', dontAsk: '完全不問' },
   },
   ask: {
     allow: '可以',

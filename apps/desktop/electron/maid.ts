@@ -16,7 +16,7 @@ import { cafeTools, EXPRESSION_TOOL, REPORT_TOOL } from './tools'
 import { watchLook } from './look'
 import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
 import { chosenSpeech } from './history'
-import { conversationBacklog, forgetSession, lastConversation, listConversations, rememberSession } from './history'
+import { conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings } from './history'
 import { readGit } from './status'
 import type {
   BridgeEvent,
@@ -115,6 +115,13 @@ function newestConversation(cwd: string) {
  */
 export const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'cafe-plugin')
 
+/** What she opens as: the master's standing pick, and the app's own defaults
+ * for anything he has never touched. */
+function openingSettings(): SessionSettings {
+  const kept = keptSettings()
+  return { model: kept.model, effort: kept.effort ?? 'high', mode: kept.mode ?? 'default' }
+}
+
 /** How long a session gets to say it is connected before the window treats the
  * silence as a locked door. Normally it answers in a second or two. */
 const WAY_IN_TIMEOUT = 15_000
@@ -173,7 +180,11 @@ export class MaidSession {
   /** The conversation this window is on — the previous one until the SDK says
    * otherwise, so a reload picks up where the master left off. */
   private sessionId: string | null = null
-  private settings: SessionSettings = { model: null, effort: 'high', mode: 'default' }
+  private settings: SessionSettings = openingSettings()
+  /** Whether the mode above is the master's own pick. Until it is, the window
+   * has no opinion about how much she asks: the session is opened without one
+   * and what his terminal is set to holds here too. */
+  private modePicked = keptSettings().mode !== null
   private models: ModelChoice[] = []
   private commands: CafeCommand[] = []
   /** Her own wording for what the window says as her, once it exists. */
@@ -263,6 +274,12 @@ export class MaidSession {
    * when the session opens, so it is picked up the next time one does. */
   configure(patch: Partial<SessionSettings>) {
     this.settings = { ...this.settings, ...patch }
+    if (patch.mode !== undefined) this.modePicked = true
+    rememberSettings({
+      model: this.settings.model,
+      effort: this.settings.effort,
+      mode: this.modePicked ? this.settings.mode : null,
+    })
     if (patch.model !== undefined) void this.stream?.setModel(patch.model ?? undefined).catch(() => {})
     if (patch.mode !== undefined) void this.stream?.setPermissionMode(patch.mode).catch(() => {})
     if (patch.effort !== undefined) this.reopen()
@@ -420,7 +437,11 @@ export class MaidSession {
       systemPrompt: { type: 'preset', preset: 'claude_code', append: shiftBrief() },
       mcpServers: { cafe: cafeTools },
       resume: this.sessionId ?? undefined,
-      permissionMode: this.settings.mode,
+      // Nothing is said about the mode unless the master has picked one in this
+      // window: passing one overrides what he set in his terminal, and a window
+      // that quietly puts him back to asking-first every launch is the app
+      // undoing his own setting behind his back.
+      ...(this.modePicked ? { permissionMode: this.settings.mode } : {}),
       effort: this.settings.effort,
       ...(this.settings.model ? { model: this.settings.model } : {}),
     }
@@ -494,6 +515,12 @@ export class MaidSession {
           this.sessionId = sdk.session_id
           rememberSession(this.cwd, sdk.session_id)
           this.followLook(sdk.session_id)
+          // With no pick of its own, the window shows what the session came up
+          // as — the only place his terminal's setting is ever said out loud.
+          if (!this.modePicked && sdk.permissionMode !== this.settings.mode) {
+            this.settings = { ...this.settings, mode: sdk.permissionMode }
+            this.emit({ kind: 'settings', settings: this.settings, models: this.models })
+          }
         }
         // Every reply of hers was answered with the whole conversation in front
         // of it, so the newest one measures what the conversation now costs to

@@ -36,6 +36,8 @@ vi.mock('./history', () => ({
   conversationBacklog: vi.fn(),
   listConversations: vi.fn(),
   chosenSpeech: vi.fn(),
+  keptSettings: vi.fn(),
+  rememberSettings: vi.fn(),
 }))
 
 // The status line otherwise spawns a real `git` in whatever folder the test
@@ -47,7 +49,7 @@ vi.mock('./status', () => ({
 import { contextTokens, MaidSession, nameOf, PromptQueue, readUsage, readWindows, whyStopped } from './maid'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
-import { chosenSpeech, conversationBacklog, forgetSession, lastConversation, listConversations, rememberSession } from './history'
+import { chosenSpeech, conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings } from './history'
 import { readGit } from './status'
 
 /** A clean slate for every test, whether or not it cares — a MaidSession test
@@ -65,6 +67,8 @@ beforeEach(() => {
   vi.mocked(conversationBacklog).mockReset().mockReturnValue(null)
   vi.mocked(listConversations).mockReset().mockReturnValue([])
   vi.mocked(chosenSpeech).mockReset().mockReturnValue('')
+  vi.mocked(keptSettings).mockReset().mockReturnValue({ model: null, effort: null, mode: null })
+  vi.mocked(rememberSettings).mockReset()
   vi.mocked(readGit).mockReset().mockResolvedValue({})
 })
 
@@ -862,5 +866,72 @@ describe('MaidSession — the status line measures the context, not the whole tu
 
     await vi.waitFor(() => expect(statusesFrom(events).length).toBeGreaterThan(0))
     expect(statusesFrom(events).at(-1)!.status.contextTokens).toBe(50_004)
+  })
+})
+
+describe('MaidSession — how much she asks first', () => {
+  /** The session saying what it opened as. The master's terminal settings are
+   * in there: this is the only place the window hears about them. */
+  function initMessage(permissionMode: string): SDKMessage {
+    return {
+      type: 'system',
+      subtype: 'init',
+      session_id: 'session-1',
+      permissionMode,
+      model: 'claude',
+      tools: [],
+      mcp_servers: [],
+      slash_commands: [],
+      uuid: 'u',
+    } as unknown as SDKMessage
+  }
+
+  function settingsFrom(events: BridgeEvent[]) {
+    return events.filter((event) => event.kind === 'settings') as Extract<BridgeEvent, { kind: 'settings' }>[]
+  }
+
+  const optionsOf = (call: number) => vi.mocked(query).mock.calls[call][0].options ?? {}
+
+  it('leaves the mode alone when nobody has picked one here, and shows what the terminal is set to', async () => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-mode-untouched', emit)
+
+    session.ask('run-1', 'go on then')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+
+    // Nothing said about it: a mode passed here would override his own setting.
+    expect(optionsOf(0)).not.toHaveProperty('permissionMode')
+
+    fakes[0].push(initMessage('auto'))
+    await vi.waitFor(() => expect(settingsFrom(events).at(-1)?.settings.mode).toBe('auto'))
+  })
+
+  it('opens as what he picked last time, and the session cannot talk it back down', async () => {
+    vi.mocked(keptSettings).mockReturnValue({ model: null, effort: null, mode: 'plan' })
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-mode-kept', emit)
+
+    session.ask('run-1', 'go on then')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    expect(optionsOf(0)).toMatchObject({ permissionMode: 'plan' })
+
+    fakes[0].push(initMessage('auto'))
+    fakes[0].push(resultMessage())
+    await vi.waitFor(() => expect(events.some((event) => event.kind === 'done')).toBe(true))
+    expect(settingsFrom(events).every((event) => event.settings.mode === 'plan')).toBe(true)
+  })
+
+  it('writes down what he turns it to — the model and the effort with it', () => {
+    const { emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-mode-written', emit)
+
+    session.configure({ model: 'claude-opus-5' })
+    // Only the model was touched, so the mode is still his terminal's to decide.
+    expect(rememberSettings).toHaveBeenLastCalledWith({ model: 'claude-opus-5', effort: 'high', mode: null })
+
+    session.configure({ mode: 'auto' })
+    expect(rememberSettings).toHaveBeenLastCalledWith({ model: 'claude-opus-5', effort: 'high', mode: 'auto' })
   })
 })
