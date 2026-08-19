@@ -25,6 +25,7 @@ function createBridge() {
     cwd: '/mock/project',
     locale: 'en',
     localeChoice: 'system',
+    askLanguage: false,
     setLocale: vi.fn(),
     setSpeech: vi.fn(),
     start: vi.fn(),
@@ -67,8 +68,9 @@ function createBridge() {
  * time rather than the one the top of this file would otherwise have already
  * settled with no bridge at all.
  */
-async function mountLive() {
+async function mountLive(bridgeOverrides: Partial<CafeBridge> = {}) {
   const { bridge, emit } = createBridge()
+  Object.assign(bridge, bridgeOverrides)
   ;(window as unknown as { cafe: CafeBridge }).cafe = bridge
   vi.resetModules()
   const { GalgameClient } = await import('./GalgameClient')
@@ -181,6 +183,28 @@ describe('GalgameClient', () => {
 
     await vi.waitFor(() => expect(screen.getByText('You are ことね, an AI maid.')).toBeInTheDocument())
     expect(bridge.persona).toHaveBeenCalled()
+  })
+
+
+  it('asks what she should speak when nobody ever has, before she says anything else', async () => {
+    const { bridge } = await mountLive({ askLanguage: true })
+
+    // The window's own question, not hers: it is up before any session has
+    // answered, with the languages to answer it under the box. (The line
+    // itself is typed out a letter at a time, so what is asserted is the row.)
+    expect(await screen.findByRole('button', { name: '繁體中文' })).toBeInTheDocument()
+
+    await act(async () => screen.getByRole('button', { name: '繁體中文' }).click())
+
+    expect(bridge.setSpeech).toHaveBeenCalledWith('繁體中文')
+    expect(screen.queryByRole('button', { name: '繁體中文' })).not.toBeInTheDocument()
+  })
+
+  it('leaves the opening alone when the language was settled long ago', async () => {
+    await mountLive()
+
+    expect(screen.queryByRole('button', { name: '日本語' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '繁體中文' })).not.toBeInTheDocument()
   })
 
   it('Bug 3 — a folder move empties standing always-allows, so the same command re-asks in the new place', async () => {

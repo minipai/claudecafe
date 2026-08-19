@@ -1,6 +1,6 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { faceFor } from '@/agent/expressions'
-import { speakThis } from '@/i18n'
+import { speakThis, text } from '@/i18n'
 import type { BacklogLine, BridgeEvent, CafeCommand, Lines, Look, ModelChoice, Report, SessionSettings, Trouble } from '@/agent'
 import { createChatMessage } from './chatlog'
 import { speakThese } from './content'
@@ -43,6 +43,10 @@ export type WindowScene = {
    * over `lines` itself is fixed at mount, so it reads this instead. */
   linesRef: RefObject<Lines>
   lastLineRef: RefObject<string>
+  /** Whether the opening question — what should she speak — is still standing.
+   * Until it is answered, that question is what the scene opens on, and her
+   * own greeting does not take its place. */
+  askingLanguage: RefObject<boolean>
 }
 
 /** A bridge event that is not scoped to a run — routed to whatever the window
@@ -69,9 +73,12 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
     // has said. Anything further down the log stays as it was said.
     speakThese(event.lines)
     const stale = scene.greetingRef.current
-    scene.greetingRef.current = event.lines.greeting
     scene.linesRef.current = event.lines
     scene.setLines(event.lines)
+    // Her wording is kept, but the scene is still on the window's own question
+    // and stays there — she is not answered by being written to.
+    if (scene.askingLanguage.current) return
+    scene.greetingRef.current = event.lines.greeting
     scene.setChatMessages((current) =>
       current.length === 1 && current[0].role === 'assistant' && current[0].content === stale
         ? [createChatMessage('assistant', event.lines.greeting)]
@@ -99,9 +106,12 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
     // she does at the start of any session, rather than standing there with
     // the last folder's line still in the box.
     if (!event.lines.length) {
-      scene.setChatMessages([createChatMessage('assistant', scene.linesRef.current.greeting)])
+      const opening = scene.askingLanguage.current
+        ? text().scene.askLanguage
+        : scene.linesRef.current.greeting
+      scene.setChatMessages([createChatMessage('assistant', opening)])
       scene.setExpression('neutral')
-      scene.cut(scene.linesRef.current.greeting)
+      scene.cut(opening)
       return
     }
     scene.setChatMessages(

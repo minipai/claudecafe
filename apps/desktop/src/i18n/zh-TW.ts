@@ -166,6 +166,8 @@ export const zhTW: Text = {
     close: '關閉',
   },
   scene: {
+    askLanguage: '要ことね用哪個語言跟ご主人様說話呢？',
+    otherLanguage: '其他語言…',
     say: '跟ことね說點什麼…',
     send: '送出',
     stop: '停下',

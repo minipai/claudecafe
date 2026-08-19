@@ -194,6 +194,9 @@ export type CafeBridge = {
   /** What was picked, which may be `system`. */
   localeChoice: string
   /** Draw the interface in another language, and keep that choice. */
+  /** Nobody has ever said what she should speak — not here, not in the café.
+   * The window asks before she says anything else. */
+  askLanguage: boolean
   setLocale(choice: string): void
   /** Have her reply in this — free text, empty to follow the café's setting. */
   setSpeech(language: string): void

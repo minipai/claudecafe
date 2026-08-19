@@ -45,14 +45,29 @@ export function replyLanguage() {
   if (told) return told
   const said = process.env.CLAUDE_MAID_LANG?.trim()
   if (said) return said
+  return cafeLanguage() || 'English'
+}
+
+/** The café's own setting, which is the master's terminal maid's language too.
+ * Empty on a machine that has never heard of the café. */
+function cafeLanguage() {
   try {
     const config = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude/cafe/config.json'), 'utf8'))
-    const lang = String(config.lang ?? '').trim()
-    if (lang) return lang
+    return String(config.lang ?? '').trim()
   } catch {
-    // no café config: she speaks the plugin's default, which is English
+    return '' // no café config
   }
-  return 'English'
+}
+
+/**
+ * Whether anyone has ever said what she should speak. Nobody has on a machine
+ * with neither a window setting nor a café one — and English is then a default
+ * nobody chose, which is how a master who speaks something else ends up with a
+ * maid answering him in the wrong language and nothing on screen saying where
+ * that is changed. The window asks him instead, once.
+ */
+export function languageSettled() {
+  return Boolean(chosenSpeech().trim() || process.env.CLAUDE_MAID_LANG?.trim() || cafeLanguage())
 }
 
 /** Her lines in this language, if the window already has them. English needs no

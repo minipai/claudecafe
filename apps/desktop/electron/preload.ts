@@ -4,11 +4,13 @@ import type { BridgeEvent, CafeBridge } from '../src/agent/bridge'
 const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? ''
 const localeArg = process.argv.find((arg) => arg.startsWith('--cafe-locale=')) ?? ''
 const choiceArg = process.argv.find((arg) => arg.startsWith('--cafe-locale-choice=')) ?? ''
+const askArg = process.argv.find((arg) => arg.startsWith('--cafe-ask-language=')) ?? ''
 
 const bridge: CafeBridge = {
   cwd: folderArg.slice('--cafe-cwd='.length),
   locale: localeArg.slice('--cafe-locale='.length),
   localeChoice: choiceArg.slice('--cafe-locale-choice='.length),
+  askLanguage: askArg.slice('--cafe-ask-language='.length) === '1',
   setLocale: (choice) => ipcRenderer.send('cafe:set-locale', choice),
   setSpeech: (language) => ipcRenderer.send('cafe:set-speech', language),
   start: (runId, prompt, images) => ipcRenderer.send('cafe:start', runId, prompt, images),

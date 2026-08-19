@@ -54,7 +54,7 @@ type Doing = {
 /** The usual answers, offered so the common case is one keystroke. Anything
  * typed instead is taken as it stands — she is told to reply in it, and a
  * sentence with an instruction in it works as well as a language's name. */
-const SPOKEN = ['English', '繁體中文', '日本語', '简体中文', '한국어']
+export const SPOKEN = ['English', '繁體中文', '日本語', '简体中文', '한국어']
 
 /** The permission modes, worded as the CLI words them, with what each one means
  * for the master standing there watching. */
@@ -68,6 +68,7 @@ const MODES: SessionSettings['mode'][] = ['default', 'auto', 'acceptEdits', 'pla
  */
 export function CommandBar({
   open,
+  startAt,
   folder,
   conversation,
   locale,
@@ -76,6 +77,9 @@ export function CommandBar({
   onClose,
 }: {
   open: boolean
+  /** Which list to open on, when the bar is being opened for one thing in
+   * particular rather than to be looked through. */
+  startAt?: 'speech'
   /** Where she is now, so the list can say so instead of offering it. */
   folder: string
   conversation: string | null
@@ -112,13 +116,13 @@ export function CommandBar({
   // top, and a conversation started since then belongs in the list at all.
   useEffect(() => {
     if (!open) return
-    setStep('commands')
+    setStep(startAt ?? 'commands')
     setTyped('')
     setActive(0)
     setWriting(false)
     void window.cafe?.folders().then(setFolders)
     void window.cafe?.conversations().then(setConversations)
-  }, [open])
+  }, [open, startAt])
 
   const commands: Entry[] = [
     { key: 'folder', icon: FolderOpen, label: t.bar.folder, find: eng.bar.folder, note: shorten(folder), into: 'folder' },

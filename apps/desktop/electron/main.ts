@@ -14,7 +14,7 @@ import {
   rememberLocale,
   rememberSpeech,
 } from './history'
-import { personaOf } from './lines'
+import { languageSettled, personaOf } from './lines'
 import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -72,6 +72,10 @@ function openWindow(cwd: string) {
         `--cafe-cwd=${cwd}`,
         `--cafe-locale=${drawnIn()}`,
         `--cafe-locale-choice=${chosenLocale()}`,
+        // Asked on the scene rather than through a settings screen, so it has
+        // to be known before the page is drawn — and it is a file read, not a
+        // session, so a window that cannot sign in still asks.
+        `--cafe-ask-language=${languageSettled() ? '' : '1'}`,
       ],
     },
   })

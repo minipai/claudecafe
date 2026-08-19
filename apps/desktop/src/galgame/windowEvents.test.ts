@@ -25,6 +25,7 @@ const LINES: Lines = {
 
 function createScene(overrides: Partial<WindowScene> = {}): WindowScene {
   return {
+    askingLanguage: { current: false },
     setLook: vi.fn(),
     setLookUnread: vi.fn(),
     setSettings: vi.fn(),

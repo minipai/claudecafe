@@ -171,6 +171,8 @@ export const en = {
     close: 'Close',
   },
   scene: {
+    askLanguage: 'Which language should I speak, Master?',
+    otherLanguage: 'Something else…',
     say: 'Say something to ことね…',
     send: 'Send',
     stop: 'Stop',
