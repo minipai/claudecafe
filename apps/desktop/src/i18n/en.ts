@@ -158,7 +158,7 @@ export const en = {
     speaks: 'She answers in',
     otherLanguage: 'Something else — write it in any words',
     later: 'Both can be changed later with ⌘K',
-    start: 'Let her in',
+    start: 'Save settings',
   },
   trouble: {
     signIn: {

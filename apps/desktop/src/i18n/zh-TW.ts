@@ -153,7 +153,7 @@ export const zhTW: Text = {
     speaks: '她回話用',
     otherLanguage: '其他語言——想怎麼寫都可以',
     later: '兩個之後都能用 ⌘K 改',
-    start: '讓她進來',
+    start: '儲存設定',
   },
   trouble: {
     signIn: {

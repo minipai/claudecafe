@@ -197,16 +197,16 @@ describe('GalgameClient', () => {
     expect(bridge.setLocale).toHaveBeenCalledWith('zh-TW')
 
     await act(async () => asHer.click())
-    await act(async () => screen.getByRole('button', { name: 'Let her in' }).click())
+    await act(async () => screen.getByRole('button', { name: 'Save settings' }).click())
 
     expect(bridge.setSpeech).toHaveBeenCalledWith('繁體中文')
-    expect(screen.queryByRole('button', { name: 'Let her in' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save settings' })).not.toBeInTheDocument()
   })
 
   it('guesses her language off the machine when he picks none himself', async () => {
     const { bridge } = await mountLive({ askLanguage: true, locale: 'zh-TW' })
 
-    await act(async () => screen.getByRole('button', { name: 'Let her in' }).click())
+    await act(async () => screen.getByRole('button', { name: 'Save settings' }).click())
 
     // A Chinese machine, nothing picked: English would be a default nobody
     // asked for.
@@ -219,7 +219,7 @@ describe('GalgameClient', () => {
     fireEvent.change(screen.getByLabelText('Something else — write it in any words'), {
       target: { value: 'Español, pero explícame el código en inglés' },
     })
-    await act(async () => screen.getByRole('button', { name: 'Let her in' }).click())
+    await act(async () => screen.getByRole('button', { name: 'Save settings' }).click())
 
     expect(bridge.setSpeech).toHaveBeenCalledWith('Español, pero explícame el código en inglés')
   })
@@ -227,7 +227,7 @@ describe('GalgameClient', () => {
   it('leaves the scene alone when the language was settled long ago', async () => {
     await mountLive()
 
-    expect(screen.queryByRole('button', { name: 'Let her in' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save settings' })).not.toBeInTheDocument()
   })
 
   it('Bug 3 — a folder move empties standing always-allows, so the same command re-asks in the new place', async () => {
