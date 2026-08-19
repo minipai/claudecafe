@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:e2e": "vite build && node electron/build.mjs --fake-sdk && playwright test",
     "check": "tsc -b && vitest run",
-    "package": "pnpm build && electron-builder --mac --dir && codesign --force --deep --sign - release/mac-arm64/ClaudeCafe.app",
+    "package": "scripts/package.sh",
     "preview": "vite preview"
   },
   "dependencies": {
