@@ -46,9 +46,11 @@ type Doing = {
   onOpenHistory: () => void
   onCompact: () => void
   onOpenPanel: (command: '/usage' | '/context' | '/agents' | '/mcp' | '/status' | '/keys') => void
-  /** How much she asks before doing, and how it is changed. */
+  /** How much she asks before doing, and how it is changed. Null is handing
+   * it back to the master's terminal rather than pinning one here. */
   mode: SessionSettings['mode']
-  onMode: (mode: SessionSettings['mode']) => void
+  modePicked: boolean
+  onMode: (mode: SessionSettings['mode'] | null) => void
 }
 
 /** The usual answers, offered so the common case is one keystroke. Anything
@@ -166,15 +168,28 @@ export function CommandBar({
             })),
           ]
         : step === 'mode'
-          ? MODES.map((mode): Entry => ({
-              key: `mode-${mode}`,
-              icon: ShieldCheck,
-              label: t.mode[mode],
-              find: eng.mode[mode],
-              note: mode === doing.mode ? t.bar.current : t.mode.note[mode],
-              here: mode === doing.mode,
-              run: () => doing.onMode(mode),
-            }))
+          ? [
+              // Where a window nobody has touched stands, and the only way back
+              // to it once a mode has been picked here.
+              {
+                key: 'mode-follow',
+                icon: ShieldCheck,
+                label: t.mode.follow,
+                find: CATALOGUES.en.mode.follow,
+                note: doing.modePicked ? undefined : t.bar.current,
+                here: !doing.modePicked,
+                run: () => doing.onMode(null),
+              } as Entry,
+              ...MODES.map((mode): Entry => ({
+                key: `mode-${mode}`,
+                icon: ShieldCheck,
+                label: t.mode[mode],
+                find: eng.mode[mode],
+                note: doing.modePicked && mode === doing.mode ? t.bar.current : t.mode.note[mode],
+                here: doing.modePicked && mode === doing.mode,
+                run: () => doing.onMode(mode),
+              })),
+            ]
         : step === 'speech'
           ? writing
             ? [

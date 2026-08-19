@@ -26,6 +26,10 @@ export type SessionSettings = {
    * be able to *say* the other two, because the master's terminal may well be
    * set to one and the window follows that until it is told otherwise. */
   mode: 'default' | 'auto' | 'acceptEdits' | 'plan' | 'bypassPermissions' | 'dontAsk'
+  /** Whether the mode above was picked in this window. False means it is
+   * whatever the master's terminal is set to, and follows it as that changes —
+   * which is what a window nobody has touched should do. */
+  modePicked: boolean
 }
 
 /** What the master has turned this window to, kept between launches. A null is
@@ -194,9 +198,6 @@ export type CafeBridge = {
   /** What was picked, which may be `system`. */
   localeChoice: string
   /** Draw the interface in another language, and keep that choice. */
-  /** Nobody has ever said what she should speak — not here, not in the café.
-   * The window asks before she says anything else. */
-  askLanguage: boolean
   setLocale(choice: string): void
   /** Have her reply in this — free text, empty to follow the café's setting. */
   setSpeech(language: string): void
@@ -229,6 +230,10 @@ export type CafeBridge = {
   /** The instructions she is wearing, as markdown. Empty on a machine with no
    * copy of her anywhere. */
   persona(): Promise<string>
+  /** Whether nobody has ever said what she should speak — not here, not in the
+   * café. Asked every time the page loads, so an answered welcome does not
+   * come back with the next reload. */
+  askLanguage(): Promise<boolean>
   /** The conversations held in this folder, newest first. */
   conversations(): Promise<Conversation[]>
   /** The folders she has been opened on, most recent first. */

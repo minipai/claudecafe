@@ -119,7 +119,14 @@ export const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)
  * for anything he has never touched. */
 function openingSettings(): SessionSettings {
   const kept = keptSettings()
-  return { model: kept.model, effort: kept.effort ?? 'high', mode: kept.mode ?? 'default' }
+  return {
+    model: kept.model,
+    effort: kept.effort ?? 'high',
+    mode: kept.mode ?? 'default',
+    // Nothing kept means nobody has picked one here: the window has no opinion
+    // about how much she asks, and the terminal's setting holds.
+    modePicked: kept.mode !== null,
+  }
 }
 
 /** How long a session gets to say it is connected before the window treats the
@@ -181,10 +188,6 @@ export class MaidSession {
    * otherwise, so a reload picks up where the master left off. */
   private sessionId: string | null = null
   private settings: SessionSettings = openingSettings()
-  /** Whether the mode above is the master's own pick. Until it is, the window
-   * has no opinion about how much she asks: the session is opened without one
-   * and what his terminal is set to holds here too. */
-  private modePicked = keptSettings().mode !== null
   private models: ModelChoice[] = []
   private commands: CafeCommand[] = []
   /** Her own wording for what the window says as her, once it exists. */
@@ -274,14 +277,18 @@ export class MaidSession {
    * when the session opens, so it is picked up the next time one does. */
   configure(patch: Partial<SessionSettings>) {
     this.settings = { ...this.settings, ...patch }
-    if (patch.mode !== undefined) this.modePicked = true
+    if (patch.mode !== undefined) this.settings.modePicked = true
     rememberSettings({
       model: this.settings.model,
       effort: this.settings.effort,
-      mode: this.modePicked ? this.settings.mode : null,
+      mode: this.settings.modePicked ? this.settings.mode : null,
     })
     if (patch.model !== undefined) void this.stream?.setModel(patch.model ?? undefined).catch(() => {})
     if (patch.mode !== undefined) void this.stream?.setPermissionMode(patch.mode).catch(() => {})
+    // Handing the mode back to the terminal cannot be said down the control
+    // channel — there is no "unset" — so the session is opened again with
+    // nothing said about it, the same way effort is picked up.
+    if (patch.modePicked === false) this.reopen()
     if (patch.effort !== undefined) this.reopen()
     this.emit({ kind: 'settings', settings: this.settings, models: this.models })
   }
@@ -441,7 +448,7 @@ export class MaidSession {
       // window: passing one overrides what he set in his terminal, and a window
       // that quietly puts him back to asking-first every launch is the app
       // undoing his own setting behind his back.
-      ...(this.modePicked ? { permissionMode: this.settings.mode } : {}),
+      ...(this.settings.modePicked ? { permissionMode: this.settings.mode } : {}),
       effort: this.settings.effort,
       ...(this.settings.model ? { model: this.settings.model } : {}),
     }
@@ -511,13 +518,20 @@ export class MaidSession {
         if (sdk.type === 'system' && sdk.subtype === 'commands_changed') {
           this.tellCommands(sdk.commands)
         }
+        // Everything before this is a summary now, so what the conversation
+        // costs is not known again until she answers on the far side of it —
+        // and the figure from before it is about a conversation that is gone.
+        if (sdk.type === 'system' && sdk.subtype === 'compact_boundary') {
+          this.lastContext = null
+          void this.reportStatus()
+        }
         if (sdk.type === 'system' && sdk.subtype === 'init') {
           this.sessionId = sdk.session_id
           rememberSession(this.cwd, sdk.session_id)
           this.followLook(sdk.session_id)
           // With no pick of its own, the window shows what the session came up
           // as — the only place his terminal's setting is ever said out loud.
-          if (!this.modePicked && sdk.permissionMode !== this.settings.mode) {
+          if (!this.settings.modePicked && sdk.permissionMode !== this.settings.mode) {
             this.settings = { ...this.settings, mode: sdk.permissionMode }
             this.emit({ kind: 'settings', settings: this.settings, models: this.models })
           }
@@ -580,6 +594,18 @@ export class MaidSession {
       label: nameOf(model, models),
       efforts: model.supportedEffortLevels ?? [],
     }))
+    // A model kept from an earlier launch that this account can no longer pick
+    // would be handed to every session that opens from now on, and there is
+    // nothing in the list to pick instead of it. Forgotten rather than kept:
+    // the next session opens on whatever the CLI's own default is.
+    if (this.settings.model && this.models.length && !this.models.some((model) => model.value === this.settings.model)) {
+      this.settings = { ...this.settings, model: null }
+      rememberSettings({
+        model: null,
+        effort: this.settings.effort,
+        mode: this.settings.modePicked ? this.settings.mode : null,
+      })
+    }
     this.emit({ kind: 'settings', settings: this.settings, models: this.models })
   }
 

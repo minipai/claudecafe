@@ -25,7 +25,7 @@ function createBridge() {
     cwd: '/mock/project',
     locale: 'en',
     localeChoice: 'system',
-    askLanguage: false,
+    askLanguage: vi.fn().mockResolvedValue(false),
     setLocale: vi.fn(),
     setSpeech: vi.fn(),
     start: vi.fn(),
@@ -187,11 +187,12 @@ describe('GalgameClient', () => {
 
 
   it('welcomes a machine nobody has ever set up, and asks for both languages at once', async () => {
-    const { bridge } = await mountLive({ askLanguage: true })
+    const { bridge } = await mountLive({ askLanguage: vi.fn().mockResolvedValue(true) })
 
     // Two rows offer 繁體中文: the window's own wording first, what she answers
     // in second. They are separate settings — an English window may well want
     // her speaking something else.
+    await vi.waitFor(() => expect(screen.getAllByRole('button', { name: '繁體中文' })).toHaveLength(2))
     const [asTheWindow, asHer] = screen.getAllByRole('button', { name: '繁體中文' })
     await act(async () => asTheWindow.click())
     expect(bridge.setLocale).toHaveBeenCalledWith('zh-TW')
@@ -204,8 +205,9 @@ describe('GalgameClient', () => {
   })
 
   it('guesses her language off the machine when he picks none himself', async () => {
-    const { bridge } = await mountLive({ askLanguage: true, locale: 'zh-TW' })
+    const { bridge } = await mountLive({ askLanguage: vi.fn().mockResolvedValue(true), locale: 'zh-TW' })
 
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Save settings' })).toBeInTheDocument())
     await act(async () => screen.getByRole('button', { name: 'Save settings' }).click())
 
     // A Chinese machine, nothing picked: English would be a default nobody
@@ -214,14 +216,26 @@ describe('GalgameClient', () => {
   })
 
   it('takes a language she was written rather than picked', async () => {
-    const { bridge } = await mountLive({ askLanguage: true })
+    const { bridge } = await mountLive({ askLanguage: vi.fn().mockResolvedValue(true) })
 
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Something else — write it in any words')).toBeInTheDocument(),
+    )
     fireEvent.change(screen.getByLabelText('Something else — write it in any words'), {
       target: { value: 'Español, pero explícame el código en inglés' },
     })
     await act(async () => screen.getByRole('button', { name: 'Save settings' }).click())
 
     expect(bridge.setSpeech).toHaveBeenCalledWith('Español, pero explícame el código en inglés')
+  })
+
+  it('guesses a Japanese machine as 日本語, which is on the shortlist too', async () => {
+    const { bridge } = await mountLive({ askLanguage: vi.fn().mockResolvedValue(true), locale: 'ja-JP' })
+
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Save settings' })).toBeInTheDocument())
+    await act(async () => screen.getByRole('button', { name: 'Save settings' }).click())
+
+    expect(bridge.setSpeech).toHaveBeenCalledWith('日本語')
   })
 
   it('leaves the scene alone when the language was settled long ago', async () => {

@@ -24,7 +24,7 @@ export function WelcomePanel({ open, onDone }: { open: boolean; onDone: () => vo
   const [typed, setTyped] = useState('')
 
   const drawnIn = locale === 'system' ? (window.cafe?.locale ?? 'en') : locale
-  const speaks = typed.trim() || spoken || (drawnIn.startsWith('zh') ? '繁體中文' : 'English')
+  const speaks = typed.trim() || spoken || spokenFor(drawnIn)
 
   /** The interface redraws as it is picked — including this panel, which is the
    * plainest way of showing what was just chosen. */
@@ -118,4 +118,20 @@ export function WelcomePanel({ open, onDone }: { open: boolean; onDone: () => vo
       </DialogContent>
     </Dialog>
   )
+}
+
+/**
+ * What a machine set to this is likely to want her speaking. The window itself
+ * only exists in two languages, but what she speaks is free text — so the
+ * guess follows the machine rather than the two catalogues, and every language
+ * on the shortlist above can be guessed rather than only the two.
+ */
+function spokenFor(code: string) {
+  const said = code.toLowerCase()
+  if (said.startsWith('ja')) return '日本語'
+  if (said.startsWith('ko')) return '한국어'
+  // Written Chinese is the split that matters here, and it is not the country:
+  // Singapore writes simplified, Hong Kong and Taiwan traditional.
+  if (said.startsWith('zh')) return /hans|-cn|-sg/.test(said) ? '简体中文' : '繁體中文'
+  return 'English'
 }

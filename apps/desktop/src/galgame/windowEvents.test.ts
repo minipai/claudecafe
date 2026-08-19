@@ -61,7 +61,7 @@ describe('applyWindowEvent', () => {
 
   it('settings: takes the session settings and what models are on offer together', () => {
     const scene = createScene()
-    const settings = { model: null, effort: 'high' as const, mode: 'default' as const }
+    const settings = { model: null, effort: 'high' as const, mode: 'default' as const, modePicked: false }
     const models = [{ value: 'opus', label: 'Opus', efforts: ['high' as const] }]
     applyWindowEvent({ kind: 'settings', settings, models }, scene)
     expect(scene.setSettings).toHaveBeenCalledWith(settings)

@@ -26,6 +26,7 @@ function createDoing() {
     onCompact: vi.fn(),
     onOpenPanel: vi.fn(),
     mode: 'default' as const,
+    modePicked: false,
     onMode: vi.fn(),
   }
 }

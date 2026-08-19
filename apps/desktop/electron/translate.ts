@@ -300,7 +300,7 @@ const TASK_STATUS: Record<string, Todo['status']> = {
 
 /** She forgot to hand it over, but it is far too long to say — the panel takes
  * it anyway. A medium-length answer is still spoken. */
-function isLongForm(text: string) {
+export function isLongForm(text: string) {
   return text.length > 1200 || /^#{1,4} /m.test(text) || text.includes('```')
 }
 
@@ -317,7 +317,7 @@ export function hasShape(text: string) {
 export const FALLBACK_LABEL = 'View full report →'
 
 /** The line said out loud when the body goes to the report panel. */
-function openingLine(text: string) {
+export function openingLine(text: string) {
   const first = text.split('\n').find((line) => line.trim() && !line.startsWith('#'))?.trim() ?? ''
   return first.length > 120 ? `${first.slice(0, 118)}…` : first || 'Done — the write-up is ready.'
 }

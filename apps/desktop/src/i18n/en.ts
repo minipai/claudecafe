@@ -45,6 +45,7 @@ export const en = {
     system: 'Follow the system',
   },
   mode: {
+    follow: 'However the terminal is set',
     default: 'Ask before acting',
     auto: 'Decide for herself',
     acceptEdits: 'Edit files without asking',

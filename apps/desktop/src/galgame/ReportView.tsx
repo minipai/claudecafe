@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { useIsPresent } from 'motion/react'
 import { motion } from 'motion/react'
 import { X } from 'lucide-react'
 import { marked } from 'marked'
@@ -25,7 +26,12 @@ export function ReportView({ shortline, report, onClose, actions }: ReportViewPr
   // opens over the scene is a dialogue and closes on Esc already; this one is
   // drawn by hand so that it can morph out of the box she speaks in, and it was
   // the one thing on screen the key did nothing to.
+  // It is kept mounted through its own exit animation, and an esc pressed in
+  // that half-second is meant for the scene behind it — a panel already on its
+  // way out must not take it and do nothing with it.
+  const present = useIsPresent()
   useEffect(() => {
+    if (!present) return
     const leave = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return
       event.preventDefault()
@@ -33,7 +39,7 @@ export function ReportView({ shortline, report, onClose, actions }: ReportViewPr
     }
     window.addEventListener('keydown', leave)
     return () => window.removeEventListener('keydown', leave)
-  }, [onClose])
+  }, [onClose, present])
 
   return (
     <motion.div

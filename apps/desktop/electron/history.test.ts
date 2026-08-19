@@ -117,6 +117,30 @@ describe('conversationBacklog', () => {
     ])
   })
 
+  it('does not count the mood marker as part of what she said', () => {
+    const cwd = '/Users/master/proj'
+    // Just under the line where a line stops being read as speech — with the
+    // marker counted in, it would come back laid out instead of said.
+    const said = `${'a'.repeat(150)}【 開心 (˶ˆᗜˆ˵) 】`
+    writeTranscript(home, cwd, 'sess', [assistantRow(said)])
+    expect(conversationBacklog(cwd, 'sess')).toEqual([
+      { role: 'assistant', content: said, at: expect.any(Number) },
+    ])
+  })
+
+  it('gives back a long answer she never handed over the way the scene showed it — one line said, the rest in the panel', () => {
+    const cwd = '/Users/master/proj'
+    const written = `# What I found\n\n${'The pool cap is five. '.repeat(80)}`
+    writeTranscript(home, cwd, 'sess', [assistantRow(`${written}【 得意 ᕙ( •̀ ᗜ •́)ᕗ 】`)])
+    const [line] = conversationBacklog(cwd, 'sess')!
+    // The panel holds the whole of it, without the marker she signed it with.
+    expect(line.report).toEqual({ label: 'View full report →', body: written.trim() })
+    // And what is said is one line of it, still signed — the face comes off that.
+    expect(line.content.length).toBeLessThan(written.length)
+    expect(line.content).toContain('【 得意 ᕙ( •̀ ᗜ •́)ᕗ 】')
+    expect(line.laidOut).toBeUndefined()
+  })
+
   it('drops a slash command wrapped in <command-name>, a tag Claude Code itself writes', () => {
     const cwd = '/Users/master/proj'
     writeTranscript(home, cwd, 'sess', [userRow('<command-name>/compact</command-name>')])

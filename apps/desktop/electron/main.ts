@@ -72,10 +72,6 @@ function openWindow(cwd: string) {
         `--cafe-cwd=${cwd}`,
         `--cafe-locale=${drawnIn()}`,
         `--cafe-locale-choice=${chosenLocale()}`,
-        // Asked on the scene rather than through a settings screen, so it has
-        // to be known before the page is drawn — and it is a file read, not a
-        // session, so a window that cannot sign in still asks.
-        `--cafe-ask-language=${languageSettled() ? '' : '1'}`,
       ],
     },
   })
@@ -195,6 +191,10 @@ ipcMain.handle('cafe:folders', () => recentFolders())
 // Read off disk rather than asked of her: the persona is what the session was
 // opened with, so it is there to show even when there is no session to ask.
 ipcMain.handle('cafe:persona', () => personaOf(CAFE_PLUGIN))
+// Asked on every page rather than handed over as the window is built: a page
+// that reloads after the welcome card was answered must not put it up again.
+// A file read, not a session — a window that cannot sign in still asks.
+ipcMain.handle('cafe:ask-language', () => !languageSettled())
 
 /**
  * The sign-in the window cannot do itself. She works through Claude Code and

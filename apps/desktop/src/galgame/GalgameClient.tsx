@@ -101,7 +101,7 @@ export function GalgameClient() {
   const [outputTokens, setOutputTokens] = useState(0)
   const [changingSession, setChangingSession] = useState(false)
   const [compacting, setCompacting] = useState(false)
-  const [settings, setSettings] = useState<SessionSettings>({ model: null, effort: 'high', mode: 'default' })
+  const [settings, setSettings] = useState<SessionSettings>({ model: null, effort: 'high', mode: 'default', modePicked: false })
   const [models, setModels] = useState<ModelChoice[]>([])
   const [commands, setCommands] = useState<CafeCommand[]>([])
   /** The slash command the window is answering itself, if any. */
@@ -121,7 +121,7 @@ export function GalgameClient() {
   const [speech, setSpeech] = useState({ language: '', chosen: '' })
   /** Nobody on this machine has ever said what she should speak or what the
    * window should be drawn in, so both are asked once before anything else. */
-  const [welcoming, setWelcoming] = useState(() => window.cafe?.askLanguage ?? false)
+  const [welcoming, setWelcoming] = useState(false)
   // A real session starts empty; the canned backlog is only there to give the
   // mock something to show.
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() =>
@@ -228,6 +228,10 @@ export function GalgameClient() {
     cut(lines.greeting)
   }, [])
 
+  useEffect(() => {
+    void window.cafe?.askLanguage().then(setWelcoming)
+  }, [])
+
   /**
    * What belongs to the window rather than to a run: the look (shot in the
    * background, minutes after the turn that prompted it), the settings, and the
@@ -271,6 +275,10 @@ export function GalgameClient() {
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return
+      // The report is drawn over everything, so a panel opened under it is one
+      // the master can neither see nor close — and it would take the next esc
+      // meant for the report.
+      if (readerOpen || permissionExpanded || trouble) return
       if (event.key === 'k') {
         event.preventDefault()
         setSwitching(true)
@@ -281,7 +289,7 @@ export function GalgameClient() {
     }
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)
-  }, [])
+  }, [readerOpen, permissionExpanded, trouble])
 
   /**
    * Esc cuts her off, the way it does in the terminal she came from — the stop
@@ -736,9 +744,13 @@ export function GalgameClient() {
           onCompact: compactSession,
           onOpenPanel: setPanel,
           mode: settings.mode,
+          modePicked: settings.modePicked,
           onMode: (mode) => {
-            setSettings((current) => ({ ...current, mode }))
-            window.cafe?.configure({ mode })
+            // Null hands it back to his terminal: the window stops having an
+            // opinion, and what the session reports next is what it shows.
+            const patch = mode === null ? { modePicked: false } : { mode }
+            setSettings((current) => ({ ...current, ...patch }))
+            window.cafe?.configure(patch)
           },
         }}
         onClose={(moved) => {

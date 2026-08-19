@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { app } from 'electron'
 import { REPORT_TOOL } from './tools'
-import { describeTool, FALLBACK_LABEL, hasShape } from './translate'
+import { describeTool, FALLBACK_LABEL, hasShape, isLongForm, openingLine } from './translate'
 import type { BacklogLine, KeptSettings } from '../src/agent/bridge'
 
 /**
@@ -238,14 +238,22 @@ export function keptSettings(): KeptSettings {
   try {
     const kept = JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) as Partial<KeptSettings>
     return {
-      model: kept.model ?? null,
-      effort: kept.effort ?? null,
-      mode: kept.mode ?? null,
+      model: typeof kept.model === 'string' && kept.model ? kept.model : null,
+      // Hand-edited, or written by a version that offered something this one
+      // does not: a value the SDK will not take opens nothing at all, so it is
+      // read as never having been set rather than passed on.
+      effort: EFFORTS.includes(kept.effort as Effort) ? (kept.effort as Effort) : null,
+      mode: MODES.includes(kept.mode as Mode) ? (kept.mode as Mode) : null,
     }
   } catch {
     return { model: null, effort: null, mode: null }
   }
 }
+
+type Effort = NonNullable<KeptSettings['effort']>
+type Mode = NonNullable<KeptSettings['mode']>
+const EFFORTS: Effort[] = ['low', 'medium', 'high', 'xhigh', 'max']
+const MODES: Mode[] = ['default', 'auto', 'acceptEdits', 'plan', 'bypassPermissions', 'dontAsk']
 
 /** How many folders the window keeps its own note of, and how many it offers. */
 const FOLDER_LIMIT = 20
@@ -299,9 +307,22 @@ function readBacklog(transcript: string): BacklogLine[] {
     // anything she said — read only the text back and the whole write-up is
     // gone, with nothing on the row to open.
     const handed = reportHandedOver(row.message?.content)
+    // How long a line is decides how it comes back, and the marker she signed
+    // it with is not part of its length — measured with it on, a line either
+    // side of the boundary comes back in a different shape than it was said in.
+    const { said, marker } = withoutMood(content)
     if (handed) {
       lines.push({ role: 'assistant', content: content || handed.line, at, report: handed.report })
-    } else if (row.type === 'assistant' && hasShape(content)) {
+    } else if (row.type === 'assistant' && isLongForm(said)) {
+      // Too long to say, and she never handed it over herself — the scene put
+      // it in a panel and said one line of it, so that is how it comes back.
+      lines.push({
+        role: 'assistant',
+        content: [openingLine(said), marker].filter(Boolean).join(' '),
+        at,
+        report: { label: FALLBACK_LABEL, body: said },
+      })
+    } else if (row.type === 'assistant' && hasShape(said)) {
       // She wrote this one out rather than said it, and it has to be laid out
       // again coming back: read as speech, its paragraphs and its list run
       // together into one wall of text.
@@ -314,6 +335,13 @@ function readBacklog(transcript: string): BacklogLine[] {
     for (const used of toolsUsed(row.message?.content)) lines.push({ role: 'event', content: used, at })
   }
   return lines.slice(-BACKLOG_LIMIT)
+}
+
+/** The mood marker held apart from the words: it is what her face is read off
+ * coming back, so it is kept on the line, but it is not what the line says. */
+function withoutMood(text: string) {
+  const marker = text.match(/【[^【】]*】\s*$/)
+  return { said: (marker ? text.slice(0, marker.index) : text).trim(), marker: marker ? marker[0] : '' }
 }
 
 type Block = { type: string; text?: string; name?: string; input?: Record<string, unknown> }

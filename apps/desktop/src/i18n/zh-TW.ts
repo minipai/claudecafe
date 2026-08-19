@@ -40,6 +40,7 @@ export const zhTW: Text = {
     system: '跟著系統走',
   },
   mode: {
+    follow: '跟著終端機的設定',
     default: '動手前先問',
     auto: '讓她自己決定',
     acceptEdits: '改檔案不用問',

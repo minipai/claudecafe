@@ -271,7 +271,7 @@ describe('PromptQueue', () => {
  * innards is exactly how the hold-back bug hid: nothing ever actually drained
  * it, so a queue with two prompts sitting in it looked no different from one
  * with a single prompt sent and a second genuinely held back. */
-function fakeStream(prompt: AsyncIterable<SDKUserMessage>) {
+function fakeStream(prompt: AsyncIterable<SDKUserMessage>, models: unknown[] = []) {
   const queued: SDKMessage[] = []
   let wake: (() => void) | null = null
   let ended = false
@@ -305,7 +305,7 @@ function fakeStream(prompt: AsyncIterable<SDKUserMessage>) {
     setModel: vi.fn(async () => undefined),
     return: returned,
     initializationResult: vi.fn(async () => ({ account: {}, commands: [], agents: [], output_style: 'default' })),
-    supportedModels: vi.fn(async () => []),
+    supportedModels: vi.fn(async () => models),
     supportedCommands: vi.fn(async () => []),
     supportedAgents: vi.fn(async () => []),
     mcpServerStatus: vi.fn(async () => []),
@@ -376,10 +376,10 @@ function deferred<T>() {
 /** Wires the mocked `query` to open a fresh fake connection every time
  * `open()`/`reopen()` calls it, each one eagerly draining whatever prompt
  * queue it was handed — same as the real SDK. */
-function trackConnections() {
+function trackConnections(models: unknown[] = []) {
   const fakes: ReturnType<typeof fakeStream>[] = []
   vi.mocked(query).mockImplementation((args) => {
-    const fake = fakeStream(args.prompt as AsyncIterable<SDKUserMessage>)
+    const fake = fakeStream(args.prompt as AsyncIterable<SDKUserMessage>, models)
     fakes.push(fake)
     return fake.stream
   })
@@ -892,6 +892,9 @@ describe('MaidSession — how much she asks first', () => {
 
   const optionsOf = (call: number) => vi.mocked(query).mock.calls[call][0].options ?? {}
 
+  const statuses = (events: BridgeEvent[]) =>
+    events.filter((event) => event.kind === 'status') as Extract<BridgeEvent, { kind: 'status' }>[]
+
   it('leaves the mode alone when nobody has picked one here, and shows what the terminal is set to', async () => {
     const fakes = trackConnections()
     const { events, emit } = collectEvents()
@@ -934,4 +937,71 @@ describe('MaidSession — how much she asks first', () => {
     session.configure({ mode: 'auto' })
     expect(rememberSettings).toHaveBeenLastCalledWith({ model: 'claude-opus-5', effort: 'high', mode: 'auto' })
   })
+
+  it('hands the mode back to the terminal, and opens again with nothing said about it', async () => {
+    vi.mocked(keptSettings).mockReturnValue({ model: null, effort: null, mode: 'plan' })
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-mode-unpinned', emit)
+
+    session.ask('run-1', 'go on then')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    expect(optionsOf(0)).toMatchObject({ permissionMode: 'plan' })
+
+    session.configure({ modePicked: false })
+
+    // Written down as never having been picked, so the next launch follows him
+    // too — and the session is opened again to let the CLI decide it.
+    expect(rememberSettings).toHaveBeenLastCalledWith({ model: null, effort: 'high', mode: null })
+
+    // The connection is dropped and the next thing said opens a fresh one —
+    // the same way a change of effort is picked up.
+    session.ask('run-2', 'and again')
+    await vi.waitFor(() => expect(fakes).toHaveLength(2))
+    expect(optionsOf(1)).not.toHaveProperty('permissionMode')
+
+    fakes[1].push(initMessage('auto'))
+    await vi.waitFor(() => expect(settingsFrom(events).at(-1)?.settings.mode).toBe('auto'))
+  })
+
+  it('drops a kept model the account can no longer pick, rather than opening every session on it', async () => {
+    vi.mocked(keptSettings).mockReturnValue({ model: 'claude-retired-4', effort: null, mode: null })
+    // The account offers one model, and it is not the one being kept.
+    const fakes = trackConnections([{ value: 'claude-opus-5', displayName: 'Opus 5' }])
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-model-gone', emit)
+
+    session.ask('run-1', 'go on then')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    expect(optionsOf(0)).toMatchObject({ model: 'claude-retired-4' })
+
+    // The list arrives on its own once the session is up; the window reads it
+    // and finds what it was keeping is not on it.
+    await vi.waitFor(() => expect(settingsFrom(events).at(-1)?.settings.model).toBeNull())
+    expect(rememberSettings).toHaveBeenLastCalledWith({ model: null, effort: 'high', mode: null })
+  })
+
+  it('stops reporting the old context figure once the conversation behind it has been compacted', async () => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-compacted', emit)
+
+    session.ask('run-1', 'go fix the thing')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    fakes[0].push({
+      type: 'assistant',
+      message: { model: 'claude', content: [{ type: 'text', text: 'ok' }], usage: { input_tokens: 4, cache_read_input_tokens: 300_000 } },
+      parent_tool_use_id: null,
+      uuid: 'u',
+      session_id: 's',
+    } as unknown as SDKMessage)
+    fakes[0].push(resultMessage())
+    await vi.waitFor(() => expect(statuses(events).at(-1)?.status.contextTokens).toBe(300_004)) 
+
+    // Everything that figure measured is a summary now.
+    fakes[0].push({ type: 'system', subtype: 'compact_boundary', uuid: 'u', session_id: 's' } as unknown as SDKMessage)
+
+    await vi.waitFor(() => expect(statuses(events).at(-1)?.status.contextTokens).toBeNull())
+  })
+
 })
