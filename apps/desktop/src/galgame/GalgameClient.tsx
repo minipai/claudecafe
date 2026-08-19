@@ -12,8 +12,9 @@ import { AgentsPanel } from './AgentsPanel'
 import { McpPanel } from './McpPanel'
 import { StatusPanel } from './StatusPanel'
 import { KeysPanel } from './KeysPanel'
+import { WelcomePanel } from './WelcomePanel'
 import { PersonaPanel } from './PersonaPanel'
-import { CommandBar, SPOKEN } from './CommandBar'
+import { CommandBar } from './CommandBar'
 import { TroublePanel } from './TroublePanel'
 import { ChatHistory } from './ChatHistory'
 import { DemoRow } from './DemoRow'
@@ -113,38 +114,29 @@ export function GalgameClient() {
    * elsewhere, so it is state rather than something read once at startup. */
   const [folder, setFolder] = useState(workingDirectory ?? '')
   const [switching, setSwitching] = useState(false)
-  /** Which list the bar opens on — the language one when it was opened from the
-   * opening question rather than by ⌘K. */
-  const [barAt, setBarAt] = useState<'speech' | undefined>(undefined)
   /** The interface's language, which is not hers: a code, kept so switching it
    * redraws everything under this component. */
   const [locale, setLocale] = useState(window.cafe?.localeChoice ?? 'system')
   /** What she is speaking, as the session reports it — a sentence, not a code. */
   const [speech, setSpeech] = useState({ language: '', chosen: '' })
-  /** Nobody has ever said what she should speak, so the first thing on the
-   * scene is her asking. Written into the window, not written by her: it has
-   * to be readable before there is a language, and standing before there is a
-   * session — a master who has not signed in yet still gets asked. */
-  const [askingLanguage, setAskingLanguage] = useState(() => window.cafe?.askLanguage ?? false)
-  /** The same, read by the window events — they run off a listener set up once
-   * and would otherwise be looking at the answer as it stood at mount. */
-  const askingRef = useRef(window.cafe?.askLanguage ?? false)
-  const opening = () => (askingRef.current ? text().scene.askLanguage : currentLines().greeting)
+  /** Nobody on this machine has ever said what she should speak or what the
+   * window should be drawn in, so both are asked once before anything else. */
+  const [welcoming, setWelcoming] = useState(() => window.cafe?.askLanguage ?? false)
   // A real session starts empty; the canned backlog is only there to give the
   // mock something to show.
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() =>
     isLive
-      ? [createChatMessage('assistant', opening())]
+      ? [createChatMessage('assistant', currentLines().greeting)]
       : createPreviewHistory(currentLines().greeting),
   )
   /** Her wording, once the session has written it — English until then. */
   const [lines, setLines] = useState<Lines>(currentLines)
   /** The opening as it currently stands, so a later rewrite knows what to replace. */
-  const greetingRef = useRef(opening())
+  const greetingRef = useRef(currentLines().greeting)
   /** The same wording, read by the effect that only runs once — its closure
    * over `lines` itself is fixed at mount, so it reads this instead. */
   const linesRef = useRef<Lines>(currentLines())
-  const lastLineRef = useRef(opening())
+  const lastLineRef = useRef(currentLines().greeting)
   /** Every run still in flight. A prompt sent while she is working starts its
    * own, so stopping her has to reach all of them — with only the newest kept,
    * the older run carried on and put the plate back to spinning the moment the
@@ -233,7 +225,7 @@ export function GalgameClient() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    cut(opening())
+    cut(lines.greeting)
   }, [])
 
   /**
@@ -265,7 +257,6 @@ export function GalgameClient() {
       greetingRef,
       linesRef,
       lastLineRef,
-      askingLanguage: askingRef,
     }
     const stop = window.cafe?.listen((event) => applyWindowEvent(event, windowScene))
     window.cafe?.refresh()
@@ -612,27 +603,6 @@ export function GalgameClient() {
     setReaderOpen(false)
   }
 
-  /**
-   * The answer to the opening question. She is told what to speak, which
-   * reopens her session in it and has her write her own lines again — and
-   * until those come back the scene stands on the English ones, the same as
-   * any other start. What she says next is hers; the question was the window's.
-   */
-  function pickLanguage(language: string) {
-    setAskingLanguage(false)
-    askingRef.current = false
-    if (language === text().scene.otherLanguage) {
-      setBarAt('speech')
-      setSwitching(true)
-      return
-    }
-    window.cafe?.setSpeech(language)
-    const greeting = linesRef.current.greeting
-    greetingRef.current = greeting
-    setChatMessages([createChatMessage('assistant', greeting)])
-    cut(greeting)
-  }
-
   function tryRun(prompt: string) {
     if (isBusy()) return
     run(prompt)
@@ -701,17 +671,7 @@ export function GalgameClient() {
               onLookRead={() => setLookUnread(false)}
               footer={
                 <>
-                  {askingLanguage ? (
-                    <ChoiceRow
-                      question={{
-                        header: '',
-                        question: '',
-                        options: [...SPOKEN, text().scene.otherLanguage].map((label) => ({ label })),
-                        multiSelect: false,
-                      }}
-                      onAnswer={([language]) => pickLanguage(language)}
-                    />
-                  ) : choiceRequest ? (
+                  {choiceRequest ? (
                     <ChoiceRow
                       key={choiceRequest.id}
                       question={choiceRequest.question}
@@ -763,9 +723,9 @@ export function GalgameClient() {
       <StatusPanel open={panel === '/status'} onClose={() => setPanel(null)} />
       <KeysPanel open={panel === '/keys'} onClose={() => setPanel(null)} />
       <PersonaPanel open={panel === '/persona'} onClose={() => setPanel(null)} />
+      <WelcomePanel open={welcoming} onDone={() => setWelcoming(false)} />
       <CommandBar
         open={switching}
-        startAt={barAt}
         folder={folder}
         locale={locale}
         speech={speech}
@@ -783,7 +743,6 @@ export function GalgameClient() {
         }}
         onClose={(moved) => {
           setSwitching(false)
-          setBarAt(undefined)
           if (!moved) return
           // Whatever she was in the middle of belongs to where he just left;
           // the scene starts over with what comes back.

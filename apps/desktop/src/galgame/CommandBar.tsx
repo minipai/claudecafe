@@ -68,7 +68,6 @@ const MODES: SessionSettings['mode'][] = ['default', 'auto', 'acceptEdits', 'pla
  */
 export function CommandBar({
   open,
-  startAt,
   folder,
   conversation,
   locale,
@@ -77,9 +76,6 @@ export function CommandBar({
   onClose,
 }: {
   open: boolean
-  /** Which list to open on, when the bar is being opened for one thing in
-   * particular rather than to be looked through. */
-  startAt?: 'speech'
   /** Where she is now, so the list can say so instead of offering it. */
   folder: string
   conversation: string | null
@@ -116,13 +112,13 @@ export function CommandBar({
   // top, and a conversation started since then belongs in the list at all.
   useEffect(() => {
     if (!open) return
-    setStep(startAt ?? 'commands')
+    setStep('commands')
     setTyped('')
     setActive(0)
     setWriting(false)
     void window.cafe?.folders().then(setFolders)
     void window.cafe?.conversations().then(setConversations)
-  }, [open, startAt])
+  }, [open])
 
   const commands: Entry[] = [
     { key: 'folder', icon: FolderOpen, label: t.bar.folder, find: eng.bar.folder, note: shorten(folder), into: 'folder' },

@@ -186,25 +186,48 @@ describe('GalgameClient', () => {
   })
 
 
-  it('asks what she should speak when nobody ever has, before she says anything else', async () => {
+  it('welcomes a machine nobody has ever set up, and asks for both languages at once', async () => {
     const { bridge } = await mountLive({ askLanguage: true })
 
-    // The window's own question, not hers: it is up before any session has
-    // answered, with the languages to answer it under the box. (The line
-    // itself is typed out a letter at a time, so what is asserted is the row.)
-    expect(await screen.findByRole('button', { name: '繁體中文' })).toBeInTheDocument()
+    // Two rows offer 繁體中文: the window's own wording first, what she answers
+    // in second. They are separate settings — an English window may well want
+    // her speaking something else.
+    const [asTheWindow, asHer] = screen.getAllByRole('button', { name: '繁體中文' })
+    await act(async () => asTheWindow.click())
+    expect(bridge.setLocale).toHaveBeenCalledWith('zh-TW')
 
-    await act(async () => screen.getByRole('button', { name: '繁體中文' }).click())
+    await act(async () => asHer.click())
+    await act(async () => screen.getByRole('button', { name: 'Let her in' }).click())
 
     expect(bridge.setSpeech).toHaveBeenCalledWith('繁體中文')
-    expect(screen.queryByRole('button', { name: '繁體中文' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Let her in' })).not.toBeInTheDocument()
   })
 
-  it('leaves the opening alone when the language was settled long ago', async () => {
+  it('guesses her language off the machine when he picks none himself', async () => {
+    const { bridge } = await mountLive({ askLanguage: true, locale: 'zh-TW' })
+
+    await act(async () => screen.getByRole('button', { name: 'Let her in' }).click())
+
+    // A Chinese machine, nothing picked: English would be a default nobody
+    // asked for.
+    expect(bridge.setSpeech).toHaveBeenCalledWith('繁體中文')
+  })
+
+  it('takes a language she was written rather than picked', async () => {
+    const { bridge } = await mountLive({ askLanguage: true })
+
+    fireEvent.change(screen.getByLabelText('Something else — write it in any words'), {
+      target: { value: 'Español, pero explícame el código en inglés' },
+    })
+    await act(async () => screen.getByRole('button', { name: 'Let her in' }).click())
+
+    expect(bridge.setSpeech).toHaveBeenCalledWith('Español, pero explícame el código en inglés')
+  })
+
+  it('leaves the scene alone when the language was settled long ago', async () => {
     await mountLive()
 
-    expect(screen.queryByRole('button', { name: '日本語' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '繁體中文' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Let her in' })).not.toBeInTheDocument()
   })
 
   it('Bug 3 — a folder move empties standing always-allows, so the same command re-asks in the new place', async () => {

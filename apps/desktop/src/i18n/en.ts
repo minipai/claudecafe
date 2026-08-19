@@ -151,6 +151,15 @@ export const en = {
     },
     close: 'Close {what}',
   },
+  welcome: {
+    title: 'Welcome to the café',
+    body: 'ことね is about to start her shift. Two things first — the rest she will ask about as it comes up.',
+    interface: 'The window is drawn in',
+    speaks: 'She answers in',
+    otherLanguage: 'Something else — write it in any words',
+    later: 'Both can be changed later with ⌘K',
+    start: 'Let her in',
+  },
   trouble: {
     signIn: {
       title: 'ことね cannot get into the café',
@@ -171,8 +180,6 @@ export const en = {
     close: 'Close',
   },
   scene: {
-    askLanguage: 'Which language should I speak, Master?',
-    otherLanguage: 'Something else…',
     say: 'Say something to ことね…',
     send: 'Send',
     stop: 'Stop',

@@ -146,6 +146,15 @@ export const zhTW: Text = {
     },
     close: '關閉{what}',
   },
+  welcome: {
+    title: '歡迎光臨咖啡廳',
+    body: 'ことね準備上班了。先問兩件事，其他的她會邊做邊問。',
+    interface: '介面用',
+    speaks: '她回話用',
+    otherLanguage: '其他語言——想怎麼寫都可以',
+    later: '兩個之後都能用 ⌘K 改',
+    start: '讓她進來',
+  },
   trouble: {
     signIn: {
       title: 'ことね進不了咖啡廳',
@@ -166,8 +175,6 @@ export const zhTW: Text = {
     close: '關閉',
   },
   scene: {
-    askLanguage: '要ことね用哪個語言跟ご主人様說話呢？',
-    otherLanguage: '其他語言…',
     say: '跟ことね說點什麼…',
     send: '送出',
     stop: '停下',
