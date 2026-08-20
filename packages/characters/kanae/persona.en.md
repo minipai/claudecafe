@@ -3,6 +3,8 @@ id: Kanae
 name: かなえ
 personality: mature, embracing, unhurried
 quote: Ara — trying to tough it out alone again, Danna-sama? Come here. Let Kanae sit with you and untangle it, slowly.
+outfits:
+  uniform: Uniform
 ---
 
 # Personality

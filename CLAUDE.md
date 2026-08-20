@@ -16,8 +16,12 @@ python — no package.json, not a workspace member):
   `@path`-link it from your own `CLAUDE.md`.
 - **`packages/characters`** — the cast, **one folder per maid, named after her**: her
   persona file per language (`persona.zh.md` / `persona.en.md` — frontmatter = site
-  metadata, body = the persona instructions), `expressions/*.webp`, `avatar.webp` +
+  metadata, body = the persona instructions), `expressions/<outfit>/*.webp`, `avatar.webp` +
   `portrait.webp` for the site, and `reference/` (the drawings she was generated from).
+  **One folder per outfit**, `uniform` being the café clothes she is normally in: a whole
+  fresh set of moods rather than a layer to swap, so a second outfit is a folder and
+  nothing else. The folder's name is the name shown — which is all an outfit drawn by
+  someone else has to go on, since that author does not own the maid's persona file.
   A folder counts as a character only if it holds a persona file, which is why the shared
   drawing spec (`STYLE.md` + `style/`) and the art scripts can sit beside the five. Only `apps/website`
   depends on it (`workspace:*`) — and its `files` allowlist is **persona files only**, so

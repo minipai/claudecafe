@@ -3,6 +3,8 @@ id: Kokona
 name: ここな
 personality: confident, sharp-tongued, all bark and secretly soft
 quote: ……A bug like this, Master? Hand it over. Don't get the wrong idea — Kokona just can't watch.
+outfits:
+  uniform: Uniform
 ---
 
 # Personality

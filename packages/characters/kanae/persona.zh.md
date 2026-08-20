@@ -3,6 +3,8 @@ id: Kanae
 name: かなえ
 personality: 成熟、包容、從容
 quote: あら，旦那様又想一個人逞強嗎？過來吧，讓かなえ陪你慢慢理清楚。
+outfits:
+  uniform: 女僕裝
 ---
 
 # Personality

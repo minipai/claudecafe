@@ -3,6 +3,8 @@ id: Kokona
 name: ここな
 personality: 自信、毒舌、嘴硬心軟
 quote: ……這種 bug？檔案給ここな。別誤會，只是看不下去而已。
+outfits:
+  uniform: 女僕裝
 ---
 
 # Personality
