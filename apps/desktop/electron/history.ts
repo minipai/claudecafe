@@ -4,7 +4,7 @@ import path from 'node:path'
 import { app } from 'electron'
 import { REPORT_TOOL } from './tools'
 import { describeTool, FALLBACK_LABEL, hasShape, isLongForm, openingLine } from './translate'
-import type { BacklogLine, KeptSettings } from '../src/agent/bridge'
+import type { BacklogLine, Backdrop, KeptSettings } from '../src/agent/bridge'
 
 /**
  * Which conversation this window is on, and what was said in it.
@@ -220,6 +220,31 @@ export function chosenSpeech(): string {
 }
 
 /**
+ * What is standing behind her — which room, and how its picture is cut off at
+ * the edges. Two names, not one: the scenes are ordinary rectangles and the
+ * shape is decided over the top of whichever one is up, so changing the room
+ * must not throw away the edge that was chosen for it.
+ *
+ * Unset is the window as it always looked: the one painted backdrop it shipped
+ * with, drawn as it is.
+ */
+export function rememberBackdrop(chosen: Backdrop) {
+  fs.writeFileSync(backdropFile(), JSON.stringify(chosen, null, 2))
+}
+
+export function chosenBackdrop(): Backdrop {
+  try {
+    const kept = JSON.parse(fs.readFileSync(backdropFile(), 'utf8')) as Partial<Backdrop>
+    return {
+      scene: typeof kept.scene === 'string' && kept.scene ? kept.scene : 'mucha',
+      edge: typeof kept.edge === 'string' && kept.edge ? kept.edge : 'none',
+    }
+  } catch {
+    return { scene: 'mucha', edge: 'none' }
+  }
+}
+
+/**
  * What she runs as, as the master last set it — which model, how hard she
  * thinks, and how much she asks first. The window forgot all three every time
  * it was closed, which on a desktop app reads as it having forgotten rather
@@ -268,6 +293,8 @@ const localeFile = () => path.join(app.getPath('userData'), 'locale.json')
 const speechFile = () => path.join(app.getPath('userData'), 'speech.json')
 
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json')
+
+const backdropFile = () => path.join(app.getPath('userData'), 'backdrop.json')
 
 const memoryFile = () => path.join(app.getPath('userData'), 'sessions.json')
 

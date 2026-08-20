@@ -28,6 +28,7 @@ function createDoing() {
     mode: 'default' as const,
     modePicked: false,
     onMode: vi.fn(),
+    onPickBackdrop: vi.fn(),
   }
 }
 
@@ -48,6 +49,7 @@ function renderBar(overrides: { conversation?: string | null; openFolder?: () =>
       conversation={overrides.conversation ?? null}
       locale="en"
       speech={{ language: '', chosen: '' }}
+      backdrop={{ scene: 'mucha', edge: 'none' }}
       doing={doing}
       onClose={onClose}
     />,

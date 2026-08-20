@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ChevronRight,
   Clock,
+  Image as Picture,
   FolderOpen,
   FolderSearch,
   Gauge,
@@ -20,7 +21,7 @@ import {
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { CATALOGUES, fill, LOCALES, text } from '@/i18n'
-import type { Conversation, SessionSettings } from '@/agent'
+import type { Backdrop, Conversation, SessionSettings } from '@/agent'
 
 /** One thing the window can do, or one place it can go. */
 type Entry = {
@@ -51,6 +52,8 @@ type Doing = {
   mode: SessionSettings['mode']
   modePicked: boolean
   onMode: (mode: SessionSettings['mode'] | null) => void
+  /** Open the backdrop picker, which lives down by the dialogue box. */
+  onPickBackdrop: () => void
 }
 
 /** The usual answers, offered so the common case is one keystroke. Anything
@@ -74,6 +77,7 @@ export function CommandBar({
   conversation,
   locale,
   speech,
+  backdrop,
   doing,
   onClose,
 }: {
@@ -86,6 +90,8 @@ export function CommandBar({
   /** What she is speaking now, and what was picked for it — empty when the
    * window is leaving that to the café's own setting. */
   speech: { language: string; chosen: string }
+  /** Which room is behind her, so the entry can say so before it is opened. */
+  backdrop: Backdrop
   doing: Doing
   /** `moved` when she was sent somewhere — the scene starts over on it. */
   onClose: (moved: boolean) => void
@@ -137,6 +143,9 @@ export function CommandBar({
     { key: 'keys', icon: Keyboard, label: t.bar.keys, find: eng.bar.keys, note: '/keys', run: () => doing.onOpenPanel('/keys') },
     { key: 'locale', icon: Languages, label: t.bar.locale, find: eng.bar.locale, note: localeNote, into: 'locale' },
     { key: 'speech', icon: MessageCircle, label: t.bar.speech, find: eng.bar.speech, note: speechNote, into: 'speech' },
+    // The choosing is done down where the dialogue box is, not in here: what
+    // is being picked is the picture behind her, and this bar sits on top of it.
+    { key: 'backdrop', icon: Picture, label: t.bar.backdrop, find: eng.bar.backdrop, note: t.backdrop.scene[backdrop.scene as keyof typeof t.backdrop.scene], run: doing.onPickBackdrop },
   ]
 
   const wanted = typed.trim().toLowerCase()

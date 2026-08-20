@@ -6,6 +6,7 @@ import { Stage } from './Stage'
 import { SpriteLayer, hasArtwork } from './SpriteLayer'
 import { KAOMOJI } from '@/agent/expressions'
 import { DialogueBox } from './DialogueBox'
+import { BackdropPicker } from './BackdropPicker'
 import { ReportView } from './ReportView'
 import { UsagePanel } from './UsagePanel'
 import { ContextPanel } from './ContextPanel'
@@ -32,6 +33,7 @@ import { toast } from 'sonner'
 import { createChatMessage, createPreviewHistory, recordToolResult } from './chatlog'
 import { choreograph, type Scene } from './choreography'
 import { applyWindowEvent, type WindowScene } from './windowEvents'
+import type { Backdrop as Chosen } from '@/agent'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
 import { lines as currentLines } from './content'
 import { fill, text } from '@/i18n'
@@ -117,11 +119,18 @@ export function GalgameClient() {
    * elsewhere, so it is state rather than something read once at startup. */
   const [folder, setFolder] = useState(workingDirectory ?? '')
   const [switching, setSwitching] = useState(false)
+  /** Whether the backdrop picker is up in place of the dialogue box. */
+  const [dressing, setDressing] = useState(false)
   /** The interface's language, which is not hers: a code, kept so switching it
    * redraws everything under this component. */
   const [locale, setLocale] = useState(window.cafe?.localeChoice ?? 'system')
   /** What she is speaking, as the session reports it — a sentence, not a code. */
   const [speech, setSpeech] = useState({ language: '', chosen: '' })
+  /** Which room is behind her and how its picture is cut off. Read off the
+   * bridge rather than defaulted here, so the first frame is already right. */
+  const [backdrop, setBackdrop] = useState<Chosen>(
+    () => window.cafe?.backdrop ?? { scene: 'mucha', edge: 'none' },
+  )
   /** Nobody on this machine has ever said what she should speak or what the
    * window should be drawn in, so both are asked once before anything else. */
   const [welcoming, setWelcoming] = useState(false)
@@ -255,6 +264,7 @@ export function GalgameClient() {
       setCommands,
       setSpeech,
       setLocale,
+      setBackdrop,
       setLines,
       setChatMessages,
       setTrouble,
@@ -648,13 +658,28 @@ export function GalgameClient() {
     <>
       <Stage>
         <TodoBoard todos={historyOpen || readerOpen ? [] : todos} />
-        <SpriteLayer expression={expression} />
+        <SpriteLayer expression={expression} backdrop={backdrop} />
 
         {/* The band above the box is where the whispers float; there is nothing
             to click there, so the pointer goes through it too. */}
         <div data-ghost className="absolute bottom-10 left-1/2 z-[6] w-[min(760px,92vw)] -translate-x-1/2">
           <WhisperZone whispers={whispers} />
-          {!readerOpen && !permissionExpanded && (
+          {/* In place of the box rather than over it: what is being chosen is
+              the picture behind her, and it has to be looked at while choosing. */}
+          {!readerOpen && !permissionExpanded && dressing && (
+            <BackdropPicker
+              chosen={backdrop}
+              onChoose={(chosen) => {
+                // Shown at once and kept by the main process; the event it
+                // sends back lands on a window already drawing it, which is
+                // what makes looking through them feel like looking.
+                setBackdrop(chosen)
+                window.cafe?.setBackdrop(chosen)
+              }}
+              onClose={() => setDressing(false)}
+            />
+          )}
+          {!readerOpen && !permissionExpanded && !dressing && (
             <DialogueBox
               line={line}
               laidOut={laidOut}
@@ -746,6 +771,7 @@ export function GalgameClient() {
         folder={folder}
         locale={locale}
         speech={speech}
+        backdrop={backdrop}
         conversation={conversation}
         doing={{
           onNewSession: startNewSession,
@@ -754,6 +780,7 @@ export function GalgameClient() {
           onOpenPanel: setPanel,
           mode: settings.mode,
           modePicked: settings.modePicked,
+          onPickBackdrop: () => setDressing(true),
           onMode: (mode) => {
             // Null hands it back to his terminal: the window stops having an
             // opinion, and what the session reports next is what it shows.

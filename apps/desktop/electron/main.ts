@@ -6,15 +6,18 @@ import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import { CAFE_PLUGIN, MaidSession } from './maid'
 import {
+  chosenBackdrop,
   chosenLocale,
   lastBounds,
   recentFolders,
+  rememberBackdrop,
   rememberBounds,
   rememberFolder,
   rememberLocale,
   rememberSpeech,
 } from './history'
 import { languageSettled, personaOf } from './lines'
+import type { Backdrop } from '../src/agent/bridge'
 import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -50,6 +53,7 @@ function readFolderArg() {
 }
 
 function openWindow(cwd: string) {
+  const backdrop = chosenBackdrop()
   const window = new BrowserWindow({
     width: 960,
     height: 800,
@@ -72,6 +76,7 @@ function openWindow(cwd: string) {
         `--cafe-cwd=${cwd}`,
         `--cafe-locale=${drawnIn()}`,
         `--cafe-locale-choice=${chosenLocale()}`,
+        `--cafe-backdrop=${backdrop.scene}/${backdrop.edge}`,
       ],
     },
   })
@@ -223,6 +228,13 @@ const SIGN_IN = 'claude'
 ipcMain.on('cafe:set-locale', (event, choice: string) => {
   rememberLocale(choice)
   windowOf(event)?.webContents.send('cafe:event', { kind: 'locale', locale: drawnIn(), choice })
+})
+
+/** Another room behind her, or another shape cut out of it. Nothing reopens:
+ * the window redraws, and the choice is kept for the next start. */
+ipcMain.on('cafe:set-backdrop', (event, chosen: Backdrop) => {
+  rememberBackdrop(chosen)
+  windowOf(event)?.webContents.send('cafe:event', { kind: 'backdrop', backdrop: chosen })
 })
 
 /** Another language for her — free text, empty to follow the café's setting. */

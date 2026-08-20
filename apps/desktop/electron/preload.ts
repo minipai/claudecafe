@@ -4,6 +4,7 @@ import type { BridgeEvent, CafeBridge } from '../src/agent/bridge'
 const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? ''
 const localeArg = process.argv.find((arg) => arg.startsWith('--cafe-locale=')) ?? ''
 const choiceArg = process.argv.find((arg) => arg.startsWith('--cafe-locale-choice=')) ?? ''
+const backdropArg = process.argv.find((arg) => arg.startsWith('--cafe-backdrop=')) ?? ''
 
 const bridge: CafeBridge = {
   cwd: folderArg.slice('--cafe-cwd='.length),
@@ -11,6 +12,13 @@ const bridge: CafeBridge = {
   localeChoice: choiceArg.slice('--cafe-locale-choice='.length),
   setLocale: (choice) => ipcRenderer.send('cafe:set-locale', choice),
   setSpeech: (language) => ipcRenderer.send('cafe:set-speech', language),
+  // Handed over as one string and split here, so the window has something to
+  // draw on its very first frame rather than a flash of nothing behind her.
+  backdrop: {
+    scene: backdropArg.slice('--cafe-backdrop='.length).split('/')[0] || 'mucha',
+    edge: backdropArg.slice('--cafe-backdrop='.length).split('/')[1] || 'none',
+  },
+  setBackdrop: (chosen) => ipcRenderer.send('cafe:set-backdrop', chosen),
   start: (runId, prompt, images) => ipcRenderer.send('cafe:start', runId, prompt, images),
   answer: (askId, value) => ipcRenderer.send('cafe:answer', askId, value),
   interrupt: () => ipcRenderer.send('cafe:interrupt'),

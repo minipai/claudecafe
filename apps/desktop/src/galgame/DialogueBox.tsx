@@ -138,7 +138,10 @@ export function DialogueBox({
             // back so it is plainly the last thing she said and not an answer
             // to what was just asked.
             <div
-              className={`min-h-[2.2em] text-lg leading-[1.8] transition-colors duration-500 ${
+              // Two lines' worth even when she has only said one: the backdrop
+              // above ends at a fixed height, and a one-line box left a strip of
+              // desktop showing between the two.
+              className={`min-h-[3.6em] text-lg leading-[1.8] transition-colors duration-500 ${
                 isPast ? 'text-foreground/35' : 'text-foreground'
               }`}
             >

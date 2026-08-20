@@ -32,6 +32,10 @@ export type SessionSettings = {
   modePicked: boolean
 }
 
+/** What is standing behind her: which room, and how the picture of it is cut
+ * off at the edges. `none` for either is nothing and a plain rectangle. */
+export type Backdrop = { scene: string; edge: string }
+
 /** What the master has turned this window to, kept between launches. A null is
  * something he has never touched: the model and the effort are then the
  * session's own, and the asking mode is whatever his terminal is set to. */
@@ -171,6 +175,8 @@ export type BridgeEvent =
   /** The interface's language changed — the code to draw it in, and what was
    * picked (which may be `system`). */
   | { kind: 'locale'; locale: string; choice: string }
+  /** Another room behind her, or another shape cut out of the one that is up. */
+  | { kind: 'backdrop'; backdrop: Backdrop }
   /** A fresh look from the café plugin — shot in the background, so it lands
    * whenever it lands rather than inside a run. */
   | { kind: 'look'; look: Look }
@@ -201,6 +207,10 @@ export type CafeBridge = {
   setLocale(choice: string): void
   /** Have her reply in this — free text, empty to follow the café's setting. */
   setSpeech(language: string): void
+  /** What she is standing in front of, as it was last left. */
+  backdrop: Backdrop
+  /** Put another room behind her, or cut the one that is up to another shape. */
+  setBackdrop(chosen: Backdrop): void
   start(runId: string, prompt: string, images: Attachment[]): void
   answer(askId: string, value: unknown): void
   interrupt(): void

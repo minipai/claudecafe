@@ -31,6 +31,8 @@ export const en = {
     keys: 'Keyboard shortcuts',
     locale: 'Interface language',
     speech: 'What she speaks',
+    backdrop: 'What is behind her',
+    edge: 'How the backdrop ends',
     followCafe: 'Follow the café setting',
     speakThis: 'Have her speak: {said}',
     typeYourself: 'Type it yourself…',
@@ -43,6 +45,27 @@ export const en = {
     title: 'What she can do',
     description: 'Commands, and the folders and conversations they lead to.',
     system: 'Follow the system',
+  },
+  backdrop: {
+    /** Named as short as they can be: the picker shows them under a thumbnail
+     * the width of a thumb, and anything longer than a word or two is cut off. */
+    scene: {
+      none: 'None',
+      cafe: 'Café',
+      spring: 'Spring',
+      summer: 'Summer',
+      autumn: 'Autumn',
+      winter: 'Winter',
+      mucha: 'Panel',
+    },
+    edge: {
+      none: 'None',
+      blur: 'Blur',
+      brush: 'Wash',
+      strokes: 'Strokes',
+      grid: 'Panes',
+      cinema: 'Film',
+    },
   },
   mode: {
     follow: 'However the terminal is set',
