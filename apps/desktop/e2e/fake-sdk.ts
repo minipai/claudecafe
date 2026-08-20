@@ -203,7 +203,7 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
     const picked = updated?.answers?.[question.question] ?? ''
     push(assistantToolUse(id, 'AskUserQuestion', { questions: [question] }, sessionId))
     push(toolResult(id, JSON.stringify({ answers: updated?.answers ?? {} }), sessionId))
-    const text = `Noted — ${picked}, then ♪ 【 開心 (˶ˆᗜˆ˵) 】`
+    const text = `Noted — ${picked}, then ♪ 【 開心 \\(ˆ ᗜ ˆ)/ 】`
     push(assistantText(text, sessionId))
     push(result(text, sessionId))
   }
@@ -249,7 +249,7 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
   }
 
   async function echo(said: string) {
-    const text = `Echo: ${said} 【 開心 (˶ˆᗜˆ˵) 】`
+    const text = `Echo: ${said} 【 開心 \\(ˆ ᗜ ˆ)/ 】`
     push(assistantText(text, sessionId))
     push(result(text, sessionId))
   }

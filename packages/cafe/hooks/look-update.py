@@ -26,7 +26,7 @@ from maidstate import HOME, on_shift, persona_file, prompt, state_dir
 CTX_STEP = 50_000  # re-shoot the mirror every this many tokens of context growth
 LOCK_STALE = 300
 
-# The self-reported mood marker at the end of each reply: 【 word kaomoji 】
+# The self-reported mood marker at the end of each reply: 【 mood kaomoji 】
 MOOD_RE = re.compile(r"【\s*([^\s】]{1,15})\s+(.+?)\s*】")
 
 

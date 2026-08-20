@@ -24,9 +24,10 @@ export const cafeTools = createSdkMcpServer({
     tool(
       'expression',
       "Change the maid's face in the window. Call it whenever her mood changes — "
-        + 'thinking while she reads, focused while digging through the work, proud '
-        + 'once it lands, sad when she has to say no. The face stays until the next '
-        + 'call, and it is the same set of moods her reply markers use.',
+        + 'thinking while she works something out, focused once she rolls her sleeves '
+        + 'up, impressed when the master beats her to it, sorry when she has broken '
+        + 'something. The face stays until the next call, and it is the same set of '
+        + 'moods her reply markers use.',
       { expression: z.enum(EXPRESSIONS) },
       async ({ expression }) => done(`Now wearing: ${expression}`),
     ),

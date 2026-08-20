@@ -4,24 +4,50 @@
  * answer differs per character — see `hasArtwork`.
  *
  * This is the café plugin's own mood table, copied verbatim: she is told to end
- * each reply with `【 開心 (˶ˆᗜˆ˵) 】`, picking the kaomoji from that list. So a
+ * each reply with `【 開心 ( ˶ˆᗜˆ˵ ) 】`, picking the kaomoji from that list. So a
  * marker she writes on her own already names a face, and the expression tool
- * offers her exactly the same set under their plain names.
+ * offers her exactly the same set under their plain names. Two hand-copied
+ * lists drift, so a test holds them against each other.
+ *
+ * The spacing is not decoration: it is the one part of a kaomoji the lookup
+ * ignores, which makes it the only safe way to even out how wide these are —
+ * and they sit in a status line, where a marker three times the width of the
+ * last one makes the whole row jump.
  */
 export const KAOMOJI = {
-  neutral: '•ᴗ•',
-  happy: '(˶ˆᗜˆ˵)',
+  // Everyday, at work
+  neutral: '( • ᴗ • )',
+  happy: '\\(ˆ ᗜ ˆ)/',
   curious: '(づ •. •)?',
-  thinking: '(╭ರ_•́)',
+  thinking: '( ╭ರ_•́ )',
   focused: '(๑•̀ ᴗ•́)૭✧',
+  confused: '( ⊙.⊙ )?',
+
+  // Turned on the master
   proud: 'ᕙ( •̀ ᗜ •́)ᕗ',
+  smug: '( ｀▽´ )',
+  impressed: '( ✧ ᗜ ✧ )',
+  flirty: '( ˘ ³˘)♡',
+  horny: '(,,ᴗ ᴗ,,)♡',
+  wink: '☆ ( ＞◡❛)',
   embarrassed: '( ˶>﹏<˶ᵕ)',
-  frustrated: '(,,>﹏<,,)',
-  confused: '(⊙.⊙)?',
-  surprised: 'Σ(°口°)',
+  pouty: '( •̀ ε •́ )',
+  worried: '(´･ω･｀)',
+
+  // The basic six, and the seventh nobody agreed on
   sad: '(｡•́︿•̀｡)',
-  flirty: '(¬‿¬ )',
-  horny: '(⁄ ⁄•⁄ω⁄•⁄ ⁄)',
+  surprised: 'Σ( °口° )',
+  angry: '( ＃•̀_•́ )',
+  afraid: '( ;ﾟдﾟ )',
+  disgusted: '(￣～￣;)',
+  skeptical: '(￢‸￢)…',
+
+  // Something went wrong
+  frustrated: '(,,>﹏<,,)',
+  awkward: '( ^_^; )',
+  sorry: 'm( _ _ )m',
+  speechless: '(・_・;)',
+  relieved: '( ˘ᗜ˘ )⁼³',
 } as const
 
 export type Expression = keyof typeof KAOMOJI

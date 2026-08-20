@@ -3,7 +3,7 @@ import { faceFor } from '../src/agent/expressions'
 
 describe('test harness', () => {
   it('resolves renderer modules', () => {
-    expect(faceFor('【 開心 (˶ˆᗜˆ˵) 】')).toBe('happy')
+    expect(faceFor('【 開心 \\(ˆ ᗜ ˆ)/ 】')).toBe('happy')
   })
 
   it('stubs electron for main-process modules', async () => {

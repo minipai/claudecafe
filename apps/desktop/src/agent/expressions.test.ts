@@ -11,12 +11,35 @@ describe('faceFor', () => {
   })
 
   it('matches a marker with the plain-language name and extra spacing around the kaomoji', () => {
-    expect(faceFor('【 開心 (˶ˆᗜˆ˵) 】')).toBe('happy')
-    expect(faceFor('  (  ˶ ˆ ᗜ ˆ ˵ )  ')).toBe('happy')
+    expect(faceFor('【 開心 \\(ˆ ᗜ ˆ)/ 】')).toBe('happy')
+    expect(faceFor('  \\ ( ˆ ᗜ ˆ ) /  ')).toBe('happy')
   })
 
   it('returns null for a marker naming no face at all', () => {
     expect(faceFor('【 just words, no face 】')).toBeNull()
+  })
+
+  // The spacing inside these is what evens out how wide they are, and it is
+  // adjusted freely for that. Every one of them has to survive being written
+  // with the spacing somewhere else — or in a transcript from before it moved.
+  it('matches every kaomoji however its spacing falls', () => {
+    for (const [expression, kaomoji] of Object.entries(KAOMOJI)) {
+      expect(faceFor(kaomoji.replace(/\s+/g, ''))).toBe(expression)
+      expect(faceFor(kaomoji.split('').join(' '))).toBe(expression)
+    }
+  })
+
+  // The lookup takes the first kaomoji the marker contains, so one that sits
+  // inside another can never be picked — the face it names would be dead on
+  // arrival. Worth failing here rather than in a marker nobody can explain.
+  it('has no kaomoji hiding inside another', () => {
+    const bare = (text: string) => text.replace(/\s+/g, '')
+    const swallowed = Object.entries(KAOMOJI).flatMap(([expression, kaomoji]) =>
+      Object.entries(KAOMOJI)
+        .filter(([other, inside]) => other !== expression && bare(kaomoji).includes(bare(inside)))
+        .map(([other]) => `${other} inside ${expression}`),
+    )
+    expect(swallowed).toEqual([])
   })
 })
 

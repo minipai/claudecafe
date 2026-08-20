@@ -121,7 +121,7 @@ describe('conversationBacklog', () => {
     const cwd = '/Users/master/proj'
     // Just under the line where a line stops being read as speech — with the
     // marker counted in, it would come back laid out instead of said.
-    const said = `${'a'.repeat(150)}【 開心 (˶ˆᗜˆ˵) 】`
+    const said = `${'a'.repeat(150)}【 開心 \\(ˆ ᗜ ˆ)/ 】`
     writeTranscript(home, cwd, 'sess', [assistantRow(said)])
     expect(conversationBacklog(cwd, 'sess')).toEqual([
       { role: 'assistant', content: said, at: expect.any(Number) },
@@ -201,12 +201,12 @@ describe('conversationBacklog', () => {
     const cwd = '/Users/master/proj'
     writeTranscript(home, cwd, 'sess', [
       assistantRow([
-        { type: 'text', text: 'Done ♪ 【 開心 (˶ˆᗜˆ˵) 】' },
+        { type: 'text', text: 'Done ♪ 【 開心 \\(ˆ ᗜ ˆ)/ 】' },
         { type: 'tool_use', name: 'mcp__cafe__report', input: { line: 'All written down~', body: 'the body' } },
       ]),
     ])
     const backlog = conversationBacklog(cwd, 'sess')!
-    expect(backlog[0].content).toBe('Done ♪ 【 開心 (˶ˆᗜˆ˵) 】')
+    expect(backlog[0].content).toBe('Done ♪ 【 開心 \\(ˆ ᗜ ˆ)/ 】')
     // No label of her own: the panel still needs a way in.
     expect(backlog[0].report).toEqual({ label: 'View full report →', body: 'the body' })
   })

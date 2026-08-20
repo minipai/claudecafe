@@ -4,7 +4,7 @@ import type { AgentMessage } from '../src/agent/types'
 import { describeTool, Turn } from './translate'
 import { EXPRESSION_TOOL, REPORT_TOOL } from './tools'
 
-const HAPPY = '【 開心 (˶ˆᗜˆ˵) 】'
+const HAPPY = '【 開心 \\(ˆ ᗜ ˆ)/ 】'
 
 function textBlock(text: string) {
   return { type: 'text', text }
