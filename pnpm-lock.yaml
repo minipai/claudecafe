@@ -107,9 +107,9 @@ importers:
 
   apps/website:
     dependencies:
-      '@claudecafe/maid-personas':
+      '@claudecafe/characters':
         specifier: workspace:*
-        version: link:../../packages/maid-personas
+        version: link:../../packages/characters
       '@hono/node-server':
         specifier: ^1.19.9
         version: 1.19.14(hono@4.12.23)
@@ -135,9 +135,7 @@ importers:
 
   packages/cafe-bell: {}
 
-  packages/maid-assets: {}
-
-  packages/maid-personas: {}
+  packages/characters: {}
 
   packages/maid-voice-player: {}
 

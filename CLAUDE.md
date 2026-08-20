@@ -2,7 +2,7 @@
 
 A pnpm monorepo for the AI maid ecosystem. The repo root **is also a plugin
 marketplace named `claudecafe`** (`.claude-plugin/marketplace.json`, listing cafe-bell +
-cafe). Seven packages; everything with an npm package.json is **namespaced under
+cafe). Six packages; everything with an npm package.json is **namespaced under
 `@claudecafe/*`** (the private root stays `claudecafe-monorepo`; `packages/cafe` is pure
 python — no package.json, not a workspace member):
 
@@ -14,12 +14,15 @@ python — no package.json, not a workspace member):
   the `/<id>.md` route serves the full persona file including frontmatter — download it
   into `~/.claude/cafe/personas/` (the cafe plugin's draw pool), or keep it anywhere and
   `@path`-link it from your own `CLAUDE.md`.
-- **`packages/maid-personas`** — the persona definitions `*.md` (frontmatter = site
-  metadata, body = the persona instructions), one directory per language: `zh/` + `en/`.
-  Only `apps/website` depends on it (`workspace:*`); the cafe plugin does not ship the cast.
-- **`packages/maid-assets`** — character artwork shared by web and desktop. Currently holds
-  ことね/ここな expression sheets, generation seed images, and the shared design spec; each
-  app picks and copies the images it needs at build time.
+- **`packages/characters`** — the cast, **one folder per maid, named after her**: her
+  persona file per language (`persona.zh.md` / `persona.en.md` — frontmatter = site
+  metadata, body = the persona instructions), `expressions/*.webp`, `avatar.webp` +
+  `portrait.webp` for the site, and `reference/` (the drawings she was generated from).
+  A folder counts as a character only if it holds a persona file, which is why the shared
+  drawing spec (`STYLE.md` + `style/`) and the art scripts can sit beside the five. Only `apps/website`
+  depends on it (`workspace:*`) — and its `files` allowlist is **persona files only**, so
+  `pnpm deploy` leaves 53 MB of artwork out of the web image. The apps copy the images
+  they need at build time; the cafe plugin does not ship the cast.
 - **`packages/cafe-bell`** — a pub/sub hub (SSE bus) for Claude Code hook events. Also a
   marketplace plugin.
 - **`packages/cafe`** — the Claude Code plugin (hooks + three commands: `/cafe:config` for
@@ -99,14 +102,14 @@ Electron (`electron/*.ts`, the main process) + Vite/React 19/Tailwind (`src/`) +
 
 Hono + JSX (SSR), gray-matter, marked, TypeScript.
 
-- Persona files live in `packages/maid-personas`; the site locates the directory via
-  `require.resolve('@claudecafe/maid-personas/package.json')` (works through the pnpm symlink in
-  dev and through the deploy bundle in Docker).
+- Persona files live in `packages/characters/<id>/persona.<lang>.md`; the site locates the
+  package via `require.resolve('@claudecafe/characters/package.json')` (works through the pnpm
+  symlink in dev and through the deploy bundle in Docker).
 - **i18n**: English at the root, Chinese under `/zh/` (`href()` in `src/i18n.ts` builds the
   URLs; hreflang cross-links, and the switcher's `?lang=` plants a cookie that only redirects
-  `/` → `/zh`). English content = translation files: personas in `packages/maid-personas/en/`,
-  blog posts in `apps/website/blog/en/` (same filename), each falling back to the Chinese
-  version when missing.
+  `/` → `/zh`). English content = translation files: `persona.en.md` beside each maid's
+  `persona.zh.md`, blog posts in `apps/website/blog/en/` (same filename), each falling back
+  to the Chinese version when missing.
 - The maid page's CTA: the whole sentence links to `/<id>.md`, with a download link beside it —
   both include the frontmatter (the cafe plugin's status line reads `name:`). The page itself
   still renders the body only.

@@ -16,7 +16,7 @@
     "@hono/node-server": "^1.19.9",
     "gray-matter": "^4.0.3",
     "hono": "^4.12.3",
-    "@claudecafe/maid-personas": "workspace:*",
+    "@claudecafe/characters": "workspace:*",
     "marked": "^17.0.3"
   },
   "devDependencies": {

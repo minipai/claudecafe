@@ -25,7 +25,7 @@ place open.
 The mood marker is a **response-style flourish** for the reply itself; consumers
 (the look generator today, a companion app tomorrow) read it straight off the
 transcript. Its kaomoji come from a fixed 26-row table mapping 1:1 to
-`@claudecafe/maid-assets` expression artwork, so a companion app can resolve the
+`@claudecafe/characters` expression artwork, so a companion app can resolve the
 current face to an image. The cues are persona-agnostic; only the flavour comes
 from whoever is on shift.
 

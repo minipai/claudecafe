@@ -28,7 +28,7 @@ function stageCafePlugin() {
   // She lives in the plugin's own maids/ folder, where the persona lookup falls
   // back to — a master who hired her himself still wins, which is the same file.
   fs.copyFileSync(
-    path.join(repo, 'packages/maid-personas/zh/kotone.md'),
+    path.join(repo, 'packages/characters/kotone/persona.zh.md'),
     path.join(out, 'maids/kotone.md'),
   )
   dropShiftHook(out)

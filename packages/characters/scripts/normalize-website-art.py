@@ -6,8 +6,8 @@ from PIL import Image
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-ASSET_ROOT = REPO_ROOT / "packages" / "maid-assets" / "characters"
-WEB_ROOT = REPO_ROOT / "apps" / "web" / "src" / "assets" / "maids"
+CAST_ROOT = REPO_ROOT / "packages" / "characters"
+WEB_ROOT = REPO_ROOT / "apps" / "website" / "src" / "assets" / "maids"
 
 CANVAS_SIZE = (1024, 1920)
 OUTPUT_CROP = (0, 0, 864, 1760)
@@ -21,43 +21,28 @@ TARGET_HEAD = {"center_x": 220, "top": 58, "bottom": 291}
 # the approved composition while allowing every character to share one rule.
 CHARACTERS = {
     "kanae": {
-        "source": ASSET_ROOT
-        / "kanae"
-        / "website"
-        / "fullbody-pencil-source.webp",
+        "source": CAST_ROOT / "kanae" / "reference" / "portrait-pencil.webp",
         "css": {"x": -210, "y": 20, "height": 1500},
         "head": {"center_x": 228, "top": 58, "bottom": 291},
     },
     "kokona": {
-        "source": ASSET_ROOT
-        / "kokona"
-        / "website"
-        / "fullbody-pencil-source.webp",
+        "source": CAST_ROOT / "kokona" / "reference" / "portrait-pencil.webp",
         "css": {"x": -150, "y": -68, "height": 1715},
         "head": {"center_x": 238, "top": 58, "bottom": 285},
         "scale_adjust": 0.92,
     },
     "kotone": {
-        "source": ASSET_ROOT
-        / "kotone"
-        / "website"
-        / "fullbody-pencil-source.webp",
+        "source": CAST_ROOT / "kotone" / "reference" / "portrait-pencil.webp",
         "css": {"x": -70, "y": 20, "height": 1500},
         "head": {"center_x": 252, "top": 58, "bottom": 299},
     },
     "kuroko": {
-        "source": ASSET_ROOT
-        / "kuroko"
-        / "website"
-        / "fullbody-pencil-source.webp",
+        "source": CAST_ROOT / "kuroko" / "reference" / "portrait-pencil.webp",
         "css": {"x": -242, "y": -3, "height": 1690},
         "head": {"center_x": 208, "top": 40, "bottom": 305},
     },
     "kurumi": {
-        "source": ASSET_ROOT
-        / "kurumi"
-        / "website"
-        / "fullbody-pencil-source.webp",
+        "source": CAST_ROOT / "kurumi" / "reference" / "portrait-pencil.webp",
         "css": {"x": -250, "y": 20, "height": 1500},
         "head": {"center_x": 200, "top": 58, "bottom": 335},
     },
@@ -120,7 +105,7 @@ def normalize(name: str, config: dict[str, object]) -> None:
     canvas.alpha_composite(scaled_canvas, aligned_offset)
 
     output = canvas.crop(OUTPUT_CROP)
-    output_path = source_path.parent / "fullbody-pencil-normalized.webp"
+    output_path = source_path.parents[1] / "portrait.webp"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output.save(output_path, optimize=True)
     output.save(WEB_ROOT / f"maid-{name}.webp", optimize=True)
@@ -128,7 +113,7 @@ def normalize(name: str, config: dict[str, object]) -> None:
     avatar = output.crop(AVATAR_CROP).resize(
         AVATAR_SIZE, Image.Resampling.LANCZOS
     )
-    avatar_path = source_path.parent / "avatar-normalized.webp"
+    avatar_path = source_path.parents[1] / "avatar.webp"
     avatar.save(avatar_path, optimize=True)
     avatar.save(WEB_ROOT / f"avatar-{name}.webp", optimize=True)
 

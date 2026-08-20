@@ -1,0 +1,11 @@
+{
+  "name": "@claudecafe/characters",
+  "version": "1.0.0",
+  "description": "The Claude Café cast — one folder per character: her persona file in each language, her expression sprites, and the drawings she was generated from. Consumed by apps/website; the apps copy the images they need at build time.",
+  "private": true,
+  "type": "module",
+  "license": "ISC",
+  "files": [
+    "*/persona.*.md"
+  ]
+}
