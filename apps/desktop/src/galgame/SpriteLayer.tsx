@@ -1,46 +1,41 @@
+import { EXPRESSIONS } from '@/agent/expressions'
 import type { Expression } from './types'
 import { Backdrop } from './Backdrop'
-import neutral from '../assets/kotone-neutral.webp'
-import happy from '../assets/kotone-happy.webp'
-import curious from '../assets/kotone-curious.webp'
-import thinking from '../assets/kotone-thinking.webp'
-import focused from '../assets/kotone-focused.webp'
-import proud from '../assets/kotone-proud.webp'
-import embarrassed from '../assets/kotone-embarrassed.webp'
-import frustrated from '../assets/kotone-frustrated.webp'
-import confused from '../assets/kotone-confused.webp'
-import surprised from '../assets/kotone-surprised.webp'
-import sad from '../assets/kotone-sad.webp'
-import flirty from '../assets/kotone-flirty.webp'
-import horny from '../assets/kotone-horny.webp'
+
+export type SpriteSources = Partial<Record<Expression, string>>
+
+const spriteModules = import.meta.glob('../assets/kotone-*.webp', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+}) as Record<string, string>
 
 /**
- * The faces she has been drawn wearing. Not every expression in the table is
- * in here: the artwork is drawn one at a time, and a character of her own
- * brings however many she has — so a face with no picture behind it is normal
- * rather than a mistake.
+ * The faces she has been drawn wearing. The partial record is intentional: if
+ * the mood table grows ahead of the artwork again, an undrawn face can still
+ * fall back to neutral instead of breaking the scene.
  */
-const SPRITE: Partial<Record<Expression, string>> = {
-  neutral,
-  happy,
-  curious,
-  thinking,
-  focused,
-  proud,
-  embarrassed,
-  frustrated,
-  confused,
-  surprised,
-  sad,
-  flirty,
-  horny,
+const SPRITE = Object.fromEntries(
+  EXPRESSIONS.flatMap((expression) => {
+    const source = spriteModules[`../assets/kotone-${expression}.webp`]
+    return source ? [[expression, source]] : []
+  }),
+) as SpriteSources
+
+const neutral = SPRITE.neutral
+if (!neutral) throw new Error('Missing bundled neutral sprite')
+
+/** Resolve through a runtime map first so uploaded sprites can be blob: URLs,
+ * custom-protocol URLs, or persisted file URLs without becoming build imports. */
+export function spriteFor(expression: Expression, custom: SpriteSources = {}) {
+  return custom[expression] ?? SPRITE[expression] ?? neutral
 }
 
 /** Whether she has actually been drawn wearing this face. A face with no
  * artwork leaves her standing neutral, and the kaomoji stands in for it beside
  * her name (see GalgameClient). */
-export function hasArtwork(expression: Expression) {
-  return expression in SPRITE
+export function hasArtwork(expression: Expression, custom: SpriteSources = {}) {
+  return Boolean(custom[expression] ?? SPRITE[expression])
 }
 
 /**
@@ -48,7 +43,13 @@ export function hasArtwork(expression: Expression) {
  * with the dialogue box over her lower body. Nothing that opens on top of the
  * scene moves her — the panels are on top of it, not instead of it.
  */
-export function SpriteLayer({ expression }: { expression: Expression }) {
+export function SpriteLayer({
+  expression,
+  sprites,
+}: {
+  expression: Expression
+  sprites?: SpriteSources
+}) {
   return (
     // The window ends where it ends, and with nothing painted behind her that
     // edge used to cut her off mid-skirt. This fades her out above it, so she
@@ -66,7 +67,7 @@ export function SpriteLayer({ expression }: { expression: Expression }) {
             the alpha under the pointer decides (see useClickThrough), which is
             also what makes her a handle you can only grab by the sleeve. */}
         <img
-          src={SPRITE[expression] ?? neutral}
+          src={spriteFor(expression, sprites)}
           alt="ことね"
           draggable={false}
           data-art

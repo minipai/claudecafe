@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import type { Expression } from '@/agent/expressions'
-import { hasArtwork } from './SpriteLayer'
+import { EXPRESSIONS } from '@/agent/expressions'
+import { hasArtwork, spriteFor } from './SpriteLayer'
 
 describe('hasArtwork', () => {
-  it('knows the faces she has been drawn wearing', () => {
-    expect(hasArtwork('neutral')).toBe(true)
-    expect(hasArtwork('horny')).toBe(true)
+  it('has artwork for every face in the mood table', () => {
+    for (const expression of EXPRESSIONS) expect(hasArtwork(expression)).toBe(true)
   })
 
-  // The artwork is drawn one at a time, so the table runs ahead of it — and a
-  // character of her own brings however many faces she has.
-  it('is false for a face in the table that nobody has drawn yet', () => {
-    expect(hasArtwork('pouty' as Expression)).toBe(false)
+  it('lets runtime sources override bundled artwork', () => {
+    const uploaded = 'blob:https://cafe.test/kotone-happy'
+
+    expect(spriteFor('happy', { happy: uploaded })).toBe(uploaded)
+    expect(hasArtwork('happy', { happy: uploaded })).toBe(true)
   })
 })
