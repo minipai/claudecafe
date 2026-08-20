@@ -19,6 +19,9 @@ type DialogueBoxProps = {
   isLoading: boolean
   /** The 【…】 she signed the line in the box with, as she wrote it. */
   mood: string | null
+  /** The kaomoji standing in for the face she is wearing, when that face has
+   * no artwork behind it. Absent whenever the artwork says it itself. */
+  standIn: string | null
   /** Her own words for the wait, cycled through while she works. */
   waiting: string[]
   /** How much she has written this turn, as the session counts it. */
@@ -54,6 +57,7 @@ export function DialogueBox({
   laidOut,
   isLoading,
   mood,
+  standIn,
   waiting,
   outputTokens,
   queued,
@@ -93,6 +97,17 @@ export function DialogueBox({
     >
       <div className="absolute -top-4 left-6 z-10 flex items-center gap-2.5">
         <NamePlate onOpen={onOpenPersona} />
+        {/* A face she has no artwork for leaves her standing neutral, so the
+            kaomoji says it here instead — next to her name, which is as close
+            to her face as the box gets. It goes as soon as she wears a face
+            that is drawn. The marker in the corner below is not the same
+            thing and does not cover for it: that is how she signed the line,
+            and it is behind the waiting line for as long as she is working. */}
+        {standIn && (
+          <span className="rounded-lg border border-border bg-card px-2 py-1 text-sm whitespace-nowrap text-foreground shadow-md">
+            {standIn}
+          </span>
+        )}
         {unreadLook && <InnerVoice look={unreadLook} onRead={onLookRead} />}
       </div>
       <div className="absolute -top-4 right-4 z-10">{utility}</div>

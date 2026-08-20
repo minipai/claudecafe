@@ -1,5 +1,7 @@
 /**
- * Every face the maid has artwork for, with the kaomoji that stands for it.
+ * Every face the maid has a name for, with the kaomoji that stands for it.
+ * Whether she has been drawn wearing one is a separate question, and the
+ * answer differs per character — see `hasArtwork`.
  *
  * This is the café plugin's own mood table, copied verbatim: she is told to end
  * each reply with `【 開心 (˶ˆᗜˆ˵) 】`, picking the kaomoji from that list. So a

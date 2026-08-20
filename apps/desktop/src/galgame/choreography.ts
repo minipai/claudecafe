@@ -14,13 +14,12 @@ export type Scene = {
   appendChatMessage: (role: ChatMessage['role'], content: string, report?: Report) => void
   appendEvent: (content: string, detail?: string, toolId?: string, output?: string) => void
   recordResult: (toolId: string, output: string, failed: boolean) => void
-  signLast: (mood?: string) => void
   say: (text: string, hooks?: Hooks) => void
   act: (play: () => void) => void
   wear: (expr?: Expression, marker?: string) => void
   /** The bare face, with no marker to sign it — a tool changing her expression
    * mid-turn, not a line taking the box. */
-  setExpression: (expr: Expression) => void
+  showFace: (expr: Expression) => void
   pushWhisper: (text: string, kind: Whisper['kind']) => void
   setPhase: (phase: Phase) => void
   setReport: (report: Report | null) => void
@@ -47,8 +46,10 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
       break
     case 'text_delta':
       // Into the log the moment she says it — the log is the conversation as
-      // it happens, not a summary written at the end of the turn.
-      scene.appendChatMessage('assistant', msg.text)
+      // it happens, not a summary written at the end of the turn. It goes in
+      // the way she wrote it, marker and all: the scene is what strips the
+      // marker off, to put it on her face instead.
+      scene.appendChatMessage('assistant', signed(msg.text, msg.mood))
       scene.say(msg.text, { onShow: () => scene.wear(msg.expression, msg.mood) })
       break
     case 'look':
@@ -89,7 +90,7 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
         // Unknown name: her face stays whatever it already was, rather than
         // handing an <img> a src that names nothing.
         const wanted = msg.input?.expression
-        if (isExpression(wanted)) scene.act(() => scene.setExpression(wanted))
+        if (isExpression(wanted)) scene.act(() => scene.showFace(wanted))
       } else if (!msg.silent) {
         scene.act(() => scene.pushWhisper(msg.label, 'tool'))
       }
@@ -105,12 +106,9 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
       // Done, and he is somewhere else: what she ended on is worth hearing
       // there rather than sitting unread in a window behind everything.
       scene.notify(shorten(msg.line))
-      // The log keeps her line the way she wrote it, mood marker and all —
-      // the scene is what strips it, to put the marker on her face instead.
-      // A line already spoken is already logged; all the result adds is the
-      // mood she signed off with.
-      if (msg.said) scene.signLast(msg.mood)
-      else scene.appendChatMessage('assistant', signed(msg.line, msg.mood), msg.report)
+      // A line already spoken went on the record when she said it, marker
+      // included; the result is that same line coming back round.
+      if (!msg.said) scene.appendChatMessage('assistant', signed(msg.line, msg.mood), msg.report)
       if (msg.tier === 'heavy') {
         scene.setPhase('done')
         scene.setReport(msg.report ?? null)

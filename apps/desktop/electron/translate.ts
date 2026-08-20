@@ -98,8 +98,15 @@ export class Turn {
 
     for (const block of sdk.message.content) {
       if (block.type === 'text') {
-        this.flush(out)
         const { text, expression, marker } = readMood(block.text)
+        // She sometimes signs off in a block of its own — the marker belongs
+        // to the line before it, not to nothing at all. Signed where it stands,
+        // the line still goes out complete and in one piece.
+        if (!text && marker && this.pendingLine) {
+          this.pendingLine = { ...this.pendingLine, expression, marker }
+          continue
+        }
+        this.flush(out)
         this.pendingLine = text ? { text, expression, marker } : null
       } else if (block.type === 'thinking') {
         this.flush(out)

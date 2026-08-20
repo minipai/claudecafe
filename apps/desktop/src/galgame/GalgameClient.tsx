@@ -3,7 +3,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { Stage } from './Stage'
-import { SpriteLayer } from './SpriteLayer'
+import { SpriteLayer, hasArtwork } from './SpriteLayer'
+import { KAOMOJI } from '@/agent/expressions'
 import { DialogueBox } from './DialogueBox'
 import { ReportView } from './ReportView'
 import { UsagePanel } from './UsagePanel'
@@ -28,7 +29,7 @@ import { SessionPlaque } from './SessionPlaque'
 import { useSpeech, type Hooks } from './useSpeech'
 import { alwaysCovers, readPermission, standingFor, type PermissionAsk } from './permission'
 import { toast } from 'sonner'
-import { createChatMessage, createPreviewHistory, recordToolResult, signLastMood } from './chatlog'
+import { createChatMessage, createPreviewHistory, recordToolResult } from './chatlog'
 import { choreograph, type Scene } from './choreography'
 import { applyWindowEvent, type WindowScene } from './windowEvents'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
@@ -84,6 +85,8 @@ export function GalgameClient() {
   /** The 【…】 she signed her last line with, kept as she wrote it. Empty until
    * she has signed one — the window has nothing of its own to put there. */
   const [mood, setMood] = useState<string | null>(null)
+  /** The kaomoji standing in for a face she has no artwork for. */
+  const [standIn, setStandIn] = useState<string | null>(null)
   const [ctaVisible, setCtaVisible] = useState(false)
   const [laidOut, setLaidOut] = useState<string | null>(null)
   const [whispers, setWhispers] = useState<Whisper[]>([])
@@ -183,12 +186,6 @@ export function GalgameClient() {
     [],
   )
 
-  /** The mood marker arrives with the result, after the line it belongs to is
-   * already in the log. */
-  const signLast = useCallback((mood?: string) => {
-    setChatMessages((current) => signLastMood(current, mood))
-  }, [])
-
   /** Things that happened between the spoken lines — tools, permissions,
    * interruptions. `output` is what it answered, when that is known already;
    * a tool call gets its answer later, by id. */
@@ -219,8 +216,19 @@ export function GalgameClient() {
    * marker of its own is not left wearing the last one that had one — the
    * corner clears with it, even though the face can stay. */
   function wear(expr?: Expression, marker?: string) {
-    if (expr) setExpression(expr)
     setMood(marker ?? null)
+    // A line with no marker of its own changes no face, and leaves whatever is
+    // standing in for the current one where it is.
+    if (expr) showFace(expr)
+  }
+
+  /** Put a face on. She has only been drawn wearing some of them: the rest
+   * leave her standing neutral, and the kaomoji stands in beside her name so
+   * the change is still visible — whether a tool asked for the face mid-turn
+   * or she signed a line with it. */
+  function showFace(expr: Expression) {
+    setExpression(expr)
+    setStandIn(hasArtwork(expr) ? null : KAOMOJI[expr])
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -435,6 +443,7 @@ export function GalgameClient() {
   function resetScene() {
     setLaidOut(null)
     setMood(null)
+    setStandIn(null)
     alwaysAllowRef.current = new Set()
   }
 
@@ -579,11 +588,10 @@ export function GalgameClient() {
       appendChatMessage,
       appendEvent,
       recordResult,
-      signLast,
       say,
       act,
       wear,
-      setExpression,
+      showFace,
       pushWhisper,
       setPhase,
       setReport,
@@ -654,6 +662,7 @@ export function GalgameClient() {
               isPast={past}
               isLoading={phase === 'working'}
               mood={mood}
+              standIn={standIn}
               waiting={lines.waiting}
               outputTokens={outputTokens}
               queued={queued}

@@ -14,7 +14,13 @@ import sad from '../assets/kotone-sad.webp'
 import flirty from '../assets/kotone-flirty.webp'
 import horny from '../assets/kotone-horny.webp'
 
-const SPRITE: Record<Expression, string> = {
+/**
+ * The faces she has been drawn wearing. Not every expression in the table is
+ * in here: the artwork is drawn one at a time, and a character of her own
+ * brings however many she has — so a face with no picture behind it is normal
+ * rather than a mistake.
+ */
+const SPRITE: Partial<Record<Expression, string>> = {
   neutral,
   happy,
   curious,
@@ -28,6 +34,13 @@ const SPRITE: Record<Expression, string> = {
   sad,
   flirty,
   horny,
+}
+
+/** Whether she has actually been drawn wearing this face. A face with no
+ * artwork leaves her standing neutral, and the kaomoji stands in for it beside
+ * her name (see GalgameClient). */
+export function hasArtwork(expression: Expression) {
+  return expression in SPRITE
 }
 
 /**
@@ -53,7 +66,7 @@ export function SpriteLayer({ expression }: { expression: Expression }) {
             the alpha under the pointer decides (see useClickThrough), which is
             also what makes her a handle you can only grab by the sleeve. */}
         <img
-          src={SPRITE[expression]}
+          src={SPRITE[expression] ?? neutral}
           alt="ことね"
           draggable={false}
           data-art

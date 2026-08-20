@@ -7,13 +7,12 @@ function createScene(): Scene {
     appendChatMessage: vi.fn(),
     appendEvent: vi.fn(),
     recordResult: vi.fn(),
-    signLast: vi.fn(),
     say: vi.fn(),
     // Acts play immediately in these tests — the queueing itself belongs to
     // useSpeech, not to the choreography that decides an act should happen.
     act: vi.fn((play: () => void) => play()),
     wear: vi.fn(),
-    setExpression: vi.fn(),
+    showFace: vi.fn(),
     pushWhisper: vi.fn(),
     setPhase: vi.fn(),
     setReport: vi.fn(),
@@ -47,10 +46,12 @@ describe('choreograph', () => {
     expect(Object.values(scene).every((fn) => (fn as ReturnType<typeof vi.fn>).mock.calls.length === 0)).toBe(true)
   })
 
-  it('text_delta: logs the line and says it, wearing whatever face and mood it arrives with', () => {
+  it('text_delta: logs the line signed, says it stripped, and wears whatever face and mood it arrives with', () => {
     const scene = createScene()
     choreograph({ type: 'text_delta', text: 'hello there', expression: 'happy', mood: '【 開心 】' }, scene)
-    expect(scene.appendChatMessage).toHaveBeenCalledWith('assistant', 'hello there')
+    // On the record the way she wrote it, marker and all — written once, when
+    // she said it, rather than gone back over at the end of the turn.
+    expect(scene.appendChatMessage).toHaveBeenCalledWith('assistant', 'hello there 【 開心 】')
     expect(scene.say).toHaveBeenCalledWith('hello there', expect.any(Object))
     showLastLine(scene)
     expect(scene.wear).toHaveBeenCalledWith('happy', '【 開心 】')
@@ -114,7 +115,7 @@ describe('choreograph', () => {
     )
     // An empty label falls back to the tool's own name — same as any other tool call.
     expect(scene.appendEvent).toHaveBeenCalledWith('set_expression', undefined, 'call-1')
-    expect(scene.setExpression).toHaveBeenCalledWith('proud')
+    expect(scene.showFace).toHaveBeenCalledWith('proud')
     // A bare expression change is not a spoken line, so the mood in the
     // corner — which only `wear` touches — is left exactly as it was.
     expect(scene.wear).not.toHaveBeenCalled()
@@ -127,14 +128,14 @@ describe('choreograph', () => {
       { type: 'tool_use', id: 'call-1', name: 'set_expression', label: '', input: { expression: 'excited' } },
       scene,
     )
-    expect(scene.setExpression).not.toHaveBeenCalled()
+    expect(scene.showFace).not.toHaveBeenCalled()
     expect(scene.act).not.toHaveBeenCalled()
   })
 
   it('tool_use set_expression: no input at all is the same as an unknown name', () => {
     const scene = createScene()
     choreograph({ type: 'tool_use', id: 'call-1', name: 'set_expression', label: '' }, scene)
-    expect(scene.setExpression).not.toHaveBeenCalled()
+    expect(scene.showFace).not.toHaveBeenCalled()
   })
 
   it('tool_use, not silent: logs it and whispers what she is doing', () => {
@@ -176,7 +177,6 @@ describe('choreograph', () => {
         scene,
       )
       expect(scene.notify).toHaveBeenCalledWith('all done~')
-      expect(scene.signLast).not.toHaveBeenCalled()
       expect(scene.appendChatMessage).toHaveBeenCalledWith('assistant', 'all done~ 【 開心 】', report)
       expect(scene.setPhase).toHaveBeenCalledWith('idle')
       expect(scene.setLaidOut).not.toHaveBeenCalled()
@@ -185,10 +185,9 @@ describe('choreograph', () => {
       expect(scene.wear).toHaveBeenCalledWith('happy', '【 開心 】')
     })
 
-    it('already said: the mood signs the message already on screen instead of writing a new one', () => {
+    it('already said: nothing is written again — the line went on the record, signed, when she said it', () => {
       const scene = createScene()
       choreograph({ type: 'result', tier: 'light', line: 'all done~', mood: '【 開心 】', said: true }, scene)
-      expect(scene.signLast).toHaveBeenCalledWith('【 開心 】')
       expect(scene.appendChatMessage).not.toHaveBeenCalled()
       expect(scene.setPhase).toHaveBeenCalledWith('idle')
       // Already on screen — nothing left to say.
@@ -250,9 +249,7 @@ describe('choreograph', () => {
       expect(scene.setReport).toHaveBeenCalledWith(report)
       expect(scene.setCtaVisible).toHaveBeenCalledWith(true)
       expect(scene.say).not.toHaveBeenCalled()
-      // Already on screen — the mood signs what is there rather than a fresh
-      // line being written over it.
-      expect(scene.signLast).toHaveBeenCalledWith('【 誇らしい 】')
+      // Already on screen, and already on the record with its marker.
       expect(scene.appendChatMessage).not.toHaveBeenCalled()
     })
   })

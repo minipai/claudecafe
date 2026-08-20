@@ -126,6 +126,15 @@ describe('Turn — mood markers', () => {
     })
   })
 
+  it('signs the line before it when she puts the marker in a block of its own', () => {
+    // The cue tells her to sign off on a line of her own, and she sometimes
+    // takes that as far as a separate block. The marker still belongs to what
+    // she just said, so the line goes out signed rather than bare.
+    const turn = new Turn('hi')
+    const out = turn.read(assistant([textBlock('All done~'), textBlock(HAPPY), toolUseBlock('t1', 'Read', { file_path: 'a' })]))
+    expect(textDeltas(out)).toEqual([{ type: 'text_delta', text: 'All done~', expression: 'happy', mood: HAPPY }])
+  })
+
   it('a plain line with no marker keeps a straight face', () => {
     const turn = new Turn('hi')
     const out = turn.read(assistant([textBlock('No marker here'), toolUseBlock('t1', 'Read', { file_path: 'a' })]))

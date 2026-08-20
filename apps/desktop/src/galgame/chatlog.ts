@@ -36,7 +36,8 @@ export function glance(text: string) {
   return oneLine.length > 90 ? `${oneLine.slice(0, 88)}…` : oneLine
 }
 
-/** Her line as she wrote it: the mood marker belongs on the record. */
+/** Her line as she wrote it: the mood marker belongs on the record, so it goes
+ * on at the moment the line does — the box is the only place it comes off. */
 export function signed(line: string, mood?: string) {
   return mood ? `${line} ${mood}` : line
 }
@@ -50,18 +51,6 @@ export function createPreviewHistory(greeting: string) {
     createChatMessage('user', 'can I read back over what we said earlier?', undefined, now - 3 * 60_000),
     createChatMessage('assistant', 'Of course — open LOG and the whole conversation is waiting there ♪', undefined, now - 2 * 60_000),
   ]
-}
-
-/** The mood marker arrives with the result, after the line it belongs to is
- * already in the log. */
-export function signLastMood(messages: ChatMessage[], mood?: string): ChatMessage[] {
-  if (!mood) return messages
-  let last = messages.length - 1
-  while (last >= 0 && messages[last].role !== 'assistant') last--
-  if (last < 0) return messages
-  const signedMessages = [...messages]
-  signedMessages[last] = { ...messages[last], content: signed(messages[last].content, mood) }
-  return signedMessages
 }
 
 /** What a tool answered, put on the row that recorded the call. */

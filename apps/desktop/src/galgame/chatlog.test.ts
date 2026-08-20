@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createChatMessage, createPreviewHistory, glance, recordToolResult, shorten, signed, signLastMood } from './chatlog'
+import { createChatMessage, createPreviewHistory, glance, recordToolResult, shorten, signed } from './chatlog'
 
 describe('createChatMessage', () => {
   it('assigns increasing ids', () => {
@@ -85,48 +85,6 @@ describe('createPreviewHistory', () => {
     for (let i = 1; i < history.length; i++) {
       expect(history[i].createdAt).toBeGreaterThan(history[i - 1].createdAt)
     }
-  })
-})
-
-describe('signLastMood', () => {
-  it('does nothing when there is no mood to sign with', () => {
-    const messages = [createChatMessage('assistant', 'said this')]
-    expect(signLastMood(messages)).toBe(messages)
-  })
-
-  it('signs the most recent assistant message', () => {
-    const messages = [
-      createChatMessage('assistant', 'first'),
-      createChatMessage('user', 'and?'),
-      createChatMessage('assistant', 'second'),
-    ]
-    const signedMessages = signLastMood(messages, '【 開心 】')
-    expect(signedMessages[2].content).toBe('second 【 開心 】')
-    // Untouched otherwise.
-    expect(signedMessages[0].content).toBe('first')
-    expect(signedMessages[1].content).toBe('and?')
-  })
-
-  it('skips past trailing non-assistant rows to find the last thing she said', () => {
-    const messages = [
-      createChatMessage('assistant', 'said this'),
-      createChatMessage('event', 'ran a tool'),
-      createChatMessage('user', 'ok'),
-    ]
-    const signedMessages = signLastMood(messages, '【 開心 】')
-    expect(signedMessages[0].content).toBe('said this 【 開心 】')
-  })
-
-  it('leaves the log untouched when there is no assistant message at all', () => {
-    const messages = [createChatMessage('user', 'hello'), createChatMessage('event', 'ran a tool')]
-    expect(signLastMood(messages, '【 開心 】')).toBe(messages)
-  })
-
-  it('does not mutate the input array', () => {
-    const messages = [createChatMessage('assistant', 'said this')]
-    const original = messages[0]
-    signLastMood(messages, '【 開心 】')
-    expect(messages[0]).toBe(original)
   })
 })
 
