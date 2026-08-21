@@ -288,4 +288,26 @@ describe('GalgameClient', () => {
     expect(screen.getByRole('button', { name: 'Always allow Bash git' })).toBeInTheDocument()
     expect(bridge.answer).not.toHaveBeenCalledWith('ask-3', expect.anything())
   })
+
+  it('Bug 4 — an answer she wrote out keeps its layout while it stands, rather than reflowing when the next thing is asked', async () => {
+    const { bridge, emit } = await mountLive()
+
+    await act(async () => submit('what is zh?'))
+    const runId = lastRunId(bridge)
+    await act(async () =>
+      emit({
+        kind: 'message',
+        runId,
+        message: { type: 'result', tier: 'medium', line: 'The short of it.\n\nAnd then the rest of it.' },
+      }),
+    )
+
+    const written = () => document.querySelector('.report-md')
+    await vi.waitFor(() => expect(written()!.querySelectorAll('p')).toHaveLength(2))
+
+    // The master asks the next thing. Her answer stays in the box — faded, but
+    // still the shape she wrote it in, not one wall of text.
+    await act(async () => submit('and ja?'))
+    expect(written()!.querySelectorAll('p')).toHaveLength(2)
+  })
 })

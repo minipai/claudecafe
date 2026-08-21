@@ -188,12 +188,23 @@ export function GalgameClient() {
    * she already writes them as separate things. */
   function say(text: string, hooks?: Hooks) {
     lastLineRef.current = text
-    queueLine(text, hooks)
+    // The layout belongs to the line it was drawn for, so it goes when that
+    // line leaves the box and not a moment earlier — dropped while the line
+    // was still standing, a written-out answer reflowed into one wall of text
+    // in front of the master the instant he asked the next thing.
+    queueLine(text, {
+      ...hooks,
+      onShow: () => {
+        setLaidOut(null)
+        hooks?.onShow?.()
+      },
+    })
   }
 
   /** Straight into the box — a question, an interruption, a new session. */
   function cut(text: string) {
     lastLineRef.current = text
+    setLaidOut(null)
     cutIn(text)
   }
 
@@ -594,7 +605,6 @@ export function GalgameClient() {
     // The master has moved the scene on himself: anything of hers still waiting
     // to be clicked through belongs to the question before this one.
     clearSpeech()
-    setLaidOut(null)
     setCtaVisible(false)
     setTodos([])
     setOutputTokens(0)

@@ -126,7 +126,15 @@ export function DialogueBox({
           <div ref={said} className="max-h-[min(300px,34vh)] overflow-y-auto overscroll-contain">
           {laidOut ? (
             <div
-              className="report-md text-base leading-[1.9] text-foreground"
+              // It fades back once it is no longer the answer to the question
+              // just asked, the same as a spoken line does — what it says stops
+              // being current, but how it was written stays as it was written.
+              // Faded whole rather than by text colour: `.report-md` sets its
+              // own colour and beats a utility class, and the code spans in it
+              // carry a background that has to go back with the words.
+              className={`report-md text-base leading-[1.9] transition-opacity duration-500 ${
+                isPast ? 'opacity-35' : 'opacity-100'
+              }`}
               // Single line breaks are kept, the same as the report panel and
               // the log: she writes a line per point as often as she leaves a
               // blank line between them, and run together they read as one.
