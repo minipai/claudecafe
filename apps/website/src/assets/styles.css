@@ -1050,12 +1050,13 @@ body:has(.plugin-page)::before {
 }
 
 
-/* The plugin pill on the homepage — a sibling of the blog pill. */
-.plugin-pill {
+/* The app and plugin pills on the homepage — the blog pill's siblings, and
+   stacked tight against each other and against it. */
+.shelf-pill {
     margin-bottom: 0;
 }
 
-.plugin-pill + .blog-list {
+.shelf-pill + .blog-list {
     margin-top: 0.4rem;
 }
 
@@ -1083,9 +1084,13 @@ body:has(.plugin-page)::before {
 .app-page .lede {
     font-size: var(--fs-md);
     color: var(--text-muted);
-    max-width: 640px;
+    max-width: 680px;
     margin: 0 auto;
     text-align: center;
+    /* Centred type breaks wherever the width says, and this sentence ends on a
+       list — left alone it drops "your MCP servers." onto a line of its own.
+       Balanced, the browser evens the lines out instead. */
+    text-wrap: balance;
 }
 
 /* She gets more room than the type does — the window is the picture here. */
@@ -1126,9 +1131,14 @@ body:has(.plugin-page)::before {
 }
 
 .app-caption {
-    margin-top: 10px;
+    margin-top: 14px;
+    /* Three sentences wide enough to need a measure — a centred line that runs
+       the full page is read twice and understood once. */
+    max-width: 620px;
+    margin-inline: auto;
     text-align: center;
     font-size: 15px;
+    line-height: 1.75;
     color: var(--text-muted);
 }
 

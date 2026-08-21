@@ -103,7 +103,7 @@ function site(locale: Locale) {
 
   page.get("/app", (c) => {
     const title =
-      locale === "zh" ? "ClaudeCafe — 站在你桌面上的 Claude Code" : "ClaudeCafe — Claude Code, standing on your desktop";
+      locale === "zh" ? "ClaudeCafe——最可愛的 Claude Code" : "ClaudeCafe — the most adorable Claude Code";
     const description =
       locale === "zh"
         ? "同一個 Claude Code，跑在沒有邊框的視窗裡：一位女僕站在你的桌面上回話、動手前先問你、長答案給你一份報告。可以在頁面上直接試玩。"

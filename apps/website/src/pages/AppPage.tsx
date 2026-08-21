@@ -25,9 +25,9 @@ const INSTALL_LINE = `curl -L ${DOWNLOAD_URL} -o /tmp/cc.zip && unzip -q /tmp/cc
  * way — one line of what it is, the window itself, and how to take it home. */
 const copy = {
   en: {
-    name: 'ClaudeCafe',
-    lede:
-      'The same Claude Code you already run — your login, your skills, your MCP servers — with a maid standing in front of it instead of a prompt.',
+    tagline: 'The most adorable Claude Code',
+    whatItIs:
+      'This is ClaudeCafe — the same Claude Code you already run, but with a maid on your desktop instead of a terminal: your login, your skills, your MCP servers.',
     demoNote: 'The real window on a canned script. Nothing on your machine is touched.',
     demoHint: 'Best on a desktop-sized screen.',
     dlMeta: 'macOS · Apple silicon · v0.2.1 · 246 MB',
@@ -40,9 +40,9 @@ const copy = {
     copied: 'copied',
   },
   zh: {
-    name: 'ClaudeCafe',
-    lede:
-      '同一個 Claude Code——你的登入、你的 skills、你的 MCP 伺服器——只是站在你面前的是一位女僕，不是一行游標。',
+    tagline: '最可愛的 Claude Code',
+    whatItIs:
+      '這就是 ClaudeCafe——同一個你在用的 Claude Code，只是它跑在你的桌面上，不在終端機裡：你的登入、你的 skills、你的 MCP 伺服器。',
     demoNote: '這就是那個視窗本人，跑的是預錄好的劇本，不會動到你電腦裡的任何東西。',
     demoHint: '在電腦上看最準。',
     dlMeta: 'macOS · Apple 晶片 · v0.2.1 · 246 MB',
@@ -94,9 +94,12 @@ export function AppPage({ locale }: { locale: Locale }) {
 
   return (
     <div class="plugin-page app-page">
+      {/* The claim is the biggest thing on the page and the name is said in
+          passing, inside the sentence that explains it: nobody arrives here
+          knowing the name, so it is worth less than the line under it. */}
       <header class="app-head">
-        <h1 class="app-h1">{t.name}</h1>
-        <p class="lede">{t.lede}</p>
+        <h1 class="app-h1">{t.tagline}</h1>
+        <p class="lede">{t.whatItIs}</p>
       </header>
 
       {/* No frame around her: a border here would put the window back in the

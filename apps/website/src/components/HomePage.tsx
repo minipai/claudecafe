@@ -15,8 +15,16 @@ export function HomePage({ maids, posts, locale }: { maids: Maid[]; posts: BlogP
           <MaidCard maid={maid} locale={locale} />
         ))}
       </div>
-      {/* The app page is not linked from here yet — it is still being cut. */}
-      <div class="blog-list plugin-pill">
+      {/* Her window first: it is the one thing here you can watch working
+          before you install anything. */}
+      <div class="blog-list shelf-pill">
+        <div class="blog-row">
+          <span class="blog-row-date">app</span>
+          <a href={href(locale, "/app")} class="blog-row-title">{ui[locale].appPillTitle}</a>
+          <a href={href(locale, "/app")} class="blog-row-action">{ui[locale].appPillAction}</a>
+        </div>
+      </div>
+      <div class="blog-list shelf-pill">
         <div class="blog-row">
           <span class="blog-row-date">plugin</span>
           <a href={href(locale, "/plugin")} class="blog-row-title">{ui[locale].pluginPillTitle}</a>
