@@ -16,6 +16,8 @@ describe('the wardrobe', () => {
   it('hangs her café clothes first, whatever else she has', () => {
     expect(outfitsOf('kotone')[0]).toBe('uniform')
     expect(outfitsOf('kotone')).toContain('one-piece')
+    expect(outfitsOf('kurumi')[0]).toBe('uniform')
+    expect(outfitsOf('kurumi')).toContain('one-piece')
   })
 })
 
@@ -29,7 +31,7 @@ describe('wearable', () => {
   })
 
   it('falls back to her café clothes when the kept outfit is gone', () => {
-    expect(wearable({ maid: 'kurumi', outfit: 'one-piece' })).toEqual({ maid: 'kurumi', outfit: 'uniform' })
+    expect(wearable({ maid: 'kurumi', outfit: 'swimsuit' })).toEqual({ maid: 'kurumi', outfit: 'uniform' })
   })
 
   it('still stands someone up rather than nobody', () => {
