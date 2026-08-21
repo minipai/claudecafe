@@ -6,3 +6,12 @@ packages/cafe/dist/
 
 # wrangler local state (the r2 simulator, dev cache)
 .wrangler/
+
+# The window's copy of the cast — mirrored out of packages/characters by
+# apps/desktop/scripts/pack-sprites.sh, and regenerated rather than kept.
+# Checked in it would put another 6 MB of the same artwork into history every
+# time a maid is redrawn.
+apps/desktop/src/assets/cast/
+
+# macOS leaves these in every folder anyone has opened in Finder.
+.DS_Store
