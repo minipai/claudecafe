@@ -57,7 +57,7 @@ def crop(path, out):
     grown = sprite.resize((round(sprite.width * scale), round(sprite.height * scale)), Image.LANCZOS)
     card = Image.new('RGBA', CANVAS, (0, 0, 0, 0))
     card.alpha_composite(grown, (round(CANVAS[0] / 2 - middle * scale), round(HAIR_TOP - top * scale)))
-    card.save(out)
+    card.save(out, quality=90, method=6)
     print(f'{out}: head {width:.0f} -> {HEAD_WIDTH} ({scale:.2f}x)')
     return out
 

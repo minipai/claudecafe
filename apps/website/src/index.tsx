@@ -53,7 +53,6 @@ app.use("*", async (c, next) => {
 });
 
 app.use("/assets/*", serveStatic({ root: "./src/" }));
-app.use("/downloads/*", serveStatic({ root: "./src/" }));
 
 app.get("/robots.txt", (c) => {
   return c.text("User-agent: *\nAllow: /\n");

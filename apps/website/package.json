@@ -10,8 +10,8 @@
     "check": "tsc --noEmit"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "minipai",
+  "license": "MIT",
   "dependencies": {
     "@hono/node-server": "^1.19.9",
     "gray-matter": "^4.0.3",

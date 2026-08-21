@@ -15,3 +15,11 @@ apps/desktop/src/assets/cast/
 
 # macOS leaves these in every folder anyone has opened in Finder.
 .DS_Store
+
+# The PNG masters the artwork is generated from — git carries the webp the apps
+# actually load; these stay on disk (and in the archive), not in history.
+art-masters/
+
+# Operator runbooks — ssh into the droplet, cut a release. Useless to anyone
+# who cannot deploy this, and they would load into every contributor's session.
+.claude/skills/

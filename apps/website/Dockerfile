@@ -13,8 +13,6 @@ WORKDIR /repo
 # Manifests first so the install layer caches until deps actually change.
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/website/package.json apps/website/
-COPY packages/cafe-bell/package.json packages/cafe-bell/
-COPY packages/maid-voice-player/package.json packages/maid-voice-player/
 COPY packages/characters/package.json packages/characters/
 RUN pnpm install --frozen-lockfile
 

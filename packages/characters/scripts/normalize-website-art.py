@@ -7,7 +7,21 @@ from PIL import Image
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CAST_ROOT = REPO_ROOT / "packages" / "characters"
+MASTERS = REPO_ROOT / "art-masters"
 WEB_ROOT = REPO_ROOT / "apps" / "website" / "src" / "assets" / "maids"
+
+
+def drawing(*parts: str) -> Path:
+    """A drawing from the masters beside the repo.
+
+    The pencil portraits these are built from are workshop material, not part
+    of the cast the apps ship, so they live in art-masters/ and never in git.
+    Without that folder there is nothing to normalize — hence the plain error
+    rather than a lower-quality fallback."""
+    master = MASTERS.joinpath(*parts).with_suffix(".png")
+    if not master.exists():
+        raise SystemExit(f"missing master: {master}")
+    return master
 
 CANVAS_SIZE = (1024, 1920)
 OUTPUT_CROP = (0, 0, 864, 1760)
@@ -21,28 +35,28 @@ TARGET_HEAD = {"center_x": 220, "top": 58, "bottom": 291}
 # the approved composition while allowing every character to share one rule.
 CHARACTERS = {
     "kanae": {
-        "source": CAST_ROOT / "kanae" / "reference" / "portrait-pencil.webp",
+        "source": drawing("kanae", "reference", "portrait-pencil"),
         "css": {"x": -210, "y": 20, "height": 1500},
         "head": {"center_x": 228, "top": 58, "bottom": 291},
     },
     "kokona": {
-        "source": CAST_ROOT / "kokona" / "reference" / "portrait-pencil.webp",
+        "source": drawing("kokona", "reference", "portrait-pencil"),
         "css": {"x": -150, "y": -68, "height": 1715},
         "head": {"center_x": 238, "top": 58, "bottom": 285},
         "scale_adjust": 0.92,
     },
     "kotone": {
-        "source": CAST_ROOT / "kotone" / "reference" / "portrait-pencil.webp",
+        "source": drawing("kotone", "reference", "portrait-pencil"),
         "css": {"x": -70, "y": 20, "height": 1500},
         "head": {"center_x": 252, "top": 58, "bottom": 299},
     },
     "kuroko": {
-        "source": CAST_ROOT / "kuroko" / "reference" / "portrait-pencil.webp",
+        "source": drawing("kuroko", "reference", "portrait-pencil"),
         "css": {"x": -242, "y": -3, "height": 1690},
         "head": {"center_x": 208, "top": 40, "bottom": 305},
     },
     "kurumi": {
-        "source": CAST_ROOT / "kurumi" / "reference" / "portrait-pencil.webp",
+        "source": drawing("kurumi", "reference", "portrait-pencil"),
         "css": {"x": -250, "y": 20, "height": 1500},
         "head": {"center_x": 200, "top": 58, "bottom": 335},
     },
@@ -105,17 +119,17 @@ def normalize(name: str, config: dict[str, object]) -> None:
     canvas.alpha_composite(scaled_canvas, aligned_offset)
 
     output = canvas.crop(OUTPUT_CROP)
-    output_path = source_path.parents[1] / "portraits" / "standing.webp"
+    output_path = CAST_ROOT / name / "portraits" / "standing.webp"
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output.save(output_path, optimize=True)
-    output.save(WEB_ROOT / f"maid-{name}.webp", optimize=True)
+    output.save(output_path, quality=88, method=6)
+    output.save(WEB_ROOT / f"maid-{name}.webp", quality=88, method=6)
 
     avatar = output.crop(AVATAR_CROP).resize(
         AVATAR_SIZE, Image.Resampling.LANCZOS
     )
-    avatar_path = source_path.parents[1] / "portraits" / "avatar.webp"
-    avatar.save(avatar_path, optimize=True)
-    avatar.save(WEB_ROOT / f"avatar-{name}.webp", optimize=True)
+    avatar_path = CAST_ROOT / name / "portraits" / "avatar.webp"
+    avatar.save(avatar_path, quality=90, method=6)
+    avatar.save(WEB_ROOT / f"avatar-{name}.webp", quality=90, method=6)
 
     alpha_bbox = output.getchannel("A").getbbox()
     print(

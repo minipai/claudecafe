@@ -255,8 +255,8 @@ describe('listConversations', () => {
   })
 
   it('mangles the project folder the same way Claude Code itself does — pinned against a literal, not against the regex that produces it', () => {
-    const cwd = '/Users/art/Dev/claudecafe'
-    const folder = path.join(home, '.claude/projects', '-Users-art-Dev-claudecafe')
+    const cwd = '/Users/maid/Dev/claudecafe'
+    const folder = path.join(home, '.claude/projects', '-Users-maid-Dev-claudecafe')
     fs.mkdirSync(folder, { recursive: true })
     fs.writeFileSync(path.join(folder, 'sess.jsonl'), `${JSON.stringify(userRow('hi'))}\n`)
     expect(listConversations(cwd).map((c) => c.sessionId)).toEqual(['sess'])

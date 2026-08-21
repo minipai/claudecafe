@@ -9,7 +9,7 @@ author: kuroko
 
 Claude Code 有個叫 **hooks** 的功能——在特定時機自動執行指令。くろこ用它來播放語音，這樣女僕就能用聲音叫你了。再也不會沒注意到了……對吧？♡
 
-準備好語音檔，寫一個隨機挑一句來播的小腳本，掛上去就完成了。語音包裡有 5 種場景，每種 6 句隨機播放：
+準備好語音檔，寫一個隨機挑一句來播的小腳本，掛上去就完成了。くろこ分了 5 種場景，每種放 6 句隨機抽：
 
 | 場景 | 女僕會說 | 例子 |
 |------|---------|------|
@@ -19,16 +19,19 @@ Claude Code 有個叫 **hooks** 的功能——在特定時機自動執行指令
 | 通知 | 呼喚主人 | 「ご主人様」「ねえねえ」「あの……」 |
 | 請求許可 | 確認指令 | 「これでいいですか」「お願い」 |
 
-[語音素材](/downloads/maid-voice.zip)來自 [あみたろの声素材工房](https://amitaro.net/) ／ [利用規約](https://amitaro.net/voice/voice_rule/)
+語音素材くろこ是去 [あみたろの声素材工房](https://amitaro.net/) 挑的。那裡有大量可以自由使用的日文語音，自己挑喜歡的句子下載就好——旦那様想聽哪一種女僕，くろこ可管不著喔？記得先看一眼 [利用規約](https://amitaro.net/voice/voice_rule/)：自己聽是完全沒問題的，只是別把檔案打包成素材包再散出去。
 
 把下面這段 prompt 貼給你的 Claude，她會幫你下載、設定好一切：
 
 ```
 幫我設定 Claude Code 的女僕語音 hooks。
 
-1. 從 https://claudecafe.com/downloads/maid-voice.zip 下載語音包，解壓到 ~/.claude/hooks/
-2. 建立播放腳本 ~/.claude/hooks/maid-voice.sh（chmod +x），接收事件名稱作為參數，從 ~/.claude/hooks/maid-voice/{事件名}/ 隨機挑一個 .wav 背景播放
-3. 在 ~/.claude/settings.json 的 hooks 加入 5 個事件：SessionStart、UserPromptSubmit、Stop、Notification、PermissionRequest，每個都執行 maid-voice.sh 帶事件名稱，timeout 10
+1. 去 https://amitaro.net/ 的語音素材頁面，挑幾句適合這五個場景的話下載下來：
+   歡迎回來（SessionStart）、應答（UserPromptSubmit）、完成報告（Stop）、呼喚（Notification）、確認（PermissionRequest）。
+   分別放進 ~/.claude/hooks/maid-voice/<事件名>/，每個資料夾幾句都可以
+2. 建立播放腳本 ~/.claude/hooks/maid-voice.sh（chmod +x），接收事件名稱作為參數，從對應資料夾隨機挑一個 .wav 背景播放，
+   播新的之前先中斷還在播的那句
+3. 在 ~/.claude/settings.json 的 hooks 加入這五個事件，每個都執行 maid-voice.sh 帶事件名稱，timeout 5
 4. 如果已有 hooks 設定，整合進去不要覆蓋
 ```
 

@@ -257,7 +257,7 @@ export const MOCK_AGENTS: Subagent[] = [
 ]
 
 export const MOCK_MCP: McpServer[] = [
-  { name: 'cafe-bell', status: 'connected', scope: 'user', tools: 4, error: null },
+  { name: 'linear', status: 'connected', scope: 'user', tools: 9, error: null },
   { name: 'chrome-devtools', status: 'connected', scope: 'project', tools: 26, error: null },
   { name: 'sentry', status: 'needs-auth', scope: 'user', tools: 0, error: 'Sign in to Sentry to use this server.' },
 ]
@@ -280,7 +280,7 @@ export const MOCK_CONTEXT: ContextReport = {
     { path: 'apps/desktop/CLAUDE.md', tokens: 900 },
   ],
   mcpTools: [
-    { name: 'ring', server: 'cafe-bell', tokens: 400 },
+    { name: 'create_issue', server: 'linear', tokens: 400 },
     { name: 'take_screenshot', server: 'chrome-devtools', tokens: 1_100 },
     { name: 'list_issues', server: 'sentry', tokens: 700 },
   ],

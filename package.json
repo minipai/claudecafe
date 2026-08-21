@@ -1,7 +1,7 @@
 {
   "name": "claudecafe-monorepo",
   "version": "1.0.0",
-  "description": "AI 女僕生態系 monorepo — web 展示站、cafe-bell hook 事件 hub、maid-voice 語音播放器",
+  "description": "AI 女僕生態系 monorepo — 展示站、桌面女僕、cafe plugin",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.24.0",
@@ -11,5 +11,5 @@
     "ship": "pnpm --filter @claudecafe/website ship",
     "check": "pnpm -r check"
   },
-  "license": "ISC"
+  "license": "MIT"
 }
