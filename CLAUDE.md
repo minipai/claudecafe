@@ -9,15 +9,18 @@ python — no package.json, not a workspace member):
 - **`apps/desktop`** — the maid's window on the desktop (Electron + React + Agent
   SDK). Transparent and frameless: just a standing portrait that changes expression, and
   she *is* the agent (`@anthropic-ai/claude-agent-sdk`, borrowing Claude Code's
-  credentials). Only ことね has a full portrait/expression set so far.
+  credentials). **ことね and くるみ** are the two the window carries — the shift is handed
+  over in a panel that opens when a conversation is started over, which is the only moment
+  it can (her persona lives in the session's system prompt).
 - **`apps/website`** — the persona showcase (Hono SSR), and also the **hiring channel**:
   the `/<id>.md` route serves the full persona file including frontmatter — download it
   into `~/.claude/cafe/personas/` (the cafe plugin's draw pool), or keep it anywhere and
   `@path`-link it from your own `CLAUDE.md`.
 - **`packages/characters`** — the cast, **one folder per maid, named after her**: her
   persona file per language (`persona.zh.md` / `persona.en.md` — frontmatter = site
-  metadata, body = the persona instructions), `expressions/<outfit>/*.webp`, `avatar.webp` +
-  `portrait.webp` for the site, and `reference/` (the drawings she was generated from).
+  metadata, body = the persona instructions), `expressions/<outfit>/*.webp`,
+  `portraits/` (`avatar.webp` + `standing.webp`, both for the site) and `reference/`
+  (the drawings she was generated from). Nothing loose at her root but who she is.
   **One folder per outfit**, `uniform` being the café clothes she is normally in: a whole
   fresh set of moods rather than a layer to swap, so a second outfit is a folder and
   nothing else. The folder's name is the name shown — which is all an outfit drawn by
@@ -85,6 +88,11 @@ or status line reads it.
 
 Electron (`electron/*.ts`, the main process) + Vite/React 19/Tailwind (`src/`) + Agent SDK.
 
+- **The cast is copied in, not read live**: `scripts/pack-sprites.sh` mirrors
+  `packages/characters/<maid>/expressions/<outfit>/` into `src/assets/cast/` as webp, and
+  that folder is then the single source of truth — the window globs it for who can be
+  picked, and `electron/build.mjs` reads the same folder to decide whose persona ships.
+  Adding a maid or an outfit means running that script, nothing else.
 - **The main process ignores HMR**: any change under `electron/` (SDK session, tools, look
   watcher, ipc) needs the dev app restarted — `node electron/dev.mjs` (**never pass `--dir=`**, it
   overwrites the folder she remembers). Only `src/` updates live.

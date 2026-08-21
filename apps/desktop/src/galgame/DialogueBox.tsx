@@ -7,7 +7,7 @@ import { WaitingLine } from './WaitingLine'
 import { InnerVoice } from './InnerVoice'
 import type { Look } from '@/agent'
 import type { Pace } from './useSpeech'
-import { fill, text } from '@/i18n'
+import { fill, her, text } from '@/i18n'
 
 type DialogueBoxProps = {
   line: string
@@ -96,7 +96,7 @@ export function DialogueBox({
       className="relative w-full rounded-xl border border-border bg-card shadow-md"
     >
       <div className="absolute -top-4 left-6 z-10 flex items-center gap-2.5">
-        <NamePlate onOpen={onOpenPersona} />
+        <NamePlate name={her()} onOpen={onOpenPersona} />
         {/* A face she has no artwork for leaves her standing neutral, so the
             kaomoji says it here instead — next to her name, which is as close
             to her face as the box gets. It goes as soon as she wears a face

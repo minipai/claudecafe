@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { text } from '@/i18n'
+import { fill, her, text } from '@/i18n'
 import type { Trouble } from '@/agent'
 
 /** The one thing to go and type when she is locked out. It is a command, not a
@@ -32,7 +32,7 @@ export function TroublePanel({ trouble, onClose }: { trouble: Trouble | null; on
         className="flex w-[min(460px,88vw)] max-w-none flex-col gap-0 overflow-hidden border border-border bg-card/85 p-0 shadow-xl backdrop-blur-xl sm:max-w-[460px]"
       >
         <div className="flex items-start justify-between gap-3 px-6 pt-5">
-          <DialogTitle className="text-base font-semibold text-foreground">{said?.title}</DialogTitle>
+          <DialogTitle className="text-base font-semibold text-foreground">{said ? fill(said.title, { her: her() }) : null}</DialogTitle>
           <Button variant="ghost" size="icon-sm" aria-label={t.close} onClick={onClose}>
             <X />
           </Button>

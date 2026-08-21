@@ -1,6 +1,6 @@
 import { query as mockQuery } from './mock'
 import { query as liveQuery, newSession as endLiveSession } from './live'
-import { MOCK_AGENTS, MOCK_CONTEXT, MOCK_MCP, MOCK_PERSONA, MOCK_SESSION, MOCK_SESSION_CWD, MOCK_STATUS, mockUsage } from './content.mock'
+import { MOCK_AGENTS, MOCK_CAST, MOCK_CONTEXT, MOCK_MCP, MOCK_PERSONA, MOCK_SESSION, MOCK_SESSION_CWD, MOCK_STATUS, mockUsage } from './content.mock'
 
 /** In the browser there is no bridge, so the canned mock keeps standing in. */
 export const isLive = typeof window !== 'undefined' && Boolean(window.cafe)
@@ -26,6 +26,7 @@ export const subagents = isLive ? () => window.cafe!.agents() : async () => MOCK
 export const mcpServers = isLive ? () => window.cafe!.mcpServers() : async () => MOCK_MCP
 export const sessionStatus = isLive ? () => window.cafe!.status() : async () => MOCK_STATUS
 export const maidPersona = isLive ? () => window.cafe!.persona() : async () => MOCK_PERSONA
+export const castList = isLive ? () => window.cafe!.cast() : async () => MOCK_CAST
 
 /** What the bottom plate shows before any turn has been taken — live, this
  * arrives as an event instead. */
@@ -39,6 +40,7 @@ export type {
   BridgeEvent,
   CafeBridge,
   CafeCommand,
+  CastMember,
   ContextReport,
   Conversation,
   Lines,
@@ -46,6 +48,7 @@ export type {
   ModelChoice,
   SessionSettings,
   SessionStatus,
+  Shift,
   StatusReport,
   Subagent,
   Trouble,

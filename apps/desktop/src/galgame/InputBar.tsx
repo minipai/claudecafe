@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { CommandMenu } from './CommandMenu'
 import { Attachments, readImage, type Pending } from './Attachments'
-import { text as ui } from '@/i18n'
+import { fill, her, text as ui } from '@/i18n'
 import type { Attachment, CafeCommand } from '@/agent'
 
 type InputBarProps = {
@@ -136,7 +136,7 @@ export function InputBar({ isBusy, commands, onSubmit, onStop }: InputBarProps) 
               e.currentTarget.form?.requestSubmit()
             }
           }}
-          placeholder={t.say}
+          placeholder={fill(t.say, { her: her() })}
           className="min-h-8 resize-none border-none bg-transparent shadow-none focus-visible:ring-0"
         />
         {isBusy ? (

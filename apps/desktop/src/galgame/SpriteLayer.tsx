@@ -1,43 +1,7 @@
-import type { Backdrop as Chosen } from '@/agent'
-import { EXPRESSIONS } from '@/agent/expressions'
+import type { Backdrop as Chosen, Shift } from '@/agent'
 import type { Expression } from './types'
+import { spriteFor } from './cast'
 import { Backdrop, WidescreenBackdrop } from './Backdrop'
-
-export type SpriteSources = Partial<Record<Expression, string>>
-
-const spriteModules = import.meta.glob('../assets/kotone-*.webp', {
-  eager: true,
-  import: 'default',
-  query: '?url',
-}) as Record<string, string>
-
-/**
- * The faces she has been drawn wearing. The partial record is intentional: if
- * the mood table grows ahead of the artwork again, an undrawn face can still
- * fall back to neutral instead of breaking the scene.
- */
-const SPRITE = Object.fromEntries(
-  EXPRESSIONS.flatMap((expression) => {
-    const source = spriteModules[`../assets/kotone-${expression}.webp`]
-    return source ? [[expression, source]] : []
-  }),
-) as SpriteSources
-
-const neutral = SPRITE.neutral
-if (!neutral) throw new Error('Missing bundled neutral sprite')
-
-/** Resolve through a runtime map first so uploaded sprites can be blob: URLs,
- * custom-protocol URLs, or persisted file URLs without becoming build imports. */
-export function spriteFor(expression: Expression, custom: SpriteSources = {}) {
-  return custom[expression] ?? SPRITE[expression] ?? neutral
-}
-
-/** Whether she has actually been drawn wearing this face. A face with no
- * artwork leaves her standing neutral, and the kaomoji stands in for it beside
- * her name (see GalgameClient). */
-export function hasArtwork(expression: Expression, custom: SpriteSources = {}) {
-  return Boolean(custom[expression] ?? SPRITE[expression])
-}
 
 /**
  * Where she stands, and she stays there: one framing, hung off the bottom edge,
@@ -46,12 +10,16 @@ export function hasArtwork(expression: Expression, custom: SpriteSources = {}) {
  */
 export function SpriteLayer({
   expression,
+  shift,
+  name,
   backdrop,
-  sprites,
 }: {
   expression: Expression
+  shift: Shift
+  /** Whoever is standing there, so a screen reader is told who rather than
+   * being told "maid". */
+  name: string
   backdrop: Chosen
-  sprites?: SpriteSources
 }) {
   return (
     <>
@@ -80,8 +48,8 @@ export function SpriteLayer({
             the alpha under the pointer decides (see useClickThrough), which is
             also what makes her a handle you can only grab by the sleeve. */}
           <img
-            src={spriteFor(expression, sprites)}
-            alt="ことね"
+            src={spriteFor(shift, expression)}
+            alt={name}
             draggable={false}
             data-art
             onPointerDown={(event) => {

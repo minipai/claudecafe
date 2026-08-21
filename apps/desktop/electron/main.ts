@@ -8,16 +8,18 @@ import { CAFE_PLUGIN, MaidSession } from './maid'
 import {
   chosenBackdrop,
   chosenLocale,
+  chosenShift,
   lastBounds,
   recentFolders,
   rememberBackdrop,
   rememberBounds,
   rememberFolder,
   rememberLocale,
+  rememberShift,
   rememberSpeech,
 } from './history'
-import { languageSettled, personaOf } from './lines'
-import type { Backdrop } from '../src/agent/bridge'
+import { castOf, languageSettled, nameOf, personaOf } from './lines'
+import type { Backdrop, Shift } from '../src/agent/bridge'
 import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -54,6 +56,7 @@ function readFolderArg() {
 
 function openWindow(cwd: string) {
   const backdrop = chosenBackdrop()
+  const shift = chosenShift()
   const window = new BrowserWindow({
     width: 960,
     height: 800,
@@ -77,6 +80,8 @@ function openWindow(cwd: string) {
         `--cafe-locale=${drawnIn()}`,
         `--cafe-locale-choice=${chosenLocale()}`,
         `--cafe-backdrop=${backdrop.scene}/${backdrop.edge}`,
+        `--cafe-shift=${shift.maid}/${shift.outfit}`,
+        `--cafe-maid-name=${nameOf(CAFE_PLUGIN, shift.maid)}`,
       ],
     },
   })
@@ -195,7 +200,8 @@ ipcMain.handle('cafe:conversations', (event) => shiftOf(event)?.conversations() 
 ipcMain.handle('cafe:folders', () => recentFolders())
 // Read off disk rather than asked of her: the persona is what the session was
 // opened with, so it is there to show even when there is no session to ask.
-ipcMain.handle('cafe:persona', () => personaOf(CAFE_PLUGIN))
+ipcMain.handle('cafe:persona', () => personaOf(CAFE_PLUGIN, chosenShift().maid))
+ipcMain.handle('cafe:cast', () => castOf(CAFE_PLUGIN))
 // Asked on every page rather than handed over as the window is built: a page
 // that reloads after the welcome card was answered must not put it up again.
 // A file read, not a session — a window that cannot sign in still asks.
@@ -237,6 +243,15 @@ ipcMain.on('cafe:set-backdrop', (event, chosen: Backdrop) => {
   windowOf(event)?.webContents.send('cafe:event', { kind: 'backdrop', backdrop: chosen })
 })
 
+/**
+ * Someone else on shift, or the same maid in something else. Nothing reopens
+ * here either — but unlike the room behind her, this one is not what the window
+ * is showing until the next conversation starts: her persona goes into the
+ * system prompt, and a session already running cannot be told she is somebody
+ * else halfway through.
+ */
+ipcMain.on('cafe:set-shift', (_event, shift: Shift) => rememberShift(shift))
+
 /** Another language for her — free text, empty to follow the café's setting. */
 ipcMain.on('cafe:set-speech', (event, language: string) => {
   rememberSpeech(language)
@@ -272,7 +287,8 @@ ipcMain.handle('cafe:open-folder', async (event) => {
 ipcMain.on('cafe:notify', (event, body: string, waiting: boolean) => {
   const window = windowOf(event)
   if (!window || window.isFocused()) return
-  const note = new Notification({ title: waiting ? 'ことね is waiting' : 'ことね', body })
+  const her = nameOf(CAFE_PLUGIN, chosenShift().maid)
+  const note = new Notification({ title: waiting ? `${her} is waiting` : her, body })
   note.on('click', () => {
     if (window.isDestroyed()) return
     window.show()

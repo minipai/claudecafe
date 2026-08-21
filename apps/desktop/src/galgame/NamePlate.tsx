@@ -1,4 +1,4 @@
-import { text } from '@/i18n'
+import { fill, text } from '@/i18n'
 
 /**
  * Galgame-style speaker plate floating over the dialogue frame's top-left
@@ -9,16 +9,16 @@ import { text } from '@/i18n'
  * Her name is also the way in to who she is: press the plate and the persona
  * she is wearing opens.
  */
-export function NamePlate({ onOpen }: { onOpen: () => void }) {
+export function NamePlate({ name, onOpen }: { name: string; onOpen: () => void }) {
   return (
     <button
       type="button"
       onClick={onOpen}
-      aria-label={text().scene.openPersona}
+      aria-label={fill(text().scene.openPersona, { her: name })}
       className="inline-flex cursor-pointer items-center rounded-lg bg-primary px-4 py-1.5 shadow-md transition-shadow hover:shadow-lg"
     >
       <span className="text-sm font-semibold tracking-[0.2em] text-primary-foreground">
-        ことね
+        {name}
       </span>
     </button>
   )

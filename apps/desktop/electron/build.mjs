@@ -18,6 +18,28 @@ const repo = path.resolve(here, '../../..')
  */
 const SKIP = new Set(['dist', '__pycache__', 'ship.sh', 'test.py'])
 
+/**
+ * Whose persona travels with the app: whoever the window has artwork for.
+ *
+ * Read off the sprites rather than listed again here, because the two have to
+ * agree — a maid the window can stand up but has no persona for would answer as
+ * a plain assistant wearing her face, and a persona for a maid nobody can pick
+ * is dead weight. scripts/pack-sprites.sh is what fills that folder.
+ */
+const CAST = whoIsDrawn()
+
+function whoIsDrawn() {
+  const drawn = path.join(here, '../src/assets/cast')
+  const found = fs.existsSync(drawn)
+    ? fs.readdirSync(drawn, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name)
+    : []
+  // Loudly, because the artwork is generated rather than checked in: an empty
+  // folder would otherwise ship an app with nobody's persona in it, which
+  // starts up fine and answers as a plain assistant.
+  if (found.length === 0) throw new Error('No cast artwork staged — run apps/desktop/scripts/pack-sprites.sh first')
+  return found
+}
+
 function stageCafePlugin() {
   const out = path.join(here, '../dist-electron/cafe-plugin')
   fs.rmSync(out, { recursive: true, force: true })
@@ -25,12 +47,17 @@ function stageCafePlugin() {
     recursive: true,
     filter: (source) => !SKIP.has(path.basename(source)),
   })
-  // She lives in the plugin's own maids/ folder, where the persona lookup falls
-  // back to — a master who hired her himself still wins, which is the same file.
-  fs.copyFileSync(
-    path.join(repo, 'packages/characters/kotone/persona.zh.md'),
-    path.join(out, 'maids/kotone.md'),
-  )
+  // They live in the plugin's own maids/ folder, where the persona lookup falls
+  // back to — a master who hired one of them himself still wins, which is the
+  // same file. Everyone the window carries artwork for has to be here: a maid
+  // who can be stood up but has no persona would answer as a plain assistant
+  // wearing her face.
+  for (const maid of CAST) {
+    fs.copyFileSync(
+      path.join(repo, `packages/characters/${maid}/persona.zh.md`),
+      path.join(out, `maids/${maid}.md`),
+    )
+  }
   dropShiftHook(out)
 }
 

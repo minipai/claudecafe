@@ -36,6 +36,25 @@ export type SessionSettings = {
  * off at the edges. `none` for either is nothing and a plain rectangle. */
 export type Backdrop = { scene: string; edge: string }
 
+/**
+ * Who is on shift in this window and what she is wearing. Both are the names of
+ * folders in the cast's artwork, which is also what the café's own shift
+ * assignment calls her — the window is one session, so the maid in it and the
+ * maid its hooks think are on are the same maid.
+ */
+export type Shift = { maid: string; outfit: string }
+
+/**
+ * One maid the shift can be handed to, as her own persona file names her.
+ *
+ * Her name and the wording of her outfits come from that file rather than from
+ * the interface's own catalogue: a maid the master hired from the café was
+ * never in it. An outfit somebody else drew for her is not in there either —
+ * they do not own her persona — so a wardrobe with no wording for it falls back
+ * to the folder's name, which is the one thing its author did choose.
+ */
+export type CastMember = { id: string; name: string; outfits: { id: string; label: string }[] }
+
 /** What the master has turned this window to, kept between launches. A null is
  * something he has never touched: the model and the effort are then the
  * session's own, and the asking mode is whatever his terminal is set to. */
@@ -211,6 +230,19 @@ export type CafeBridge = {
   backdrop: Backdrop
   /** Put another room behind her, or cut the one that is up to another shape. */
   setBackdrop(chosen: Backdrop): void
+  /** Who is on shift here, as it was last left. */
+  shift: Shift
+  /** What to call her, as her persona file does. Handed over with the window
+   * rather than asked for, so the name plate is right on the first frame — a
+   * plate that says one maid and then another reads as the app having changed
+   * its mind about who is standing there. */
+  maidName: string
+  /** Hand the shift to someone else, or put her in something else. Read when a
+   * session opens, so it is the next conversation that she starts. */
+  setShift(shift: Shift): void
+  /** Everyone the shift could be handed to, named as their persona files name
+   * them. The window narrows this to the maids it carries artwork for. */
+  cast(): Promise<CastMember[]>
   start(runId: string, prompt: string, images: Attachment[]): void
   answer(askId: string, value: unknown): void
   interrupt(): void

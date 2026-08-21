@@ -4,7 +4,7 @@ import path from 'node:path'
 import { app } from 'electron'
 import { REPORT_TOOL } from './tools'
 import { describeTool, FALLBACK_LABEL, hasShape, isLongForm, openingLine } from './translate'
-import type { BacklogLine, Backdrop, KeptSettings } from '../src/agent/bridge'
+import type { BacklogLine, Backdrop, KeptSettings, Shift } from '../src/agent/bridge'
 
 /**
  * Which conversation this window is on, and what was said in it.
@@ -245,6 +245,38 @@ export function chosenBackdrop(): Backdrop {
 }
 
 /**
+ * Who is on shift in this window, and what she is wearing.
+ *
+ * Kept rather than drawn fresh: the café hands a terminal session a random maid
+ * because a terminal is one shift among many, but this window is a thing on the
+ * desktop that the master looks at, and something that looked different every
+ * morning would read as the app having lost her.
+ *
+ * Read when a session opens, so handing the shift on takes effect at the next
+ * conversation rather than mid-sentence — her persona is in the system prompt,
+ * and there is no changing that under a session already running.
+ */
+export function rememberShift(shift: Shift) {
+  fs.writeFileSync(shiftFile(), JSON.stringify(shift, null, 2))
+}
+
+export function chosenShift(): Shift {
+  try {
+    const kept = JSON.parse(fs.readFileSync(shiftFile(), 'utf8')) as Partial<Shift>
+    return {
+      maid: typeof kept.maid === 'string' && kept.maid ? kept.maid : DEFAULT_SHIFT.maid,
+      outfit: typeof kept.outfit === 'string' && kept.outfit ? kept.outfit : DEFAULT_SHIFT.outfit,
+    }
+  } catch {
+    return DEFAULT_SHIFT
+  }
+}
+
+/** Who opens the café on a machine that has never been asked: the maid the
+ * window was built around, in the clothes she works in. */
+const DEFAULT_SHIFT: Shift = { maid: 'kotone', outfit: 'uniform' }
+
+/**
  * What she runs as, as the master last set it — which model, how hard she
  * thinks, and how much she asks first. The window forgot all three every time
  * it was closed, which on a desktop app reads as it having forgotten rather
@@ -295,6 +327,8 @@ const speechFile = () => path.join(app.getPath('userData'), 'speech.json')
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json')
 
 const backdropFile = () => path.join(app.getPath('userData'), 'backdrop.json')
+
+const shiftFile = () => path.join(app.getPath('userData'), 'shift.json')
 
 const memoryFile = () => path.join(app.getPath('userData'), 'sessions.json')
 

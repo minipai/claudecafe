@@ -45,6 +45,23 @@ export function speakThis(code: string | null | undefined) {
   return spoken
 }
 
+let onShift = 'ことね'
+
+/**
+ * Whoever is standing in the window, for the strings that name her. Kept beside
+ * the language rather than passed down through the components, for the same
+ * reason: half the interface says her name, and threading it through every one
+ * of them would be carrying one word a very long way.
+ *
+ * Her name is not a translation. It is what her own persona file calls her, and
+ * a maid the master hired himself was never in either catalogue.
+ */
+export const her = () => onShift
+
+export function nowServing(name: string) {
+  onShift = name
+}
+
 /** `Always allow {what}` with the what in it. No plurals, no genders — the
  * catalogue carries a separate key wherever a language needs one. */
 export function fill(template: string, values: Record<string, string | number>) {

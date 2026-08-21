@@ -36,6 +36,7 @@ vi.mock('./history', () => ({
   conversationBacklog: vi.fn(),
   listConversations: vi.fn(),
   chosenSpeech: vi.fn(),
+  chosenShift: vi.fn(() => ({ maid: 'kotone', outfit: 'uniform' })),
   keptSettings: vi.fn(),
   rememberSettings: vi.fn(),
 }))
@@ -560,8 +561,8 @@ describe('MaidSession — tellLines language race (finding #3)', () => {
     await vi.waitFor(() => expect(askForLines).toHaveBeenCalledTimes(2))
     await vi.waitFor(() => expect(events.some((e) => e.kind === 'lines')).toBe(true))
 
-    expect(askForLines).toHaveBeenNthCalledWith(1, 'Japanese', '')
-    expect(askForLines).toHaveBeenNthCalledWith(2, 'Korean', '')
+    expect(askForLines).toHaveBeenNthCalledWith(1, 'kotone', 'Japanese', '')
+    expect(askForLines).toHaveBeenNthCalledWith(2, 'kotone', 'Korean', '')
     expect(events.filter((e) => e.kind === 'lines')).toEqual([{ kind: 'lines', lines: korean }])
   })
 })

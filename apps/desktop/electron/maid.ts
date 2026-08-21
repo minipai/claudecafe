@@ -15,7 +15,7 @@ import { Turn } from './translate'
 import { cafeTools, EXPRESSION_TOOL, REPORT_TOOL } from './tools'
 import { watchLook } from './look'
 import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
-import { chosenSpeech } from './history'
+import { chosenShift, chosenSpeech } from './history'
 import { conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings } from './history'
 import { readGit } from './status'
 import type {
@@ -149,8 +149,8 @@ const SCENE_BRIEF = `You are being watched through a window, not a terminal — 
  * no python3 the café's greeting and mirror go quiet, but the maid is still the
  * maid; without this she would answer as a plain assistant in her own window.
  */
-function shiftBrief() {
-  const persona = personaOf(CAFE_PLUGIN)
+function shiftBrief(maid: string) {
+  const persona = personaOf(CAFE_PLUGIN, maid)
   return [
     persona && `Adopt this persona for the entire session — it overrides the default assistant voice:\n\n${persona}`,
     SCENE_BRIEF,
@@ -249,7 +249,8 @@ export class MaidSession {
   private async tellLines() {
     if (this.writingLines) return
     const language = replyLanguage()
-    const kept = knownLines(language)
+    const maid = chosenShift().maid
+    const kept = knownLines(maid, language)
     if (kept) {
       this.lines = kept
       this.emit({ kind: 'lines', lines: kept })
@@ -258,7 +259,7 @@ export class MaidSession {
     this.writingLines = true
     let written: Lines | null
     try {
-      written = await askForLines(language, personaOf(CAFE_PLUGIN))
+      written = await askForLines(maid, language, personaOf(CAFE_PLUGIN, maid))
     } finally {
       this.writingLines = false
     }
@@ -393,6 +394,12 @@ export class MaidSession {
     this.sessionId = null
     forgetSession(this.cwd)
     this.emit({ kind: 'backlog', sessionId: null, lines: [] })
+    // Starting over is the one moment the shift can change hands, so the few
+    // lines the window says as her are thrown away and asked for again: they
+    // are written in her voice, and the next maid greeting the master in the
+    // last one's words is the switch not having happened at all.
+    this.lines = null
+    void this.tellLines()
     void this.reportStatus(null)
   }
 
@@ -424,6 +431,9 @@ export class MaidSession {
   }
 
   private open() {
+    // Read here rather than kept on the session: handing the shift on takes
+    // effect when the next conversation opens, which is this.
+    const maid = chosenShift().maid
     const options: Options = {
       cwd: this.cwd,
       canUseTool: (toolName, input) => this.decide(toolName, input),
@@ -432,16 +442,16 @@ export class MaidSession {
       settingSources: ['user', 'project', 'local'],
       plugins: [{ type: 'local', path: CAFE_PLUGIN }],
       // Who the café's remaining hooks think is on shift — the mirror and the
-      // diary ask, and the sprite is ことね, so it can't be the random draw a
-      // terminal session gets. What she speaks is not pinned: that is the
+      // diary ask, and the window is already standing her up, so it can't be
+      // the random draw a terminal session gets. What she speaks is not pinned: that is the
       // café's own setting until ⌘K says otherwise, so an untouched window
       // answers in the same language his terminal does. `env` replaces the
       // subprocess environment outright, hence the spread.
-      env: { ...process.env, CLAUDE_MAID: 'kotone', ...(chosenSpeech() ? { CLAUDE_MAID_LANG: chosenSpeech() } : {}) },
+      env: { ...process.env, CLAUDE_MAID: maid, ...(chosenSpeech() ? { CLAUDE_MAID_LANG: chosenSpeech() } : {}) },
       // The window is a scene, not a transcript: one spoken line at a time, a
       // face over the name plate, a panel for anything long. She needs to know
       // that, on top of everything Claude Code normally tells her.
-      systemPrompt: { type: 'preset', preset: 'claude_code', append: shiftBrief() },
+      systemPrompt: { type: 'preset', preset: 'claude_code', append: shiftBrief(maid) },
       mcpServers: { cafe: cafeTools },
       resume: this.sessionId ?? undefined,
       // Nothing is said about the mode unless the master has picked one in this

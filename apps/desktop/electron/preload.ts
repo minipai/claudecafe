@@ -5,6 +5,8 @@ const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? '
 const localeArg = process.argv.find((arg) => arg.startsWith('--cafe-locale=')) ?? ''
 const choiceArg = process.argv.find((arg) => arg.startsWith('--cafe-locale-choice=')) ?? ''
 const backdropArg = process.argv.find((arg) => arg.startsWith('--cafe-backdrop=')) ?? ''
+const shiftArg = process.argv.find((arg) => arg.startsWith('--cafe-shift=')) ?? ''
+const nameArg = process.argv.find((arg) => arg.startsWith('--cafe-maid-name=')) ?? ''
 
 const bridge: CafeBridge = {
   cwd: folderArg.slice('--cafe-cwd='.length),
@@ -19,6 +21,13 @@ const bridge: CafeBridge = {
     edge: backdropArg.slice('--cafe-backdrop='.length).split('/')[1] || 'none',
   },
   setBackdrop: (chosen) => ipcRenderer.send('cafe:set-backdrop', chosen),
+  shift: {
+    maid: shiftArg.slice('--cafe-shift='.length).split('/')[0] || 'kotone',
+    outfit: shiftArg.slice('--cafe-shift='.length).split('/')[1] || 'uniform',
+  },
+  maidName: nameArg.slice('--cafe-maid-name='.length),
+  setShift: (shift) => ipcRenderer.send('cafe:set-shift', shift),
+  cast: () => ipcRenderer.invoke('cafe:cast'),
   start: (runId, prompt, images) => ipcRenderer.send('cafe:start', runId, prompt, images),
   answer: (askId, value) => ipcRenderer.send('cafe:answer', askId, value),
   interrupt: () => ipcRenderer.send('cafe:interrupt'),

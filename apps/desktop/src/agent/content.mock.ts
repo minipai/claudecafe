@@ -4,7 +4,7 @@
  * own setting — but because this script is what strangers meet on the web
  * demo, where there is nobody to have set anything. */
 
-import type { ContextReport, McpServer, SessionStatus, StatusReport, Subagent, UsageReport } from './bridge'
+import type { CastMember, ContextReport, McpServer, SessionStatus, StatusReport, Subagent, UsageReport } from './bridge'
 
 export const SHORT_ANSWER = 'Oh, that one defaults to a 30 second timeout ♪ Nothing to set, Master.'
 
@@ -360,3 +360,12 @@ export const LOOK_BY_TIER = {
     dialogue: 'Caught it! It was the connection pool all along!',
   },
 } as const
+
+/**
+ * The two maids the window is drawn with, for a browser with no café behind it.
+ * Live, this comes off their persona files — see castOf in electron/lines.ts.
+ */
+export const MOCK_CAST: CastMember[] = [
+  { id: 'kotone', name: 'ことね', outfits: [{ id: 'uniform', label: '女僕裝' }, { id: 'one-piece', label: '連身裙' }] },
+  { id: 'kurumi', name: 'くるみ', outfits: [{ id: 'uniform', label: '女僕裝' }] },
+]

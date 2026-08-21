@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { fill, text } from '@/i18n'
+import { fill, her, text } from '@/i18n'
 import type { ChatMessage } from './types'
 
 type ChatHistoryProps = {
@@ -208,7 +208,7 @@ export function ChatHistory({
                             isUser ? 'text-foreground/60' : 'text-foreground/85'
                           }`}
                         >
-                          {isUser ? t.log.you : t.log.her}
+                          {isUser ? t.log.you : her()}
                         </div>
                       </div>
 
@@ -264,7 +264,7 @@ export function ChatHistory({
           <div className="flex items-center gap-1">
             {isAwaitingAnswer && (
               <Button size="sm" className="mr-2 text-xs" onClick={onClose}>
-                {t.log.waiting}
+                {fill(t.log.waiting, { her: her() })}
               </Button>
             )}
             <Button

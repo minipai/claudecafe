@@ -3,7 +3,9 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { Stage } from './Stage'
-import { SpriteLayer, hasArtwork } from './SpriteLayer'
+import { SpriteLayer } from './SpriteLayer'
+import { hasArtwork, wearable } from './cast'
+import { ShiftPanel } from './ShiftPanel'
 import { KAOMOJI } from '@/agent/expressions'
 import { DialogueBox } from './DialogueBox'
 import { BackdropPicker } from './BackdropPicker'
@@ -33,10 +35,10 @@ import { toast } from 'sonner'
 import { createChatMessage, createPreviewHistory, recordToolResult } from './chatlog'
 import { choreograph, type Scene } from './choreography'
 import { applyWindowEvent, type WindowScene } from './windowEvents'
-import type { Backdrop as Chosen } from '@/agent'
+import type { Backdrop as Chosen, Shift } from '@/agent'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
 import { lines as currentLines } from './content'
-import { fill, text } from '@/i18n'
+import { fill, her, nowServing, text } from '@/i18n'
 import {
   INITIAL_LOOK,
   isLive,
@@ -131,6 +133,13 @@ export function GalgameClient() {
   const [backdrop, setBackdrop] = useState<Chosen>(
     () => window.cafe?.backdrop ?? { scene: 'mucha', edge: 'none' },
   )
+  /** Who is standing there and what she is wearing. Off the bridge for the same
+   * reason as the room behind her: the first frame has to have the right maid
+   * in it. */
+  const [shift, setShift] = useState<Shift>(() => wearable(window.cafe?.shift ?? { maid: 'kotone', outfit: 'uniform' }))
+  /** Asked as a conversation is started over, which is the only moment she can
+   * be swapped: her persona is in the session's system prompt. */
+  const [pickingShift, setPickingShift] = useState(false)
   /** Nobody on this machine has ever said what she should speak or what the
    * window should be drawn in, so both are asked once before anything else. */
   const [welcoming, setWelcoming] = useState(false)
@@ -237,7 +246,7 @@ export function GalgameClient() {
    * or she signed a line with it. */
   function showFace(expr: Expression) {
     setExpression(expr)
-    setStandIn(hasArtwork(expr) ? null : KAOMOJI[expr])
+    setStandIn(hasArtwork(shift, expr) ? null : KAOMOJI[expr])
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -477,12 +486,37 @@ export function GalgameClient() {
   }
 
   /**
-   * Start over in this folder. Everything the old session accumulated goes with
-   * it — backlog, tasks, report, standing permissions — and ことね greets the
-   * master again, the way she does at the start of any session.
+   * Start over in this folder — but ask who is taking it first. A fresh
+   * conversation is the only moment the shift can change hands, so it is the
+   * moment to ask: her persona goes into the session's system prompt, and there
+   * is no telling a maid mid-conversation that she is somebody else.
    */
   function startNewSession() {
     if (changingSession) return
+    setPickingShift(true)
+  }
+
+  /**
+   * She has been picked, so the conversation starts over with her in it.
+   *
+   * The main process is told before the reset rather than after: it reads who
+   * is on shift as the session opens, and a maid arriving a moment late would
+   * mean one more conversation in the old one's voice.
+   */
+  function handOverShift(next: Shift, name: string) {
+    setPickingShift(false)
+    setShift(next)
+    nowServing(name)
+    window.cafe?.setShift(next)
+    startOver()
+  }
+
+  /**
+   * Everything the old session accumulated goes with it — backlog, tasks,
+   * report, standing permissions — and she greets the master again, the way she
+   * does at the start of any session.
+   */
+  function startOver() {
     stopEverything()
     permissionRef.current?.resolve({ behavior: 'deny' })
     askPermission(null)
@@ -658,7 +692,7 @@ export function GalgameClient() {
     <>
       <Stage>
         <TodoBoard todos={historyOpen || readerOpen ? [] : todos} />
-        <SpriteLayer expression={expression} backdrop={backdrop} />
+        <SpriteLayer expression={expression} shift={shift} name={her()} backdrop={backdrop} />
 
         {/* The band above the box is where the whispers float; there is nothing
             to click there, so the pointer goes through it too. */}
@@ -766,6 +800,12 @@ export function GalgameClient() {
       <KeysPanel open={panel === '/keys'} onClose={() => setPanel(null)} />
       <PersonaPanel open={panel === '/persona'} onClose={() => setPanel(null)} />
       <WelcomePanel open={welcoming} onDone={() => setWelcoming(false)} />
+      <ShiftPanel
+        open={pickingShift}
+        chosen={shift}
+        onStart={handOverShift}
+        onCancel={() => setPickingShift(false)}
+      />
       <CommandBar
         open={switching}
         folder={folder}

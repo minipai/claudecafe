@@ -4,7 +4,7 @@ import type { Text } from './en'
 export const zhTW: Text = {
   bar: {
     placeholder: {
-      commands: '要ことね做什麼呢？',
+      commands: '要{her}做什麼呢？',
       folder: '哪個資料夾？',
       conversation: '哪一段對話？',
       mode: '要用哪個權限模式？',
@@ -37,7 +37,7 @@ export const zhTW: Text = {
     current: '目前',
     empty: '沒有這個名字的東西。',
     hint: '↑↓ 移動 · ⏎ 選擇 · esc 關閉',
-    title: 'ことね能做的事',
+    title: '{her}能做的事',
     description: '指令，以及它們通往的資料夾與對話。',
     system: '跟著系統走',
   },
@@ -88,7 +88,7 @@ export const zhTW: Text = {
     messages: '{count} 則訊息',
     oneMessage: '1 則訊息',
     latest: '跳到最新',
-    waiting: 'ことね在等ご主人様回答',
+    waiting: '{her}在等ご主人様回答',
     compact: '壓縮',
     compacting: '壓縮中…',
     compactHint: '把比較舊的回合摘要起來，空出上下文',
@@ -96,7 +96,6 @@ export const zhTW: Text = {
     newSessionHint: '在這個資料夾重新開始',
     compacted: '已壓縮',
     you: 'ご主人様',
-    her: 'ことね',
   },
   panel: {
     usage: {
@@ -168,9 +167,16 @@ export const zhTW: Text = {
     },
     close: '關閉{what}',
   },
+  shift: {
+    title: '誰來上班',
+    body: '這裡選的人，會從下一段對話開始上班。已經在對話裡的女僕沒辦法講到一半換成別人。',
+    wearing: '穿',
+    start: '開始上班',
+    keep: '算了',
+  },
   welcome: {
     title: '歡迎光臨咖啡廳',
-    body: 'ことね準備上班了。先問兩件事，其他的她會邊做邊問。',
+    body: '{her}準備上班了。先問兩件事，其他的她會邊做邊問。',
     interface: '介面用',
     speaks: '她回話用',
     otherLanguage: '其他語言——想怎麼寫都可以',
@@ -179,7 +185,7 @@ export const zhTW: Text = {
   },
   trouble: {
     signIn: {
-      title: 'ことね進不了咖啡廳',
+      title: '{her}進不了咖啡廳',
       body: '這個視窗是透過 Claude Code 工作的，而這台 Mac 上的 Claude Code 還沒登入。登入一次，她就能開始上班了。',
       open: '在終端機登入',
       retry: '登入好了，讓她進來',
@@ -190,14 +196,14 @@ export const zhTW: Text = {
       body: '方案的用量已經到上限，要等重置才能繼續。視窗可以告訴你現在是什麼狀況。',
     },
     offline: {
-      title: 'ことね連不上任何東西',
+      title: '{her}連不上任何東西',
       body: '連線在半路斷掉了。網路回來以後，再跟她說一次話就好。',
     },
     detail: '回傳的內容',
     close: '關閉',
   },
   scene: {
-    say: '跟ことね說點什麼…',
+    say: '跟{her}說點什麼…',
     send: '送出',
     stop: '停下',
     close: '關閉',
@@ -206,7 +212,7 @@ export const zhTW: Text = {
     tasks: '工作項目',
     history: '對話紀錄（⌘L）',
     openHistory: '打開對話紀錄',
-    openPersona: 'ことね是誰',
+    openPersona: '{her}是誰',
     commandBar: '其他所有的事（⌘K）',
     openCommandBar: '打開指令列',
     model: '模型',

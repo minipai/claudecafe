@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { SPOKEN } from './CommandBar'
-import { LOCALES, text } from '@/i18n'
+import { fill, her, LOCALES, text } from '@/i18n'
 
 /**
  * The first thing a machine that has never had her sees. Two languages are
@@ -55,7 +55,7 @@ export function WelcomePanel({ open, onDone }: { open: boolean; onDone: () => vo
           <div className="border-b border-border px-6 py-5">
             <DialogTitle className="text-lg font-semibold text-foreground">{t.title}</DialogTitle>
             <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
-              {t.body}
+              {fill(t.body, { her: her() })}
             </DialogDescription>
           </div>
 

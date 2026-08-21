@@ -42,6 +42,13 @@ function createBridge() {
     mcpServers: vi.fn().mockResolvedValue([]),
     status: vi.fn().mockResolvedValue(null),
     persona: vi.fn().mockResolvedValue('# Personality\n\nYou are ことね, an AI maid.'),
+    shift: { maid: 'kotone', outfit: 'uniform' },
+    maidName: 'ことね',
+    setShift: vi.fn(),
+    cast: vi.fn().mockResolvedValue([
+      { id: 'kotone', name: 'ことね', outfits: [{ id: 'uniform', label: '女僕裝' }] },
+      { id: 'kurumi', name: 'くるみ', outfits: [{ id: 'uniform', label: '女僕裝' }] },
+    ]),
     conversations: vi.fn().mockResolvedValue([]),
     folders: vi.fn().mockResolvedValue([]),
     switchFolder: vi.fn(),

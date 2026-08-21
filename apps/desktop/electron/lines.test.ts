@@ -68,26 +68,35 @@ describe('knownLines', () => {
   })
 
   it('returns the built-in English lines without touching the file at all', () => {
-    expect(knownLines('English')).toBe(ENGLISH)
-    expect(knownLines('english')).toBe(ENGLISH)
-    expect(knownLines('  English  ')).toBe(ENGLISH)
+    expect(knownLines('kotone', 'English')).toBe(ENGLISH)
+    expect(knownLines('kotone', 'english')).toBe(ENGLISH)
+    expect(knownLines('kotone', '  English  ')).toBe(ENGLISH)
   })
 
   it('is null for a language never written', () => {
-    expect(knownLines('日本語')).toBeNull()
+    expect(knownLines('kotone', '日本語')).toBeNull()
+  })
+
+  it('does not put one maid\'s lines in another maid\'s mouth', () => {
+    fs.writeFileSync(
+      path.join(app.getPath('userData'), 'lines.json'),
+      JSON.stringify({ kotone: { 日本語: WRITTEN } }),
+    )
+    expect(knownLines('kotone', '日本語')).toEqual(WRITTEN)
+    expect(knownLines('kurumi', '日本語')).toBeNull()
   })
 
   it('treats a kept note with no waiting lines as unwritten', () => {
     fs.writeFileSync(
       path.join(app.getPath('userData'), 'lines.json'),
-      JSON.stringify({ 日本語: { ...WRITTEN, waiting: [] } }),
+      JSON.stringify({ kotone: { 日本語: { ...WRITTEN, waiting: [] } } }),
     )
-    expect(knownLines('日本語')).toBeNull()
+    expect(knownLines('kotone', '日本語')).toBeNull()
   })
 
   it('returns a kept note that does have waiting lines', () => {
-    fs.writeFileSync(path.join(app.getPath('userData'), 'lines.json'), JSON.stringify({ 日本語: WRITTEN }))
-    expect(knownLines('日本語')).toEqual(WRITTEN)
+    fs.writeFileSync(path.join(app.getPath('userData'), 'lines.json'), JSON.stringify({ kotone: { 日本語: WRITTEN } }))
+    expect(knownLines('kotone', '日本語')).toEqual(WRITTEN)
   })
 })
 

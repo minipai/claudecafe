@@ -9,7 +9,7 @@
 export const en = {
   bar: {
     placeholder: {
-      commands: 'What should ことね do?',
+      commands: 'What should {her} do?',
       folder: 'Which folder?',
       conversation: 'Which conversation?',
       mode: 'Which permission mode?',
@@ -95,7 +95,7 @@ export const en = {
     messages: '{count} messages',
     oneMessage: '1 message',
     latest: 'Jump to latest',
-    waiting: 'ことね is waiting for an answer',
+    waiting: '{her} is waiting for an answer',
     compact: 'Compact',
     compacting: 'Compacting…',
     compactHint: 'Summarise older turns to free up context',
@@ -103,7 +103,6 @@ export const en = {
     newSessionHint: 'Start over in this folder',
     compacted: 'compacted',
     you: 'ご主人様',
-    her: 'ことね',
   },
   panel: {
     usage: {
@@ -175,9 +174,16 @@ export const en = {
     },
     close: 'Close {what}',
   },
+  shift: {
+    title: 'Who is on shift',
+    body: 'She starts the next conversation as whoever is picked here. A maid already in one cannot be told she is somebody else halfway through.',
+    wearing: 'Wearing',
+    start: 'Start her shift',
+    keep: 'Never mind',
+  },
   welcome: {
     title: 'Welcome to the café',
-    body: 'ことね is about to start her shift. Two things first — the rest she will ask about as it comes up.',
+    body: '{her} is about to start her shift. Two things first — the rest she will ask about as it comes up.',
     interface: 'The window is drawn in',
     speaks: 'She answers in',
     otherLanguage: 'Something else — write it in any words',
@@ -186,7 +192,7 @@ export const en = {
   },
   trouble: {
     signIn: {
-      title: 'ことね cannot get into the café',
+      title: '{her} cannot get into the café',
       body: 'This window works through Claude Code, and Claude Code is not signed in on this Mac. Sign in once and she can start her shift.',
       open: 'Sign in in Terminal',
       retry: 'Signed in — let her in',
@@ -197,14 +203,14 @@ export const en = {
       body: "The plan's usage limit has been reached, so nothing can be run until it resets. The window can show you where that stands.",
     },
     offline: {
-      title: 'ことね cannot reach anything',
+      title: '{her} cannot reach anything',
       body: 'The connection dropped on the way out. Once the network is back, say something to her again.',
     },
     detail: 'What came back',
     close: 'Close',
   },
   scene: {
-    say: 'Say something to ことね…',
+    say: 'Say something to {her}…',
     send: 'Send',
     stop: 'Stop',
     close: 'Close',
@@ -213,7 +219,7 @@ export const en = {
     tasks: 'TASKS',
     history: 'Conversation history (⌘L)',
     openHistory: 'Open conversation history',
-    openPersona: 'Who ことね is',
+    openPersona: 'Who {her} is',
     commandBar: 'Everything else (⌘K)',
     openCommandBar: 'Open the command bar',
     model: 'Model',

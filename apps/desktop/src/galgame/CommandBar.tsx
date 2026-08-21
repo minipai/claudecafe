@@ -20,7 +20,7 @@ import {
   Users,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { CATALOGUES, fill, LOCALES, text } from '@/i18n'
+import { CATALOGUES, fill, her, LOCALES, text } from '@/i18n'
 import type { Backdrop, Conversation, SessionSettings } from '@/agent'
 
 /** One thing the window can do, or one place it can go. */
@@ -347,7 +347,7 @@ export function CommandBar({
                 else back()
               }
             }}
-            placeholder={t.bar.placeholder[step]}
+            placeholder={fill(t.bar.placeholder[step], { her: her() })}
             className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
