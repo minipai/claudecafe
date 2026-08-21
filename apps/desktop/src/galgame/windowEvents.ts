@@ -1,7 +1,7 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { faceFor } from '@/agent/expressions'
-import { speakThis } from '@/i18n'
-import type { Backdrop, BacklogLine, BridgeEvent, CafeCommand, Lines, Look, ModelChoice, Report, SessionSettings, Trouble } from '@/agent'
+import { nowServing, speakThis } from '@/i18n'
+import type { Backdrop, BacklogLine, BridgeEvent, CafeCommand, Lines, Look, ModelChoice, Report, SessionSettings, Shift, Trouble } from '@/agent'
 import { createChatMessage } from './chatlog'
 import { speakThese } from './content'
 import type { ChatMessage, Expression, Phase } from './types'
@@ -21,6 +21,9 @@ export type WindowScene = {
   setSpeech: (speech: { language: string; chosen: string }) => void
   setLocale: (choice: string) => void
   setBackdrop: (backdrop: Backdrop) => void
+  /** Who is standing there — only ever set by the window itself, when a
+   * conversation comes back to the maid who served it. */
+  setShift: (shift: Shift) => void
   setLines: (lines: Lines) => void
   setChatMessages: Dispatch<SetStateAction<ChatMessage[]>>
   setTrouble: (trouble: Trouble | null) => void
@@ -66,6 +69,11 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
     scene.setLocale(event.choice)
   } else if (event.kind === 'backdrop') {
     scene.setBackdrop(event.backdrop)
+  } else if (event.kind === 'shift') {
+    // Ahead of the backlog it comes with, so the conversation never lands in
+    // the wrong maid's face — the name plate and the sprite change first.
+    scene.setShift(event.shift)
+    nowServing(event.maidName)
   } else if (event.kind === 'lines') {
     // Written after the window opened, so the opening may already be on
     // screen in English: it is swapped out as long as it is still all she

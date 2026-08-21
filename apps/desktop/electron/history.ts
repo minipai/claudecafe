@@ -277,6 +277,38 @@ export function chosenShift(): Shift {
 const DEFAULT_SHIFT: Shift = { maid: 'kotone', outfit: 'uniform' }
 
 /**
+ * Who served one conversation, written where the café's own hooks look it up.
+ *
+ * The window keeps one shift and the conversations keep none, so going back to
+ * an old one used to hand it to whoever happens to be on now — she would read
+ * the other maid's lines as her own, in the wrong face. The café plugin already
+ * has a place for this, one folder per session under `~/.claude/cafe/`; it only
+ * writes there when it draws a maid at random, and the window never draws. So
+ * the window signs the same sheet, and gets to read every conversation back —
+ * its own and the ones held in a terminal.
+ */
+export function rememberWhoServed(sessionId: string, maid: string) {
+  try {
+    fs.mkdirSync(shiftSheet(sessionId), { recursive: true })
+    fs.writeFileSync(path.join(shiftSheet(sessionId), 'on-shift'), maid)
+  } catch {
+    // No café plugin on this machine, or its folder is not ours to write in.
+    // Worth nothing more than the shift not coming back with the conversation.
+  }
+}
+
+export function whoServed(sessionId: string): string | null {
+  try {
+    return fs.readFileSync(path.join(shiftSheet(sessionId), 'on-shift'), 'utf8').trim() || null
+  } catch {
+    return null // held before the window wrote these, or by a plugin-less Claude Code
+  }
+}
+
+const shiftSheet = (sessionId: string) =>
+  path.join(os.homedir(), '.claude/cafe/sessions', sessionId)
+
+/**
  * What she runs as, as the master last set it — which model, how hard she
  * thinks, and how much she asks first. The window forgot all three every time
  * it was closed, which on a desktop app reads as it having forgotten rather

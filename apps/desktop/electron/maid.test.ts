@@ -17,6 +17,7 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
 vi.mock('./lines', () => ({
   askForLines: vi.fn(),
   knownLines: vi.fn(),
+  nameOf: vi.fn(() => 'くるみ'),
   personaOf: vi.fn(),
   replyLanguage: vi.fn(),
 }))
@@ -37,6 +38,9 @@ vi.mock('./history', () => ({
   listConversations: vi.fn(),
   chosenSpeech: vi.fn(),
   chosenShift: vi.fn(() => ({ maid: 'kotone', outfit: 'uniform' })),
+  rememberShift: vi.fn(),
+  rememberWhoServed: vi.fn(),
+  whoServed: vi.fn(),
   keptSettings: vi.fn(),
   rememberSettings: vi.fn(),
 }))
@@ -50,7 +54,7 @@ vi.mock('./status', () => ({
 import { contextTokens, MaidSession, nameOf, PromptQueue, readUsage, readWindows, whyStopped } from './maid'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
-import { chosenSpeech, conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings } from './history'
+import { chosenSpeech, conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings, rememberShift, whoServed } from './history'
 import { readGit } from './status'
 
 /** A clean slate for every test, whether or not it cares — a MaidSession test
@@ -64,6 +68,8 @@ beforeEach(() => {
   vi.mocked(replyLanguage).mockReset().mockReturnValue('English')
   vi.mocked(rememberSession).mockReset()
   vi.mocked(forgetSession).mockReset()
+  vi.mocked(rememberShift).mockReset()
+  vi.mocked(whoServed).mockReset()
   vi.mocked(lastConversation).mockReset().mockReturnValue(null)
   vi.mocked(conversationBacklog).mockReset().mockReturnValue(null)
   vi.mocked(listConversations).mockReset().mockReturnValue([])
@@ -746,6 +752,34 @@ describe('MaidSession — resume/reset/refresh', () => {
 
     expect(events).toContainEqual({ kind: 'backlog', sessionId: 'conv-c', lines: [{ role: 'user', content: 'hi', at: 1 }] })
     expect(rememberSession).toHaveBeenCalledWith('/tmp/cafe-maid-test-resume-backlog', 'conv-c')
+  })
+
+  it('gives a conversation back to the maid who served it', () => {
+    trackConnections()
+    vi.mocked(whoServed).mockReturnValue('kurumi')
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-resume-shift', emit)
+
+    session.resume('conv-kurumi')
+
+    expect(rememberShift).toHaveBeenCalledWith({ maid: 'kurumi', outfit: 'uniform' })
+    expect(events).toContainEqual({
+      kind: 'shift',
+      shift: { maid: 'kurumi', outfit: 'uniform' },
+      maidName: 'くるみ',
+    })
+  })
+
+  it('leaves the shift alone when the conversation was already hers', () => {
+    trackConnections()
+    vi.mocked(whoServed).mockReturnValue('kotone')
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-resume-same-shift', emit)
+
+    session.resume('conv-kotone')
+
+    expect(rememberShift).not.toHaveBeenCalled()
+    expect(events.some((event) => event.kind === 'shift')).toBe(false)
   })
 
   it('throws the conversation away on reset, forgetting it and clearing the backlog', () => {

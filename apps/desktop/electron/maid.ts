@@ -14,8 +14,8 @@ import {
 import { Turn } from './translate'
 import { cafeTools, EXPRESSION_TOOL, REPORT_TOOL } from './tools'
 import { watchLook } from './look'
-import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
-import { chosenShift, chosenSpeech } from './history'
+import { askForLines, knownLines, nameOf as maidName, personaOf, replyLanguage } from './lines'
+import { chosenShift, chosenSpeech, rememberShift, rememberWhoServed, whoServed } from './history'
 import { conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings } from './history'
 import { readGit } from './status'
 import type {
@@ -187,6 +187,9 @@ export class MaidSession {
   /** The conversation this window is on — the previous one until the SDK says
    * otherwise, so a reload picks up where the master left off. */
   private sessionId: string | null = null
+  /** Who this session was opened as — signed onto the transcript once it has an
+   * id, so going back to it later brings her back rather than whoever is on. */
+  private onShift: string | null = null
   private settings: SessionSettings = openingSettings()
   private models: ModelChoice[] = []
   private commands: CafeCommand[] = []
@@ -384,8 +387,32 @@ export class MaidSession {
     this.close()
     this.sessionId = sessionId
     rememberSession(this.cwd, sessionId)
+    this.takeBackShift(sessionId)
     this.emit({ kind: 'backlog', sessionId, lines: conversationBacklog(this.cwd, sessionId) ?? [] })
     void this.reportStatus(null)
+  }
+
+  /**
+   * Whoever served this conversation takes it back, if it was not the maid
+   * standing here now. Going back to an old one is the second moment the shift
+   * can change hands, and the only one the master does not pick: the alternative
+   * is her reading somebody else's lines out of the log as her own.
+   *
+   * Legal here for the same reason handing the shift over is legal at a fresh
+   * conversation — the connection has just been dropped, and her persona is
+   * fixed when the next one opens. What she is wearing does not come back with
+   * her: the sheet holds a name and nothing else, and the café clothes are the
+   * one outfit every maid has. Anything the window cannot dress her in it
+   * quietly puts right anyway.
+   */
+  private takeBackShift(sessionId: string) {
+    const served = whoServed(sessionId)
+    if (!served || served === chosenShift().maid) return
+    const shift = { maid: served, outfit: 'uniform' }
+    rememberShift(shift)
+    this.lines = null
+    void this.tellLines()
+    this.emit({ kind: 'shift', shift, maidName: maidName(CAFE_PLUGIN, served) })
   }
 
   /** Throw the conversation away — the next prompt starts a blank one. */
@@ -432,8 +459,9 @@ export class MaidSession {
 
   private open() {
     // Read here rather than kept on the session: handing the shift on takes
-    // effect when the next conversation opens, which is this.
-    const maid = chosenShift().maid
+    // effect when the next conversation opens, which is this. Kept on the
+    // session too, so the transcript can be signed with her once it has an id.
+    const maid = (this.onShift = chosenShift().maid)
     const options: Options = {
       cwd: this.cwd,
       canUseTool: (toolName, input) => this.decide(toolName, input),
@@ -538,6 +566,8 @@ export class MaidSession {
         if (sdk.type === 'system' && sdk.subtype === 'init') {
           this.sessionId = sdk.session_id
           rememberSession(this.cwd, sdk.session_id)
+          // Sign the transcript with her, so going back to it brings her back.
+          if (this.onShift) rememberWhoServed(sdk.session_id, this.onShift)
           this.followLook(sdk.session_id)
           // With no pick of its own, the window shows what the session came up
           // as — the only place his terminal's setting is ever said out loud.

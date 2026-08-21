@@ -202,6 +202,9 @@ export type BridgeEvent =
   /** The conversation as the transcript has it — sent on refresh, which is how
    * the backlog survives a reload. */
   | { kind: 'backlog'; sessionId: string | null; lines: BacklogLine[] }
+  /** The shift changed hands without the master handing it over: he went back
+   * to a conversation somebody else served, and she is taking it back. */
+  | { kind: 'shift'; shift: Shift; maidName: string }
   | { kind: 'settings'; settings: SessionSettings; models: ModelChoice[] }
   /** The folder she is on now — it changes under the window when she is sent
    * somewhere else, so nothing may read it once and keep it. */

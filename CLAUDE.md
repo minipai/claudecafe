@@ -10,8 +10,10 @@ python — no package.json, not a workspace member):
   SDK). Transparent and frameless: just a standing portrait that changes expression, and
   she *is* the agent (`@anthropic-ai/claude-agent-sdk`, borrowing Claude Code's
   credentials). **ことね and くるみ** are the two the window carries — the shift is handed
-  over in a panel that opens when a conversation is started over, which is the only moment
-  it can (her persona lives in the session's system prompt).
+  over in a panel that opens when a conversation is started over, since her persona lives in
+  the session's system prompt and only a fresh session can carry another one. Going back to
+  an old conversation switches it too, the other way: whoever served it is signed onto the
+  transcript (the café plugin's own `sessions/<id>/on-shift`), and takes it back.
 - **`apps/website`** — the persona showcase (Hono SSR), and also the **hiring channel**:
   the `/<id>.md` route serves the full persona file including frontmatter — download it
   into `~/.claude/cafe/personas/` (the cafe plugin's draw pool), or keep it anywhere and

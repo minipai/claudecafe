@@ -30,6 +30,7 @@ function createScene(overrides: Partial<WindowScene> = {}): WindowScene {
     setSettings: vi.fn(),
     setModels: vi.fn(),
     setFolder: vi.fn(),
+    setShift: vi.fn(),
     setCommands: vi.fn(),
     setSpeech: vi.fn(),
     setLocale: vi.fn(),

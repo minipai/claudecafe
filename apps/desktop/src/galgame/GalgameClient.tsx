@@ -274,6 +274,8 @@ export function GalgameClient() {
       setSpeech,
       setLocale,
       setBackdrop,
+      // Whoever the window cannot dress is put back in something it has.
+      setShift: (next: Shift) => setShift(wearable(next)),
       setLines,
       setChatMessages,
       setTrouble,
