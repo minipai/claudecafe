@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
-import { CAFE_PLUGIN, MaidSession } from './maid'
+import { CAFE_PLUGIN, MaidSession, nowCarrying } from './maid'
 import {
   chosenBackdrop,
   chosenLocale,
@@ -188,7 +188,10 @@ ipcMain.on('cafe:start', (event, runId: string, prompt: string, images: Attachme
 ipcMain.on('cafe:answer', (event, askId: string, value: unknown) => shiftOf(event)?.answer(askId, value))
 ipcMain.on('cafe:interrupt', (event) => shiftOf(event)?.interrupt())
 ipcMain.on('cafe:new-session', (event) => shiftOf(event)?.reset())
-ipcMain.on('cafe:refresh', (event) => shiftOf(event)?.refresh())
+ipcMain.on('cafe:refresh', (event, carrying: string[]) => {
+  nowCarrying(carrying)
+  shiftOf(event)?.refresh()
+})
 ipcMain.on('cafe:configure', (event, patch) => shiftOf(event)?.configure(patch))
 ipcMain.on('cafe:resume', (event, sessionId: string) => shiftOf(event)?.resume(sessionId))
 ipcMain.handle('cafe:usage', (event) => shiftOf(event)?.usage() ?? null)

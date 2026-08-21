@@ -288,25 +288,39 @@ const DEFAULT_SHIFT: Shift = { maid: 'kotone', outfit: 'uniform' }
  * its own and the ones held in a terminal.
  */
 export function rememberWhoServed(sessionId: string, maid: string) {
+  // Never over a name already there. The window signs on every session it
+  // opens, including a conversation it picked up rather than started — and the
+  // maid who was actually asked those questions is the one worth keeping, or
+  // the terminal the master left it in loses her for good.
+  if (whoServed(sessionId)) return
+  const sheet = shiftSheet(sessionId)
+  if (!sheet) return
   try {
-    fs.mkdirSync(shiftSheet(sessionId), { recursive: true })
-    fs.writeFileSync(path.join(shiftSheet(sessionId), 'on-shift'), maid)
+    fs.mkdirSync(sheet, { recursive: true })
+    fs.writeFileSync(path.join(sheet, 'on-shift'), maid)
   } catch {
-    // No café plugin on this machine, or its folder is not ours to write in.
-    // Worth nothing more than the shift not coming back with the conversation.
+    // Read-only home, full disk. Worth nothing more than the shift not coming
+    // back with this conversation later.
   }
 }
 
 export function whoServed(sessionId: string): string | null {
+  const sheet = shiftSheet(sessionId)
+  if (!sheet) return null
   try {
-    return fs.readFileSync(path.join(shiftSheet(sessionId), 'on-shift'), 'utf8').trim() || null
+    return fs.readFileSync(path.join(sheet, 'on-shift'), 'utf8').trim() || null
   } catch {
     return null // held before the window wrote these, or by a plugin-less Claude Code
   }
 }
 
-const shiftSheet = (sessionId: string) =>
-  path.join(os.homedir(), '.claude/cafe/sessions', sessionId)
+/** Session ids come back off disk as filenames — the conversation list reads a
+ * folder and strips `.jsonl` — so a file called `..jsonl` would otherwise walk
+ * this one folder up and read, or write, the café's own state. */
+function shiftSheet(sessionId: string) {
+  if (sessionId !== path.basename(sessionId) || sessionId.startsWith('.')) return null
+  return path.join(os.homedir(), '.claude/cafe/sessions', sessionId)
+}
 
 /**
  * What she runs as, as the master last set it — which model, how hard she

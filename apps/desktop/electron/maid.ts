@@ -149,6 +149,23 @@ const SCENE_BRIEF = `You are being watched through a window, not a terminal — 
  * no python3 the café's greeting and mirror go quiet, but the maid is still the
  * maid; without this she would answer as a plain assistant in her own window.
  */
+/**
+ * Who the window carries artwork for, as the renderer's own glob of the staged
+ * cast has it — told to the main process when the page announces itself, and
+ * the same for every window, because it is a property of the build.
+ *
+ * The main process cannot work this out for itself: the sprites are bundled
+ * into the renderer at build time, and the plugin's persona folder is a wider
+ * list than the drawn one (a maid hired for the terminal has a persona here and
+ * no face). It only matters for the one decision that picks a maid nobody
+ * asked for — taking a conversation back to whoever served it.
+ */
+let carried: string[] = []
+
+export function nowCarrying(maids: string[]) {
+  carried = maids
+}
+
 function shiftBrief(maid: string) {
   const persona = personaOf(CAFE_PLUGIN, maid)
   return [
@@ -217,6 +234,11 @@ export class MaidSession {
     if (previous) {
       this.sessionId ??= previous.sessionId
       rememberSession(this.cwd, previous.sessionId)
+      // Not only the ones the master goes back to on purpose: arriving on a
+      // folder picks up whatever was last said there, which may well have been
+      // said to another maid in a terminal. Before the session opens, so it
+      // opens as her.
+      this.takeBackShift(previous.sessionId)
     }
     // Sent even when there is nothing: arriving somewhere new must clear what
     // was on screen, not leave the last folder's conversation standing.
@@ -266,9 +288,10 @@ export class MaidSession {
     } finally {
       this.writingLines = false
     }
-    if (replyLanguage() !== language) {
-      // Told to speak something else again before this trip came back — what
-      // it wrote is for a language nobody asked for any more.
+    if (replyLanguage() !== language || chosenShift().maid !== maid) {
+      // Told to speak something else, or handed to somebody else, before this
+      // trip came back — what it wrote is in a voice nobody is standing in any
+      // more. The lines are hers as much as the language is.
       void this.tellLines()
       return
     }
@@ -408,6 +431,11 @@ export class MaidSession {
   private takeBackShift(sessionId: string) {
     const served = whoServed(sessionId)
     if (!served || served === chosenShift().maid) return
+    // Someone the window has no artwork for — a maid hired for the terminal,
+    // or the plugin's nameless stand-in. The conversation stays with whoever is
+    // on: a name plate and a persona that disagree with the sprite underneath
+    // them read worse than her reading somebody else's log.
+    if (!carried.includes(served)) return
     const shift = { maid: served, outfit: 'uniform' }
     rememberShift(shift)
     this.lines = null

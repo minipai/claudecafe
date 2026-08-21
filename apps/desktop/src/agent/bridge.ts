@@ -253,7 +253,10 @@ export type CafeBridge = {
   newSession(): void
   /** Open the session and report what is in it — status, backlog, settings.
    * The window asks once it is listening. */
-  refresh(): void
+  /** The page is up: open the session and say everything already true. The
+   * maids it has artwork for go with it — the sprites are globbed into the
+   * renderer, so the main process has no other way to know who it can stand up. */
+  refresh(carrying: string[]): void
   /** Change what the session runs as. Model and mode take effect at once; a new
    * effort is picked up on the next turn. */
   configure(patch: Partial<SessionSettings>): void

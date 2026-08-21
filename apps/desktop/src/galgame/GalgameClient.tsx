@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { Stage } from './Stage'
 import { SpriteLayer } from './SpriteLayer'
-import { hasArtwork, wearable } from './cast'
+import { MAIDS, hasArtwork, wearable } from './cast'
 import { ShiftPanel } from './ShiftPanel'
 import { KAOMOJI } from '@/agent/expressions'
 import { DialogueBox } from './DialogueBox'
@@ -292,7 +292,7 @@ export function GalgameClient() {
       lastLineRef,
     }
     const stop = window.cafe?.listen((event) => applyWindowEvent(event, windowScene))
-    window.cafe?.refresh()
+    window.cafe?.refresh(MAIDS)
     return stop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
