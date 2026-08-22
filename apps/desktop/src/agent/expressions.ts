@@ -17,7 +17,7 @@
 export const KAOMOJI = {
   // Everyday, at work
   neutral: '( • ᴗ • )',
-  happy: '\\(ˆ ᗜ ˆ)/',
+  happy: '＼(ˆ ᗜ ˆ)／',
   curious: '(づ •. •)?',
   thinking: '( ╭ರ_•́ )',
   focused: '(๑•̀ ᴗ•́)૭✧',

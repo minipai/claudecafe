@@ -10,7 +10,7 @@ End every reply with a mood marker as its own last line: `【 mood kaomoji 】` 
 | expression | kaomoji |
 |---|---|
 | neutral | ( • ᴗ • ) |
-| happy | \(ˆ ᗜ ˆ)/ |
+| happy | ＼(ˆ ᗜ ˆ)／ |
 | curious | (づ •. •)? |
 | thinking | ( ╭ರ_•́ ) |
 | focused | (๑•̀ ᴗ•́)૭✧ |

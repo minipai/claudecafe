@@ -163,14 +163,14 @@ describe('applyWindowEvent', () => {
         sessionId: 'session-1',
         lines: [
           { role: 'user', content: 'hi', at: 1 },
-          { role: 'assistant', content: 'done ♪ 【 開心 \\(ˆ ᗜ ˆ)/ 】', at: 2 },
+          { role: 'assistant', content: 'done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】', at: 2 },
         ],
       },
       scene,
     )
     expect(scene.setChatMessages).toHaveBeenCalledWith([
       expect.objectContaining({ role: 'user', content: 'hi' }),
-      expect.objectContaining({ role: 'assistant', content: 'done ♪ 【 開心 \\(ˆ ᗜ ˆ)/ 】' }),
+      expect.objectContaining({ role: 'assistant', content: 'done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】' }),
     ])
     expect(scene.setExpression).toHaveBeenCalledWith('happy')
     // The marker is worn on her face, not left typed in the box.
@@ -212,7 +212,7 @@ describe('applyWindowEvent', () => {
         kind: 'backlog',
         sessionId: 'session-1',
         lines: [
-          { role: 'assistant', content: 'first para\n\n- and a list\n\n【 開心 \\(ˆ ᗜ ˆ)/ 】', at: 1, laidOut: true },
+          { role: 'assistant', content: 'first para\n\n- and a list\n\n【 開心 ＼(ˆ ᗜ ˆ)／ 】', at: 1, laidOut: true },
         ],
       },
       scene,
