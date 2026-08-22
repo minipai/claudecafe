@@ -4,7 +4,7 @@ import type { Locale } from '../i18n.js'
  * the same window, running on its canned script because there is no Claude Code
  * behind a stranger's browser. It is framed rather than described: nothing said
  * about a maid on your desktop lands the way ten seconds with her does. */
-const DEMO_URL = 'https://claudecafe.starcoder.dev/'
+const DEMO_URL = 'https://claudecafe-demo.starcoder.dev/'
 
 /** Where the built app is fetched from — object storage rather than the box
  * this site runs on, which would otherwise carry a 238 MB download and ship a

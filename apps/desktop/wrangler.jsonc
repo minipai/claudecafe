@@ -10,7 +10,7 @@
   },
   "routes": [
     {
-      "pattern": "claudecafe.starcoder.dev",
+      "pattern": "claudecafe-demo.starcoder.dev",
       "custom_domain": true
     }
   ]
