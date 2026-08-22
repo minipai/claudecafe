@@ -703,7 +703,10 @@ export function GalgameClient() {
   return (
     <>
       <Stage>
-        <TodoBoard todos={historyOpen || readerOpen ? [] : todos} />
+        {/* Her board belongs to the work, not to the window: once she is off
+            her feet again it goes, or a half-ticked list from the last thing
+            asked stays pinned over the next conversation. */}
+        <TodoBoard todos={historyOpen || readerOpen || phase === 'idle' ? [] : todos} />
         <SpriteLayer expression={expression} shift={shift} name={her()} backdrop={backdrop} />
 
         {/* The band above the box is where the whispers float; there is nothing
