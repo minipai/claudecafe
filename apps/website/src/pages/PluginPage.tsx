@@ -277,13 +277,13 @@ export function PluginPage({ locale }: { locale: Locale }) {
               {zh ? (
                 <>
                   在 <a href={href(locale, '/')}>claudecafe.dev</a> 選一位女僕，下載她的 persona 存進{' '}
-                  <code>~/.claude/cafe/personas/</code> 就完成僱用，抽班池自動多一位。
+                  <code>~/.config/claudecafe/personas/</code> 就完成僱用，抽班池自動多一位。
                   還沒僱人之前，無名女僕「？？？」會先幫你顧店——順便告訴你去哪裡僱人。
                 </>
               ) : (
                 <>
                   Pick a maid on <a href={href(locale, '/')}>claudecafe.dev</a>, download her persona into{' '}
-                  <code>~/.claude/cafe/personas/</code> — hired; the rotation grows by one.
+                  <code>~/.config/claudecafe/personas/</code> — hired; the rotation grows by one.
                   Until someone is hired, the nameless maid ？？？ keeps the shop open — and tells you where to hire.
                 </>
               )}
@@ -294,13 +294,13 @@ export function PluginPage({ locale }: { locale: Locale }) {
             <dd>
               {zh ? (
                 <>
-                  語言、值班、抽班池，用一句話調整——設定住在 <code>~/.claude/cafe/config.json</code>，
+                  語言、值班、抽班池，用一句話調整——設定住在 <code>~/.config/claudecafe/config.json</code>，
                   下個 session 生效；想立刻換人，用 <code>CLAUDE_MAID=kokona claude</code> 開新視窗。
                 </>
               ) : (
                 <>
                   Language, who's on shift, the rotation — adjust in one sentence. Settings live in{' '}
-                  <code>~/.claude/cafe/config.json</code> and take effect next session; to swap right now,
+                  <code>~/.config/claudecafe/config.json</code> and take effect next session; to swap right now,
                   open a new window with <code>CLAUDE_MAID=kokona claude</code>.
                 </>
               )}

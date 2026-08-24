@@ -2,7 +2,7 @@
 """The maid status line: all rows, or one row picked by argv.
 
 Native statusLine renders each stdout line as its own row — run with no argument:
-  "statusLine": { "type": "command", "command": "python3 ~/.claude/cafe/bin/statusbar.py" }
+  "statusLine": { "type": "command", "command": "python3 ~/.config/claudecafe/bin/statusbar.py" }
 
 ccstatusline custom-command widgets each hold a single row — pass the row number:
   statusbar.py 1   → the scene (whose subject is the maid's name)

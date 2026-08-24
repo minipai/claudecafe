@@ -1,13 +1,13 @@
 # Claude Café
 
-A café of AI maids for [Claude Code](https://claude.com/claude-code) — the same
-assistant, working the room in an apron.
+A café of AI maids for [Claude Code](https://claude.com/claude-code) and Codex —
+the same assistant, working the room in an apron.
 
 Hire one and she takes the shift: she answers in her own voice, greets you by the
-clock, marks how she feels at the end of every reply, and leaves a line in the
-handover diary when she clocks off. There are five of them, and they are not
-interchangeable — ことね coaxes a sulking function back to work, ここな insists she
-only helped because she couldn't watch you struggle.
+clock, and marks how she feels at the end of every reply. In Claude Code she also
+leaves a line in the handover diary when she clocks off. There are five of them,
+and they are not interchangeable — ことね coaxes a sulking function back to work,
+ここな insists she only helped because she couldn't watch you struggle.
 
 **[claudecafe.dev](https://claudecafe.dev)** — meet them, and hire one.
 
@@ -32,10 +32,10 @@ Then hire someone:
 /cafe:hire kotone
 ```
 
-`/cafe:hire` pulls her persona from the site into `~/.claude/cafe/personas/`,
-which is the pool a shift is drawn from. Hire several and the café assigns one
-per session; `/cafe:config` sets the language and picks a regular. Until anyone
-is hired, a nameless maid keeps the place open.
+The shared `hire` skill pulls her persona from the site into the café's shared
+pool at `~/.config/claudecafe/personas/`. Hire several and the café assigns one
+per session; the shared `config` skill sets the language and picks a regular.
+Until anyone is hired, a nameless maid keeps the place open.
 
 Everything the plugin needs is the system's own `bash` and `python3` — no build
 step, no runtime, no node on `PATH`.
@@ -56,10 +56,9 @@ generated from. A folder counts as a character only if it holds a persona file.
 
 ## What's in here
 
-- **[`packages/cafe`](packages/cafe)** — the Claude Code plugin. Puts a maid on
-  shift at session start and keeps her alive through the session: a time-aware
-  greeting, the current time every turn, an optional status-line "look", and the
-  handover diary.
+- **[`packages/cafe`](packages/cafe)** — one plugin package for Claude Code and
+  Codex, with separate manifests, hook profiles, and user-data roots. Claude
+  Code additionally gets the optional status-line "look" and handover diary.
 - **[`apps/desktop`](apps/desktop)** — her window on the desktop
   (Electron + the Claude Agent SDK). Transparent and frameless: a standing
   portrait that changes expression, and she *is* the agent. macOS for now.

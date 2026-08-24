@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { app } from 'electron'
 import { chosenSpeech } from './history'
+import { cafeRoot } from './cafehome'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import type { CastMember, Lines } from '../src/agent/bridge'
 
@@ -52,7 +53,7 @@ export function replyLanguage() {
  * Empty on a machine that has never heard of the café. */
 function cafeLanguage() {
   try {
-    const config = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude/cafe/config.json'), 'utf8'))
+    const config = JSON.parse(fs.readFileSync(path.join(cafeRoot(), 'config.json'), 'utf8'))
     return String(config.lang ?? '').trim()
   } catch {
     return '' // no café config
@@ -196,7 +197,7 @@ function bodyOf(file: string) {
 
 /** Where the master keeps the maids he has hired, as the café reads it. */
 function personasDir() {
-  const home = path.join(os.homedir(), '.claude/cafe')
+  const home = cafeRoot()
   try {
     const config = JSON.parse(fs.readFileSync(path.join(home, 'config.json'), 'utf8'))
     const told = String(config.personas_dir ?? '').trim()

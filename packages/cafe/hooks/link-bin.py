@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SessionStart hook: keep ~/.claude/cafe/bin pointing at this version's bin/.
+"""SessionStart hook: keep the shared Cafe bin pointing at this version's bin/.
 
 ccstatusline runs the statusbar widgets itself, so it never sees
 ${CLAUDE_PLUGIN_ROOT} — its config needs an absolute path. The plugin's real
@@ -9,9 +9,13 @@ bump. Point it at this symlink instead and the config never has to change.
 import os
 import sys
 
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "bin"))
+from cafehome import cafe_root
+
 sys.stdin.read()  # drain the hook payload
 
-link = os.path.expanduser("~/.claude/cafe/bin")
+link = str(cafe_root() / "bin")
 target = os.environ.get("CLAUDE_PLUGIN_ROOT")
 if not target:
     sys.exit(0)

@@ -1,0 +1,33 @@
+{
+  "name": "cafe",
+  "version": "0.6.0+codex.20260824191846",
+  "description": "Puts a maid persona on shift with a time-aware greeting and per-turn context.",
+  "skills": "./skills/",
+  "author": {
+    "name": "minipai",
+    "url": "https://claudecafe.dev"
+  },
+  "homepage": "https://claudecafe.dev",
+  "repository": "https://github.com/minipai/claudecafe",
+  "license": "MIT",
+  "keywords": [
+    "persona",
+    "companion",
+    "cafe"
+  ],
+  "interface": {
+    "displayName": "Claude Cafe",
+    "shortDescription": "Put a maid persona on shift",
+    "longDescription": "Adds a configurable maid persona, a time-aware session greeting, and fresh per-turn context to Codex sessions.",
+    "developerName": "minipai",
+    "category": "Productivity",
+    "capabilities": [
+      "Personalization",
+      "Lifecycle hooks"
+    ],
+    "websiteURL": "https://claudecafe.dev",
+    "defaultPrompt": [
+      "Who is on shift in the cafe?"
+    ]
+  }
+}

@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { app } from 'electron'
+import { cafeRoot } from './cafehome'
 import { REPORT_TOOL } from './tools'
 import { describeTool, FALLBACK_LABEL, hasShape, isLongForm, openingLine } from './translate'
 import type { BacklogLine, Backdrop, KeptSettings, Shift } from '../src/agent/bridge'
@@ -282,7 +283,7 @@ const DEFAULT_SHIFT: Shift = { maid: 'kotone', outfit: 'uniform' }
  * The window keeps one shift and the conversations keep none, so going back to
  * an old one used to hand it to whoever happens to be on now — she would read
  * the other maid's lines as her own, in the wrong face. The café plugin already
- * has a place for this, one folder per session under `~/.claude/cafe/`; it only
+ * has a place for this, one folder per session under the shared Cafe root; it only
  * writes there when it draws a maid at random, and the window never draws. So
  * the window signs the same sheet, and gets to read every conversation back —
  * its own and the ones held in a terminal.
@@ -319,7 +320,7 @@ export function whoServed(sessionId: string): string | null {
  * this one folder up and read, or write, the café's own state. */
 function shiftSheet(sessionId: string) {
   if (sessionId !== path.basename(sessionId) || sessionId.startsWith('.')) return null
-  return path.join(os.homedir(), '.claude/cafe/sessions', sessionId)
+  return path.join(cafeRoot(), 'sessions', sessionId)
 }
 
 /**

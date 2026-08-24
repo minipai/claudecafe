@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Shared path rules for the maid state files.
+"""Shared path rules for the Cafe's state files.
 
-Each Claude Code session gets its own state so several open windows never
-overwrite each other. When no session_id is available, fall back to a global
-dir so nothing breaks.
+Each session gets its own state so several open windows never overwrite each
+other, and every host reads and writes one shared data root.
 """
 import json
 import os
 import sys
 
+from cafehome import cafe_root
+
 HOME = os.path.expanduser("~")
-ROOT = f"{HOME}/.claude/cafe"  # the plugin's one home under ~/.claude, named after it
+ROOT = str(cafe_root())
 CONFIG = f"{ROOT}/config.json"  # all persistent settings in one file
 DIARY = f"{ROOT}/diary.md"  # one shared handover diary for the whole café
 
@@ -19,7 +20,7 @@ DIARY = f"{ROOT}/diary.md"  # one shared handover diary for the whole café
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 def config():
-    """~/.claude/cafe/config.json — every key optional:
+    """The Cafe's shared config.json — every key optional:
     lang (reply language), maid (fixed pick, "none" = nobody),
     personas_dir (folder of the user's own personas),
     builtin_cast (false = drop the bundled fallback maid too, so an empty

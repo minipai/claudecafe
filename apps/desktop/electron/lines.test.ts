@@ -103,11 +103,13 @@ describe('knownLines', () => {
 describe('replyLanguage', () => {
   let home: string
   const originalEnv = process.env.CLAUDE_MAID_LANG
+  const originalXdg = process.env.XDG_CONFIG_HOME
 
   beforeEach(() => {
     home = fs.mkdtempSync(path.join(os.tmpdir(), 'cafe-home-'))
     vi.spyOn(os, 'homedir').mockReturnValue(home)
     delete process.env.CLAUDE_MAID_LANG
+    delete process.env.XDG_CONFIG_HOME
     fs.rmSync(path.join(app.getPath('userData'), 'speech.json'), { force: true })
   })
 
@@ -115,11 +117,13 @@ describe('replyLanguage', () => {
     vi.restoreAllMocks()
     if (originalEnv === undefined) delete process.env.CLAUDE_MAID_LANG
     else process.env.CLAUDE_MAID_LANG = originalEnv
+    if (originalXdg === undefined) delete process.env.XDG_CONFIG_HOME
+    else process.env.XDG_CONFIG_HOME = originalXdg
   })
 
   function writeConfig(lang: string) {
-    fs.mkdirSync(path.join(home, '.claude/cafe'), { recursive: true })
-    fs.writeFileSync(path.join(home, '.claude/cafe/config.json'), JSON.stringify({ lang }))
+    fs.mkdirSync(path.join(home, '.config/claudecafe'), { recursive: true })
+    fs.writeFileSync(path.join(home, '.config/claudecafe/config.json'), JSON.stringify({ lang }))
   }
 
   it('defaults to English when nothing says otherwise', () => {

@@ -1,6 +1,6 @@
 import fs from 'node:fs'
-import os from 'node:os'
 import path from 'node:path'
+import { cafeRoot } from './cafehome'
 import type { Look } from '../src/agent/types'
 
 /**
@@ -15,7 +15,7 @@ import type { Look } from '../src/agent/types'
  * polls the path rather than the folder.
  */
 export function watchLook(sessionId: string, onLook: (look: Look) => void) {
-  const file = path.join(os.homedir(), '.claude/cafe/sessions', sessionId, 'look.txt')
+  const file = path.join(cafeRoot(), 'sessions', sessionId, 'look.txt')
   let last = ''
 
   const reread = () => {

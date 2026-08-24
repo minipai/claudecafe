@@ -1,26 +1,38 @@
 # cafe
 
 Claude Café in **one plugin**: a maid on shift (persona injected at session
-start) plus the liveliness layer (greeting, per-turn time, mood marker, a
-status-line "look" and a shared handover diary). Three commands —
-`/cafe:hire` to hire a maid, `/cafe:config` for settings, `/cafe:statusline`
-to wire up the status line; everything else is hooks.
+start) plus the liveliness layer (greeting, per-turn time, and mood marker).
+Claude Code adds a status-line "look" and handover diary. The shared `hire` and
+`config` skills work in Claude Code and Codex; Claude Code also has
+`/cafe:statusline` to wire up its status line. Everything else is hooks.
 
 The plugin is the café's operating system; the maids themselves are **hired
 from [claudecafe.dev](https://claudecafe.dev)** — `/cafe:hire <id>` fetches a
-maid's persona (`claudecafe.dev/<id>.md`, Chinese under `/zh/`) into
-`~/.claude/cafe/personas/`, and a maid page's download link is the manual
-route to the same folder. Until someone is hired, a nameless maid keeps the
-place open.
+maid's persona (`claudecafe.dev/<id>.md`, Chinese under `/zh/`) into the current
+host's `cafe/personas/`, and a maid page's download link is the manual route to
+the same folder. Until someone is hired, a nameless maid keeps the place open.
+
+## Claude Code and Codex
+
+The same package carries two lifecycle profiles. Claude Code reads
+`hooks/claude-hooks.json`, selected explicitly by `.claude-plugin/plugin.json`,
+and gets the complete café including the look, diary, and status-line wiring.
+Codex discovers the default `hooks/hooks.json`, which keeps only the portable
+persona, greeting, and per-turn time hooks. It deliberately does not register
+the Claude-specific look, diary, or status-line hooks.
+
+Both hosts load the same `skills/config/SKILL.md` and `skills/hire/SKILL.md`,
+and share one data root: `$XDG_CONFIG_HOME/claudecafe`, defaulting to
+`~/.config/claudecafe`. `bin/cafehome.py` is the single resolver for that rule.
 
 | Component | Type | What it does |
 |-----------|------|--------------|
 | `load-persona.py` | `SessionStart` hook | Puts a maid on shift: injects the chosen persona's body (frontmatter stripped) plus the reply language. Shift order: `CLAUDE_MAID` env → this session's `on-shift` file → config `maid` → a draw from the maids you've hired into `personas/`; while nobody is hired, the bundled nameless maid keeps the café open. `none` = nobody on shift (no persona injected — bring your own via `CLAUDE.md`). |
 | `session-greeting.py` | `SessionStart` hook | Hands over the local time (no scripted wording — a hardcoded "it is getting late" never expires), the weather (wttr.in, 2s cap, skipped offline), the recent handover-diary entries, and the mood-marker cue. Also starts the shift tidy: resets the shift clock and last shift's look, and sweeps session state older than 7 days. |
 | `current-time.py` | `UserPromptSubmit` hook | A per-turn status line for the model: current time ｜ hours on shift ｜ today's commits ｜ festival, so the clock never goes stale. |
-| `look-update.py` | `Stop` hook | Has the maid "check the mirror": forks a background `claude -p --model haiku` that writes a scene line + a dialogue line to `look.txt`. The maid's mood is read straight off the transcript (the last `【 mood kaomoji 】` marker). Regenerates after every tool-using turn; chat-only turns re-check every 50k tokens of context growth. Opt-in (`look: true`, set by `/cafe:statusline`) — off, it exits before spending anything. |
-| `diary-write.py` | `SessionEnd` hook | The maid on shift leaves one line in the shared handover diary — written by a detached background `claude -p --model haiku` from a transcript digest, so it's in her voice. |
-| `link-bin.py` | `SessionStart` hook | Keeps `~/.claude/cafe/bin` symlinked at this version's `bin/`, so status-line config survives version bumps. |
+| `look-update.py` | Claude Code `Stop` hook | Has the maid "check the mirror": forks a background `claude -p --model haiku` that writes a scene line + a dialogue line to `look.txt`. The maid's mood is read straight off the transcript (the last `【 mood kaomoji 】` marker). Regenerates after every tool-using turn; chat-only turns re-check every 50k tokens of context growth. Opt-in (`look: true`, set by `/cafe:statusline`) — off, it exits before spending anything. |
+| `diary-write.py` | Claude Code `SessionEnd` hook | The maid on shift leaves one line in the shared handover diary — written by a detached background `claude -p --model haiku` from a transcript digest, so it's in her voice. |
+| `link-bin.py` | Claude Code `SessionStart` hook | Keeps `~/.config/claudecafe/bin` symlinked at this version's `bin/`, so status-line config survives version bumps. |
 
 The mood marker is a **response-style flourish** for the reply itself; consumers
 (the look generator today, a companion app tomorrow) read it straight off the
@@ -31,9 +43,9 @@ from whoever is on shift.
 
 ## Customizing: config.json and your own personas
 
-`/cafe:config` is the guided way (menu or plain language: `/cafe:config lang
-English`). Underneath it's one optional file, `~/.claude/cafe/config.json`
-(every key optional):
+The `config` skill is the guided way. Underneath it is one optional shared file:
+`~/.config/claudecafe/config.json` (or `$XDG_CONFIG_HOME/claudecafe/config.json`
+when set). Every key is optional:
 
 ```json
 {
@@ -51,7 +63,7 @@ English`). Underneath it's one optional file, `~/.claude/cafe/config.json`
 - `maid` — a fixed pick instead of the random draw; `"none"` puts nobody on
   shift (no persona injected). `CLAUDE_MAID` env overrides per window.
 - `personas_dir` — where your own persona files live (default
-  `~/.claude/cafe/personas`).
+  `<current Cafe root>/personas`).
 - `builtin_cast` — `false` drops the bundled nameless maid, so an empty
   personas_dir means nobody on shift instead of her.
 - `festivals` — the built-in festival calendar is maid-café flavored
@@ -59,11 +71,13 @@ English`). Underneath it's one optional file, `~/.claude/cafe/config.json`
   it; `false` drops the festival segment entirely. A pack is one flat object
   of fixed dates: `{"02-14": "西洋情人節", "10-10": "國慶日"}` — movable feasts
   (lunar calendar, nth-weekday rules) are out of scope.
-- `look` — `true` turns on the background mirror shots (default off — they
+- `look` — Claude Code only; `true` turns on the background mirror shots
+  (default off — they
   spend API credit, a `claude -p --model haiku` call each, and are invisible
   until a status line displays them). `/cafe:statusline` sets this up
   end to end; without it the status line shows the maid's bare name.
-- `diary` — `false` skips the handover-diary line at session end.
+- `diary` — Claude Code only; `false` skips the handover-diary line at session
+  end.
 - `greeting` — `false` drops the session-start briefing (greeting, weather,
   diary recap, mood-marker cue). Housekeeping (shift clock, session sweep)
   still runs.
@@ -79,16 +93,24 @@ out of the random draw (an explicit pick still works). The nameless maid can
 be retired the same way — a `noname.md` stub containing only that frontmatter.
 When every hired maid is off duty, she comes back to keep the café open.
 
-## State: everything under ~/.claude/cafe/
+## State: one shared root
 
 ```
-~/.claude/cafe/
-  bin → <plugin>/bin        # maintained by link-bin.py
+~/.config/claudecafe/       # or $XDG_CONFIG_HOME/claudecafe
+
+The shared root contains:
   config.json               # settings (optional, see above)
-  diary.md                  # the shared handover diary (trimmed to 200 entries)
   personas/<id>.md          # your own personas (optional)
-  sessions/<session_id>/    # per-window state: on-shift, look.txt…
+  sessions/<session_id>/    # per-window state: on-shift…
+
+Claude Code additionally writes:
+  bin → <plugin>/bin        # maintained by link-bin.py
+  diary.md                  # handover diary (trimmed to 200 entries)
+  sessions/<session_id>/look.txt
 ```
+
+The `bin` link, look, and diary are Claude-only. Config, personas, and session
+state are shared across hosts.
 
 Per-window shift state is what lets two windows run different maids at once:
 the draw is written into the window's shift file, so resuming brings back the
@@ -104,7 +126,7 @@ The native `statusLine` runs one script that prints both rows
 (the scene's subject is the maid's own name; the dialogue rides below):
 
 ```json
-"statusLine": { "type": "command", "command": "python3 ~/.claude/cafe/bin/statusbar.py" }
+"statusLine": { "type": "command", "command": "python3 ~/.config/claudecafe/bin/statusbar.py" }
 ```
 
 ```
@@ -117,12 +139,12 @@ Command** widgets for the same rows (point at the symlink, never at the versione
 plugin path — that breaks on every update):
 
 ```
-~/.claude/cafe/bin/statusbar.py 1   # the scene
-~/.claude/cafe/bin/statusbar.py 2   # the dialogue
+~/.config/claudecafe/bin/statusbar.py 1   # the scene
+~/.config/claudecafe/bin/statusbar.py 2   # the dialogue
 ```
 
 Nobody on shift means every widget prints nothing and the rows collapse.
-Wiring it by hand? Also set `"look": true` in `~/.claude/cafe/config.json` —
+Wiring it by hand? Also set `"look": true` in `~/.config/claudecafe/config.json` —
 generation stays off until someone can see it.
 
 ## No build step

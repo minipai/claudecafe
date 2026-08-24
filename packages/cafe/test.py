@@ -21,18 +21,20 @@ import unittest
 TEST_HOME = tempfile.mkdtemp(prefix="cafe-test-")
 atexit.register(shutil.rmtree, TEST_HOME, ignore_errors=True)
 os.environ["HOME"] = TEST_HOME  # must precede the imports below
-for var in ("CLAUDE_MAID", "CLAUDE_MAID_LANG", "CLAUDE_MAID_SUB"):
+for var in ("CAFE_HOST", "CODEX_HOME", "XDG_CONFIG_HOME", "CLAUDE_MAID",
+            "CLAUDE_MAID_LANG", "CLAUDE_MAID_SUB"):
     os.environ.pop(var, None)
 
 PLUGIN = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, f"{PLUGIN}/bin")
 sys.path.insert(0, f"{PLUGIN}/hooks")
+import cafehome  # noqa: E402
 import maidstate  # noqa: E402
 festival = importlib.import_module("festival")
 load_persona = importlib.import_module("load-persona")
 look_update = importlib.import_module("look-update")
 
-CAFE = f"{TEST_HOME}/.claude/cafe"
+CAFE = f"{TEST_HOME}/.config/claudecafe"
 FAKE_PLUGIN = f"{TEST_HOME}/fake-plugin"
 
 
@@ -61,6 +63,20 @@ class CafeTest(unittest.TestCase):
     def tearDown(self):
         for mod in (maidstate, load_persona):
             mod.PLUGIN_ROOT = self._real_root
+
+
+class CafeHomeTest(unittest.TestCase):
+    def test_default_root_is_under_config(self):
+        self.assertEqual(str(cafehome.cafe_root()), CAFE)
+
+    def test_xdg_config_home_replaces_the_default_base(self):
+        custom = f"{TEST_HOME}/custom-config"
+        os.environ["XDG_CONFIG_HOME"] = custom
+        try:
+            self.assertEqual(str(cafehome.cafe_root()),
+                             f"{custom}/claudecafe")
+        finally:
+            del os.environ["XDG_CONFIG_HOME"]
 
 
 class ConfigTest(CafeTest):
@@ -258,6 +274,18 @@ class HookProcessTest(CafeTest):
         self.assertNotIn("---", r.stdout)  # frontmatter stripped
         self.assertIn(maidstate.DEFAULT_LANG, r.stdout)
 
+    def test_host_envs_do_not_split_the_shared_root(self):
+        write(f"{CAFE}/config.json", json.dumps({"maid": "sharedmaid"}))
+        write(f"{CAFE}/personas/sharedmaid.md",
+              "---\nname: Shared Maid\n---\nShared persona.\n")
+
+        r = self._run("hooks/load-persona.py", env={
+            "CAFE_HOST": "codex",
+            "CODEX_HOME": f"{TEST_HOME}/custom-codex",
+        })
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("Shared persona.", r.stdout)
+
     def test_sub_session_guard(self):
         for script in ("hooks/load-persona.py", "hooks/session-greeting.py"):
             r = self._run(script, env={"CLAUDE_MAID_SUB": "1",
@@ -307,6 +335,77 @@ class HookProcessTest(CafeTest):
                           (("2",), "「line」\n"), (("row2",), ""), (("0",), ""):
             r = self._run("bin/statusbar.py", stdin=payload, argv=argv)
             self.assertEqual((r.returncode, r.stdout, r.stderr), (0, want, ""), argv)
+
+
+class PackageLayoutTest(unittest.TestCase):
+    """Both products share one archive but select different hook profiles."""
+
+    @classmethod
+    def setUpClass(cls):
+        def load(relative):
+            with open(f"{PLUGIN}/{relative}", encoding="utf-8") as f:
+                return json.load(f)
+
+        cls.claude_manifest = load(".claude-plugin/plugin.json")
+        cls.codex_manifest = load(".codex-plugin/plugin.json")
+        cls.claude_hooks = load("hooks/claude-hooks.json")["hooks"]
+        cls.codex_hooks = load("hooks/hooks.json")["hooks"]
+
+    @staticmethod
+    def commands(hooks):
+        return {
+            hook["command"]
+            for groups in hooks.values()
+            for group in groups
+            for hook in group["hooks"]
+        }
+
+    def test_manifests_select_the_expected_hook_profiles(self):
+        self.assertEqual(self.claude_manifest["hooks"],
+                         "./hooks/claude-hooks.json")
+        # Codex discovers hooks/hooks.json by convention; its validated
+        # manifest must not try to declare the unsupported hooks field.
+        self.assertNotIn("hooks", self.codex_manifest)
+        self.assertEqual(self.codex_manifest["name"], "cafe")
+        self.assertEqual(self.codex_manifest["skills"], "./skills/")
+
+    def test_claude_keeps_the_complete_lifecycle(self):
+        self.assertEqual(set(self.claude_hooks),
+                         {"SessionStart", "UserPromptSubmit", "SessionEnd", "Stop"})
+        commands = self.commands(self.claude_hooks)
+        for script in ("link-bin.py", "diary-write.py", "look-update.py"):
+            self.assertTrue(any(script in command for command in commands), script)
+
+    def test_codex_excludes_claude_only_hooks(self):
+        self.assertEqual(set(self.codex_hooks),
+                         {"SessionStart", "UserPromptSubmit"})
+        commands = self.commands(self.codex_hooks)
+        for script in ("link-bin.py", "diary-write.py", "look-update.py"):
+            self.assertFalse(any(script in command for command in commands), script)
+
+    def test_portable_hooks_are_shared(self):
+        claude = self.commands(self.claude_hooks)
+        codex = self.commands(self.codex_hooks)
+        for script in ("load-persona.py", "session-greeting.py", "current-time.py"):
+            self.assertTrue(any(script in command for command in claude), script)
+            self.assertTrue(any(script in command for command in codex), script)
+
+    def test_hook_profiles_do_not_pin_a_data_host(self):
+        claude = self.commands(self.claude_hooks)
+        codex = self.commands(self.codex_hooks)
+        self.assertTrue(all(command.startswith("python3 ")
+                            for command in claude | codex))
+        self.assertTrue(all("${PLUGIN_ROOT}" in command for command in codex))
+
+    def test_config_and_hire_are_single_shared_skills(self):
+        for name in ("config", "hire"):
+            skill = f"{PLUGIN}/skills/{name}/SKILL.md"
+            self.assertTrue(os.path.isfile(skill), skill)
+            self.assertFalse(os.path.exists(f"{PLUGIN}/commands/{name}.md"))
+            with open(skill, encoding="utf-8") as f:
+                text = f.read()
+            self.assertIn("cafehome.py", text)
+            self.assertNotIn("--host", text)
 
 
 if __name__ == "__main__":

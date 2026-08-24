@@ -73,7 +73,8 @@ function stageCafePlugin() {
  * mirror and the diary are what the café is, and they degrade quietly.
  */
 function dropShiftHook(out) {
-  const file = path.join(out, 'hooks/hooks.json')
+  const manifest = JSON.parse(fs.readFileSync(path.join(out, '.claude-plugin/plugin.json'), 'utf8'))
+  const file = path.resolve(out, manifest.hooks ?? 'hooks/hooks.json')
   const config = JSON.parse(fs.readFileSync(file, 'utf8'))
   for (const group of config.hooks.SessionStart) {
     group.hooks = group.hooks.filter((hook) => !hook.command.includes('load-persona'))

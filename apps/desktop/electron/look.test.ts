@@ -7,20 +7,24 @@ import { watchLook } from './look'
 describe('watchLook', () => {
   let home: string
   let fastTimers: ReturnType<typeof setInterval>[]
+  const originalXdg = process.env.XDG_CONFIG_HOME
 
   beforeEach(() => {
     home = fs.mkdtempSync(path.join(os.tmpdir(), 'cafe-home-'))
     vi.spyOn(os, 'homedir').mockReturnValue(home)
+    delete process.env.XDG_CONFIG_HOME
     fastTimers = []
   })
 
   afterEach(() => {
     for (const timer of fastTimers.splice(0)) clearInterval(timer)
     vi.restoreAllMocks()
+    if (originalXdg === undefined) delete process.env.XDG_CONFIG_HOME
+    else process.env.XDG_CONFIG_HOME = originalXdg
   })
 
   function lookFile(sessionId: string) {
-    return path.join(home, '.claude/cafe/sessions', sessionId, 'look.txt')
+    return path.join(home, '.config/claudecafe/sessions', sessionId, 'look.txt')
   }
 
   /**

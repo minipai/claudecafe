@@ -37,7 +37,7 @@ fi
 
 # Stage only what the plugin needs at runtime (no build/test tooling).
 rm -rf "$DIST" && mkdir -p "$DIST/stage"
-for item in .claude-plugin bin hooks commands prompts maids README.md; do
+for item in .claude-plugin .codex-plugin bin hooks commands skills prompts maids README.md; do
     cp -R "$PLUGIN/$item" "$DIST/stage/$item"
 done
 find "$DIST/stage" -type d -name __pycache__ -exec rm -rf {} +

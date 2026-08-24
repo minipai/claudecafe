@@ -17,9 +17,10 @@ the things that are expensive to find out the hard way.
   `expressions/<outfit>/`, `portraits/`, all webp. **The PNG masters, pencil references
   and drawing spec live in `art-masters/` at the repo root, gitignored** — the art scripts
   read from there and stop with a plain error when it isn't present.
-- **`packages/cafe`** — the plugin: puts a maid on shift at session start
-  (`load-persona.py`) and keeps her alive through the session (greeting, per-turn time,
-  status-line look, handover diary). Settings in `~/.claude/cafe/config.json`.
+- **`packages/cafe`** — one plugin package for Claude Code and Codex. They share
+  portable hooks, skills, and one data root at `$XDG_CONFIG_HOME/claudecafe`
+  (default `~/.config/claudecafe`), but select different manifests/hook profiles.
+  Claude alone gets the status-line look and handover diary.
 
 ## ⚠️ Three landmines in plugin development
 
@@ -32,7 +33,7 @@ the things that are expensive to find out the hard way.
   and won't reinstall an unchanged one. Bump `packages/cafe/.claude-plugin/plugin.json` and
   the matching entry in the root `marketplace.json` together, then
   `/plugin marketplace update claudecafe` → `/plugin update cafe@claudecafe`.
-- **Ask the user before touching the live global config (`~/.claude/`).** The plugin is
+- **Ask the user before touching live global config (`~/.config/claudecafe/`, `~/.claude/`, or `~/.codex/`).** The plugin is
   installed + enabled from the marketplace — there are no loose hook mirrors or symlinks,
   and none should be laid down by hand again.
 
