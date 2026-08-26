@@ -544,12 +544,16 @@ export function GalgameClient() {
       setTodos([])
       setReport(null)
       resetScene()
-      setChatMessages([createChatMessage('assistant', lines.greeting)])
+      // Read through the ref, not the closure: the session answers a handover
+      // with the new maid's lines while this pause is still running, and the
+      // closure is whoever stood here before her.
+      const opening = linesRef.current.greeting
+      setChatMessages([createChatMessage('assistant', opening)])
       setExpression('neutral')
       setLook(isLive ? null : INITIAL_LOOK)
       setLookUnread(true)
       setChoiceRequest(null)
-      cut(lines.greeting)
+      cut(opening)
       setChangingSession(false)
     }, 340)
   }

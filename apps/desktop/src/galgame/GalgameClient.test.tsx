@@ -5,9 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BridgeEvent, CafeBridge } from '@/agent/bridge'
 
 // jsdom does not implement scrollIntoView, and the command bar calls it to
-// keep the highlighted row in view.
+// keep the highlighted row in view; nor scrollTo, and the log calls it to
+// keep the newest line in view.
 beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn()
+  Element.prototype.scrollTo = vi.fn()
 })
 
 afterEach(() => {
@@ -310,4 +312,44 @@ describe('GalgameClient', () => {
     await act(async () => submit('and ja?'))
     expect(written()!.querySelectorAll('p')).toHaveLength(2)
   })
+
+  it("Bug 5 — handing over the shift greets in the new maid's voice, not whoever stood there before her", async () => {
+    const KURUMI = 'ご主人様～♪ くるみ在這裡等你好久了呢！'
+    const KOTONE = '歡迎回來，ご主人様。ことね隨時為您效勵喔～'
+    const { emit } = await mountLive({ shift: { maid: 'kurumi', outfit: 'uniform' } })
+
+    // くるみ is on shift, and her lines were written in her own voice once.
+    await act(async () => emit({ kind: 'lines', lines: linesIn(KURUMI) }))
+
+    // A new conversation asks who is taking over; the master picks ことね.
+    await act(async () => screen.getByLabelText('Open the command bar').click())
+    await act(async () => screen.getByText('Start a new conversation').closest('button')!.click())
+    await act(async () => screen.getByRole('button', { name: 'ことね' }).click())
+    await act(async () => screen.getByRole('button', { name: 'Start her shift' }).click())
+
+    // The session answers the reset: nothing said yet, then whoever was picked
+    // speaking in her own words — both well inside the hand-over pause.
+    await act(async () => {
+      emit({ kind: 'backlog', sessionId: null, lines: [] })
+      emit({ kind: 'lines', lines: linesIn(KOTONE) })
+    })
+
+    // Once the pause is over, the log opens with her — not a word of くるみ's.
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 500)))
+    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
+    expect(screen.getByText(KOTONE)).toBeInTheDocument()
+    expect(screen.queryByText(KURUMI)).not.toBeInTheDocument()
+  })
 })
+
+function linesIn(greeting: string) {
+  return {
+    greeting,
+    interrupted: 'え、止めるんですか…？',
+    commandAsk: 'may I run this?',
+    editAsk: 'may I change this file?',
+    planAsk: 'does the plan look right?',
+    errorTitle: 'oops',
+    waiting: ['a', 'b', 'c', 'd', 'e'],
+  }
+}
