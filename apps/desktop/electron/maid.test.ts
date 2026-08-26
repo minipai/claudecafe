@@ -492,6 +492,66 @@ describe('MaidSession — prompts are held back until nothing is in flight (bug 
   })
 })
 
+describe('MaidSession — background continuations', () => {
+  it('delivers a background turn directly when it reports after its launching run ended', async () => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-background', emit)
+
+    session.ask('run-1', 'delegate this')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    fakes[0].push(assistantText('I sent it out'))
+    fakes[0].push(resultMessage('I sent it out'))
+    await vi.waitFor(() => expect(events).toContainEqual({ kind: 'done', runId: 'run-1' }))
+
+    // The SDK injects the task notification and produces another assistant
+    // turn without a prompt from the renderer, so there is no run id here.
+    fakes[0].push(assistantText('the background task is done'))
+    fakes[0].push(resultMessage('the background task is done'))
+
+    await vi.waitFor(() =>
+      expect(events).toContainEqual({
+        kind: 'ambient-message',
+        message: {
+          type: 'result',
+          tier: 'light',
+          line: 'the background task is done',
+          mood: undefined,
+          expression: undefined,
+          said: false,
+        },
+      }),
+    )
+  })
+
+  it('keeps an in-progress background turn from ending a prompt submitted behind it', async () => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-background-race', emit)
+
+    session.ask('run-1', 'delegate this')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    fakes[0].push(resultMessage('delegated'))
+    await vi.waitFor(() => expect(events).toContainEqual({ kind: 'done', runId: 'run-1' }))
+
+    fakes[0].push(assistantText('background completion'))
+    await vi.waitFor(() => expect(events.some((event) => event.kind === 'ambient-message')).toBe(true))
+    session.ask('run-2', 'a new question')
+    fakes[0].push(resultMessage('background completion'))
+    await vi.waitFor(() =>
+      expect(events).toContainEqual({
+        kind: 'ambient-message',
+        message: expect.objectContaining({ type: 'result', line: 'background completion' }),
+      }),
+    )
+    expect(events).not.toContainEqual({ kind: 'done', runId: 'run-2' })
+
+    fakes[0].push(assistantText('the new answer'))
+    fakes[0].push(resultMessage('the new answer'))
+    await vi.waitFor(() => expect(events).toContainEqual({ kind: 'done', runId: 'run-2' }))
+  })
+})
+
 describe('MaidSession — interrupt (finding #2)', () => {
   it('closes out every run at once — the running one may never get a result to end on', async () => {
     const fakes = trackConnections()

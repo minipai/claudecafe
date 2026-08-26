@@ -67,6 +67,7 @@ describe('query', () => {
     const first = iter.next()
     const runId = vi.mocked(bridge.start).mock.calls[0][0] as string
 
+    emit({ kind: 'ambient-message', message: { type: 'thinking', text: 'background, not this run' } })
     emit({ kind: 'message', runId: 'someone-elses-run', message: { type: 'thinking', text: 'not for us' } })
     emit({ kind: 'message', runId, message: { type: 'thinking', text: 'first' } })
     emit({ kind: 'message', runId, message: { type: 'thinking', text: 'second' } })

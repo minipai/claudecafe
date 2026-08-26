@@ -46,6 +46,7 @@ import {
   query,
   workingDirectory,
   type Attachment,
+  type AgentMessage,
   type CafeCommand,
   type Look,
   type PermissionResult,
@@ -169,6 +170,13 @@ export function GalgameClient() {
   const alwaysAllowRef = useRef(new Set<string>())
   const permissionRef = useRef<PermissionRequest | null>(null)
   const running = useRef(0)
+  /** Background completions have no renderer run of their own. If one arrives
+   * while the master has another turn in flight, keep its scene beats here so
+   * it cannot interrupt or overwrite the foreground conversation. */
+  const ambientMessages = useRef<AgentMessage[]>([])
+  /** The bridge listener lives for the mount, but the scene it calls changes
+   * with the maid and her outfit. Always point it at the newest closure. */
+  const playAmbientRef = useRef<(message: AgentMessage) => void>(() => {})
 
   const {
     line,
@@ -260,6 +268,47 @@ export function GalgameClient() {
     setStandIn(hasArtwork(shift, expr) ? null : KAOMOJI[expr])
   }
 
+  /** The same scene both prompted and unsolicited turns play through. Kept in
+   * one place so a background completion is rendered with exactly the same
+   * log, speech, report and expression semantics as an ordinary answer. */
+  function currentScene(): Scene {
+    return {
+      appendChatMessage,
+      appendEvent,
+      recordResult,
+      say,
+      act,
+      wear,
+      showFace,
+      pushWhisper,
+      setPhase,
+      setReport,
+      setCtaVisible,
+      setTodos,
+      setOutputTokens,
+      setLook,
+      setLookUnread,
+      setReaderOpen,
+      setLaidOut,
+      notify: (body) => window.cafe?.notify(body, false),
+    }
+  }
+
+  function playAmbient(message: AgentMessage) {
+    if (running.current > 0) {
+      ambientMessages.current.push(message)
+      return
+    }
+    choreograph(message, currentScene())
+  }
+
+  function flushAmbient() {
+    const waiting = ambientMessages.current.splice(0)
+    const scene = currentScene()
+    for (const message of waiting) choreograph(message, scene)
+  }
+  playAmbientRef.current = playAmbient
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     cut(lines.greeting)
@@ -302,7 +351,10 @@ export function GalgameClient() {
       linesRef,
       lastLineRef,
     }
-    const stop = window.cafe?.listen((event) => applyWindowEvent(event, windowScene))
+    const stop = window.cafe?.listen((event) => {
+      if (event.kind === 'ambient-message') playAmbientRef.current(event.message)
+      else applyWindowEvent(event, windowScene)
+    })
     window.cafe?.refresh(MAIDS)
     return stop
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -476,6 +528,7 @@ export function GalgameClient() {
     setLaidOut(null)
     setMood(null)
     setStandIn(null)
+    ambientMessages.current = []
     alwaysAllowRef.current = new Set()
   }
 
@@ -639,31 +692,15 @@ export function GalgameClient() {
       inFlight.current.delete(controller)
       running.current = Math.max(0, running.current - 1)
       if (running.current > 0) setPhase('working')
-      else setPhase((standing) => (standing === 'working' ? 'idle' : standing))
+      else {
+        setPhase((standing) => (standing === 'working' ? 'idle' : standing))
+        flushAmbient()
+      }
     }
   }
 
   async function consume(controller: AbortController, prompt: string, images: Attachment[]) {
-    const scene: Scene = {
-      appendChatMessage,
-      appendEvent,
-      recordResult,
-      say,
-      act,
-      wear,
-      showFace,
-      pushWhisper,
-      setPhase,
-      setReport,
-      setCtaVisible,
-      setTodos,
-      setOutputTokens,
-      setLook,
-      setLookUnread,
-      setReaderOpen,
-      setLaidOut,
-      notify: (body) => window.cafe?.notify(body, false),
-    }
+    const scene = currentScene()
     for await (const msg of query({ prompt, images, abortController: controller, canUseTool, askUser })) {
       choreograph(msg, scene)
     }

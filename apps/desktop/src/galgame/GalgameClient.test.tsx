@@ -313,6 +313,41 @@ describe('GalgameClient', () => {
     expect(written()!.querySelectorAll('p')).toHaveLength(2)
   })
 
+  it('plays an unsolicited background completion when no foreground turn is running', async () => {
+    const { emit } = await mountLive()
+
+    await act(async () =>
+      emit({
+        kind: 'ambient-message',
+        message: { type: 'result', tier: 'light', line: 'The background task is done.' },
+      }),
+    )
+    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
+
+    expect(screen.getByText('The background task is done.')).toBeInTheDocument()
+  })
+
+  it('defers a background completion until the foreground turn ends, preserving the submitted message', async () => {
+    const { bridge, emit } = await mountLive()
+
+    await act(async () => submit('the foreground question'))
+    const runId = lastRunId(bridge)
+    await act(async () =>
+      emit({
+        kind: 'ambient-message',
+        message: { type: 'result', tier: 'light', line: 'The background task is done.' },
+      }),
+    )
+    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
+
+    expect(screen.getAllByText('the foreground question').length).toBeGreaterThan(0)
+    expect(screen.queryByText('The background task is done.')).not.toBeInTheDocument()
+
+    await act(async () => emit({ kind: 'done', runId }))
+    await vi.waitFor(() => expect(screen.getByText('The background task is done.')).toBeInTheDocument())
+    expect(screen.getAllByText('the foreground question').length).toBeGreaterThan(0)
+  })
+
   it("Bug 5 — handing over the shift greets in the new maid's voice, not whoever stood there before her", async () => {
     const KURUMI = 'ご主人様～♪ くるみ在這裡等你好久了呢！'
     const KOTONE = '歡迎回來，ご主人様。ことね隨時為您效勵喔～'

@@ -187,6 +187,11 @@ export class MaidSession {
   private prompts = new PromptQueue()
   /** Turns waiting their turn — the SDK answers them one at a time, in order. */
   private runs: { runId: string; turn: Turn }[] = []
+  /** A turn the CLI started itself when a background task reported in after
+   * its launching renderer run had already ended. Once it starts, it keeps
+   * ownership through its result even if the master submits another prompt
+   * while it is speaking. */
+  private ambientTurn: Turn | null = null
   /** Asked for, but not yet handed to the SDK. The CLI reads whatever lands in
    * `prompts` at once — that is what makes it stdin, not a queue of its own —
    * so anything typed behind a turn still running has to wait here instead,
@@ -355,6 +360,7 @@ export class MaidSession {
     this.prompts.clear()
     for (const resolve of this.waiting.values()) resolve([])
     this.waiting.clear()
+    this.ambientTurn = null
   }
 
   /** A prompt asked for while nothing is running reaches the CLI at once —
@@ -620,6 +626,20 @@ export class MaidSession {
           continue
         }
         const run = this.runs[0]
+        // A background agent can finish after the renderer run that launched
+        // it has ended. Its next assistant message starts an unsolicited turn;
+        // keep translating that turn directly instead of rereading and
+        // replacing the whole transcript-backed scene. Holding onto the Turn
+        // until its result also stops a prompt submitted midway from stealing
+        // the background result as its own.
+        if (this.ambientTurn || (!run && (sdk.type === 'assistant' || sdk.type === 'result'))) {
+          this.ambientTurn ??= new Turn()
+          for (const message of this.ambientTurn.read(sdk)) {
+            this.emit({ kind: 'ambient-message', message })
+          }
+          if (sdk.type === 'result') this.ambientTurn = null
+          continue
+        }
         if (!run) continue
         for (const message of run.turn.read(sdk)) {
           this.emit({ kind: 'message', runId: run.runId, message })

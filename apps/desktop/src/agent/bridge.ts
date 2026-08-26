@@ -212,6 +212,9 @@ export type BridgeEvent =
   /** What `/` offers. Sent when the session says so — a skill picked up while
    * she works changes the list mid-conversation. */
   | { kind: 'commands'; commands: CafeCommand[] }
+  /** The CLI continued the conversation on its own after a background task
+   * finished, so there is no renderer run id to route the words through. */
+  | { kind: 'ambient-message'; message: AgentMessage }
   | { kind: 'message'; runId: string; message: AgentMessage }
   | { kind: 'ask-permission'; runId: string; askId: string; toolName: string; input: Record<string, unknown> }
   | { kind: 'ask-question'; runId: string; askId: string; question: Question }
