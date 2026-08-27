@@ -1,10 +1,29 @@
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const repo = path.resolve(here, '../../..')
+
+/**
+ * The Agent SDK finds its native CLI through an optional platform package.
+ * pnpm keeps that package beside the SDK in its store, but electron-builder's
+ * production-dependency walk does not follow that private link in a workspace.
+ * Put the executable beside the bundled main process instead, where both a dev
+ * build and a packaged app can address it without relying on node resolution.
+ */
+function stageClaudeCli() {
+  const require = createRequire(import.meta.url)
+  const sdk = require.resolve('@anthropic-ai/claude-agent-sdk')
+  const platformPackage = `@anthropic-ai/claude-agent-sdk-${process.platform}-${process.arch}`
+  const executable = process.platform === 'win32' ? 'claude.exe' : 'claude'
+  const source = createRequire(sdk).resolve(`${platformPackage}/${executable}`)
+  const out = path.join(here, `../dist-electron/${executable}`)
+  fs.copyFileSync(source, out)
+  fs.chmodSync(out, 0o755)
+}
 
 /**
  * The café plugin travels with the app. On a terminal the maid is whoever the
@@ -94,6 +113,7 @@ function dropShiftHook(out) {
  */
 export async function buildElectron({ fakeSdk = false } = {}) {
   stageCafePlugin()
+  stageClaudeCli()
   // The main process resolves them next to itself, bundled or not. Two icons:
   // the maid facing the master is the app, and the same maid looking away,
   // thinking, is the checkout — a different pose rather than a mark on the same

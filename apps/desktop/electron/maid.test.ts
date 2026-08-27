@@ -51,7 +51,7 @@ vi.mock('./status', () => ({
   readGit: vi.fn(),
 }))
 
-import { contextTokens, MaidSession, nameOf, nowCarrying, PromptQueue, readUsage, readWindows, whyStopped } from './maid'
+import { CLAUDE_EXECUTABLE, contextTokens, MaidSession, nameOf, nowCarrying, PromptQueue, readUsage, readWindows, whyStopped } from './maid'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
 import { chosenSpeech, conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings, rememberShift, whoServed } from './history'
@@ -1019,6 +1019,17 @@ describe('MaidSession — how much she asks first', () => {
 
   const statuses = (events: BridgeEvent[]) =>
     events.filter((event) => event.kind === 'status') as Extract<BridgeEvent, { kind: 'status' }>[]
+
+  it('points the SDK at the native CLI staged beside the main process', async () => {
+    const fakes = trackConnections()
+    const { emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-native-cli', emit)
+
+    session.ask('run-1', 'go on then')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+
+    expect(optionsOf(0)).toMatchObject({ pathToClaudeCodeExecutable: CLAUDE_EXECUTABLE })
+  })
 
   it('leaves the mode alone when nobody has picked one here, and shows what the terminal is set to', async () => {
     const fakes = trackConnections()

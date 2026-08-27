@@ -115,6 +115,14 @@ function newestConversation(cwd: string) {
  */
 export const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'cafe-plugin')
 
+/** The SDK's native CLI is staged beside this bundled main process. Keeping
+ * the path explicit matters in the packaged app: electron-builder cannot see
+ * the optional platform package through pnpm's workspace links. */
+export const CLAUDE_EXECUTABLE = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  process.platform === 'win32' ? 'claude.exe' : 'claude',
+)
+
 /** What she opens as: the master's standing pick, and the app's own defaults
  * for anything he has never touched. */
 function openingSettings(): SessionSettings {
@@ -498,6 +506,7 @@ export class MaidSession {
     const maid = (this.onShift = chosenShift().maid)
     const options: Options = {
       cwd: this.cwd,
+      pathToClaudeCodeExecutable: CLAUDE_EXECUTABLE,
       canUseTool: (toolName, input) => this.decide(toolName, input),
       // A client working on a real project should honour that project's own
       // settings, memory and plugins — the same files Claude Code reads.
