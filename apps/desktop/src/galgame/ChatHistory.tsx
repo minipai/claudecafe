@@ -17,6 +17,9 @@ import type { ChatMessage } from './types'
 type ChatHistoryProps = {
   open: boolean
   messages: ChatMessage[]
+  /** The transcript this log belongs to. Until the SDK has assigned one,
+   * there is no conversation the CLI can resume yet. */
+  conversation: string | null
   /** True while a run is in flight — compacting mid-turn is not allowed. */
   isBusy: boolean
   isCompacting: boolean
@@ -41,6 +44,7 @@ function formatTime(timestamp: number) {
 export function ChatHistory({
   open,
   messages,
+  conversation,
   isBusy,
   isCompacting,
   isAwaitingAnswer,
@@ -49,6 +53,8 @@ export function ChatHistory({
   onNewSession,
 }: ChatHistoryProps) {
   const t = text()
+  const hasStarted = messages.some((message) => message.role === 'user')
+  const resumeCommand = conversation && hasStarted ? `claude --resume ${conversation}` : null
   /** Which tool answers the master has opened — his reading, not the log's. */
   const [opened, setOpened] = useState<Set<number>>(new Set())
 
@@ -80,9 +86,16 @@ export function ChatHistory({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent showCloseButton={false} className="flex h-[min(760px,86vh)] w-[min(960px,90vw)] max-w-none flex-col gap-0 overflow-hidden border border-border bg-card/80 p-0 shadow-xl backdrop-blur-xl sm:max-w-[960px]">
         <DialogHeader className="flex-row items-center justify-between border-b border-border px-4 py-2.5 text-left">
-          <DialogTitle className="text-sm font-medium text-foreground">
-            {t.log.title}
-          </DialogTitle>
+          <div className="flex min-w-0 items-center gap-3">
+            <DialogTitle className="shrink-0 text-sm font-medium text-foreground">
+              {t.log.title}
+            </DialogTitle>
+            {resumeCommand && (
+              <code className="min-w-0 truncate rounded border border-border bg-background/55 px-2 py-1 font-mono text-[10px] text-muted-foreground select-text">
+                {resumeCommand}
+              </code>
+            )}
+          </div>
           <DialogDescription className="sr-only">
             {messages.length === 1 ? t.log.oneMessage : fill(t.log.messages, { count: messages.length })}
           </DialogDescription>

@@ -609,6 +609,7 @@ export class MaidSession {
         if (sdk.type === 'system' && sdk.subtype === 'init') {
           this.sessionId = sdk.session_id
           rememberSession(this.cwd, sdk.session_id)
+          this.emit({ kind: 'conversation', sessionId: sdk.session_id })
           // Sign the transcript with her, so going back to it brings her back.
           if (this.onShift) rememberWhoServed(sdk.session_id, this.onShift)
           this.followLook(sdk.session_id)

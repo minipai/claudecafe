@@ -202,6 +202,9 @@ export type BridgeEvent =
   /** The conversation as the transcript has it — sent on refresh, which is how
    * the backlog survives a reload. */
   | { kind: 'backlog'; sessionId: string | null; lines: BacklogLine[] }
+  /** The SDK assigned an id to a newly-opened conversation. Unlike backlog,
+   * this changes only the identity and leaves the live scene untouched. */
+  | { kind: 'conversation'; sessionId: string }
   /** The shift changed hands without the master handing it over: he went back
    * to a conversation somebody else served, and she is taking it back. */
   | { kind: 'shift'; shift: Shift; maidName: string }

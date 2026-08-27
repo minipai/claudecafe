@@ -62,6 +62,8 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
     scene.setFolder(event.cwd)
   } else if (event.kind === 'commands') {
     scene.setCommands(event.commands)
+  } else if (event.kind === 'conversation') {
+    scene.setConversation(event.sessionId)
   } else if (event.kind === 'speech') {
     scene.setSpeech({ language: event.language, chosen: event.chosen })
   } else if (event.kind === 'locale') {

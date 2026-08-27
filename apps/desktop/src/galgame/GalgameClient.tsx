@@ -950,6 +950,7 @@ export function GalgameClient() {
       <ChatHistory
         open={historyOpen}
         messages={chatMessages}
+        conversation={conversation}
         isBusy={phase === 'working'}
         isCompacting={compacting}
         isAwaitingAnswer={permissionRequest !== null || choiceRequest !== null}

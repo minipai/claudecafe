@@ -83,6 +83,13 @@ describe('applyWindowEvent', () => {
     expect(scene.setCommands).toHaveBeenCalledWith(commands)
   })
 
+  it('conversation: learns a fresh session id without replacing its live messages', () => {
+    const scene = createScene()
+    applyWindowEvent({ kind: 'conversation', sessionId: 'session-1' }, scene)
+    expect(scene.setConversation).toHaveBeenCalledWith('session-1')
+    expect(scene.setChatMessages).not.toHaveBeenCalled()
+  })
+
   it('speech: what she is speaking and what was asked for', () => {
     const scene = createScene()
     applyWindowEvent({ kind: 'speech', language: 'Japanese', chosen: 'Japanese' }, scene)

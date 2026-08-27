@@ -168,11 +168,40 @@ describe('GalgameClient', () => {
       fireEvent.keyDown(window, { key: 'l', metaKey: true })
     })
     expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.queryByText(/^claude --resume /)).not.toBeInTheDocument()
 
     await act(async () => {
       fireEvent.keyDown(window, { key: 'l', metaKey: true })
     })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('puts the CLI resume command in the log title once the conversation has an id', async () => {
+    const { emit } = await mountLive()
+    await act(async () =>
+      emit({
+        kind: 'backlog',
+        sessionId: 'session-123',
+        lines: [{ role: 'user', content: 'hello', at: 1 }],
+      }),
+    )
+
+    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
+
+    expect(screen.getByText('claude --resume session-123')).toBeInTheDocument()
+  })
+
+  it('hides the resume command before the master has spoken, then shows it once the conversation starts', async () => {
+    const { emit } = await mountLive()
+    await act(async () => emit({ kind: 'conversation', sessionId: 'fresh-session' }))
+
+    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
+    expect(screen.queryByText('claude --resume fresh-session')).not.toBeInTheDocument()
+    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
+
+    await act(async () => submit('hello'))
+    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
+    expect(screen.getByText('claude --resume fresh-session')).toBeInTheDocument()
   })
 
   it('/keys is answered by the window itself — the keys are written down somewhere findable', async () => {

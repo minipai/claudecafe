@@ -1044,6 +1044,7 @@ describe('MaidSession — how much she asks first', () => {
 
     fakes[0].push(initMessage('auto'))
     await vi.waitFor(() => expect(settingsFrom(events).at(-1)?.settings.mode).toBe('auto'))
+    expect(events).toContainEqual({ kind: 'conversation', sessionId: 'session-1' })
   })
 
   it('opens as what he picked last time, and the session cannot talk it back down', async () => {
