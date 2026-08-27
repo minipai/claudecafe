@@ -166,6 +166,42 @@ class CastPoolTest(CafeTest):
         self.assertEqual(load_persona.cast_pool(), ["mymaid"])
 
 
+class CommitAuthorshipTest(CafeTest):
+    PERSONA = """# Personality
+
+Maid instructions.
+
+## Git
+
+When creating commits, use this Co-Authored-By line instead of the default:
+`Co-Authored-By: ここな <kokona@claudecafe.dev>`
+"""
+
+    def test_co_author_is_the_default_and_explicitly_excludes_author(self):
+        body = load_persona.commit_authorship(self.PERSONA)
+        self.assertIn(
+            "`Co-Authored-By: ここな <kokona@claudecafe.dev>`", body)
+        self.assertIn("Do not use `--author` for the maid.", body)
+
+    def test_author_uses_maid_identity_without_co_author_trailer(self):
+        set_config({"commit_authorship": "author"})
+        body = load_persona.commit_authorship(self.PERSONA)
+        self.assertIn(
+            '`--author="ここな <kokona@claudecafe.dev>"`', body)
+        self.assertIn("the user remains committer", body)
+        self.assertNotIn("Co-Authored-By:", body)
+
+    def test_invalid_mode_falls_back_to_co_author(self):
+        set_config({"commit_authorship": "surprise-me"})
+        body = load_persona.commit_authorship(self.PERSONA)
+        self.assertIn("Co-Authored-By:", body)
+        self.assertNotIn('`--author="', body)
+
+    def test_custom_persona_without_cafe_identity_is_unchanged(self):
+        body = "# Personality\n\nCustom instructions.\n"
+        self.assertEqual(load_persona.commit_authorship(body), body)
+
+
 class FestivalTest(CafeTest):
     def test_builtin_pack_by_default(self):
         import datetime
@@ -273,6 +309,22 @@ class HookProcessTest(CafeTest):
         self.assertIn("Test persona body.", r.stdout)
         self.assertNotIn("---", r.stdout)  # frontmatter stripped
         self.assertIn(maidstate.DEFAULT_LANG, r.stdout)
+
+    def test_load_persona_applies_author_mode(self):
+        set_config({"commit_authorship": "author"})
+        write(f"{CAFE}/personas/testmaid.md", """---
+name: T
+---
+Test persona body.
+
+## Git
+
+When creating commits, use this Co-Authored-By line instead of the default:
+`Co-Authored-By: T <testmaid@claudecafe.dev>`
+""")
+        r = self._run("hooks/load-persona.py", env={"CLAUDE_MAID": "testmaid"})
+        self.assertIn('`--author="T <testmaid@claudecafe.dev>"`', r.stdout)
+        self.assertNotIn("Co-Authored-By:", r.stdout)
 
     def test_host_envs_do_not_split_the_shared_root(self):
         write(f"{CAFE}/config.json", json.dumps({"maid": "sharedmaid"}))

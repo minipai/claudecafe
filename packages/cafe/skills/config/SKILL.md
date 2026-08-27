@@ -1,6 +1,6 @@
 ---
 name: config
-description: View or change Cafe settings, language, maid selection, personas, festivals, greeting, diary, or look behavior.
+description: View or change Cafe settings, language, maid selection, personas, commit authorship, festivals, greeting, diary, or look behavior.
 ---
 
 Resolve `../../bin/cafehome.py` relative to this `SKILL.md`. Run it and use its
@@ -16,6 +16,10 @@ needed, preserve unknown keys, and write valid JSON. Every key is optional:
 - `personas_dir` — user's persona `*.md` folder (default:
   `CAFE_ROOT/personas`).
 - `builtin_cast` — `false` removes the bundled fallback maid.
+- `commit_authorship` — `"co-author"` (default) adds the maid as a
+  `Co-Authored-By` trailer while keeping the user's Git identity; `"author"`
+  uses the maid's identity with `git commit --author` and keeps the user as
+  committer. These modes are mutually exclusive.
 - `festivals` — custom JSON festival-pack path; `false` disables festivals.
 - `greeting` — `false` disables the session-start briefing.
 - `look` — Claude Code only; `true` enables status-line scene generation.

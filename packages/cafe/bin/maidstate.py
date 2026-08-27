@@ -23,6 +23,7 @@ def config():
     """The Cafe's shared config.json — every key optional:
     lang (reply language), maid (fixed pick, "none" = nobody),
     personas_dir (folder of the user's own personas),
+    commit_authorship ("co-author" or "author"),
     builtin_cast (false = drop the bundled fallback maid too, so an empty
     personas_dir means nobody on shift).
     Individual retirement lives in each persona's own frontmatter: off_duty."""

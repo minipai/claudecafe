@@ -1,6 +1,6 @@
 {
   "name": "cafe",
-  "version": "0.6.0+codex.20260824191846",
+  "version": "0.6.1+codex.20260827010906",
   "description": "Puts a maid persona on shift with a time-aware greeting and per-turn context.",
   "skills": "./skills/",
   "author": {

@@ -52,7 +52,8 @@ when set). Every key is optional:
   "lang": "繁體中文（台灣用語：「螢幕」不寫「熒幕／屏幕」、「程式碼」不寫「代碼」；嚴禁簡體字）",
   "maid": "mymaid",
   "personas_dir": "~/my-maids",
-  "builtin_cast": false
+  "builtin_cast": false,
+  "commit_authorship": "author"
 }
 ```
 
@@ -66,6 +67,11 @@ when set). Every key is optional:
   `<current Cafe root>/personas`).
 - `builtin_cast` — `false` drops the bundled nameless maid, so an empty
   personas_dir means nobody on shift instead of her.
+- `commit_authorship` — how a Cafe maid is credited in commits: `"co-author"`
+  (default) keeps your Git identity and adds the maid's `Co-Authored-By`
+  trailer; `"author"` uses `git commit --author` for the maid while you remain
+  committer. The loader emits one mode's instruction only, so global commit
+  rules cannot leave both forms active.
 - `festivals` — the built-in festival calendar is maid-café flavored
   (Valentine's, White Day, Maid Day…). A path to your own JSON pack replaces
   it; `false` drops the festival segment entirely. A pack is one flat object
