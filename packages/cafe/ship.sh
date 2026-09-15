@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # Ship the cafe plugin to the public shelf at claudecafe.dev/plugins/:
 # run the tests, zip a versioned archive, regenerate the public
@@ -30,7 +30,7 @@ ZIP="cafe-$VERSION.zip"
 
 # A published version is frozen; republishing the same number would hand two
 # different sha256s to the world.
-if [ -z "$SHIP_DRY" ] && curl -sfI "$BASE_URL/$ZIP" >/dev/null 2>&1; then
+if [ -z "${SHIP_DRY:-}" ] && curl -sfI "$BASE_URL/$ZIP" >/dev/null 2>&1; then
     echo "✗ $ZIP is already on the shelf — bump the version first." >&2
     exit 1
 fi
@@ -74,7 +74,7 @@ with open(f"{os.environ['DIST']}/marketplace.json", "w") as f:
 EOF
 
 echo "dist ready: $ZIP (sha256 $SHA)"
-[ -n "$SHIP_DRY" ] && { echo "(dry run — nothing uploaded)"; exit 0; }
+[ -n "${SHIP_DRY:-}" ] && { echo "(dry run — nothing uploaded)"; exit 0; }
 
 ssh "$DROPLET" "mkdir -p $REMOTE_DIR"
 scp -q "$DIST/$ZIP" "$DIST/marketplace.json" "$DROPLET:$REMOTE_DIR/"

@@ -14,12 +14,13 @@ the same folder. Until someone is hired, a nameless maid keeps the place open.
 
 ## Claude Code and Codex
 
-The same package carries two lifecycle profiles. Claude Code reads
-`hooks/claude-hooks.json`, selected explicitly by `.claude-plugin/plugin.json`,
-and gets the complete café including the look, diary, and status-line wiring.
-Codex discovers the default `hooks/hooks.json`, which keeps only the portable
-persona, greeting, and per-turn time hooks. It deliberately does not register
-the Claude-specific look, diary, or status-line hooks.
+Both hosts discover `hooks/hooks.json`, which contains the shared persona,
+greeting, and per-turn time hooks. Commands use `CLAUDE_PLUGIN_ROOT` in Claude
+Code and `PLUGIN_ROOT` in Codex to find the installed scripts.
+Claude Code additionally loads `hooks/claude-hooks.json` through its manifest
+for look, diary, and status-line wiring. That file contains only the extra
+hooks: a manifest hook path adds to the defaults, so repeating the shared
+hooks there would run them twice. Codex loads only the shared defaults.
 
 Both hosts load the same `skills/config/SKILL.md` and `skills/hire/SKILL.md`,
 and share one data root: `$XDG_CONFIG_HOME/claudecafe`, defaulting to

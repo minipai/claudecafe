@@ -57,7 +57,7 @@ generated from. A folder counts as a character only if it holds a persona file.
 ## What's in here
 
 - **[`packages/cafe`](packages/cafe)** — one plugin package for Claude Code and
-  Codex, with separate manifests, hook profiles, and user-data roots. Claude
+  Codex, with separate manifests, shared default hooks, and one data root. Claude
   Code additionally gets the optional status-line "look" and handover diary.
 - **[`apps/desktop`](apps/desktop)** — her window on the desktop
   (Electron + the Claude Agent SDK). Transparent and frameless: a standing

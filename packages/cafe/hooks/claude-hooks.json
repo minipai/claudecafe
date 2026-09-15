@@ -1,33 +1,12 @@
 {
-  "description": "Café hooks for Claude Code — persona and greeting on session start, per-turn time, status-line look, and handover diary.",
+  "description": "Additional Claude Code hooks: status-line wiring, look, and handover diary.",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/load-persona.py\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-greeting.py\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/link-bin.py\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/current-time.py\"",
             "timeout": 5
           }
         ]

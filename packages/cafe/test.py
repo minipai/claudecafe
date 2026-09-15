@@ -390,7 +390,7 @@ When creating commits, use this Co-Authored-By line instead of the default:
 
 
 class PackageLayoutTest(unittest.TestCase):
-    """Both products share one archive but select different hook profiles."""
+    """Claude merges its extra hooks with the defaults Codex discovers."""
 
     @classmethod
     def setUpClass(cls):
@@ -400,8 +400,12 @@ class PackageLayoutTest(unittest.TestCase):
 
         cls.claude_manifest = load(".claude-plugin/plugin.json")
         cls.codex_manifest = load(".codex-plugin/plugin.json")
-        cls.claude_hooks = load("hooks/claude-hooks.json")["hooks"]
+        cls.claude_extra_hooks = load("hooks/claude-hooks.json")["hooks"]
         cls.codex_hooks = load("hooks/hooks.json")["hooks"]
+        cls.claude_hooks = {
+            event: cls.codex_hooks.get(event, []) + cls.claude_extra_hooks.get(event, [])
+            for event in cls.codex_hooks.keys() | cls.claude_extra_hooks.keys()
+        }
 
     @staticmethod
     def commands(hooks):
@@ -441,6 +445,34 @@ class PackageLayoutTest(unittest.TestCase):
         for script in ("load-persona.py", "session-greeting.py", "current-time.py"):
             self.assertTrue(any(script in command for command in claude), script)
             self.assertTrue(any(script in command for command in codex), script)
+
+    def test_claude_does_not_run_shared_hooks_twice(self):
+        for script in ("load-persona.py", "session-greeting.py", "current-time.py"):
+            commands = [hook["command"] for groups in self.claude_hooks.values()
+                        for group in groups for hook in group["hooks"]]
+            self.assertEqual(sum(script in command for command in commands), 1, script)
+
+    def test_hook_commands_resolve_each_hosts_plugin_root(self):
+        # Run the real shell commands against a fake Python executable. This
+        # catches missing root variables without invoking live persona hooks.
+        with tempfile.TemporaryDirectory(prefix="cafe hook paths ") as tmp:
+            python = os.path.join(tmp, "python3")
+            with open(python, "w") as f:
+                f.write('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+            os.chmod(python, 0o755)
+            for variable, hooks in (("CLAUDE_PLUGIN_ROOT", self.claude_hooks),
+                                    ("PLUGIN_ROOT", self.codex_hooks)):
+                env = {**os.environ, "PATH": tmp}
+                env.pop("CLAUDE_PLUGIN_ROOT", None)
+                env.pop("PLUGIN_ROOT", None)
+                env[variable] = tmp
+                for command in self.commands(hooks):
+                    result = subprocess.run(command, shell=True, env=env,
+                                            capture_output=True, text=True)
+                    script = command.split("/hooks/")[1].split('"')[0]
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout, f"{tmp}/hooks/{script}\n")
+                    self.assertTrue(os.path.isfile(f"{PLUGIN}/hooks/{script}"))
 
     def test_hook_profiles_do_not_pin_a_data_host(self):
         claude = self.commands(self.claude_hooks)
