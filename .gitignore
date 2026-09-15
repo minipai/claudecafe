@@ -1,5 +1,7 @@
 node_modules/
 notes/
+.diffwalk/
+.claude/types/
 __pycache__/
 
 packages/cafe/dist/

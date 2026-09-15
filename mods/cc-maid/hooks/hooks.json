@@ -1,0 +1,4 @@
+{
+  "description": "Open a pane showing the supplied pixel-art reference.",
+  "modules": ["./register.tsx"]
+}

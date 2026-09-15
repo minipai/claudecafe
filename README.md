@@ -59,6 +59,8 @@ generated from. A folder counts as a character only if it holds a persona file.
 - **[`packages/cafe`](packages/cafe)** — one plugin package for Claude Code and
   Codex, with separate manifests, shared default hooks, and one data root. Claude
   Code additionally gets the optional status-line "look" and handover diary.
+- **[`mods/cc-maid`](mods/cc-maid)** — experimental Claude Code pixel panel and
+  expression tool, listed as `cc-maid` in the same `claudecafe` marketplace.
 - **[`apps/desktop`](apps/desktop)** — her window on the desktop
   (Electron + the Claude Agent SDK). Transparent and frameless: a standing
   portrait that changes expression, and she *is* the agent. macOS for now.

@@ -1,0 +1,8 @@
+{
+  "name": "cc-maid",
+  "version": "0.1.36",
+  "description": "Experimental Kotone pixel maid panel with agent-controlled expressions for Claude Code.",
+  "author": {
+    "name": "minipai"
+  }
+}

@@ -16,6 +16,15 @@
         "name": "minipai"
       },
       "source": "./packages/cafe"
+    },
+    {
+      "name": "cc-maid",
+      "description": "Experimental pixel maid panel for Claude Code. Gives the agent a visible Kotone portrait and an expression tool. Requires function hooks.",
+      "version": "0.1.36",
+      "author": {
+        "name": "minipai"
+      },
+      "source": "./mods/cc-maid"
     }
   ]
 }
