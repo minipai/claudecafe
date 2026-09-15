@@ -174,7 +174,7 @@ python3 packages/cafe/test.py
 /plugin install cafe@claudecafe
 ```
 
-Releases are cut with `ship.sh` (bump the version in `.claude-plugin/plugin.json`
+Releases are cut with `scripts/ship-plugin.sh cafe` from the repo root (bump the version in `.claude-plugin/plugin.json`
 first — published zips are immutable). Working on the plugin itself? Point the
 marketplace at your checkout instead (`/plugin marketplace add /path/to/claudecafe`)
 and skip the shipping round trip.

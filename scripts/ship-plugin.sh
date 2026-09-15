@@ -1,15 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
-# Ship the cafe plugin to the public shelf at claudecafe.dev/plugins/:
-# run the tests, zip a versioned archive, regenerate the public
+# Ship one marketplace plugin to the public shelf at claudecafe.dev/plugins/:
+# run its tests, zip a versioned archive, update its entry in the public
 # marketplace.json (archive source + sha256) and upload both.
+#
+#   scripts/ship-plugin.sh <cafe|cc-maid>
 #
 # Published zips are immutable — same version twice aborts; bump the version
 # (plugin.json + root marketplace.json) instead. Old zips stay up: the shelf
-# doubles as the release archive and instant rollback.
+# doubles as the release archive and instant rollback. Other plugins keep the
+# entries already live, so shipping one never unpublishes another.
 #
 # SHIP_DRY=1 stops after building dist/ (nothing uploaded).
+
+NAME="${1:?usage: scripts/ship-plugin.sh <cafe|cc-maid>}"
 
 DROPLET="root@134.199.156.190"
 # Inside caddy's existing RW mount (/opt/caddy-data → /data), so serving
@@ -17,16 +22,33 @@ DROPLET="root@134.199.156.190"
 REMOTE_DIR="/opt/caddy-data/plugins"
 BASE_URL="https://claudecafe.dev/plugins"
 
-REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-PLUGIN="$REPO_ROOT/packages/cafe"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Each plugin stages only what it needs at runtime (no build/test tooling).
+case "$NAME" in
+    cafe)
+        PLUGIN="$REPO_ROOT/packages/cafe"
+        ITEMS=(.claude-plugin .codex-plugin bin hooks commands skills prompts maids README.md)
+        run_tests() { python3 "$PLUGIN/test.py" 2>&1 | tail -3; }
+        ;;
+    cc-maid)
+        PLUGIN="$REPO_ROOT/mods/cc-maid"
+        ITEMS=(.claude-plugin hooks README.md)
+        run_tests() { CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test "$PLUGIN" 2>&1 | tail -3; }
+        ;;
+    *)
+        echo "✗ unknown plugin: $NAME" >&2
+        exit 1
+        ;;
+esac
 DIST="$PLUGIN/dist"
 
-echo "=== cafe plugin ship ==="
+echo "=== $NAME plugin ship ==="
 
-python3 "$PLUGIN/test.py" 2>&1 | tail -3
+run_tests
 
 VERSION=$(python3 -c "import json; print(json.load(open('$PLUGIN/.claude-plugin/plugin.json'))['version'])")
-ZIP="cafe-$VERSION.zip"
+ZIP="$NAME-$VERSION.zip"
 
 # A published version is frozen; republishing the same number would hand two
 # different sha256s to the world.
@@ -35,9 +57,8 @@ if [ -z "${SHIP_DRY:-}" ] && curl -sfI "$BASE_URL/$ZIP" >/dev/null 2>&1; then
     exit 1
 fi
 
-# Stage only what the plugin needs at runtime (no build/test tooling).
 rm -rf "$DIST" && mkdir -p "$DIST/stage"
-for item in .claude-plugin .codex-plugin bin hooks commands skills prompts maids README.md; do
+for item in "${ITEMS[@]}"; do
     cp -R "$PLUGIN/$item" "$DIST/stage/$item"
 done
 find "$DIST/stage" -type d -name __pycache__ -exec rm -rf {} +
@@ -45,28 +66,32 @@ find "$DIST/stage" -type d -name __pycache__ -exec rm -rf {} +
 
 SHA=$(shasum -a 256 "$DIST/$ZIP" | cut -d' ' -f1)
 
-# The public marketplace lists cafe only; name/description/author come from
-# the repo marketplace so the two never drift.
-ROOT_MP="$REPO_ROOT/.claude-plugin/marketplace.json" DIST="$DIST" \
-    ZIP_URL="$BASE_URL/$ZIP" SHA="$SHA" python3 <<'EOF'
+curl -sf "$BASE_URL/marketplace.json" -o "$DIST/live.json"
+
+# name/description/author come from the repo marketplace so the two never
+# drift; the other plugins keep their live archive entries.
+ROOT_MP="$REPO_ROOT/.claude-plugin/marketplace.json" LIVE_MP="$DIST/live.json" \
+    DIST="$DIST" NAME="$NAME" ZIP_URL="$BASE_URL/$ZIP" SHA="$SHA" python3 <<'EOF'
 import json, os
 root = json.load(open(os.environ["ROOT_MP"]))
-cafe = next(p for p in root["plugins"] if p["name"] == "cafe")
+live = {p["name"]: p for p in json.load(open(os.environ["LIVE_MP"]))["plugins"]}
+shipped = next(p for p in root["plugins"] if p["name"] == os.environ["NAME"])
+live[shipped["name"]] = {
+    "name": shipped["name"],
+    "description": shipped["description"],
+    "version": shipped["version"],
+    "author": shipped["author"],
+    "source": {
+        "source": "archive",
+        "url": os.environ["ZIP_URL"],
+        "sha256": os.environ["SHA"],
+    },
+}
 public = {
     "name": root["name"],
     "owner": {"name": root["owner"]["name"], "url": "https://claudecafe.dev"},
     "metadata": root["metadata"],
-    "plugins": [{
-        "name": cafe["name"],
-        "description": cafe["description"],
-        "version": cafe["version"],
-        "author": cafe["author"],
-        "source": {
-            "source": "archive",
-            "url": os.environ["ZIP_URL"],
-            "sha256": os.environ["SHA"],
-        },
-    }],
+    "plugins": [live[p["name"]] for p in root["plugins"] if p["name"] in live],
 }
 with open(f"{os.environ['DIST']}/marketplace.json", "w") as f:
     json.dump(public, f, indent=2, ensure_ascii=False)

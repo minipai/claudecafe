@@ -3,8 +3,17 @@
 ![Pixel-art maid in a Claude Code side panel](../../docs/images/cc-maid.png)
 
 Experimental plugin in the `claudecafe` marketplace, alongside `cafe`.
-Its marketplace identifier is `cc-maid@claudecafe`. The repository marketplace
-includes it; the public marketplace needs a release before remote installation.
+Its marketplace identifier is `cc-maid@claudecafe`. Install it from the public
+marketplace, then start Claude Code with function hooks enabled:
+
+```
+/plugin marketplace add https://claudecafe.dev/plugins/marketplace.json
+/plugin install cc-maid@claudecafe
+```
+
+Releases are cut with `scripts/ship-plugin.sh cc-maid` from the repo root (bump the
+version in `.claude-plugin/plugin.json` and the root `marketplace.json` first —
+published zips are immutable).
 
 Reviewed pixel portraits in a Claude Code pane, with an agent tool to
 change expression. Cafe supplies the persona; this separate plugin supplies the

@@ -5,6 +5,7 @@ notes/
 __pycache__/
 
 packages/cafe/dist/
+mods/cc-maid/dist/
 
 # wrangler local state (the r2 simulator, dev cache)
 .wrangler/
