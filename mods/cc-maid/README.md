@@ -1,104 +1,56 @@
 # cc-maid
 
-![Pixel-art maid in a Claude Code side panel](../../docs/images/cc-maid.png)
+![A pixel-art maid changing expressions beside Claude Code](../../docs/images/cc-maid.gif)
 
-Experimental plugin in the `claudecafe` marketplace, alongside `cafe`.
-Its marketplace identifier is `cc-maid@claudecafe`. Install it from the public
-marketplace, then start Claude Code with function hooks enabled:
+A pixel-art maid who stands in a panel beside your Claude Code conversation and
+changes her expression as she works: focused when she starts, curious while she
+investigates, happy when the tests pass, sorry when she slips up. Claude picks the
+face itself; you don't have to ask.
+
+The current artwork is Kotone, with 26 expressions. cc-maid only supplies the
+portrait. How Claude talks stays with whatever persona you already use, such as
+the `cafe` plugin from the same marketplace.
+
+> Experimental. cc-maid is built on Claude Code's function hooks, which are in
+> early access and may change between releases.
+
+## Install
+
+Inside Claude Code:
 
 ```
 /plugin marketplace add https://claudecafe.dev/plugins/marketplace.json
 /plugin install cc-maid@claudecafe
 ```
 
-Releases are cut with `scripts/ship-plugin.sh cc-maid` from the repo root (bump the
-version in `.claude-plugin/plugin.json` and the root `marketplace.json` first —
-published zips are immutable).
-
-Reviewed pixel portraits in a Claude Code pane, with an agent tool to
-change expression. Cafe supplies the persona; this separate plugin supplies the
-portrait and tool.
-The current art is Kotone; model-facing instructions do not prescribe a character
-name and keep the session's existing persona.
-
-## Run
+Then start Claude Code with function hooks enabled:
 
 ```sh
-CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir ./mods/cc-maid
+CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude
 ```
 
-`session.start` registers the tool in an interactive terminal session, including
-when this mod is hot-reloaded. The agent sees
-`mcp__cc-maid__set_expression`, with one `expression` argument chosen from
-26 names, such as `neutral`, `happy`, `angry`, `flirty`, or `impressed`.
-`flirty` is the reviewed blowing-kiss pose.
+The panel opens when an interactive terminal session starts. It does not appear
+in non-interactive runs (`claude -p`) or on desktop and mobile.
 
-The current expression is a variable inside this mod's `register()` instance.
-A valid call changes that variable and invalidates the panel render. Repeating
-the same expression does nothing; invalid names return an error without changing
-the portrait. It stays on the selected expression until changed, and resets to
-neutral when the mod instance is recreated. There are no timers or background
-model calls. Agent calls within the same mod instance share its portrait state.
+## Use
 
-A `prompt.context` block introduces the visible panel and asks the agent to change
-expression proactively when its emotional tone changes, just before the matching
-reply or work. It follows the desktop scene brief's expression guidance without
-bringing over desktop-only report tools or reply-length restrictions. The prompt
-is static and only injected when the terminal tool is enabled; hot reload refreshes
-it, while expression changes only redraw the panel. Other context is preserved.
-Actual use remains up to the agent. Text mood markers do not automatically switch
-this panel.
+Just work as usual. Claude changes the portrait when its tone changes, and the
+face stays until the next change.
 
-The terminal pane uses a 48-column × 152-row Raster (48 × 304 image pixels).
-The panel opens without requesting keyboard focus or a fixed height; inline
-placement uses Claude's default one-third height. Claude controls pane placement
-and scrolling. Other surfaces and noninteractive
-sessions do not register the tool or open the pane.
+You can also ask for a face directly, for example "switch to happy". The
+expressions are:
 
-## Artwork
+`neutral` `happy` `angry` `sad` `afraid` `awkward` `confused` `curious`
+`disgusted` `embarrassed` `flirty` `focused` `frustrated` `horny` `impressed`
+`pouty` `proud` `relieved` `skeptical` `smug` `sorry` `speechless` `surprised`
+`thinking` `wink` `worried`
 
-The current assets are in `art-masters/kotone/panel/expressions-v2/` at the
-repository root: marker originals, face-and-ears
-crops, BOX samples, reviewed pixel corrections, and exact packed raster exports.
-All 26 faces include the reviewed nose, eyelid, mouth and catchlight corrections;
-neutral retains tapered fringe tips. Original generation prompts and corrections
-are stored next to the images. Hair keeps its sampled colors except for explicit
-reviewed fringe corrections.
+A text mood marker such as the `【 … 】` line that `cafe` personas end replies
+with does not change the panel; only Claude's expression tool does.
 
-Preview edits in the gallery before updating the live panel. Build preview assets:
+## Update
 
-```sh
-uv run --with pillow python art-masters/kotone/panel/tools/build-expressions.py
 ```
-
-After approving them, export the existing rasters for the panel:
-
-```sh
-python3 art-masters/kotone/panel/tools/export-expressions.py
-```
-
-The exporter generates `hooks/expressions.ts` and one module per expression under
-`hooks/expressions/`. Each module stays below Claude's 1 MiB source-file limit.
-The runtime uses these packed cells, without reading or resizing PNGs.
-
-Rejected images, old static raster modules and their backups have been removed.
-The preview server serves `art-masters/kotone/panel/` directly; no art or preview
-folder lives inside the mod. Source/style references and provenance are in
-`art-masters/kotone/panel/references/`.
-
-```sh
-python3 -m http.server 8137 --bind 0.0.0.0 --directory art-masters/kotone/panel
-```
-
-Open `http://192.168.88.8:8137/expressions-v2/` for the retained gallery.
-
-## Check
-
-Targets the locally generated Claude Code function-hook declarations. Regenerate
-those with `/plugin-types` after updating Claude; this API is early access.
-
-```sh
-pnpm --filter @claudecafe/website exec tsc -p ../../mods/cc-maid/tsconfig.json
-CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin validate mods/cc-maid
-CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test mods/cc-maid
+/plugin marketplace update claudecafe
+/plugin update cc-maid@claudecafe
 ```
