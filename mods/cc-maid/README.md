@@ -48,6 +48,39 @@ expressions are:
 A text mood marker such as the `【 … 】` line that `cafe` personas end replies
 with does not change the panel; only Claude's expression tool does.
 
+## Terminal font
+
+The portrait is drawn with half-block characters, so every terminal cell holds
+two pixels stacked vertically. She looks right when a cell is twice as tall as
+it is wide, and stretches when it isn't. The font decides that ratio, and the
+line spacing multiplies it.
+
+Anything from 1:1.9 to 1:2.1 is close enough that nobody notices. Past that she
+visibly stretches, and past 1:2.3 she looks plainly wrong.
+
+These fonts come closest, at line spacing 1.0:
+
+| Font | Cell ratio | Off |
+|---|---|---|
+| Fira Code, Fira Mono | 1:2.00 | exact |
+| Ubuntu Mono | 1:2.00 | exact |
+| Monoid | 1:2.00 | exact |
+| Monaspace (Neon, Argon, Xenon, Krypton, Radon) | 1:2.01 | exact |
+| Cascadia Code, Cascadia Mono | 1:1.98 | 1% flat |
+| Menlo, SF Mono | 1:1.93 | 3% flat |
+| DejaVu Sans Mono, Hack | 1:1.93 | 3% flat |
+| Source Code Pro, Hasklig | 1:2.09 | 5% tall |
+| Inconsolata, Meslo LG S | 1:2.10 | 5% tall |
+
+Common fonts that stretch her by a tenth or more: JetBrains Mono, Maple Mono,
+Roboto Mono, Red Hat Mono, Monaco, IBM Plex Mono, Geist Mono, Lilex, Intel One
+Mono, Noto Sans Mono, Space Mono, 0xProto, Victor Mono. Monaspace Wide, Commit
+Mono and Anonymous Pro squash her instead.
+
+Line spacing applies on top: JetBrains Mono at 1.2 makes her a third taller
+than intended. The ratios above are read from each font's own metrics, and
+terminals may differ by a percent or two.
+
 ## Update
 
 ```
