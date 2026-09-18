@@ -979,17 +979,6 @@ body:has(.plugin-page)::before {
     }
 }
 
-.plugin-page .statusline {
-    border-top: 1px dashed var(--code-sep);
-    margin-top: 14px;
-    padding-top: 12px;
-}
-
-.plugin-page .statusline .sl-row {
-    color: var(--code-accent);
-    margin: 4px 0;
-}
-
 .plugin-page .note-slot {
     padding-top: 2px;
 }

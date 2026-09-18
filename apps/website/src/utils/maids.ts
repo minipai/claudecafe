@@ -20,7 +20,7 @@ export interface Maid {
   quote: string
   rawMd: string
   /** The whole file, frontmatter included — what /<slug>.md serves, so a
-   * downloaded persona keeps her name: for the cafe plugin's status line. */
+   * downloaded persona keeps her name: for the cafe plugin to display. */
   sourceMd: string
 }
 

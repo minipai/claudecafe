@@ -25,24 +25,18 @@ const copy = {
     d3kicker: '03 · Sign-off',
     d3title: 'Every reply closes with a mood',
     d3desc:
-      'Pure style output — it never affects Claude’s judgment. Only the status-line skit borrows it to pick her expression.',
+      'Pure style output — it never affects Claude’s judgment — a small face at the end of the work.',
     d3reply: 'Done — the config file is fixed. A restart should clear it!',
     d3mood: '【 happy (˶ˆᗜˆ˵) 】',
-    d4kicker: '04 · The status line',
-    d4title: 'What she’s doing, always at the bottom',
-    d4desc1: 'A two-line skit generated in the background — a new scene each time she finishes a task. Run ',
-    d4desc2: ' to wire it up; unwired, nothing is generated.',
-    d4work: 'Editing 3 files · updating config schema…',
-    d4sys: 'Claude is working ',
-    d4scene: 'Kurumi’s fingertips dance across the editor, hopping between the config files',
-    d4speech: 'ご主人様～ everything’s tidied up!',
+    d4kicker: '04 · A glance over',
+    d4title: 'Curious what she’s up to back there?',
+    d4desc1: 'Look up from the code, type ',
+    d4desc2: ', and there she is — the tea gone cold, the file she’s wrestling with.',
+    d4cmd: '/cafe:look',
+    d4scene: 'Afternoon light falls slanting across the keyboard as Kurumi hops from one config file to the next, fingertips skipping over the editor. The tea at the corner of the desk stopped steaming a while ago, a sticky note covered in marks pinned under the cup. The fan hums low; she tucks a loose strand of hair back behind her ear without taking her eyes off the screen.',
     fkicker: 'And more',
     ftitle: 'Other corners of the café',
     features: [
-      {
-        dt: 'Handover diary',
-        dd: 'At session end, the maid on shift leaves one line in a shared diary for the next girl — and you can read back through it.',
-      },
       {
         dt: 'Café calendar',
         dd: 'Valentine’s, Maid Day, Tanabata, Halloween… a built-in café calendar, swappable for your own.',
@@ -59,7 +53,6 @@ const copy = {
     ikicker: 'Open shop',
     ititle: 'Three steps, open today',
     hireComment: '# pick a maid on this site, then hire her in one line',
-    slComment: '# for the status-line skit (optional)',
     inote:
       'Start a new session after installing and you’ll hear that “welcome back” — the nameless maid ？？？ keeps the shop until you hire someone; whoever you hire takes the next shift.',
   },
@@ -82,24 +75,18 @@ const copy = {
     d2maid: 'ご主人様，已經超過半夜了喔……這個 bug くるみ記下來，明天再抓好不好？',
     d3kicker: '03 · 回應結尾',
     d3title: '每則回應，帶著一枚心情收尾',
-    d3desc: '純風格輸出，不影響 Claude 的判斷與行為——只有 status line 的小劇場會借它挑表情。',
+    d3desc: '純風格輸出，不影響 Claude 的判斷與行為——只是在工作結尾留下一張小表情。',
     d3reply: '好的，設定檔已經修好了，重新啟動應該就沒問題了！',
     d3mood: '【 開心 (˶ˆᗜˆ˵) 】',
-    d4kicker: '04 · 底部 Status Line',
-    d4title: '她正在做什麼，一直顯示在最下面',
-    d4desc1: '背景生成的兩行小劇場，她每做完一件事就換一幕。裝好後跑 ',
-    d4desc2: ' 接上——不接就不生成。',
-    d4work: 'Editing 3 files · updating config schema…',
-    d4sys: 'Claude is working ',
-    d4scene: 'くるみ的指尖在編輯器上輕快跳躍，逐個切換著要改的設定檔',
-    d4speech: 'ご主人様～設定全部整理好了呢～',
+    d4kicker: '04 · 抬頭看她一眼',
+    d4title: '她在那邊忙什麼呢？',
+    d4desc1: '工作到一半抬頭打一句 ',
+    d4desc2: '，就看見她此刻的樣子——涼掉的茶、和手邊正在纏鬥的那個檔案。',
+    d4cmd: '/cafe:look',
+    d4scene: '午後的光斜斜落在鍵盤上，くるみ把要改的設定檔一個一個切過去，指尖在編輯器上輕快跳躍。桌角那杯紅茶早就不冒煙了，杯底壓著一張寫滿記號的便條。風扇低低地轉著，她順手把滑下來的一縷髮絲別回耳後，眼睛始終沒離開螢幕。',
     fkicker: '還有這些',
     ftitle: '咖啡廳的其他角落',
     features: [
-      {
-        dt: '交接簿日記',
-        dd: 'session 結束時，值班女僕會在共用日記留一句話給下一位——你也能翻到過去的紀錄。',
-      },
       {
         dt: '節日曆',
         dd: '情人節、女僕日、七夕、萬聖⋯內建店曆，也能換成自己的節日包。',
@@ -110,7 +97,6 @@ const copy = {
     ikicker: '開店',
     ititle: '三步，今天就開店',
     hireComment: '# 回這裡挑一位女僕，一句話僱用',
-    slComment: '# 想要 status line 的小劇場（選配）',
     inote:
       '裝好後開一個新 session，就會聽見那聲「歡迎回來」——還沒僱人時由無名女僕「？？？」看店；僱了誰，下個 session 就換她上班。',
   },
@@ -140,11 +126,6 @@ function InstallTerminal({ t }: { t: (typeof copy)[Locale] }) {
       <div class="term-line txt-sys">{t.hireComment}</div>
       <div class="term-line prompt">
         <span class="p-sym">›</span> <span class="txt-cmd">/cafe:hire kurumi</span>
-      </div>
-      <div class="term-line txt-sys">&nbsp;</div>
-      <div class="term-line txt-sys">{t.slComment}</div>
-      <div class="term-line prompt">
-        <span class="p-sym">›</span> <span class="txt-cmd">/cafe:statusline</span>
       </div>
     </div>
   )
@@ -231,7 +212,7 @@ export function PluginPage({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      <section id="demo-status">
+      <section id="demo-look">
         <div class="section-head reveal">
           <div class="section-kicker ui-label">{t.d4kicker}</div>
           <div class="section-title">{t.d4title}</div>
@@ -240,18 +221,14 @@ export function PluginPage({ locale }: { locale: Locale }) {
           <div class="note-slot">
             <div class="section-desc">
               {t.d4desc1}
-              <code>/cafe:statusline</code>
+              <code>{t.d4cmd}</code>
               {t.d4desc2}
             </div>
           </div>
           <div class="terminal-slot">
             <div class="terminal">
-              <div class="term-line">{t.d4work}</div>
-              <div class="term-line txt-sys">{t.d4sys}<span class="cursor"></span></div>
-              <div class="statusline">
-                <div class="sl-row">{t.d4scene}</div>
-                <div class="sl-row">{t.d4speech}</div>
-              </div>
+              <div class="term-line prompt"><span class="p-sym">›</span> <span class="txt-cmd">{t.d4cmd}</span></div>
+              <div class="term-line txt-maid">{t.d4scene}</div>
             </div>
           </div>
         </div>
@@ -269,10 +246,6 @@ export function PluginPage({ locale }: { locale: Locale }) {
           </div>
           <div class="plain-item">
             <dt>{t.features[1].dt}</dt>
-            <dd>{t.features[1].dd}</dd>
-          </div>
-          <div class="plain-item">
-            <dt>{t.features[2].dt}</dt>
             <dd>
               {zh ? (
                 <>
@@ -290,7 +263,7 @@ export function PluginPage({ locale }: { locale: Locale }) {
             </dd>
           </div>
           <div class="plain-item">
-            <dt>{t.features[3].dt}</dt>
+            <dt>{t.features[2].dt}</dt>
             <dd>
               {zh ? (
                 <>
