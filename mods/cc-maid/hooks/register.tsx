@@ -1,11 +1,12 @@
 import type { Register } from 'claude-code'
-import { expressions, type Expression } from './expressions'
+import { loadFaces } from './faces'
 import { expressionPrompt } from './prompt'
 
 const tool = 'mcp__cc-maid__set_expression'
 
 export const register: Register = (on) => {
-  let expression: Expression = 'neutral'
+  const faces = loadFaces()
+  let expression = 'neutral'
   let enabled = false
 
   on('session.start', async ($, e, next) => {
@@ -20,7 +21,7 @@ export const register: Register = (on) => {
           + 'This changes the actual panel image, independently of the text mood marker.',
         inputSchema: {
           type: 'object',
-          properties: { expression: { type: 'string', enum: Object.keys(expressions) } },
+          properties: { expression: { type: 'string', enum: Object.keys(faces) } },
           required: ['expression'],
           additionalProperties: false,
         },
@@ -45,11 +46,11 @@ export const register: Register = (on) => {
 
   on('tool.call', { tool }, async ($, e) => {
     const selected = e.expression
-    if (typeof selected !== 'string' || !Object.hasOwn(expressions, selected)) {
+    if (typeof selected !== 'string' || !Object.hasOwn(faces, selected)) {
       return { deny: `Unknown expression: ${String(selected)}` }
     }
     if (selected !== expression) {
-      expression = selected as Expression
+      expression = selected
       await $.ui.invalidate('ui.render')
     }
     return { result: `Expression: ${expression}` }
@@ -59,6 +60,6 @@ export const register: Register = (on) => {
     if (e.surface !== 'terminal' || e.requestId !== 'cc-maid') return next(e)
 
     const { Raster } = $.ui.resolve(e)
-    return <Raster key="panel-image" {...expressions[expression]} />
+    return <Raster key="panel-image" {...faces[expression]!} />
   })
 }

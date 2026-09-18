@@ -1,6 +1,8 @@
 import type { RenderElement, RenderInput } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { expressions } from '../hooks/expressions'
+import { loadFaces } from '../hooks/faces'
+
+const expressions = loadFaces()
 
 const tool = 'mcp__cc-maid__set_expression'
 const panelImage = expressions.neutral
