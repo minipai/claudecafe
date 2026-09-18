@@ -1,7 +1,7 @@
 # claudecafe (monorepo)
 
 A pnpm monorepo for the AI maid ecosystem. The repo root **is also a plugin marketplace
-named `claudecafe`** (`.claude-plugin/marketplace.json`, listing the cafe plugin). Four
+named `claudecafe`** (`.claude-plugin/marketplace.json`, listing the cafe plugin). Five
 packages, everything with an npm package.json namespaced under `@claudecafe/*` (the
 private root stays `claudecafe-monorepo`; `packages/cafe` is pure python — no
 package.json, not a workspace member).
@@ -22,6 +22,12 @@ the things that are expensive to find out the hard way.
   (default `~/.config/claudecafe`). Both discover `hooks/hooks.json` by convention
   and neither manifest declares a `hooks` path — a manifest path adds to those
   defaults, so naming the same file would run every hook twice.
+- **`packages/opencode`** — the café for OpenCode, plus the sidebar portrait it
+  absorbed from the old `opencode-maid` mod. One package, two entrypoints
+  (`exports["./server"]` and `exports["./tui"]`) because OpenCode's loader refuses
+  a module that default-exports both. It shares the café data root, and reads
+  `packages/cafe`'s prompts and nameless maid. Server hooks run inside opencode's
+  own Bun runtime, so the "no JS runtime on PATH" landmine below does not apply.
 
 ## ⚠️ Three landmines in plugin development
 

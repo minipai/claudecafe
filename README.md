@@ -57,8 +57,11 @@ generated from. A folder counts as a character only if it holds a persona file.
 ## What's in here
 
 - **[`packages/cafe`](packages/cafe)** — one plugin package for Claude Code and
-  Codex, with separate manifests, shared default hooks, and one data root. Claude
-  Code additionally gets the optional status-line "look" and handover diary.
+  Codex, with separate manifests, shared default hooks and skills
+  (`hire`, `config`, `look`), and one data root.
+- **[`packages/opencode`](packages/opencode)** — the same café for OpenCode, plus
+  the sidebar portrait it absorbed from the old `opencode-maid` mod: one package,
+  two entrypoints (server and TUI).
 - **[`mods/cc-maid`](mods/cc-maid)** — experimental Claude Code pixel panel and
   expression tool, listed as `cc-maid` in the same `claudecafe` marketplace.
 - **[`apps/desktop`](apps/desktop)** — her window on the desktop
