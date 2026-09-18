@@ -28,7 +28,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 case "$NAME" in
     cafe)
         PLUGIN="$REPO_ROOT/packages/cafe"
-        ITEMS=(.claude-plugin .codex-plugin bin hooks commands skills prompts maids README.md)
+        ITEMS=(.claude-plugin .codex-plugin bin hooks skills prompts maids README.md)
         run_tests() { python3 "$PLUGIN/test.py" 2>&1 | tail -3; }
         ;;
     cc-maid)

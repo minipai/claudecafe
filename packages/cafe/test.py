@@ -5,8 +5,8 @@
 
 Sandbox HOME, no network, no claude CLI.
 Covers the pure logic where the silent-failure bugs live (shift resolution,
-cast pool, persona files, festival packs, status rows, transcript stats) —
-not the prompt prose or anything an LLM generates.
+cast pool, persona files, festival packs) — not the prompt prose or anything
+an LLM generates.
 """
 import atexit
 import importlib
@@ -32,7 +32,6 @@ import cafehome  # noqa: E402
 import maidstate  # noqa: E402
 festival = importlib.import_module("festival")
 load_persona = importlib.import_module("load-persona")
-look_update = importlib.import_module("look-update")
 
 CAFE = f"{TEST_HOME}/.config/claudecafe"
 FAKE_PLUGIN = f"{TEST_HOME}/fake-plugin"
@@ -123,7 +122,6 @@ class ShiftTest(CafeTest):
 class PersonaTest(CafeTest):
     def test_user_file_wins_over_bundled(self):
         write(f"{CAFE}/personas/noname.md", "---\nname: My Maid\n---\nMine.\n")
-        self.assertEqual(maidstate.display_name("noname"), "My Maid")
         self.assertEqual(maidstate.persona_body(
             maidstate.persona_file("noname")).strip(), "Mine.")
 
@@ -135,7 +133,6 @@ class PersonaTest(CafeTest):
 
     def test_missing_persona(self):
         self.assertIsNone(maidstate.persona_file("ghost"))
-        self.assertEqual(maidstate.display_name("ghost"), "Ghost")
 
 
 class CastPoolTest(CafeTest):
@@ -234,58 +231,6 @@ class FestivalTest(CafeTest):
         self.assertEqual(festival.today_festivals(day), [])
 
 
-class StatusLinesTest(CafeTest):
-    def test_nobody_on_shift(self):
-        self.assertEqual(maidstate.status_lines("sid"), [])
-
-    def test_bare_name_before_first_look(self):
-        write(f"{CAFE}/sessions/sid/on-shift", "noname")
-        self.assertEqual(maidstate.status_lines("sid"), ["？？？"])
-
-    def test_look_rows_and_quote_wrap(self):
-        write(f"{CAFE}/sessions/sid/on-shift", "kurumi")
-        write(f"{CAFE}/sessions/sid/look.txt", "scene\nhello master\n")
-        self.assertEqual(maidstate.status_lines("sid"), ["scene", "「hello master」"])
-        write(f"{CAFE}/sessions/sid/look.txt", "scene\n「already quoted」\n")
-        self.assertEqual(maidstate.status_lines("sid")[1], "「already quoted」")
-
-
-class TranscriptStatsTest(CafeTest):
-    def _transcript(self, entries):
-        path = f"{TEST_HOME}/transcript.jsonl"
-        write(path, "\n".join(json.dumps(e) for e in entries) + "\n")
-        return path
-
-    def test_work_turn_with_mood(self):
-        path = self._transcript([
-            {"type": "user", "message": {"content": "fix the bug"}},
-            {"type": "assistant", "message": {
-                "usage": {"input_tokens": 1000},
-                "content": [
-                    {"type": "tool_use", "name": "Bash"},
-                    {"type": "text",
-                     "text": "done 【 proud ᕙ( •̀ ᗜ •́)ᕗ 】"}]}},
-        ])
-        turns, tasks, tools, ctx, mood, worked = look_update.transcript_stats(path)
-        self.assertEqual((turns, tasks, tools, ctx, worked),
-                         (1, ["fix the bug"], {"Bash": 1}, 1000, True))
-        self.assertEqual(mood, "proud ᕙ( •̀ ᗜ •́)ᕗ")
-
-    def test_chat_only_turn(self):
-        path = self._transcript([
-            {"type": "user", "message": {"content": "how are you"}},
-            {"type": "assistant", "message": {
-                "usage": {"input_tokens": 500},
-                "content": [{"type": "text", "text": "fine!"}]}},
-        ])
-        turns, tasks, tools, ctx, mood, worked = look_update.transcript_stats(path)
-        self.assertEqual((tools, mood, worked), ({}, "neutral", False))
-
-    def test_missing_transcript(self):
-        self.assertEqual(look_update.transcript_stats("/nope"),
-                         (0, [], {}, 0, "neutral", False))
-
-
 class PromptTemplateTest(CafeTest):
     def test_substitution_survives_literal_dollar(self):
         write(f"{FAKE_PLUGIN}/prompts/t.md", "Hi $name, cost $5, $missing stays\n")
@@ -338,15 +283,6 @@ When creating commits, use this Co-Authored-By line instead of the default:
         self.assertEqual(r.returncode, 0)
         self.assertIn("Shared persona.", r.stdout)
 
-    def test_sub_session_guard(self):
-        for script in ("hooks/load-persona.py", "hooks/session-greeting.py"):
-            r = self._run(script, env={"CLAUDE_MAID_SUB": "1",
-                                       "CLAUDE_MAID": "kurumi"})
-            self.assertEqual((r.returncode, r.stdout.strip()), (0, ""), script)
-
-    # The feature toggles run with PATH restricted to system dirs, so even a
-    # broken toggle can't reach a real `claude` — diary then degrades to its
-    # mechanical fallback line, which the assertion catches.
     SYS_PATH = {"PATH": "/usr/bin:/bin"}
 
     def test_greeting_toggle_silences_but_still_tidies(self):
@@ -358,39 +294,9 @@ When creating commits, use this Co-Authored-By line instead of the default:
         # the briefing is silenced, but the shift clock still gets stamped
         self.assertTrue(os.path.exists(f"{CAFE}/sessions/greet-sid/started-at"))
 
-    def test_diary_toggle_writes_nothing(self):
-        set_config({"diary": False, "maid": "testmaid"})
-        transcript = f"{TEST_HOME}/toggle-transcript.jsonl"
-        write(transcript, json.dumps(
-            {"type": "user", "message": {"content": "hello maid"}}) + "\n")
-        r = self._run("hooks/diary-write.py",
-                      stdin=json.dumps({"session_id": "d-sid",
-                                        "transcript_path": transcript}),
-                      env=self.SYS_PATH)
-        self.assertEqual(r.returncode, 0)
-        self.assertFalse(os.path.exists(maidstate.DIARY))
-
-    def test_look_off_by_default_skips_before_any_state(self):
-        set_config({"maid": "testmaid"})  # no "look" key — opt-in, so it bails
-        r = self._run("hooks/look-update.py",
-                      stdin=json.dumps({"session_id": "look-sid"}),
-                      env=self.SYS_PATH)
-        self.assertEqual(r.returncode, 0)
-        # bails before state_dir(create=True), so the session dir never appears
-        self.assertFalse(os.path.exists(f"{CAFE}/sessions/look-sid"))
-
-    def test_statusbar_row_args(self):
-        write(f"{CAFE}/sessions/sid/on-shift", "testmaid")
-        write(f"{CAFE}/sessions/sid/look.txt", "scene\nline\n")
-        payload = json.dumps({"session_id": "sid"})
-        for argv, want in ((), "scene\n「line」\n"), (("1",), "scene\n"), \
-                          (("2",), "「line」\n"), (("row2",), ""), (("0",), ""):
-            r = self._run("bin/statusbar.py", stdin=payload, argv=argv)
-            self.assertEqual((r.returncode, r.stdout, r.stderr), (0, want, ""), argv)
-
 
 class PackageLayoutTest(unittest.TestCase):
-    """Claude merges its extra hooks with the defaults Codex discovers."""
+    """One hook profile, discovered by convention on both hosts."""
 
     @classmethod
     def setUpClass(cls):
@@ -400,12 +306,7 @@ class PackageLayoutTest(unittest.TestCase):
 
         cls.claude_manifest = load(".claude-plugin/plugin.json")
         cls.codex_manifest = load(".codex-plugin/plugin.json")
-        cls.claude_extra_hooks = load("hooks/claude-hooks.json")["hooks"]
-        cls.codex_hooks = load("hooks/hooks.json")["hooks"]
-        cls.claude_hooks = {
-            event: cls.codex_hooks.get(event, []) + cls.claude_extra_hooks.get(event, [])
-            for event in cls.codex_hooks.keys() | cls.claude_extra_hooks.keys()
-        }
+        cls.hooks = load("hooks/hooks.json")["hooks"]
 
     @staticmethod
     def commands(hooks):
@@ -416,40 +317,19 @@ class PackageLayoutTest(unittest.TestCase):
             for hook in group["hooks"]
         }
 
-    def test_manifests_select_the_expected_hook_profiles(self):
-        self.assertEqual(self.claude_manifest["hooks"],
-                         "./hooks/claude-hooks.json")
-        # Codex discovers hooks/hooks.json by convention; its validated
-        # manifest must not try to declare the unsupported hooks field.
+    def test_neither_manifest_declares_a_hook_profile(self):
+        # Both hosts discover hooks/hooks.json by convention; a manifest path
+        # would add to those defaults and run the shared hooks twice.
+        self.assertNotIn("hooks", self.claude_manifest)
         self.assertNotIn("hooks", self.codex_manifest)
         self.assertEqual(self.codex_manifest["name"], "cafe")
         self.assertEqual(self.codex_manifest["skills"], "./skills/")
 
-    def test_claude_keeps_the_complete_lifecycle(self):
-        self.assertEqual(set(self.claude_hooks),
-                         {"SessionStart", "UserPromptSubmit", "SessionEnd", "Stop"})
-        commands = self.commands(self.claude_hooks)
-        for script in ("link-bin.py", "diary-write.py", "look-update.py"):
-            self.assertTrue(any(script in command for command in commands), script)
-
-    def test_codex_excludes_claude_only_hooks(self):
-        self.assertEqual(set(self.codex_hooks),
-                         {"SessionStart", "UserPromptSubmit"})
-        commands = self.commands(self.codex_hooks)
-        for script in ("link-bin.py", "diary-write.py", "look-update.py"):
-            self.assertFalse(any(script in command for command in commands), script)
-
-    def test_portable_hooks_are_shared(self):
-        claude = self.commands(self.claude_hooks)
-        codex = self.commands(self.codex_hooks)
+    def test_every_hook_is_shared(self):
+        self.assertEqual(set(self.hooks), {"SessionStart", "UserPromptSubmit"})
+        commands = [hook["command"] for groups in self.hooks.values()
+                    for group in groups for hook in group["hooks"]]
         for script in ("load-persona.py", "session-greeting.py", "current-time.py"):
-            self.assertTrue(any(script in command for command in claude), script)
-            self.assertTrue(any(script in command for command in codex), script)
-
-    def test_claude_does_not_run_shared_hooks_twice(self):
-        for script in ("load-persona.py", "session-greeting.py", "current-time.py"):
-            commands = [hook["command"] for groups in self.claude_hooks.values()
-                        for group in groups for hook in group["hooks"]]
             self.assertEqual(sum(script in command for command in commands), 1, script)
 
     def test_hook_commands_resolve_each_hosts_plugin_root(self):
@@ -460,13 +340,12 @@ class PackageLayoutTest(unittest.TestCase):
             with open(python, "w") as f:
                 f.write('#!/bin/sh\nprintf "%s\\n" "$@"\n')
             os.chmod(python, 0o755)
-            for variable, hooks in (("CLAUDE_PLUGIN_ROOT", self.claude_hooks),
-                                    ("PLUGIN_ROOT", self.codex_hooks)):
+            for variable in ("CLAUDE_PLUGIN_ROOT", "PLUGIN_ROOT"):
                 env = {**os.environ, "PATH": tmp}
                 env.pop("CLAUDE_PLUGIN_ROOT", None)
                 env.pop("PLUGIN_ROOT", None)
                 env[variable] = tmp
-                for command in self.commands(hooks):
+                for command in self.commands(self.hooks):
                     result = subprocess.run(command, shell=True, env=env,
                                             capture_output=True, text=True)
                     script = command.split("/hooks/")[1].split('"')[0]
@@ -474,12 +353,10 @@ class PackageLayoutTest(unittest.TestCase):
                     self.assertEqual(result.stdout, f"{tmp}/hooks/{script}\n")
                     self.assertTrue(os.path.isfile(f"{PLUGIN}/hooks/{script}"))
 
-    def test_hook_profiles_do_not_pin_a_data_host(self):
-        claude = self.commands(self.claude_hooks)
-        codex = self.commands(self.codex_hooks)
-        self.assertTrue(all(command.startswith("python3 ")
-                            for command in claude | codex))
-        self.assertTrue(all("${PLUGIN_ROOT}" in command for command in codex))
+    def test_hooks_do_not_pin_a_data_host(self):
+        commands = self.commands(self.hooks)
+        self.assertTrue(all(command.startswith("python3 ") for command in commands))
+        self.assertTrue(all("${PLUGIN_ROOT}" in command for command in commands))
 
     def test_config_and_hire_are_single_shared_skills(self):
         for name in ("config", "hire"):

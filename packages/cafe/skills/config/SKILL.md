@@ -1,6 +1,6 @@
 ---
 name: config
-description: View or change Cafe settings, language, maid selection, personas, commit authorship, festivals, greeting, diary, or look behavior.
+description: View or change Cafe settings, language, maid selection, personas, commit authorship, festivals, or the session-start greeting.
 ---
 
 Resolve `../../bin/cafehome.py` relative to this `SKILL.md`. Run it and use its
@@ -22,8 +22,6 @@ needed, preserve unknown keys, and write valid JSON. Every key is optional:
   committer. These modes are mutually exclusive.
 - `festivals` — custom JSON festival-pack path; `false` disables festivals.
 - `greeting` — `false` disables the session-start briefing.
-- `look` — Claude Code only; `true` enables status-line scene generation.
-- `diary` — Claude Code only; `false` skips the handover diary.
 
 Individual retirement belongs in a persona's frontmatter as `off_duty: true`,
 not in config. A frontmatter-only `noname.md` stub in `personas_dir` retires the

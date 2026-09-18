@@ -13,7 +13,6 @@ from cafehome import cafe_root
 HOME = os.path.expanduser("~")
 ROOT = str(cafe_root())
 CONFIG = f"{ROOT}/config.json"  # all persistent settings in one file
-DIARY = f"{ROOT}/diary.md"  # one shared handover diary for the whole café
 
 # This file lives in <plugin>/bin/, so maids/ (the bundled fallback maid) is
 # next door. Resolved relatively; version bumps in the cache path don't matter.
@@ -31,7 +30,7 @@ def config():
         with open(CONFIG, encoding="utf-8") as f:
             data = json.load(f)
         # A hand-edited file may hold valid JSON that isn't an object; treating
-        # it as one would crash every hook and the status line at once.
+        # it as one would crash every hook at once.
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
@@ -43,15 +42,8 @@ def personas_dir():
     return os.path.expanduser(d)
 
 
-def claude_bin():
-    """Where the claude CLI lives — hooks run on a shell PATH that may not
-    have it, and its install location varies per machine."""
-    import shutil
-    return shutil.which("claude") or f"{HOME}/.local/bin/claude"
-
-
 def state_dir(session_id=None, create=True):
-    """create=False is for read-only statusline widgets, so a mere refresh
+    """create=False is for read-only lookups, so merely asking who is on shift
     doesn't sprout empty dirs."""
     d = f"{ROOT}/sessions/{session_id}" if session_id else f"{ROOT}/sessions/_global"
     if create:
@@ -60,7 +52,7 @@ def state_dir(session_id=None, create=True):
 
 
 def payload_from_stdin():
-    """Statusline widgets and hooks both receive the session JSON on stdin."""
+    """Hooks receive the session JSON on stdin."""
     try:
         return json.load(sys.stdin)
     except Exception:
@@ -122,30 +114,3 @@ def persona_file(maid_id):
         if os.path.exists(path) and persona_body(path).strip():
             return path
     return None
-
-
-def status_lines(session_id):
-    """The two status-line rows: the scene (whose subject is the maid's name,
-    per the look prompt) and the dialogue. Before the first look, fall back to
-    the bare name; nobody on shift returns []."""
-    maid_id = on_shift(session_id)
-    if not maid_id:
-        return []
-    look = [l.strip() for l in
-            read(f"{state_dir(session_id, create=False)}/look.txt").splitlines() if l.strip()]
-    scene = look[0] if look else display_name(maid_id)
-    speech = look[1] if len(look) > 1 else ""
-    if speech and not speech.startswith("「"):
-        speech = f"「{speech}」"  # wrap the dialogue in quotes so it reads as speech
-    return [scene, speech] if speech else [scene]
-
-
-def display_name(maid_id):
-    """Read name: from the persona frontmatter; fall back to the id."""
-    import re
-    path = persona_file(maid_id)
-    if path:
-        m = re.search(r"^name:\s*(.+)$", read(path), re.M)
-        if m:
-            return m.group(1).strip()
-    return maid_id.capitalize()

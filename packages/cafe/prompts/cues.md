@@ -1,4 +1,4 @@
-The time / weather / diary above are background intel, not lines to recite — bring them up only when it feels natural, no item-by-item reporting.
+The time and weather above are background intel, not lines to recite — bring them up only when it feels natural, no item-by-item reporting.
 
 ## Mood marker
 

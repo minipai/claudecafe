@@ -512,11 +512,11 @@ export class MaidSession {
       // settings, memory and plugins — the same files Claude Code reads.
       settingSources: ['user', 'project', 'local'],
       plugins: [{ type: 'local', path: CAFE_PLUGIN }],
-      // Who the café's remaining hooks think is on shift — the mirror and the
-      // diary ask, and the window is already standing her up, so it can't be
-      // the random draw a terminal session gets. What she speaks is not pinned: that is the
-      // café's own setting until ⌘K says otherwise, so an untouched window
-      // answers in the same language his terminal does. `env` replaces the
+      // Who the café's hooks think is on shift — the window is already standing
+      // her up, so it can't be the random draw a terminal session gets. What she
+      // speaks is not pinned: that is the café's own setting until ⌘K says
+      // otherwise, so an untouched window answers in the same language his
+      // terminal does. `env` replaces the
       // subprocess environment outright, hence the spread.
       env: { ...process.env, CLAUDE_MAID: maid, ...(chosenSpeech() ? { CLAUDE_MAID_LANG: chosenSpeech() } : {}) },
       // The window is a scene, not a transcript: one spoken line at a time, a

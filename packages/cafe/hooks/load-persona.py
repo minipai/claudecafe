@@ -94,8 +94,6 @@ def commit_authorship(body):
 
 
 def main():
-    if os.environ.get("CLAUDE_MAID_SUB"):
-        return  # background look/diary sub-sessions don't need a persona
     session_id = payload_from_stdin().get("session_id")
 
     maid = (os.environ.get("CLAUDE_MAID", "").strip()

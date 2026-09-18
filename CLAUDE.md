@@ -19,9 +19,9 @@ the things that are expensive to find out the hard way.
   read from there and stop with a plain error when it isn't present.
 - **`packages/cafe`** — one plugin package for Claude Code and Codex. They share
   portable hooks, skills, and one data root at `$XDG_CONFIG_HOME/claudecafe`
-  (default `~/.config/claudecafe`). Both load `hooks/hooks.json`; Claude's manifest
-  adds `hooks/claude-hooks.json` for status-line wiring, look and handover diary.
-  Keep shared hooks out of that extra file: Claude merges it with the defaults.
+  (default `~/.config/claudecafe`). Both discover `hooks/hooks.json` by convention
+  and neither manifest declares a `hooks` path — a manifest path adds to those
+  defaults, so naming the same file would run every hook twice.
 
 ## ⚠️ Three landmines in plugin development
 

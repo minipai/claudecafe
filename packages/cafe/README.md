@@ -2,9 +2,9 @@
 
 Claude Café in **one plugin**: a maid on shift (persona injected at session
 start) plus the liveliness layer (greeting, per-turn time, and mood marker).
-Claude Code adds a status-line "look" and handover diary. The shared `hire` and
-`config` skills work in Claude Code and Codex; Claude Code also has
-`/cafe:statusline` to wire up its status line. Everything else is hooks.
+Nothing in it is host-only: the same hooks and the same `hire`, `config` and
+`look` skills run on Claude Code and Codex. Commands are Claude-only, so the
+plugin ships none.
 
 The plugin is the café's operating system; the maids themselves are **hired
 from [claudecafe.dev](https://claudecafe.dev)** — `/cafe:hire <id>` fetches a
@@ -14,30 +14,25 @@ the same folder. Until someone is hired, a nameless maid keeps the place open.
 
 ## Claude Code and Codex
 
-Both hosts discover `hooks/hooks.json`, which contains the shared persona,
-greeting, and per-turn time hooks. Commands use `CLAUDE_PLUGIN_ROOT` in Claude
-Code and `PLUGIN_ROOT` in Codex to find the installed scripts.
-Claude Code additionally loads `hooks/claude-hooks.json` through its manifest
-for look, diary, and status-line wiring. That file contains only the extra
-hooks: a manifest hook path adds to the defaults, so repeating the shared
-hooks there would run them twice. Codex loads only the shared defaults.
+Both hosts discover `hooks/hooks.json` by convention — the persona, greeting
+and per-turn time hooks, the whole set. Neither manifest declares a `hooks`
+path: a manifest path *adds* to the discovered defaults, so naming the same
+file there would run every hook twice. Commands use `CLAUDE_PLUGIN_ROOT` in
+Claude Code and `PLUGIN_ROOT` in Codex to find the installed scripts.
 
-Both hosts load the same `skills/config/SKILL.md` and `skills/hire/SKILL.md`,
+Both hosts load the same `skills/` (`config`, `hire`, `look`),
 and share one data root: `$XDG_CONFIG_HOME/claudecafe`, defaulting to
 `~/.config/claudecafe`. `bin/cafehome.py` is the single resolver for that rule.
 
 | Component | Type | What it does |
 |-----------|------|--------------|
 | `load-persona.py` | `SessionStart` hook | Puts a maid on shift: injects the chosen persona's body (frontmatter stripped) plus the reply language. Shift order: `CLAUDE_MAID` env → this session's `on-shift` file → config `maid` → a draw from the maids you've hired into `personas/`; while nobody is hired, the bundled nameless maid keeps the café open. `none` = nobody on shift (no persona injected — bring your own via `CLAUDE.md`). |
-| `session-greeting.py` | `SessionStart` hook | Hands over the local time (no scripted wording — a hardcoded "it is getting late" never expires), the weather (wttr.in, 2s cap, skipped offline), the recent handover-diary entries, and the mood-marker cue. Also starts the shift tidy: resets the shift clock and last shift's look, and sweeps session state older than 7 days. |
-| `current-time.py` | `UserPromptSubmit` hook | A per-turn status line for the model: current time ｜ hours on shift ｜ today's commits ｜ festival, so the clock never goes stale. |
-| `look-update.py` | Claude Code `Stop` hook | Has the maid "check the mirror": forks a background `claude -p --model haiku` that writes a scene line + a dialogue line to `look.txt`. The maid's mood is read straight off the transcript (the last `【 mood kaomoji 】` marker). Regenerates after every tool-using turn; chat-only turns re-check every 50k tokens of context growth. Opt-in (`look: true`, set by `/cafe:statusline`) — off, it exits before spending anything. |
-| `diary-write.py` | Claude Code `SessionEnd` hook | The maid on shift leaves one line in the shared handover diary — written by a detached background `claude -p --model haiku` from a transcript digest, so it's in her voice. |
-| `link-bin.py` | Claude Code `SessionStart` hook | Keeps `~/.config/claudecafe/bin` symlinked at this version's `bin/`, so status-line config survives version bumps. |
+| `session-greeting.py` | `SessionStart` hook | Hands over the local time (no scripted wording — a hardcoded "it is getting late" never expires), the weather (wttr.in, 2s cap, skipped offline), and the mood-marker cue. Also starts the shift tidy: resets the shift clock and sweeps session state older than 7 days. |
+| `current-time.py` | `UserPromptSubmit` hook | A per-turn context line for the model: current time ｜ hours on shift ｜ today's commits ｜ festival, so the clock never goes stale. |
+| `look` | skill, both hosts | Asks the maid on shift what she looks like right now — one scene drawn from the work at hand, written in her own voice. Prose only; nothing is stored. |
 
 The mood marker is a **response-style flourish** for the reply itself; consumers
-(the look generator today, a companion app tomorrow) read it straight off the
-transcript. Its kaomoji come from a fixed 26-row table mapping 1:1 to
+(a companion app, say) read it straight off the transcript. Its kaomoji come from a fixed 26-row table mapping 1:1 to
 `@claudecafe/characters` expression artwork, so a companion app can resolve the
 current face to an image. The cues are persona-agnostic; only the flavour comes
 from whoever is on shift.
@@ -78,16 +73,8 @@ when set). Every key is optional:
   it; `false` drops the festival segment entirely. A pack is one flat object
   of fixed dates: `{"02-14": "西洋情人節", "10-10": "國慶日"}` — movable feasts
   (lunar calendar, nth-weekday rules) are out of scope.
-- `look` — Claude Code only; `true` turns on the background mirror shots
-  (default off — they
-  spend API credit, a `claude -p --model haiku` call each, and are invisible
-  until a status line displays them). `/cafe:statusline` sets this up
-  end to end; without it the status line shows the maid's bare name.
-- `diary` — Claude Code only; `false` skips the handover-diary line at session
-  end.
 - `greeting` — `false` drops the session-start briefing (greeting, weather,
-  diary recap, mood-marker cue). Housekeeping (shift clock, session sweep)
-  still runs.
+  mood-marker cue). Housekeeping (shift clock, session sweep) still runs.
 
 A persona is an `<id>.md` file in personas_dir (frontmatter with `name:`,
 body = the persona instructions; **lowercase filename**, that's the id) —
@@ -109,50 +96,13 @@ The shared root contains:
   config.json               # settings (optional, see above)
   personas/<id>.md          # your own personas (optional)
   sessions/<session_id>/    # per-window state: on-shift…
-
-Claude Code additionally writes:
-  bin → <plugin>/bin        # maintained by link-bin.py
-  diary.md                  # handover diary (trimmed to 200 entries)
-  sessions/<session_id>/look.txt
 ```
 
-The `bin` link, look, and diary are Claude-only. Config, personas, and session
-state are shared across hosts.
+Config, personas, and session state are all shared across hosts.
 
 Per-window shift state is what lets two windows run different maids at once:
 the draw is written into the window's shift file, so resuming brings back the
 same maid. Use `CLAUDE_MAID=kokona claude` as a one-shot override at launch.
-
-## Status line
-
-`/cafe:statusline` does the whole thing — it detects your setup (native
-`statusLine`, ccstatusline, or nothing yet), wires the display in, and flips
-`look` on. The manual version, if you'd rather:
-
-The native `statusLine` runs one script that prints both rows
-(the scene's subject is the maid's own name; the dialogue rides below):
-
-```json
-"statusLine": { "type": "command", "command": "python3 ~/.config/claudecafe/bin/statusbar.py" }
-```
-
-```
-くるみ的指尖在編輯器上輕快跳躍，逐個切換著要改的設定檔
-「ご主人様～設定全部整理好了呢～」
-```
-
-With [ccstatusline](https://github.com/sirmalloc/ccstatusline), add two **Custom
-Command** widgets for the same rows (point at the symlink, never at the versioned
-plugin path — that breaks on every update):
-
-```
-~/.config/claudecafe/bin/statusbar.py 1   # the scene
-~/.config/claudecafe/bin/statusbar.py 2   # the dialogue
-```
-
-Nobody on shift means every widget prints nothing and the rows collapse.
-Wiring it by hand? Also set `"look": true` in `~/.config/claudecafe/config.json` —
-generation stays off until someone can see it.
 
 ## No build step
 
