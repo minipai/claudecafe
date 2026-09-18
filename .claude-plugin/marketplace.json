@@ -20,7 +20,7 @@
     {
       "name": "cc-maid",
       "description": "Experimental pixel maid panel for Claude Code. Gives the agent a visible Kotone portrait and an expression tool. Requires function hooks.",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "author": {
         "name": "minipai"
       },

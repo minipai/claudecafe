@@ -65,6 +65,38 @@ describe('Cafe image pane', () => {
     })
   }
 
+  for (const [name, isPlaced, reopens] of [
+    ['reopens the pane waiting undrawn on a narrow terminal', false, 1],
+    ['leaves a pane the surface already placed alone', true, 0],
+  ] as const) {
+    test(name, async ($, on) => {
+      let opens = 0
+      on('session.start', (_, e) => ({ cwd: e.cwd }))
+      on('tool.register', () => ({ value: { tool } }))
+      on('ui.invalidate', () => ({ value: undefined }))
+      on('ui.open', (_, e) => { opens++; expect(e).toEqual({ id: 'cc-maid', title: 'Pixel art' }); return { value: undefined } })
+      on('ui.panes', () => ({ value: [{ id: 'cc-maid', title: 'Pixel art', isShown: true, isFocused: false, isPlaced }] }))
+      on('prompt.submit', (_, e) => ({ text: e.text }))
+      await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+      expect(opens).toBe(1)
+      expect(await $.prompt.submit({ text: 'hello' })).toEqual({ text: 'hello' })
+      expect(opens).toBe(1 + reopens)
+    })
+  }
+
+  test('leaves a pane the person closed shut', async ($, on) => {
+    let opens = 0
+    on('session.start', (_, e) => ({ cwd: e.cwd }))
+    on('tool.register', () => ({ value: { tool } }))
+    on('ui.invalidate', () => ({ value: undefined }))
+    on('ui.open', () => { opens++; return { value: undefined } })
+    on('ui.panes', () => ({ value: [] }))
+    on('prompt.submit', (_, e) => ({ text: e.text }))
+    await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+    await $.prompt.submit({ text: 'hello' })
+    expect(opens).toBe(1)
+  })
+
   test('preserves context before the interactive session enables the tool', async ($, on) => {
     const context = { blocks: [{ name: 'persona', text: 'Existing persona' }] }
     on('prompt.context', (_, e) => e)

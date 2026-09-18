@@ -3,6 +3,7 @@ import { loadFaces } from './faces'
 import { expressionPrompt } from './prompt'
 
 const tool = 'mcp__cc-maid__set_expression'
+const pane = { id: 'cc-maid', title: 'Pixel art' }
 
 export const register: Register = (on) => {
   const faces = loadFaces()
@@ -28,9 +29,18 @@ export const register: Register = (on) => {
       })
       enabled = true
       await $.ui.invalidate('prompt.context')
-      await $.ui.open({ id: 'cc-maid', title: 'Pixel art' })
+      await $.ui.open(pane)
     }
     return result
+  })
+
+  // A pane the plugin opens on its own waits undrawn below 144 columns; one
+  // opened while answering the person's prompt is placed at any width.
+  on('prompt.submit', async ($, e, next) => {
+    if (enabled && (await $.ui.panes()).some(open => open.id === pane.id && !open.isPlaced)) {
+      await $.ui.open(pane)
+    }
+    return next(e)
   })
 
   on('prompt.context', async ($, e, next) => {
@@ -57,7 +67,7 @@ export const register: Register = (on) => {
   })
 
   on('ui.render', { component: 'Pane' }, ($, e, next) => {
-    if (e.surface !== 'terminal' || e.requestId !== 'cc-maid') return next(e)
+    if (e.surface !== 'terminal' || e.requestId !== pane.id) return next(e)
 
     const { Raster } = $.ui.resolve(e)
     return <Raster key="panel-image" {...faces[expression]!} />
