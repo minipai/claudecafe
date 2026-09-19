@@ -150,6 +150,25 @@ describe('Cafe image pane', () => {
     })
   })
 
+  test('resets the expression to neutral after /clear', async ($, on) => {
+    const invalidations: string[] = []
+    on('command.run', (_, e) => {
+      expect(e.command).toBe('clear')
+      return { text: 'cleared' }
+    })
+    on('ui.invalidate', (_, e) => { invalidations.push(e.event); return { value: undefined } })
+    await $.tool.call({ tool, expression: 'happy' })
+    invalidations.length = 0
+
+    expect(await $.command.run({ command: 'clear' })).toEqual({ text: 'cleared' })
+
+    expect(invalidations).toEqual(['ui.render'])
+    expect(await $.ui.render(pane())).toEqual({
+      type: 'Raster', props: { key: 'panel-image', ...expressions.neutral },
+      raster: { plugin: 'cc-maid' },
+    })
+  })
+
   test('switches every expression and keeps the last selection until another call', async ($, on) => {
     const clock = mock.clock(on)
     const invalidations: string[] = []

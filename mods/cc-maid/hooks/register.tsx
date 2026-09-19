@@ -34,6 +34,14 @@ export const register: Register = (on) => {
     return result
   })
 
+  on('command.run', { command: 'clear' }, async ($, e, next) => {
+    if (expression !== 'neutral') {
+      expression = 'neutral'
+      await $.ui.invalidate('ui.render')
+    }
+    return next(e)
+  })
+
   // A pane the plugin opens on its own waits undrawn below 144 columns; one
   // opened while answering the person's prompt is placed at any width.
   on('prompt.submit', async ($, e, next) => {
