@@ -11,11 +11,10 @@ type SetExpression = (value: Expression) => Promise<void>
 type Context = Plugin.Context
 
 const charactersRoot = dirname(createRequire(import.meta.url).resolve("@claudecafe/characters/package.json"))
-// The sidebar's inner width is normally 38 cells. A 36×28 cell placement
-// matches the waist-up crop at the usual 1:2 terminal cell aspect ratio.
+// The sidebar's inner width is normally 38 cells. Keep a small horizontal
+// inset while the image itself uses its native pixel dimensions.
 const IMAGE_ROWS = 28
 const IMAGE_COLS = 36
-const CROP = { left: 32, top: 0, width: 448, height: 704 }
 
 function portraitPath(expression: Expression): string {
   return join(charactersRoot, "kotone", "expressions", "uniform", `${expression}.webp`)
@@ -36,19 +35,13 @@ function MaidCard(props: {
     setFailed(false)
     void NativeImage.load(portraitPath(expression))
       .then((source) => {
-        let portrait: NativeImage
-        try {
-          portrait = source.extract(CROP)
-        } finally {
-          source.dispose()
-        }
         if (expected !== generation) {
-          portrait.dispose()
+          source.dispose()
           return
         }
         const previous = current
-        current = portrait
-        setImage(portrait)
+        current = source
+        setImage(source)
         previous?.dispose()
         props.api.renderer.requestRender()
       })
@@ -75,11 +68,12 @@ function MaidCard(props: {
         height={IMAGE_ROWS}
         flexShrink={0}
         alignItems="center"
-        justifyContent="center"
+        justifyContent="flex-start"
+        overflow="hidden"
         backgroundColor={props.api.theme.background.raised.base}
       >
         {image() ? (
-          <image source={image()!} width={IMAGE_COLS} height={IMAGE_ROWS} fit="fill" />
+          <image source={image()!} {...nativeCellSize(props.api, image()!)} flexShrink={0} fit="fill" />
         ) : (
           <text fg={props.api.theme.text.subdued}>{failed() ? "Portrait unavailable" : "Loading portrait..."}</text>
         )}
@@ -100,6 +94,23 @@ function MaidCard(props: {
       </box>
     </box>
   )
+}
+
+function nativeCellSize(api: Context, image: NativeImage): { width: number; height: number } {
+  const resolution = api.renderer.resolution
+  if (!resolution) {
+    return {
+      width: IMAGE_COLS,
+      height: Math.round((IMAGE_COLS * image.height) / (image.width * 2)),
+    }
+  }
+
+  const cellWidth = resolution.width / api.renderer.terminalWidth
+  const cellHeight = resolution.height / api.renderer.terminalHeight
+  return {
+    width: Math.max(1, Math.round(image.width / cellWidth)),
+    height: Math.max(1, Math.round(image.height / cellHeight)),
+  }
 }
 
 function MaidCommands(props: {
