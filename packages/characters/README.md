@@ -25,13 +25,14 @@ is all a second artist has to go on — they don't own her persona file.
 
 ## Who reads this
 
-- **The website** takes the persona files (the package's `files` allowlist is
-  persona files only, so the deploy image stays small).
+- **The website** takes the persona files. The package's `files` allowlist also
+  includes `panel.faces` for terminal consumers while leaving WebP sprites out.
 - **The desktop app** copies the sprites in at build time — `pack-sprites.sh`
   globs `*.webp`, so `panel.faces` stays out of the window's bundle.
-- **A terminal panel** (the `cc-maid` mod today) reads `panel.faces`: a palette
-  and three index planes per mood, gzipped and base64'd, because a plugin reads
-  files as UTF-8 text. `art-masters/kotone/panel/tools/export-faces.py` writes it.
+- **The cc-maid and OpenCode terminal panels** read `panel.faces`: a palette and
+  three index planes per mood, gzipped and base64'd because the cc-maid plugin
+  reads files as UTF-8 text. `art-masters/kotone/panel/tools/export-faces.py`
+  writes it.
 - The café plugin ships none of it: maids are hired from the site.
 
 ## Where the drawings came from

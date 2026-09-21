@@ -372,7 +372,7 @@ describe("expression tool", () => {
     await cleanup?.()
   })
 
-  test("every expression the tool offers has panel artwork", () => {
+  test("every expression the tool offers has a WebP sprite", () => {
     for (const name of EXPRESSIONS) {
       expect(existsSync(join(CHARACTERS, "kotone", "expressions", "uniform", `${name}.webp`))).toBe(true)
     }

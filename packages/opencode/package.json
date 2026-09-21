@@ -1,6 +1,6 @@
 {
   "name": "@claudecafe/opencode",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "description": "Claude Café for OpenCode — a maid on shift (persona, greeting, per-turn time, mood marker) plus her portrait in the sidebar.",
   "type": "module",

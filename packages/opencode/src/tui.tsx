@@ -1,64 +1,33 @@
 /** @jsxImportSource @opentui/solid */
 import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
-import { NativeImage } from "@opentui/core"
+import type { TextRenderable } from "@opentui/core"
 import { Plugin } from "@opencode/plugin/tui"
-import { createEffect, createSignal, onCleanup } from "solid-js"
+import { createEffect, createMemo } from "solid-js"
 import { EXPRESSIONS, type Expression } from "./expressions.ts"
+import { loadFaces, renderFace } from "./faces.ts"
 import { cafeRpc } from "./rpc.ts"
 
 type SetExpression = (value: Expression) => Promise<void>
 type Context = Plugin.Context
 
 const charactersRoot = dirname(createRequire(import.meta.url).resolve("@claudecafe/characters/package.json"))
-// The sidebar's inner width is normally 38 cells. Keep a small horizontal
-// inset while the image itself uses its native pixel dimensions.
-const IMAGE_ROWS = 28
-const IMAGE_COLS = 36
-
-function portraitPath(expression: Expression): string {
-  return join(charactersRoot, "kotone", "expressions", "uniform", `${expression}.webp`)
-}
+// The sidebar's inner width is normally 38 cells; its own padding supplies the inset.
+const IMAGE_ROWS = 25
+const IMAGE_COLS = 38
+const IMAGE_TOP = 24
+const faces = loadFaces(join(charactersRoot, "kotone", "expressions", "uniform", "panel.faces"))
 
 function MaidCard(props: {
   api: Context
   expression: () => Expression
 }) {
-  const [image, setImage] = createSignal<NativeImage>()
-  const [failed, setFailed] = createSignal(false)
-  let current: NativeImage | undefined
-  let generation = 0
+  const portrait = createMemo(() => renderFace(faces[props.expression()]!, IMAGE_COLS, IMAGE_ROWS, IMAGE_TOP))
+  let portraitNode: TextRenderable | undefined
 
   createEffect(() => {
-    const expression = props.expression()
-    const expected = ++generation
-    setFailed(false)
-    void NativeImage.load(portraitPath(expression))
-      .then((source) => {
-        if (expected !== generation) {
-          source.dispose()
-          return
-        }
-        const previous = current
-        current = source
-        setImage(source)
-        previous?.dispose()
-        props.api.renderer.requestRender()
-      })
-      .catch(() => {
-        if (expected !== generation) return
-        const previous = current
-        current = undefined
-        setImage(undefined)
-        setFailed(true)
-        previous?.dispose()
-        props.api.renderer.requestRender()
-      })
-  })
-
-  onCleanup(() => {
-    generation++
-    current?.dispose()
+    const content = portrait()
+    if (portraitNode) portraitNode.content = content
   })
 
   return (
@@ -72,11 +41,17 @@ function MaidCard(props: {
         overflow="hidden"
         backgroundColor={props.api.theme.background.raised.base}
       >
-        {image() ? (
-          <image source={image()!} {...nativeCellSize(props.api, image()!)} flexShrink={0} fit="fill" />
-        ) : (
-          <text fg={props.api.theme.text.subdued}>{failed() ? "Portrait unavailable" : "Loading portrait..."}</text>
-        )}
+        <text
+          ref={(node) => {
+            portraitNode = node
+            node.content = portrait()
+          }}
+          width={IMAGE_COLS}
+          height={IMAGE_ROWS}
+          flexShrink={0}
+          wrapMode="none"
+          selectable={false}
+        />
       </box>
       <box
         width="100%"
@@ -94,23 +69,6 @@ function MaidCard(props: {
       </box>
     </box>
   )
-}
-
-function nativeCellSize(api: Context, image: NativeImage): { width: number; height: number } {
-  const resolution = api.renderer.resolution
-  if (!resolution) {
-    return {
-      width: IMAGE_COLS,
-      height: Math.round((IMAGE_COLS * image.height) / (image.width * 2)),
-    }
-  }
-
-  const cellWidth = resolution.width / api.renderer.terminalWidth
-  const cellHeight = resolution.height / api.renderer.terminalHeight
-  return {
-    width: Math.max(1, Math.round(image.width / cellWidth)),
-    height: Math.max(1, Math.round(image.height / cellHeight)),
-  }
 }
 
 function MaidCommands(props: {

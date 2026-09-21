@@ -42,10 +42,12 @@ Claude Code / Codex skills; here you hire by downloading a persona from
 
 ## TUI: the portrait
 
-A fixed waist-up Kotone portrait in the sidebar footer. It loads the uniform
-WebP directly from `@claudecafe/characters`, crops it at runtime, and lets
-OpenTUI select Kitty, Sixel, or terminal blocks. It uses a 36×28-cell area —
-nearly the full inner width of the 42-column sidebar, which OpenCode shows
+A fixed 3:4 Kotone portrait in the sidebar footer. It reads the same packed
+`panel.faces` raster as cc-maid, takes a reviewed 38×25-cell crop, and draws it
+with upper/lower half-block glyphs and 24-bit text colours. These are ordinary
+terminal cells — no Kitty or Sixel image is sent — so a remote terminal
+multiplexer does not need to replay a multi-megabyte image when its tab returns.
+The crop fills the inner width of the 42-column sidebar, which OpenCode shows
 automatically above 120 terminal columns (toggle with the `sidebar_toggle`
 binding, normally `ctrl+x b`).
 
@@ -55,8 +57,7 @@ and a system cue tells the model when to use it. V2 RPC carries model-selected
 expressions to the TUI and restores the current expression when the panel
 mounts. There are no heuristic reactions; the model drives the panel.
 
-Kitty-compatible terminals get the sharpest rendering; OpenTUI falls back to
-Sixel or terminal blocks when needed.
+Every terminal gets the same raster rendering.
 
 ## Run it
 
@@ -85,6 +86,8 @@ changes.
 - `src/cafe.ts` — the port: shared-root paths, `config.json`, the cast pool,
   festival pack, prompts, and shift context.
 - `src/tui.tsx` — the TUI implementation and sidebar slot.
+- `src/faces.ts` — unpacks the shared terminal raster and turns its crop into
+  styled half-block text.
 - `src/rpc.ts` — the typed expression method and event shared by both
   entrypoints.
 - `src/expressions.ts` — the 26-expression list both halves share, plus the
