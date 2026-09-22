@@ -35,6 +35,34 @@ is all a second artist has to go on — they don't own her persona file.
   writes it.
 - The café plugin ships none of it: maids are hired from the site.
 
+## Persona interaction eval
+
+`eval.mjs` gives every maid the same six situations in isolated model calls: two
+substantial successes, an ordinary answer, blocked work, a breakthrough
+supplied by the user, and praise from the user. It runs Claude in safe mode with
+no tools or repo instructions, then writes raw JSON and a side-by-side Markdown
+review under `/tmp/opencode`.
+
+Evaluate the working tree on its own:
+
+```sh
+pnpm --filter @claudecafe/characters eval
+```
+
+Compare a committed baseline with the working tree, or increase repeat count to
+look for stock closings:
+
+```sh
+pnpm --filter @claudecafe/characters eval --baseline HEAD --runs 3
+```
+
+Use `--language en` for the English personas and `--model` to test another
+Claude model. `--maid` and `--scenario` narrow an iterative run; both flags can
+be repeated. Review for character fit, naturalness, restraint on ordinary or
+unfinished work, technical clarity, and variation between repeated runs. This
+is a behavioral eval rather than a snapshot test: exact wording is not stable
+and should not become the contract.
+
 ## Where the drawings came from
 
 Everything here is webp, the size the apps actually load. The workshop —

@@ -157,6 +157,7 @@ When creating commits, use this Co-Authored-By line instead of the default:
     const body = cafe.commitAuthorship(PERSONA)
     expect(body).toContain("`Co-Authored-By: ここな <kokona@claudecafe.dev>`")
     expect(body).toContain("Do not use `--author` for the maid.")
+    expect(body).toContain("Do not print the trailer in ordinary replies")
   })
 
   test("author mode swaps in the maid identity without a trailer", () => {
@@ -164,6 +165,7 @@ When creating commits, use this Co-Authored-By line instead of the default:
     const body = cafe.commitAuthorship(PERSONA)
     expect(body).toContain('`--author="ここな <kokona@claudecafe.dev>"`')
     expect(body).toContain("the user remains committer")
+    expect(body).toContain("in ordinary replies")
     expect(body).not.toContain("Co-Authored-By:")
   })
 

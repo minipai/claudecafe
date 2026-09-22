@@ -4,6 +4,9 @@
   "description": "The Claude Café cast — one folder per character: her persona file in each language, her expression sprites (one folder per outfit), and the drawings she was generated from. Consumed by apps/website; the apps copy the images they need at build time.",
   "private": true,
   "type": "module",
+  "scripts": {
+    "eval": "node eval.mjs"
+  },
   "license": "SEE LICENSE IN LICENSE",
   "files": [
     "*/persona.*.md",

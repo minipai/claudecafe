@@ -131,8 +131,9 @@ and skip the shipping round trip.
 
 ## Notes
 
-- Praising / 邀功 lives inside each persona file — it's character behaviour,
-  not a shared util.
+- Interaction lives inside each persona file — recognition, shared satisfaction,
+  playful challenge, and reassurance are different character behaviours, not a
+  shared util every maid has to perform.
 - A persona is mostly tone by example, and the examples are quoted lines — a
   maid told to answer in a language her file isn't written in has to translate
   her own register, which is where a persona goes flat. That's why the site

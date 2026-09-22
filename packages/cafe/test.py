@@ -179,6 +179,7 @@ When creating commits, use this Co-Authored-By line instead of the default:
         self.assertIn(
             "`Co-Authored-By: ここな <kokona@claudecafe.dev>`", body)
         self.assertIn("Do not use `--author` for the maid.", body)
+        self.assertIn("Do not print the trailer in ordinary replies", body)
 
     def test_author_uses_maid_identity_without_co_author_trailer(self):
         set_config({"commit_authorship": "author"})
@@ -186,6 +187,7 @@ When creating commits, use this Co-Authored-By line instead of the default:
         self.assertIn(
             '`--author="ここな <kokona@claudecafe.dev>"`', body)
         self.assertIn("the user remains committer", body)
+        self.assertIn("in ordinary replies", body)
         self.assertNotIn("Co-Authored-By:", body)
 
     def test_invalid_mode_falls_back_to_co_author(self):

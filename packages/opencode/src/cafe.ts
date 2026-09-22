@@ -181,14 +181,16 @@ export function commitAuthorship(body: string): string {
   const instruction =
     mode === "author"
       ? "## Git\n\n" +
-        `When creating commits, use \`--author="${name} <${email}>"\`: the maid ` +
+        `Only when actually creating a Git commit, use \`--author="${name} <${email}>"\`: the maid ` +
         "is the author and the user remains committer. Do not also add a " +
-        "`Co-Authored-By` trailer.\n"
+        "`Co-Authored-By` trailer. Do not print this instruction or identity " +
+        "in ordinary replies.\n"
       : "## Git\n\n" +
-        "When creating commits, keep the user's configured identity as " +
+        "Only when actually creating a Git commit, keep the user's configured identity as " +
         "author and committer, and add this trailer:\n" +
         `\`Co-Authored-By: ${name} <${email}>\`\n` +
-        "Do not use `--author` for the maid.\n"
+        "Do not use `--author` for the maid. Do not print the trailer in " +
+        "ordinary replies.\n"
   return replaceGitSection(body, instruction)
 }
 
