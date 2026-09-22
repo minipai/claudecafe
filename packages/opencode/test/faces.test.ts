@@ -1,23 +1,29 @@
 import { describe, expect, test } from "bun:test"
-import { createRequire } from "node:module"
-import { dirname, join } from "node:path"
-import { EXPRESSIONS } from "../src/expressions.ts"
+import { join } from "node:path"
+import { FACE_DIRECTORY, loadFaceNames } from "../src/expressions.ts"
 import { loadFaces, renderFace } from "../src/faces.ts"
 
-const charactersRoot = dirname(createRequire(import.meta.url).resolve("@claudecafe/characters/package.json"))
-const faces = loadFaces(join(charactersRoot, "kotone", "expressions", "uniform", "panel.faces"))
+const faces = loadFaces(FACE_DIRECTORY)
 
 describe("terminal faces", () => {
-  test("the shared raster contains every expression", () => {
-    expect(Object.keys(faces).sort()).toEqual([...EXPRESSIONS].sort())
+  test("the available faces come from GIF filenames", () => {
+    expect(Object.keys(faces)).toEqual(loadFaceNames())
   })
 
-  test("the sidebar crop is styled text with the requested cell size", () => {
-    const portrait = renderFace(faces.neutral!, 38, 25, 24)
+  test("a 36x48 GIF renders as 36x24 styled terminal cells", () => {
+    const portrait = renderFace(faces.neutral!)
     const lines = portrait.chunks.map((chunk) => chunk.text).join("").split("\n")
 
-    expect(lines).toHaveLength(25)
-    expect(lines.every((line) => [...line].length === 38)).toBe(true)
+    expect(lines).toHaveLength(24)
+    expect(lines.every((line) => [...line].length === 36)).toBe(true)
     expect(portrait.chunks.some((chunk) => chunk.fg || chunk.bg)).toBe(true)
+  })
+
+  test("animated GIF frames and their delays are retained", () => {
+    const animated = loadFaces(join(import.meta.dir, "fixtures", "animated")).blink!
+
+    expect(animated.frames).toHaveLength(2)
+    expect(animated.frames.map((frame) => frame.delay)).toEqual([80, 120])
+    expect(renderFace(animated, 0).chunks).not.toEqual(renderFace(animated, 1).chunks)
   })
 })

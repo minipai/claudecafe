@@ -1,7 +1,7 @@
 {
   "name": "@claudecafe/characters",
   "version": "1.0.0",
-  "description": "The Claude Café cast — one folder per character: her persona file in each language, her expression sprites (one folder per outfit), and the drawings she was generated from. Consumed by apps/website; the apps copy the images they need at build time.",
+  "description": "The Claude Café cast — versioned persona files plus runtime avatars, portraits, terminal pixels, and visual variants.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,6 +10,10 @@
   "license": "SEE LICENSE IN LICENSE",
   "files": [
     "*/persona.*.md",
-    "*/expressions/*/panel.faces"
+    "*/avatar.webp",
+    "*/portraits/*.webp",
+    "*/pixels/*.gif",
+    "*/variants/*/portraits/*.webp",
+    "*/variants/*/pixels/*.gif"
   ]
 }

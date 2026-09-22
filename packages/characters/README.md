@@ -1,38 +1,52 @@
 # characters
 
-The cast. One folder per maid, named after her, holding nothing but who she is:
+The cast. One folder per character, named after her, containing her persona and
+the runtime artwork shipped with it:
 
 ```
 kurumi/
-  persona.zh.md      frontmatter = the site's metadata, body = who she is
-  persona.en.md      the same maid, written again rather than translated
-  expressions/
-    uniform/         26 sprites, one per mood, named after the mood
-      panel.faces    the same 26 moods as terminal pixels, in one file
-  portraits/         avatar.webp + standing.webp, for the site
+  persona.zh.md        YAML metadata + the Chinese persona body
+  persona.en.md        the same character written naturally in English
+  avatar.webp          stable square identity image
+  portraits/           default visual variant, for graphical clients
+    neutral.webp       runtime portrait; filename = expression ID
+  pixels/               default 36×48 terminal portraits
+    neutral.gif         static or animated; filename = expression ID
+  variants/
+    one-piece/
+      portraits/       a complete visual alternative, still the same maid
 ```
 
 A folder counts as a character **only if it holds a persona file** — which is why
 the drawing scripts can sit beside the five without being mistaken for a sixth.
 
-**One folder per outfit**, `uniform` being the café clothes she is normally in. An
-outfit is a whole fresh set of moods rather than a layer to swap on, so adding one
-means adding a folder and nothing else. Everything that outfit is drawn as lives
-in it: the webp the apps show, and `panel.faces`, the same moods packed for a
-terminal's cells — one file rather than 26, because a panel may be asked for any
-mood at any moment and fetching them one by one would stall on the first of each. The folder name is the name shown, which
-is all a second artist has to go on — they don't own her persona file.
+The character root is a complete default variant: it owns `avatar.webp`,
+`portraits/`, and optional `pixels/`. A different outfit is visual artwork for
+the same persona, not another character, and lives under `variants/<id>/` with
+its own complete runtime artwork. Missing variant artwork does not fall through
+to another outfit midway through a conversation.
+
+An independently distributed variant may declare `extends: <namespaced-id>` in
+its own persona frontmatter. That inherits identity, not missing artwork: the
+variant still ships every asset it promises.
+
+There is deliberately no `standing.webp`. `portraits/` means person-focused
+artwork and does not prescribe full-body or half-body composition. Kotone's
+current Retina set is 960 × 1280; terminal art belongs only in `pixels/`.
+
+Persona frontmatter uses `format_version`, a namespaced `id`, `name`, `version`,
+`author`, and `description`. Site-specific fields such as `quote`, and the
+human-readable `outfits` labels, may live beside them. The Markdown body is the
+actual persona.
 
 ## Who reads this
 
-- **The website** takes the persona files. The package's `files` allowlist also
-  includes `panel.faces` for terminal consumers while leaving WebP sprites out.
-- **The desktop app** copies the sprites in at build time — `pack-sprites.sh`
-  globs `*.webp`, so `panel.faces` stays out of the window's bundle.
-- **The cc-maid and OpenCode terminal panels** read `panel.faces`: a palette and
-  three index planes per mood, gzipped and base64'd because the cc-maid plugin
-  reads files as UTF-8 text. `art-masters/kotone/panel/tools/export-faces.py`
-  writes it.
+- **The website** takes the persona files and the normalized site artwork in its
+  own asset bundle.
+- **The desktop app** copies `portraits/` and `variants/*/portraits/` at build
+  time. The default root is presented as its `uniform` outfit.
+- **The OpenCode terminal panel** discovers 36×48 `*.gif` files by filename,
+  decodes static or animated frames, and draws them as ordinary text cells.
 - The café plugin ships none of it: maids are hired from the site.
 
 ## Persona interaction eval
@@ -65,8 +79,9 @@ and should not become the contract.
 
 ## Where the drawings came from
 
-Everything here is webp, the size the apps actually load. The workshop —
-the PNG masters, each maid's pencil references, the shared style spec — lives in
+Everything here is runtime-sized WebP or GIF. The workshop — archival PNG
+masters, native generations, upscales, pencil references, shared palettes, and
+rebuild scripts — lives in
 `art-masters/` beside the repository and never in git, because nothing that runs
 reads it. `scripts/normalize-website-art.py` works from there and says so plainly
 when it isn't present.

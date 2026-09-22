@@ -122,10 +122,10 @@ describe('choreograph', () => {
     expect(scene.pushWhisper).not.toHaveBeenCalled()
   })
 
-  it('tool_use set_expression: a name she has no artwork for leaves her face as it was', () => {
+  it('tool_use set_expression: an unknown name leaves her face as it was', () => {
     const scene = createScene()
     choreograph(
-      { type: 'tool_use', id: 'call-1', name: 'set_expression', label: '', input: { expression: 'excited' } },
+      { type: 'tool_use', id: 'call-1', name: 'set_expression', label: '', input: { expression: 'missing' } },
       scene,
     )
     expect(scene.showFace).not.toHaveBeenCalled()

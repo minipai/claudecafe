@@ -1,47 +1,86 @@
-import { readFileSync } from "node:fs"
-import { gunzipSync } from "node:zlib"
+import { readFileSync, readdirSync } from "node:fs"
+import { extname, join } from "node:path"
 import { RGBA, StyledText, type TextChunk } from "@opentui/core"
+import { GifReader, type Frame } from "omggif"
+
+export const FACE_COLUMNS = 36
+export const FACE_ROWS = 48
+
+export type FaceFrame = {
+  pixels: Uint8ClampedArray
+  delay: number
+}
 
 export type Face = {
-  columns: number
-  rows: number
-  planes: Uint8Array
-  palette: Uint32Array
-  glyphs: Uint32Array
+  frames: FaceFrame[]
 }
 
-export function loadFaces(path: string): Record<string, Face> {
-  const packed = readFileSync(path, "utf8")
-  return read(gunzipSync(Buffer.from(packed.trim(), "base64")))
+export function loadFaces(directory: string): Record<string, Face> {
+  const files = readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && extname(entry.name).toLowerCase() === ".gif")
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  return Object.fromEntries(
+    files.map((file) => [file.name.slice(0, -extname(file.name).length), loadFace(join(directory, file.name))]),
+  )
 }
 
-export function renderFace(face: Face, columns: number, rows: number, top: number): StyledText {
-  const left = Math.floor((face.columns - columns) / 2)
+export function renderFace(face: Face, frameIndex = 0): StyledText {
+  const frame = face.frames[frameIndex % face.frames.length]!
   const chunks: TextChunk[] = []
 
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < columns; x++) {
-      const upper = pixel(face, left + x, top + y * 2)
-      const lower = pixel(face, left + x, top + y * 2 + 1)
+  for (let y = 0; y < FACE_ROWS; y += 2) {
+    for (let x = 0; x < FACE_COLUMNS; x++) {
+      const upper = pixel(frame.pixels, x, y)
+      const lower = pixel(frame.pixels, x, y + 1)
       const cell = halfBlock(upper, lower)
       append(chunks, cell.text, cell.fg, cell.bg)
     }
-    if (y < rows - 1) chunks.push({ __isChunk: true, text: "\n" })
+    if (y < FACE_ROWS - 2) chunks.push({ __isChunk: true, text: "\n" })
   }
 
   return new StyledText(chunks)
 }
 
-function pixel(face: Face, x: number, y: number): number | undefined {
-  const cells = face.columns * face.rows
-  const cell = Math.floor(y / 2) * face.columns + x
-  const glyph = face.glyphs[face.planes[cell]!]!
-  const foreground = packedColor(face.planes[cells + cell]!, face.palette)
-  const background = packedColor(face.planes[cells * 2 + cell]!, face.palette)
+function loadFace(path: string): Face {
+  const bytes = readFileSync(path)
+  const gif = new GifReader(bytes)
+  if (gif.width !== FACE_COLUMNS || gif.height !== FACE_ROWS) {
+    throw new Error(`${path} must be a ${FACE_COLUMNS}x${FACE_ROWS} GIF`)
+  }
 
-  if (glyph === 0x2580 && y % 2 === 0) return foreground
-  if (glyph === 0x2584 && y % 2 === 1) return foreground
-  return background
+  const frames = decodeFrames(gif)
+  if (frames.length === 0) throw new Error(`${path} has no image frames`)
+  return { frames }
+}
+
+function decodeFrames(gif: GifReader): FaceFrame[] {
+  const canvas = new Uint8ClampedArray(FACE_COLUMNS * FACE_ROWS * 4)
+  const frames: FaceFrame[] = []
+
+  for (let index = 0; index < gif.numFrames(); index++) {
+    const frame = gif.frameInfo(index)
+    const previous = frame.disposal === 3 ? canvas.slice() : undefined
+    gif.decodeAndBlitFrameRGBA(index, canvas)
+    frames.push({ pixels: canvas.slice(), delay: Math.max(frame.delay * 10 || 100, 20) })
+
+    if (frame.disposal === 2) clearFrame(canvas, frame)
+    if (previous) canvas.set(previous)
+  }
+
+  return frames
+}
+
+function clearFrame(canvas: Uint8ClampedArray, frame: Frame): void {
+  for (let y = frame.y; y < frame.y + frame.height; y++) {
+    canvas.fill(0, (y * FACE_COLUMNS + frame.x) * 4, (y * FACE_COLUMNS + frame.x + frame.width) * 4)
+  }
+}
+
+function pixel(pixels: Uint8ClampedArray, x: number, y: number): number | undefined {
+  const at = (y * FACE_COLUMNS + x) * 4
+  if (pixels[at + 3] === 0) return undefined
+  return pixels[at]! << 16 | pixels[at + 1]! << 8 | pixels[at + 2]!
 }
 
 function halfBlock(top: number | undefined, bottom: number | undefined): {
@@ -59,44 +98,6 @@ function append(chunks: TextChunk[], text: string, fg?: RGBA, bg?: RGBA): void {
   const previous = chunks.at(-1)
   if (previous && previous.fg === fg && previous.bg === bg) previous.text += text
   else chunks.push({ __isChunk: true, text, fg, bg })
-}
-
-function read(bytes: Uint8Array): Record<string, Face> {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  if (String.fromCharCode(...bytes.subarray(0, 4)) !== "CCF1") throw new Error("Not a .faces file")
-
-  const columns = view.getUint16(4, true)
-  const rows = view.getUint16(6, true)
-  const colorCount = view.getUint16(8, true)
-  const glyphCount = view.getUint8(10)
-  const faceCount = view.getUint8(11)
-
-  let at = 12
-  const palette = new Uint32Array(colorCount)
-  for (let i = 0; i < colorCount; i++, at += 4) palette[i] = view.getUint32(at, true)
-  const glyphs = new Uint32Array(glyphCount)
-  for (let i = 0; i < glyphCount; i++, at += 4) glyphs[i] = view.getUint32(at, true)
-
-  const cells = columns * rows
-  const faces: Record<string, Face> = {}
-  for (let i = 0; i < faceCount; i++) {
-    const length = view.getUint8(at++)
-    const name = new TextDecoder().decode(bytes.subarray(at, at + length))
-    at += length
-    faces[name] = {
-      columns,
-      rows,
-      palette,
-      glyphs,
-      planes: bytes.slice(at, at + cells * 3),
-    }
-    at += cells * 3
-  }
-  return faces
-}
-
-function packedColor(index: number, palette: Uint32Array): number | undefined {
-  return index === 255 ? undefined : palette[index]!
 }
 
 const rgbaColors = new Map<number, RGBA>()

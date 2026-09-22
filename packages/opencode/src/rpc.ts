@@ -1,8 +1,7 @@
 import { Rpc } from "@opencode/plugin"
 import { z } from "zod"
-import { EXPRESSIONS } from "./expressions.ts"
 
-const expression = z.object({ expression: z.enum(EXPRESSIONS) })
+const expression = z.object({ mood: z.string(), face: z.string() })
 
 export const cafeRpc = Rpc.define({
   id: "claudecafe",

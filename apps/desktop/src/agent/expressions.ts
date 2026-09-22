@@ -23,23 +23,23 @@ export const KAOMOJI = {
   focused: '(๑•̀ ᴗ•́)૭✧',
   confused: '( ⊙.⊙ )?',
 
-  // Turned on the master
+  // Warm and playful
   proud: 'ᕙ( •̀ ᗜ •́)ᕗ',
   smug: '( ｀▽´ )',
-  impressed: '( ✧ ᗜ ✧ )',
+  excited: '٩(ˊᗜˋ*)و',
   flirty: '( ˘ ³˘)♡',
-  horny: '(,,ᴗ ᴗ,,)♡',
+  smitten: '(,,ᴗ ᴗ,,)♡',
   wink: '☆ ( ＞◡❛)',
   embarrassed: '( ˶>﹏<˶ᵕ)',
   pouty: '( •̀ ε •́ )',
   worried: '(´･ω･｀)',
+  annoyed: '(￢_￢)',
 
   // The basic six, and the seventh nobody agreed on
   sad: '(｡•́︿•̀｡)',
   surprised: 'Σ( °口° )',
   angry: '( ＃•̀_•́ )',
   afraid: '( ;ﾟдﾟ )',
-  disgusted: '(￣～￣;)',
   skeptical: '(￢‸￢)…',
 
   // Something went wrong
@@ -48,6 +48,14 @@ export const KAOMOJI = {
   sorry: 'm( _ _ )m',
   speechless: '(・_・;)',
   relieved: '( ˘ᗜ˘ )⁼³',
+
+  // Conversational reactions
+  laughing: 'ꉂ(ˊᗜˋ*)',
+  crying: '(╥﹏╥)',
+  sleepy: '(－ω－) zzZ',
+  pleading: '(｡•́人•̀｡)',
+  facepalm: '(－‸ლ)',
+  waving: '( ･ω･)ﾉ',
 } as const
 
 export type Expression = keyof typeof KAOMOJI

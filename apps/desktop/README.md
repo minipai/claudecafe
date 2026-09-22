@@ -32,6 +32,11 @@ truth: the window globs that folder for who can be picked, and the packaging ste
 reads the same folder to decide whose persona travels inside the app. `pnpm dev`
 and `pnpm build` run it for you.
 
+Each character's root `portraits/` is her default `uniform` artwork. Optional
+outfits live under `variants/<outfit>/portraits/`; the pack step normalizes both
+forms into the renderer's derived `<maid>/<outfit>/` tree and copies the root
+`avatar.webp` beside each outfit for the shift picker.
+
 Sprite and persona have to arrive together. A maid the window can stand up but
 has no persona for would answer as a plain assistant wearing her face.
 

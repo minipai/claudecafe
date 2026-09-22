@@ -12,11 +12,11 @@ and they are not interchangeable — ことね coaxes a sulking function back to
 **[claudecafe.dev](https://claudecafe.dev)** — meet them, and hire one.
 
 <p align="center">
-  <img src="packages/characters/kanae/portraits/avatar.webp" width="96" alt="かなえ">
-  <img src="packages/characters/kokona/portraits/avatar.webp" width="96" alt="ここな">
-  <img src="packages/characters/kotone/portraits/avatar.webp" width="96" alt="ことね">
-  <img src="packages/characters/kuroko/portraits/avatar.webp" width="96" alt="くろこ">
-  <img src="packages/characters/kurumi/portraits/avatar.webp" width="96" alt="くるみ">
+  <img src="packages/characters/kanae/avatar.webp" width="96" alt="かなえ">
+  <img src="packages/characters/kokona/avatar.webp" width="96" alt="ここな">
+  <img src="packages/characters/kotone/avatar.webp" width="96" alt="ことね">
+  <img src="packages/characters/kuroko/avatar.webp" width="96" alt="くろこ">
+  <img src="packages/characters/kurumi/avatar.webp" width="96" alt="くるみ">
 </p>
 
 ## Start here

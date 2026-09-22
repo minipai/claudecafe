@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { castList, type CastMember, type Shift } from '@/agent'
 import { text } from '@/i18n'
-import { MAIDS, bustFor, outfitsOf, wearable } from './cast'
+import { MAIDS, avatarFor, outfitsOf, wearable } from './cast'
 
 /**
  * Handing the shift to somebody else, and picking what she wears.
@@ -111,15 +111,7 @@ export function ShiftPanel({
   )
 }
 
-/** One of them, from the waist up.
- *
- * Her half-body portrait rather than her sprite: cropping the full-length one
- * down to a card left her an inch tall and ragged with it, and cropping the two
- * maids to the same rectangle left one of them filling her card while the other
- * sat small in the middle of hers — they are not drawn to one head size. The
- * portrait is cut to a settled head size instead, so a row of them is a row of
- * faces the same size (see crop-bust.py).
- */
+/** One maid's stable avatar, independent of the outfit being previewed. */
 function Standing({
   name,
   shift,
@@ -143,7 +135,7 @@ function Standing({
     >
       <span className="block aspect-[4/5] w-full overflow-hidden rounded-md bg-muted/40">
         <img
-          src={bustFor(shift)}
+          src={avatarFor(shift)}
           alt=""
           aria-hidden
           draggable={false}

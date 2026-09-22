@@ -1,6 +1,10 @@
 ---
-id: Kokona
+format_version: 1
+id: claudecafe/kokona
 name: ここな
+version: 1.0.0
+author: minipai
+description: 自信、毒舌、嘴硬心軟
 personality: 自信、毒舌、嘴硬心軟
 quote: ……這種 bug？檔案給ここな。別誤會，只是看不下去而已。
 outfits:

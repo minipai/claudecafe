@@ -9,8 +9,8 @@ import type { Expression } from './types'
  * The artwork is the cast: a maid the app carries no sprites for cannot stand
  * in the window at all, so the folders decide who is on the list rather than a
  * table written out beside them. They mirror the characters package — a folder
- * per maid, a folder per outfit inside her — and scripts/pack-sprites.sh is
- * what puts them here.
+ * per maid, with the default portraits and optional visual variants normalized
+ * by scripts/pack-sprites.sh into one folder per outfit here.
  *
  * What she is *called* is not in here. That comes off her persona file, which
  * the main process reads, because a maid the master hired himself was never in
@@ -29,20 +29,19 @@ type Outfit = Partial<Record<Expression, string>>
 
 const FACES = new Set<string>(EXPRESSIONS)
 
-/** What the derived half-body portrait is filed under, beside the moods. */
-const BUST = 'bust'
+/** What the stable avatar is filed under, beside the moods. */
+const AVATAR = 'avatar'
 
 const CAST: Record<string, Record<string, Outfit>> = {}
-/** Her half-body portrait per outfit, for showing her small. Cut from that
- * outfit's neutral at a settled head size, so two maids drawn to different
- * scales still come out the same size on a card (see crop-bust.py). */
-const BUSTS: Record<string, Record<string, string>> = {}
+/** Her avatar per outfit, for showing her small. The character package owns one
+ * stable avatar; pack-sprites files it beside each outfit for this derived view. */
+const AVATARS: Record<string, Record<string, string>> = {}
 for (const [file, url] of Object.entries(drawn)) {
   const [maid, outfit, sprite] = file.split('/').slice(-3)
   const face = sprite.replace(/\.webp$/, '')
-  if (face === BUST) {
-    BUSTS[maid] ??= {}
-    BUSTS[maid][outfit] = url
+  if (face === AVATAR) {
+    AVATARS[maid] ??= {}
+    AVATARS[maid][outfit] = url
     continue
   }
   // Anything else under there that is not one of the moods is not a face of
@@ -95,11 +94,10 @@ export function spriteFor(shift: Shift, expression: Expression) {
   return face
 }
 
-/** Her from the waist up in what she is wearing, for the places that show her
- * small — a full-length sprite an inch tall is a smudge. */
-export function bustFor(shift: Shift) {
+/** Her avatar for places that show her small. */
+export function avatarFor(shift: Shift) {
   const worn = wearable(shift)
-  return BUSTS[worn.maid]?.[worn.outfit] ?? spriteFor(worn, 'neutral')
+  return AVATARS[worn.maid]?.[worn.outfit] ?? spriteFor(worn, 'neutral')
 }
 
 /** Whether she has actually been drawn wearing this face. One she has not

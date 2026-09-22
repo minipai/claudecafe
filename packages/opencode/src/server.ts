@@ -1,18 +1,29 @@
 import { Plugin } from "@opencode/plugin"
 import { z } from "zod"
 import { createCafe } from "./cafe.ts"
-import { EXPRESSIONS, expressionToolDescription } from "./expressions.ts"
+import {
+  defaultFace,
+  expressionToolDescription,
+  loadFaceNames,
+  type Expression,
+} from "./expressions.ts"
 import { cafeRpc } from "./rpc.ts"
-
-const expressionInput = z.object({ expression: z.enum(EXPRESSIONS) })
 
 export default Plugin.define({
   id: "claudecafe",
   async setup(context) {
     const cafe = createCafe(context.location.directory)
     const abort = new AbortController()
+    const faces = loadFaceNames()
+    const fallbackFace = defaultFace(faces)
+    const expressionInput = z.object({
+      mood: z.string().trim().min(1).describe(
+        "A short description of your current emotional tone only, not an activity, task, subject, or progress update",
+      ),
+      face: z.enum(faces).describe("The GIF portrait to show; values come from the installed face filenames"),
+    })
     const rpc = await context.rpc.register(cafeRpc, {
-      expression: async () => expressionState(await context.storage.get("expression")),
+      expression: async () => expressionState(await context.storage.get("expression"), faces, fallbackFace),
     })
 
     void consumeEvents(context.event.subscribe({ signal: abort.signal }), cafe.event)
@@ -21,12 +32,12 @@ export default Plugin.define({
     await context.tool.transform((tools) => {
       tools.add({
         name: "set_expression",
-        description: expressionToolDescription,
+        description: expressionToolDescription(faces),
         input: expressionInput,
-        async execute({ expression }) {
-          await context.storage.set("expression", { value: expression })
-          await rpc.events.emit("expression", { expression })
-          return { content: `Expression: ${expression}` }
+        async execute(expression) {
+          await context.storage.set("expression", expression)
+          await rpc.events.emit("expression", expression)
+          return { content: `Mood: ${expression.mood}; face: ${expression.face}` }
         },
       })
     })
@@ -35,9 +46,13 @@ export default Plugin.define({
   },
 })
 
-function expressionState(value: unknown): { expression: (typeof EXPRESSIONS)[number] } {
-  const parsed = z.object({ value: z.enum(EXPRESSIONS) }).safeParse(value)
-  return { expression: parsed.success ? parsed.data.value : "neutral" }
+function expressionState(
+  value: unknown,
+  faces: readonly [string, ...string[]],
+  fallbackFace: string,
+): Expression {
+  const parsed = z.object({ mood: z.string().min(1), face: z.enum(faces) }).safeParse(value)
+  return parsed.success ? parsed.data : { mood: "neutral", face: fallbackFace }
 }
 
 async function consumeEvents(

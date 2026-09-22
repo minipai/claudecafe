@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
-import { createRequire } from "node:module"
 import { tmpdir } from "node:os"
-import { dirname, join } from "node:path"
+import { join } from "node:path"
 import * as cafe from "../src/cafe.ts"
-import { EXPRESSIONS } from "../src/expressions.ts"
+import { FACE_DIRECTORY, loadFaceNames } from "../src/expressions.ts"
 import plugin from "../src/server.ts"
 
 /**
@@ -20,7 +19,6 @@ import plugin from "../src/server.ts"
 const SANDBOX = mkdtempSync(join(tmpdir(), "opencode-cafe-test-"))
 const ROOT = join(SANDBOX, "claudecafe")
 const BUNDLED = join(SANDBOX, "cafe-plugin")
-const CHARACTERS = dirname(createRequire(import.meta.url).resolve("@claudecafe/characters/package.json"))
 
 function write(path: string, text: string): void {
   mkdirSync(join(path, ".."), { recursive: true })
@@ -327,19 +325,21 @@ describe("shift persistence", () => {
 })
 
 describe("expression tool", () => {
-  test("set_expression stores the face shared with the TUI", async () => {
-    let definition: { execute: (input: { expression: "happy" }) => Promise<{ content?: string }> } | undefined
+  test("set_expression stores the mood and GIF face shared with the TUI", async () => {
+    let definition: {
+      execute: (input: { mood: string; face: "happy" }) => Promise<{ content?: string }>
+    } | undefined
     const stored: unknown[] = []
     const emitted: unknown[] = []
     let value: unknown
-    let currentExpression: (() => Promise<{ expression: string }>) | undefined
+    let currentExpression: (() => Promise<{ mood: string; face: string }>) | undefined
     const cleanup = await plugin.setup({
       location: { directory: SANDBOX },
       event: { subscribe: () => emptyEvents() },
       rpc: {
         register: async (
           _definition: unknown,
-          handlers: { expression: () => Promise<{ expression: string }> },
+          handlers: { expression: () => Promise<{ mood: string; face: string }> },
         ) => {
           currentExpression = handlers.expression
           return {
@@ -365,18 +365,18 @@ describe("expression tool", () => {
     } as never)
 
     expect(definition).toBeDefined()
-    expect(await currentExpression?.()).toEqual({ expression: "neutral" })
-    const result = await definition?.execute({ expression: "happy" })
-    expect(result?.content).toBe("Expression: happy")
-    expect(stored).toEqual([{ key: "expression", value: { value: "happy" } }])
-    expect(emitted).toEqual([["expression", { expression: "happy" }]])
-    expect(await currentExpression?.()).toEqual({ expression: "happy" })
+    expect(await currentExpression?.()).toEqual({ mood: "neutral", face: "neutral" })
+    const result = await definition?.execute({ mood: "quietly delighted", face: "happy" })
+    expect(result?.content).toBe("Mood: quietly delighted; face: happy")
+    expect(stored).toEqual([{ key: "expression", value: { mood: "quietly delighted", face: "happy" } }])
+    expect(emitted).toEqual([["expression", { mood: "quietly delighted", face: "happy" }]])
+    expect(await currentExpression?.()).toEqual({ mood: "quietly delighted", face: "happy" })
     await cleanup?.()
   })
 
-  test("every expression the tool offers has a WebP sprite", () => {
-    for (const name of EXPRESSIONS) {
-      expect(existsSync(join(CHARACTERS, "kotone", "expressions", "uniform", `${name}.webp`))).toBe(true)
+  test("every discovered face has a GIF sprite", () => {
+    for (const name of loadFaceNames()) {
+      expect(existsSync(join(FACE_DIRECTORY, `${name}.gif`))).toBe(true)
     }
   })
 })

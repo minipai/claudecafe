@@ -1,6 +1,6 @@
 {
   "name": "@claudecafe/opencode",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "private": true,
   "description": "Claude Café for OpenCode — a maid on shift (persona, greeting, per-turn time, mood marker) plus her portrait in the sidebar.",
   "type": "module",
@@ -25,12 +25,14 @@
     "@opencode/theme": "2.0.8",
     "@opentui/core": "0.5.10",
     "@opentui/solid": "0.5.10",
+    "omggif": "1.0.10",
     "solid-js": "1.9.12",
     "zod": "4.1.8"
   },
   "devDependencies": {
     "@types/bun": "^1.2.0",
     "@types/node": "^24.0.0",
+    "@types/omggif": "1.0.5",
     "typescript": "^5.9.0"
   }
 }

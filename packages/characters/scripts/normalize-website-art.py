@@ -119,15 +119,12 @@ def normalize(name: str, config: dict[str, object]) -> None:
     canvas.alpha_composite(scaled_canvas, aligned_offset)
 
     output = canvas.crop(OUTPUT_CROP)
-    output_path = CAST_ROOT / name / "portraits" / "standing.webp"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output.save(output_path, quality=88, method=6)
     output.save(WEB_ROOT / f"maid-{name}.webp", quality=88, method=6)
 
     avatar = output.crop(AVATAR_CROP).resize(
         AVATAR_SIZE, Image.Resampling.LANCZOS
     )
-    avatar_path = CAST_ROOT / name / "portraits" / "avatar.webp"
+    avatar_path = CAST_ROOT / name / "avatar.webp"
     avatar.save(avatar_path, quality=90, method=6)
     avatar.save(WEB_ROOT / f"avatar-{name}.webp", quality=90, method=6)
 

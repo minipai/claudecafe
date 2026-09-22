@@ -31,8 +31,8 @@ serve every host.
 |------|--------------|
 | `session.context` hook | Puts a maid on shift: persona, mood-marker cue, expression cue, a fresh `now` line, and the first-turn briefing are appended to the system context. Shift order: `OPENCODE_MAID`/`CLAUDE_MAID` env → this session's own shift file → config `maid` → a draw from `personas/`. `none` disables the persona while keeping the liveliness cues. |
 | Server event stream | Tracks child and deleted sessions so task subagents do not draw a second maid and stale in-memory shifts are released. |
-| Tool transform | Adds `set_expression`; calls persist the expression and publish a typed RPC event to the TUI. |
-| Café RPC | Gives a newly mounted TUI the current expression and streams later expression changes. |
+| Tool transform | Adds `set_expression`; calls persist a free-form mood and a GIF-backed face, then publish both in a typed RPC event to the TUI. Its face enum is built from the installed GIF filenames when the plugin loads. |
+| Café RPC | Gives a newly mounted TUI the current mood and face and streams later changes. |
 
 `config.json` keys, persona files, and `off_duty` are the same ones
 [`packages/cafe`](../cafe) documents. The `hire`, `config`, and `look` skills are
@@ -42,20 +42,21 @@ Claude Code / Codex skills; here you hire by downloading a persona from
 
 ## TUI: the portrait
 
-A fixed 3:4 Kotone portrait in the sidebar footer. It reads the same packed
-`panel.faces` raster as cc-maid, takes a reviewed 38×25-cell crop, and draws it
-with upper/lower half-block glyphs and 24-bit text colours. These are ordinary
+A fixed 3:4 Kotone portrait in the sidebar footer. Each face is a 36×48 GIF in
+Kotone's default `pixels/` directory; its filename is the face ID exposed to the model and the
+`/maid` picker. Static and animated GIFs share one frame with the nameplate and
+are drawn as 36×24 upper/lower half-block cells with 24-bit text colours. These are ordinary
 terminal cells — no Kitty or Sixel image is sent — so a remote terminal
 multiplexer does not need to replay a multi-megabyte image when its tab returns.
-The crop fills the inner width of the 42-column sidebar, which OpenCode shows
+The framed crop fills the inner width of the 42-column sidebar, which OpenCode shows
 automatically above 120 terminal columns (toggle with the `sidebar_toggle`
 binding, normally `ctrl+x b`).
 
-Run `/maid` to pick an expression manually, or let the model do it: the server
-registers a `set_expression` tool with the same 26-expression enum as cc-maid,
-and a system cue tells the model when to use it. V2 RPC carries model-selected
-expressions to the TUI and restores the current expression when the panel
-mounts. There are no heuristic reactions; the model drives the panel.
+Run `/maid` to pick a face manually, or let the model do it: the server registers
+a `set_expression` tool with a free-form `mood` and a `face` enum discovered
+from the installed `*.gif` files. The mood appears beside Kotone's name while
+the face selects the portrait. V2 RPC carries both to the TUI and restores them
+when the panel mounts. There are no heuristic reactions; the model drives the panel.
 
 Every terminal gets the same raster rendering.
 
@@ -86,12 +87,11 @@ changes.
 - `src/cafe.ts` — the port: shared-root paths, `config.json`, the cast pool,
   festival pack, prompts, and shift context.
 - `src/tui.tsx` — the TUI implementation and sidebar slot.
-- `src/faces.ts` — unpacks the shared terminal raster and turns its crop into
-  styled half-block text.
+- `src/faces.ts` — decodes and composites GIF frames into styled half-block text.
 - `src/rpc.ts` — the typed expression method and event shared by both
   entrypoints.
-- `src/expressions.ts` — the 26-expression list both halves share, plus the
-  tool description and system-prompt cue.
+- `src/expressions.ts` — discovers GIF face names and holds the tool description
+  and system-prompt cue.
 - `test/plugin.test.ts` — sandboxed tests with no network.
 
 `pnpm --filter @claudecafe/opencode check` runs the typecheck and the tests.

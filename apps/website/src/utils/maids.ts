@@ -35,7 +35,7 @@ function parseMaid(slug: string, raw: string): Maid {
   return {
     slug,
     jaName: (data.name as string) ?? slug,
-    enName: (data.id as string) ?? slug.charAt(0).toUpperCase() + slug.slice(1),
+    enName: ((data.id as string)?.split('/').at(-1) ?? slug).replace(/^./, letter => letter.toUpperCase()),
     title: (data.personality as string) ?? '',
     quote: (data.quote as string) ?? '',
     rawMd: content,
