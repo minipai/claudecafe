@@ -33,7 +33,7 @@ case "$NAME" in
         ;;
     cc-maid)
         PLUGIN="$REPO_ROOT/mods/cc-maid"
-        ITEMS=(.claude-plugin hooks README.md)
+        ITEMS=(.claude-plugin hooks pixels README.md)
         run_tests() { CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test "$PLUGIN" 2>&1 | tail -3; }
         ;;
     *)
@@ -58,8 +58,9 @@ if [ -z "${SHIP_DRY:-}" ] && curl -sfI "$BASE_URL/$ZIP" >/dev/null 2>&1; then
 fi
 
 rm -rf "$DIST" && mkdir -p "$DIST/stage"
+# -L: a linked folder (cc-maid's pixels/) ships as the files it links to.
 for item in "${ITEMS[@]}"; do
-    cp -R "$PLUGIN/$item" "$DIST/stage/$item"
+    cp -RL "$PLUGIN/$item" "$DIST/stage/$item"
 done
 find "$DIST/stage" -type d -name __pycache__ -exec rm -rf {} +
 (cd "$DIST/stage" && zip -qr "../$ZIP" .)

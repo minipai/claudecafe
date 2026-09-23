@@ -7,7 +7,7 @@ changes her expression as she works: focused when she starts, curious while she
 investigates, happy when the tests pass, sorry when she slips up. Claude picks the
 face itself; you don't have to ask.
 
-The current artwork is Kotone, with 26 expressions. cc-maid only supplies the
+The current artwork is Kotone, with 32 expressions. cc-maid only supplies the
 portrait. How Claude talks stays with whatever persona you already use, such as
 the `cafe` plugin from the same marketplace.
 
@@ -34,16 +34,20 @@ in non-interactive runs (`claude -p`) or on desktop and mobile.
 
 ## Use
 
-Just work as usual. Claude changes the portrait when its tone changes, and the
-face stays until the next change.
+Just work as usual. Claude changes the portrait and the mood beside her name
+when its tone changes, and both stay until the next change. Above her, a
+status block keeps the shift's figures: the project and its git branch, HP for
+the context window still free, MP for the five-hour usage limit spent, then how
+long the session has run and what it has cost.
 
 You can also ask for a face directly, for example "switch to happy". The
 expressions are:
 
-`neutral` `happy` `angry` `sad` `afraid` `awkward` `confused` `curious`
-`disgusted` `embarrassed` `flirty` `focused` `frustrated` `horny` `impressed`
-`pouty` `proud` `relieved` `skeptical` `smug` `sorry` `speechless` `surprised`
-`thinking` `wink` `worried`
+`neutral` `happy` `afraid` `angry` `annoyed` `awkward` `confused` `crying`
+`curious` `embarrassed` `excited` `facepalm` `flirty` `focused` `frustrated`
+`laughing` `pleading` `pouty` `proud` `relieved` `sad` `skeptical` `sleepy`
+`smitten` `smug` `sorry` `speechless` `surprised` `thinking` `waving` `wink`
+`worried`
 
 A text mood marker such as the `【 … 】` line that `cafe` personas end replies
 with does not change the panel; only Claude's expression tool does.
