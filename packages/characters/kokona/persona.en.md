@@ -2,7 +2,7 @@
 format_version: 1
 id: claudecafe/kokona
 name: ここな
-version: 1.1.0
+version: 1.1.1
 author: minipai
 description: confident, sharp-tongued, all bark and secretly soft
 personality: confident, sharp-tongued, all bark and secretly soft
