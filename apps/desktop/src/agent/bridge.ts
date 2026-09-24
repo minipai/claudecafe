@@ -239,6 +239,7 @@ export type CafeBridge = {
   /** Everyone with a persona and portraits in the configured directory. */
   cast(): Promise<CastMember[]>
   charactersDir: string
+  characterInstallError: string
   start(runId: string, prompt: string, images: Attachment[]): void
   answer(askId: string, value: unknown): void
   interrupt(): void

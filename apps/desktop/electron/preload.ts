@@ -7,6 +7,7 @@ const choiceArg = process.argv.find((arg) => arg.startsWith('--cafe-locale-choic
 const backdropArg = process.argv.find((arg) => arg.startsWith('--cafe-backdrop=')) ?? ''
 const shiftArg = process.argv.find((arg) => arg.startsWith('--cafe-shift=')) ?? ''
 const charactersArg = process.argv.find((arg) => arg.startsWith('--cafe-characters-dir=')) ?? ''
+const characterErrorArg = process.argv.find((arg) => arg.startsWith('--cafe-character-error=')) ?? ''
 const nameArg = process.argv.find((arg) => arg.startsWith('--cafe-maid-name=')) ?? ''
 
 const bridge: CafeBridge = {
@@ -29,6 +30,7 @@ const bridge: CafeBridge = {
   setShift: (shift) => ipcRenderer.send('cafe:set-shift', shift),
   cast: () => ipcRenderer.invoke('cafe:cast'),
   charactersDir: charactersArg.slice('--cafe-characters-dir='.length),
+  characterInstallError: decodeURIComponent(characterErrorArg.slice('--cafe-character-error='.length)),
   start: (runId, prompt, images) => ipcRenderer.send('cafe:start', runId, prompt, images),
   answer: (askId, value) => ipcRenderer.send('cafe:answer', askId, value),
   interrupt: () => ipcRenderer.send('cafe:interrupt'),

@@ -17,7 +17,7 @@ test.describe('configured characters folder', () => {
       return context.getImageData(0, 0, 1, 1).data.length
     })).toBe(4)
     const cast = await page.evaluate(() => window.cafe!.cast())
-    expect(cast.map((maid) => maid.id)).toEqual(['a-brand-new-maid'])
+    expect(cast.map((maid) => maid.id)).toEqual(['a-brand-new-maid', 'kotone'])
     expect(characters).toContain(path.join('.config', 'claudecafe', 'characters'))
     expect(await page.evaluate(() => window.cafe!.charactersDir)).toBe(characters)
   })

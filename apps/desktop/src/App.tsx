@@ -34,6 +34,7 @@ export function App() {
         <h1 className="text-lg font-semibold">{t.title}</h1>
         <p className="text-sm text-muted-foreground">{cast === null ? t.loading : t.empty}</p>
         {window.cafe?.charactersDir && <p className="break-all text-xs text-muted-foreground">{window.cafe.charactersDir}</p>}
+        {window.cafe?.characterInstallError && <p role="alert" className="text-sm text-destructive">{window.cafe.characterInstallError}</p>}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       </div>
     </main>

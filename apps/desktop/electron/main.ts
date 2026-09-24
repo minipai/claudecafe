@@ -5,7 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, protocol, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import { MaidSession, nowCarrying } from './maid'
-import { characterImage, charactersDir } from './characters'
+import { characterImage, charactersDir, installKotone } from './characters'
 import {
   chosenBackdrop,
   chosenLocale,
@@ -51,6 +51,7 @@ const ICON = path.join(here, app.isPackaged ? 'app-icon.png' : 'app-icon-dev.png
 /** One window, one maid — she is sent to a folder rather than copied onto it,
  * so switching replaces the shift this window is watching. */
 const shifts = new Map<Electron.WebContents, MaidSession>()
+let characterInstallError = ''
 
 function readFolderArg() {
   const flag = process.argv.find((arg) => arg.startsWith('--dir='))
@@ -85,6 +86,7 @@ function openWindow(cwd: string) {
         `--cafe-backdrop=${backdrop.scene}/${backdrop.edge}`,
         `--cafe-shift=${shift.maid}`,
         `--cafe-characters-dir=${charactersDir()}`,
+        `--cafe-character-error=${encodeURIComponent(characterInstallError)}`,
         `--cafe-maid-name=${nameOf(shift.maid)}`,
       ],
     },
@@ -381,7 +383,7 @@ ipcMain.on('cafe:drag-end', (event) => {
   if (window) stopCarrying(window)
 })
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   protocol.handle('cafe-character', (request) => {
     const file = characterImage(request.url)
     if (!file) return new Response(null, { status: 404 })
@@ -395,6 +397,10 @@ void app.whenReady().then(() => {
   // The checkout says so on its own icon, so the one being worked on and the
   // one being used can sit side by side in the Dock.
   if (!app.isPackaged) app.dock?.setBadge('dev')
+  await installKotone().catch((error: unknown) => {
+    characterInstallError = error instanceof Error ? error.message : String(error)
+    console.error('Kotone could not be installed; opening the café without her.', error)
+  })
   // Where she was left. A folder given on the command line still wins — that is
   // someone saying where to open her — and with nothing to go on she opens at
   // home rather than wherever the command happened to be run from.

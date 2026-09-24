@@ -1,11 +1,44 @@
 import fs from 'node:fs'
+import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
+import { promisify } from 'node:util'
 import { cafeRoot } from './cafehome'
 import type { CastMember } from '../src/agent/bridge'
 
+const KOTONE_URL = 'https://github.com/minipai/claudecafe/releases/download/kotone-characters-v1/ClaudeCafe-Kotone-characters-v1.zip'
+const KOTONE_SHA256 = 'f56a792afb10f1085c7412b00a110d6662f5bf87db852d618896dd3a65507f5f'
+const unzip = promisify(execFile)
+
 /** Characters live beside the shared café settings, not in an app chooser. */
 export const charactersDir = () => path.join(cafeRoot(), 'characters')
+
+/** Install the default maid once, leaving any existing character folders alone. */
+export async function installKotone() {
+  const root = charactersDir()
+  const target = path.join(root, 'kotone')
+  if (castOf().some((maid) => maid.id === 'kotone')) return
+  if (fs.existsSync(target)) throw new Error(`Incomplete Kotone folder at ${target}`)
+
+  await fs.promises.mkdir(root, { recursive: true })
+  const staging = await fs.promises.mkdtemp(path.join(root, '.kotone-'))
+  try {
+    const response = await fetch(KOTONE_URL, { signal: AbortSignal.timeout(30_000) })
+    if (!response.ok) throw new Error(`Kotone download failed: HTTP ${response.status}`)
+    const archive = Buffer.from(await response.arrayBuffer())
+    if (createHash('sha256').update(archive).digest('hex') !== KOTONE_SHA256) {
+      throw new Error('Kotone download did not match its published checksum')
+    }
+
+    const zip = path.join(staging, 'kotone.zip')
+    await fs.promises.writeFile(zip, archive)
+    await unzip('unzip', ['-q', zip, '-d', staging])
+    if (!castOf(staging).some((maid) => maid.id === 'kotone')) throw new Error('Kotone archive has no usable character')
+    if (!fs.existsSync(target)) await fs.promises.rename(path.join(staging, 'kotone'), target)
+  } finally {
+    await fs.promises.rm(staging, { recursive: true, force: true })
+  }
+}
 
 export function castOf(directory = charactersDir()): CastMember[] {
   if (!directory) return []
