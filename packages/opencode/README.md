@@ -31,8 +31,8 @@ serve every host.
 |------|--------------|
 | `session.context` hook | Puts a maid on shift: persona, mood-marker cue, expression cue, a fresh `now` line, and the first-turn briefing are appended to the system context. Shift order: `OPENCODE_MAID`/`CLAUDE_MAID` env → this session's own shift file → config `maid` → a draw from `personas/`. `none` disables the persona while keeping the liveliness cues. |
 | Server event stream | Tracks child and deleted sessions so task subagents do not draw a second maid and stale in-memory shifts are released. |
-| Tool transform | Adds `set_expression`; calls persist a free-form mood and a GIF-backed face, then publish both in a typed RPC event to the TUI. Its face enum is built from the installed GIF filenames when the plugin loads. |
-| Café RPC | Gives a newly mounted TUI the current mood and face and streams later changes. |
+| Tool transform | Adds `set_expression`; calls persist a free-form mood and a GIF-backed face for the calling session, then publish both in a typed RPC event to the TUI. Its face enum is built from the installed GIF filenames when the plugin loads. |
+| Café RPC | Gives a newly mounted TUI the mood and face of a given session and streams later changes. State is per session, so every window keeps its own portrait. |
 
 `config.json` keys, persona files, and `off_duty` are the same ones
 [`packages/cafe`](../cafe) documents. The `hire`, `config`, and `look` skills are
@@ -56,7 +56,9 @@ Run `/maid` to pick a face manually, or let the model do it: the server register
 a `set_expression` tool with a free-form `mood` and a `face` enum discovered
 from the installed `*.gif` files. The mood appears beside Kotone's name while
 the face selects the portrait. V2 RPC carries both to the TUI and restores them
-when the panel mounts. There are no heuristic reactions; the model drives the panel.
+when a session's panel mounts. Each session keeps its own mood and face, so two
+windows do not fight over one portrait. There are no heuristic reactions; the
+model drives the panel.
 
 Every terminal gets the same raster rendering.
 

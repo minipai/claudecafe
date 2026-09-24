@@ -6,7 +6,7 @@ import { defaultFace, FACE_DIRECTORY, type Expression } from "./expressions.ts"
 import { FACE_COLUMNS, FACE_ROWS, loadFaces, renderFace } from "./faces.ts"
 import { cafeRpc } from "./rpc.ts"
 
-type SetExpression = (value: Expression) => Promise<void>
+type SetExpression = (sessionID: string, value: Expression) => Promise<void>
 type Context = Plugin.Context
 
 // The sidebar's inner width is normally 38 cells: 36 for the portrait and two for its frame.
@@ -15,14 +15,22 @@ const faces = loadFaces(FACE_DIRECTORY)
 const faceNames = Object.keys(faces)
 const fallbackFace = defaultFace(faceNames)
 
+function storedLook(value: unknown): { mood?: unknown; face?: unknown } {
+  return typeof value === "object" && value !== null ? (value as { mood?: unknown; face?: unknown }) : {}
+}
+
 function MaidCard(props: {
   api: Context
+  sessionID: string
   expression: () => Expression
+  sync: (sessionID: string) => void
 }) {
   const [frameIndex, setFrameIndex] = createSignal(0)
   const face = createMemo(() => faces[props.expression().face] ?? faces[fallbackFace]!)
   const portrait = createMemo(() => renderFace(face(), frameIndex()))
   let portraitNode: TextRenderable | undefined
+
+  createEffect(() => props.sync(props.sessionID))
 
   createEffect(() => {
     const selected = face()
@@ -98,7 +106,7 @@ function MaidCard(props: {
 
 function MaidCommands(props: {
   api: Context
-  expression: () => Expression
+  expression: (sessionID: string) => Expression
   setExpression: SetExpression
 }) {
   const { api, expression, setExpression } = props
@@ -111,12 +119,14 @@ function MaidCommands(props: {
         palette: true,
         slash: { name: "maid" },
         async run() {
+          const sessionID = currentSession(api)
+          if (!sessionID) return
           const value = await api.ui.dialog.select({
             title: "Maid face",
-            current: expression().face,
+            current: expression(sessionID).face,
             options: faceNames.map((item) => ({ title: item, value: item })),
           })
-          if (value) await setExpression({ ...expression(), face: value })
+          if (value) await setExpression(sessionID, { ...expression(sessionID), face: value })
         },
       },
     ],
@@ -124,31 +134,45 @@ function MaidCommands(props: {
   return null
 }
 
+/** The portrait belongs to the session in view; the active tab is the fallback. */
+function currentSession(api: Context): string | undefined {
+  const route = api.ui.router.current()
+  if (route.type === "session") return route.sessionID
+  return api.ui.tabs.list().find((tab) => tab.active)?.sessionID
+}
+
 export default Plugin.define({
   id: "claudecafe.maid",
   async setup(api) {
-    const [look, setLook] = api.storage.store<{ mood?: unknown; face?: unknown }>("expression", {
-      initial: { mood: "neutral", face: fallbackFace },
-    })
-    const expression = (): Expression => ({
-      mood: typeof look.mood === "string" && look.mood ? look.mood : "neutral",
-      face: typeof look.face === "string" && faces[look.face] ? look.face : fallbackFace,
-    })
-    const setExpression: SetExpression = async (value) => {
-      await setLook((draft) => {
-        draft.mood = value.mood
-        draft.face = value.face
+    const [looks, setLooks] = api.storage.store<Record<string, unknown>>("expressions", { initial: {} })
+    const expression = (sessionID: string): Expression => {
+      const look = storedLook(looks[sessionID])
+      return {
+        mood: typeof look.mood === "string" && look.mood ? look.mood : "neutral",
+        face: typeof look.face === "string" && faces[look.face] ? look.face : fallbackFace,
+      }
+    }
+    const setExpression: SetExpression = async (sessionID, value) => {
+      await setLooks((draft) => {
+        draft[sessionID] = { mood: value.mood, face: value.face }
       })
       api.renderer.requestRender()
     }
     const rpc = api.client.rpc(cafeRpc)
-    const stopExpressionEvents = rpc.events.on("expression", (event) => setExpression(event.data))
-
-    try {
-      const current = await rpc.expression({})
-      await setExpression(current)
-    } catch {
-      // The portrait still works when connected to a server without the café.
+    const stopExpressionEvents = rpc.events.on("expression", (event) => {
+      const { sessionID, ...value } = event.data
+      void setExpression(sessionID, value)
+    })
+    const synced = new Set<string>()
+    const syncExpression = (sessionID: string): void => {
+      if (synced.has(sessionID)) return
+      synced.add(sessionID)
+      void rpc
+        .expression({ sessionID })
+        .then((current) => setExpression(sessionID, current))
+        .catch(() => {
+          // The portrait still works when connected to a server without the café.
+        })
     }
 
     const removeCommands = api.ui.slot({
@@ -157,7 +181,14 @@ export default Plugin.define({
     })
     const removePortrait = api.ui.slot({
       append: "sidebar.footer",
-      render: () => <MaidCard api={api} expression={expression} />,
+      render: (input) => (
+        <MaidCard
+          api={api}
+          sessionID={input.sessionID}
+          expression={() => expression(input.sessionID)}
+          sync={syncExpression}
+        />
+      ),
     })
 
     return () => {

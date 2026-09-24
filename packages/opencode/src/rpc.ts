@@ -7,11 +7,11 @@ export const cafeRpc = Rpc.define({
   id: "claudecafe",
   methods: {
     expression: {
-      input: z.object({}),
+      input: z.object({ sessionID: z.string() }),
       output: expression,
     },
   },
   events: {
-    expression: { schema: expression },
+    expression: { schema: expression.extend({ sessionID: z.string() }) },
   },
 })

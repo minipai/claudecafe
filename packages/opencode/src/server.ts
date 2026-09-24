@@ -23,7 +23,8 @@ export default Plugin.define({
       face: z.enum(faces).describe("The GIF portrait to show; values come from the installed face filenames"),
     })
     const rpc = await context.rpc.register(cafeRpc, {
-      expression: async () => expressionState(await context.storage.get("expression"), faces, fallbackFace),
+      expression: async ({ sessionID }) =>
+        expressionState(await context.storage.get(expressionKey(sessionID)), faces, fallbackFace),
     })
 
     void consumeEvents(context.event.subscribe({ signal: abort.signal }), cafe.event)
@@ -34,9 +35,9 @@ export default Plugin.define({
         name: "set_expression",
         description: expressionToolDescription(faces),
         input: expressionInput,
-        async execute(expression) {
-          await context.storage.set("expression", expression)
-          await rpc.events.emit("expression", expression)
+        async execute(expression, tool) {
+          await context.storage.set(expressionKey(tool.sessionID), expression)
+          await rpc.events.emit("expression", { sessionID: tool.sessionID, ...expression })
           return { content: `Mood: ${expression.mood}; face: ${expression.face}` }
         },
       })
@@ -45,6 +46,11 @@ export default Plugin.define({
     return () => abort.abort()
   },
 })
+
+/** Every window keeps its own portrait, so the state is stored per session. */
+function expressionKey(sessionID: string): string {
+  return `expression:${sessionID}`
+}
 
 function expressionState(
   value: unknown,
