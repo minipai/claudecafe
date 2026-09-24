@@ -32,28 +32,14 @@ export type SessionSettings = {
   modePicked: boolean
 }
 
-/** What is standing behind her: which room, and how the picture of it is cut
- * off at the edges. `none` for either is nothing and a plain rectangle. */
-export type Backdrop = { scene: string; edge: string }
+/** Which transparent illustration stands behind her. */
+export type Backdrop = 'none' | 'art-nouveau' | 'ukiyo-e' | 'shojo-manga'
 
-/**
- * Who is on shift in this window and what she is wearing. Both are the names of
- * folders in the cast's artwork, which is also what the café's own shift
- * assignment calls her — the window is one session, so the maid in it and the
- * maid its hooks think are on are the same maid.
- */
-export type Shift = { maid: string; outfit: string }
+/** The folder name of the maid serving this window. */
+export type Shift = { maid: string }
 
-/**
- * One maid the shift can be handed to, as her own persona file names her.
- *
- * Her name and the wording of her outfits come from that file rather than from
- * the interface's own catalogue: a maid the master hired from the café was
- * never in it. An outfit somebody else drew for her is not in there either —
- * they do not own her persona — so a wardrobe with no wording for it falls back
- * to the folder's name, which is the one thing its author did choose.
- */
-export type CastMember = { id: string; name: string; outfits: { id: string; label: string }[] }
+/** A maid discovered in the configured characters directory. */
+export type CastMember = { id: string; name: string; avatar: string; expressions: Record<string, string> }
 
 /** What the master has turned this window to, kept between launches. A null is
  * something he has never touched: the model and the effort are then the
@@ -246,22 +232,20 @@ export type CafeBridge = {
    * plate that says one maid and then another reads as the app having changed
    * its mind about who is standing there. */
   maidName: string
-  /** Hand the shift to someone else, or put her in something else. Read when a
+  /** Hand the shift to someone else. Read when a
    * session opens, so it is the next conversation that she starts. */
   setShift(shift: Shift): void
-  /** Everyone the shift could be handed to, named as their persona files name
-   * them. The window narrows this to the maids it carries artwork for. */
+  /** Everyone with a persona and portraits in the configured directory. */
   cast(): Promise<CastMember[]>
+  charactersDir: string
+  characterInstallError: string
   start(runId: string, prompt: string, images: Attachment[]): void
   answer(askId: string, value: unknown): void
   interrupt(): void
   /** Drop the conversation and start a fresh one on the next prompt. */
   newSession(): void
-  /** Open the session and report what is in it — status, backlog, settings.
-   * The window asks once it is listening. */
-  /** The page is up: open the session and say everything already true. The
-   * maids it has artwork for go with it — the sprites are globbed into the
-   * renderer, so the main process has no other way to know who it can stand up. */
+  /** Open the session with the discovered cast and report status, backlog, and
+   * settings. The window asks once it is listening. */
   refresh(carrying: string[]): void
   /** Change what the session runs as. Model and mode take effect at once; a new
    * effort is picked up on the next turn. */

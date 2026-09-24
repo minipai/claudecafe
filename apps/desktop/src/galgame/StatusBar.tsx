@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { MAIDS } from './cast'
 import { openingStatus, usageReport, type SessionStatus } from '@/agent'
 
 /**
@@ -63,7 +62,6 @@ function useLiveStatus() {
     const stop = window.cafe?.listen((event) => {
       if (event.kind === 'status') setStatus(event.status)
     })
-    window.cafe?.refresh(MAIDS)
     return stop
   }, [])
 

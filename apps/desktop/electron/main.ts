@@ -1,10 +1,11 @@
 import { execFile } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
-import { CAFE_PLUGIN, MaidSession, nowCarrying } from './maid'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, protocol, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
+import { MaidSession, nowCarrying } from './maid'
+import { characterImage, charactersDir, installCharacters } from './characters'
 import {
   chosenBackdrop,
   chosenLocale,
@@ -23,6 +24,8 @@ import type { Backdrop, Shift } from '../src/agent/bridge'
 import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
+
+protocol.registerSchemesAsPrivileged([{ scheme: 'cafe-character', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }])
 
 // Two of her can be open at once — the one being used and the one being worked
 // on — and they must not share a drawer. Everything with her name on it hangs
@@ -48,6 +51,7 @@ const ICON = path.join(here, app.isPackaged ? 'app-icon.png' : 'app-icon-dev.png
 /** One window, one maid — she is sent to a folder rather than copied onto it,
  * so switching replaces the shift this window is watching. */
 const shifts = new Map<Electron.WebContents, MaidSession>()
+let characterInstallError = ''
 
 function readFolderArg() {
   const flag = process.argv.find((arg) => arg.startsWith('--dir='))
@@ -79,9 +83,11 @@ function openWindow(cwd: string) {
         `--cafe-cwd=${cwd}`,
         `--cafe-locale=${drawnIn()}`,
         `--cafe-locale-choice=${chosenLocale()}`,
-        `--cafe-backdrop=${backdrop.scene}/${backdrop.edge}`,
-        `--cafe-shift=${shift.maid}/${shift.outfit}`,
-        `--cafe-maid-name=${nameOf(CAFE_PLUGIN, shift.maid)}`,
+        `--cafe-backdrop=${backdrop}`,
+        `--cafe-shift=${shift.maid}`,
+        `--cafe-characters-dir=${charactersDir()}`,
+        `--cafe-character-error=${encodeURIComponent(characterInstallError)}`,
+        `--cafe-maid-name=${nameOf(shift.maid)}`,
       ],
     },
   })
@@ -203,8 +209,12 @@ ipcMain.handle('cafe:conversations', (event) => shiftOf(event)?.conversations() 
 ipcMain.handle('cafe:folders', () => recentFolders())
 // Read off disk rather than asked of her: the persona is what the session was
 // opened with, so it is there to show even when there is no session to ask.
-ipcMain.handle('cafe:persona', () => personaOf(CAFE_PLUGIN, chosenShift().maid))
-ipcMain.handle('cafe:cast', () => castOf(CAFE_PLUGIN))
+ipcMain.handle('cafe:persona', () => personaOf(chosenShift().maid))
+ipcMain.handle('cafe:cast', () => {
+  const cast = castOf()
+  nowCarrying(cast.map((maid) => maid.id))
+  return cast
+})
 // Asked on every page rather than handed over as the window is built: a page
 // that reloads after the welcome card was answered must not put it up again.
 // A file read, not a session — a window that cannot sign in still asks.
@@ -239,7 +249,7 @@ ipcMain.on('cafe:set-locale', (event, choice: string) => {
   windowOf(event)?.webContents.send('cafe:event', { kind: 'locale', locale: drawnIn(), choice })
 })
 
-/** Another room behind her, or another shape cut out of it. Nothing reopens:
+/** Another illustration behind her. Nothing reopens:
  * the window redraws, and the choice is kept for the next start. */
 ipcMain.on('cafe:set-backdrop', (event, chosen: Backdrop) => {
   rememberBackdrop(chosen)
@@ -247,13 +257,15 @@ ipcMain.on('cafe:set-backdrop', (event, chosen: Backdrop) => {
 })
 
 /**
- * Someone else on shift, or the same maid in something else. Nothing reopens
+ * Someone else on shift. Nothing reopens
  * here either — but unlike the room behind her, this one is not what the window
  * is showing until the next conversation starts: her persona goes into the
  * system prompt, and a session already running cannot be told she is somebody
  * else halfway through.
  */
-ipcMain.on('cafe:set-shift', (_event, shift: Shift) => rememberShift(shift))
+ipcMain.on('cafe:set-shift', (_event, shift: Shift) => {
+  if (castOf().some((maid) => maid.id === shift.maid)) rememberShift({ maid: shift.maid })
+})
 
 /** Another language for her — free text, empty to follow the café's setting. */
 ipcMain.on('cafe:set-speech', (event, language: string) => {
@@ -290,7 +302,7 @@ ipcMain.handle('cafe:open-folder', async (event) => {
 ipcMain.on('cafe:notify', (event, body: string, waiting: boolean) => {
   const window = windowOf(event)
   if (!window || window.isFocused()) return
-  const her = nameOf(CAFE_PLUGIN, chosenShift().maid)
+  const her = nameOf(chosenShift().maid)
   const note = new Notification({ title: waiting ? `${her} is waiting` : her, body })
   note.on('click', () => {
     if (window.isDestroyed()) return
@@ -371,11 +383,23 @@ ipcMain.on('cafe:drag-end', (event) => {
   if (window) stopCarrying(window)
 })
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
+  protocol.handle('cafe-character', (request) => {
+    const file = characterImage(request.url)
+    if (!file) return new Response(null, { status: 404 })
+    try {
+      return new Response(readFileSync(file), { headers: { 'Content-Type': 'image/webp', 'Access-Control-Allow-Origin': '*' } })
+    } catch {
+      return new Response(null, { status: 404 })
+    }
+  })
   app.dock?.setIcon(nativeImage.createFromPath(ICON))
   // The checkout says so on its own icon, so the one being worked on and the
   // one being used can sit side by side in the Dock.
   if (!app.isPackaged) app.dock?.setBadge('dev')
+  const failures = await installCharacters()
+  characterInstallError = failures.join('\n')
+  for (const failure of failures) console.error('Character could not be installed:', failure)
   // Where she was left. A folder given on the command line still wins — that is
   // someone saying where to open her — and with nothing to go on she opens at
   // home rather than wherever the command happened to be run from.

@@ -15,9 +15,9 @@ the things that are expensive to find out the hard way.
   `/<id>.md` serves a persona file, frontmatter included.
 - **`packages/characters`** — the cast. One folder per maid: persona per language,
   root `avatar.webp`, default `portraits/` and `pixels/`, and optional `variants/`.
-  **The PNG masters, pencil references
-  and drawing spec live in `art-masters/` at the repo root, gitignored** — the art scripts
-  read from there and stop with a plain error when it isn't present.
+  **The PNG masters, pencil references and drawing spec live in `art-masters/` at the
+  repo root, gitignored** — the art scripts read from there and stop with a plain error
+  when it isn't present.
 - **`packages/cafe`** — one plugin package for Claude Code and Codex. They share
   portable hooks, skills, and one data root at `$XDG_CONFIG_HOME/claudecafe`
   (default `~/.config/claudecafe`). Both discover `hooks/hooks.json` by convention
@@ -68,11 +68,10 @@ or status line reads it.
   (`release/mac-arm64/ClaudeCafe.app`) and keeps separate state from the dev build
   (`ClaudeCafe` vs `ClaudeCafe (dev)` under Application Support). Leave it alone when
   restarting dev.
-- **The cast is copied in, not read live**: `scripts/pack-sprites.sh` normalizes
-  `packages/characters/<maid>/portraits/` plus `variants/*/portraits/` into `src/assets/cast/`, which is then
-  the single source of truth — the window globs it for who can be picked, and
-  `electron/build.mjs` reads it to decide whose persona ships. `pnpm dev` and `pnpm build`
-  run it themselves.
+- **The cast is discovered at runtime**: the desktop app reads
+  `$XDG_CONFIG_HOME/claudecafe/characters` (default `~/.config/claudecafe/characters`),
+  with a persona, optional `avatar.webp`, and `portraits/neutral.webp`
+  per maid. It does not bundle a fixed cast or offer outfit selection.
 - **Language split**: the interface is English, but what she says follows the user's
   language — the lines the window feeds her are generated once at startup per the café
   config's `lang` into `lines.json` under userData (`electron/lines.ts`).

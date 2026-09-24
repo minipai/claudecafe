@@ -43,8 +43,9 @@ actual persona.
 
 - **The website** takes the persona files and the normalized site artwork in its
   own asset bundle.
-- **The desktop app** copies `portraits/` and `variants/*/portraits/` at build
-  time. The default root is presented as its `uniform` outfit.
+- **The desktop app** installs character folders under
+  `$XDG_CONFIG_HOME/claudecafe/characters` at runtime. It uses the root
+  `avatar.webp` and default `portraits/`; visual variants are not shown there.
 - **The OpenCode terminal panel** discovers 36×48 `*.gif` files by filename,
   decodes static or animated frames, and draws them as ordinary text cells.
 - The café plugin ships none of it: maids are hired from the site.

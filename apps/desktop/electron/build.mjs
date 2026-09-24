@@ -27,8 +27,8 @@ function stageClaudeCli() {
 
 /**
  * The café plugin travels with the app. On a terminal the maid is whoever the
- * plugin drew that day; here the sprite and the name plate are already ことね,
- * so the app carries its own copy of the plugin and her persona file instead of
+ * plugin drew that day; here the app loads her persona from its configured
+ * characters folder and carries its own copy of the plugin instead of
  * asking the master to install one. The copy is what the session loads, so the
  * window behaves the same on a machine that has never heard of the café.
  *
@@ -37,28 +37,6 @@ function stageClaudeCli() {
  */
 const SKIP = new Set(['dist', '__pycache__', 'ship.sh', 'test.py'])
 
-/**
- * Whose persona travels with the app: whoever the window has artwork for.
- *
- * Read off the sprites rather than listed again here, because the two have to
- * agree — a maid the window can stand up but has no persona for would answer as
- * a plain assistant wearing her face, and a persona for a maid nobody can pick
- * is dead weight. scripts/pack-sprites.sh is what fills that folder.
- */
-const CAST = whoIsDrawn()
-
-function whoIsDrawn() {
-  const drawn = path.join(here, '../src/assets/cast')
-  const found = fs.existsSync(drawn)
-    ? fs.readdirSync(drawn, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name)
-    : []
-  // Loudly, because the artwork is generated rather than checked in: an empty
-  // folder would otherwise ship an app with nobody's persona in it, which
-  // starts up fine and answers as a plain assistant.
-  if (found.length === 0) throw new Error('No cast artwork staged — run apps/desktop/scripts/pack-sprites.sh first')
-  return found
-}
-
 function stageCafePlugin() {
   const out = path.join(here, '../dist-electron/cafe-plugin')
   fs.rmSync(out, { recursive: true, force: true })
@@ -66,24 +44,13 @@ function stageCafePlugin() {
     recursive: true,
     filter: (source) => !SKIP.has(path.basename(source)),
   })
-  // They live in the plugin's own maids/ folder, where the persona lookup falls
-  // back to — a master who hired one of them himself still wins, which is the
-  // same file. Everyone the window carries artwork for has to be here: a maid
-  // who can be stood up but has no persona would answer as a plain assistant
-  // wearing her face.
-  for (const maid of CAST) {
-    fs.copyFileSync(
-      path.join(repo, `packages/characters/${maid}/persona.zh.md`),
-      path.join(out, `maids/${maid}.md`),
-    )
-  }
   dropShiftHook(out)
 }
 
 /**
  * Who she is does not travel through a hook here. The plugin draws a maid at
  * session start and injects her persona from python; the window already knows —
- * the sprite is ことね — so the app puts her persona in the session's system
+ * from the configured character folder — so it puts her persona in the session's system
  * prompt itself (see maid.ts), which still stands on a Mac with no python3 for
  * the hooks to run on. This copy therefore loses that one hook, or she would be
  * introduced twice on the machines that do have one.

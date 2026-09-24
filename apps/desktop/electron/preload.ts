@@ -1,11 +1,13 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import type { BridgeEvent, CafeBridge } from '../src/agent/bridge'
+import type { Backdrop, BridgeEvent, CafeBridge } from '../src/agent/bridge'
 
 const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? ''
 const localeArg = process.argv.find((arg) => arg.startsWith('--cafe-locale=')) ?? ''
 const choiceArg = process.argv.find((arg) => arg.startsWith('--cafe-locale-choice=')) ?? ''
 const backdropArg = process.argv.find((arg) => arg.startsWith('--cafe-backdrop=')) ?? ''
 const shiftArg = process.argv.find((arg) => arg.startsWith('--cafe-shift=')) ?? ''
+const charactersArg = process.argv.find((arg) => arg.startsWith('--cafe-characters-dir=')) ?? ''
+const characterErrorArg = process.argv.find((arg) => arg.startsWith('--cafe-character-error=')) ?? ''
 const nameArg = process.argv.find((arg) => arg.startsWith('--cafe-maid-name=')) ?? ''
 
 const bridge: CafeBridge = {
@@ -14,20 +16,16 @@ const bridge: CafeBridge = {
   localeChoice: choiceArg.slice('--cafe-locale-choice='.length),
   setLocale: (choice) => ipcRenderer.send('cafe:set-locale', choice),
   setSpeech: (language) => ipcRenderer.send('cafe:set-speech', language),
-  // Handed over as one string and split here, so the window has something to
-  // draw on its very first frame rather than a flash of nothing behind her.
-  backdrop: {
-    scene: backdropArg.slice('--cafe-backdrop='.length).split('/')[0] || 'mucha',
-    edge: backdropArg.slice('--cafe-backdrop='.length).split('/')[1] || 'none',
-  },
+  backdrop: (backdropArg.slice('--cafe-backdrop='.length) || 'art-nouveau') as Backdrop,
   setBackdrop: (chosen) => ipcRenderer.send('cafe:set-backdrop', chosen),
   shift: {
-    maid: shiftArg.slice('--cafe-shift='.length).split('/')[0] || 'kotone',
-    outfit: shiftArg.slice('--cafe-shift='.length).split('/')[1] || 'uniform',
+    maid: shiftArg.slice('--cafe-shift='.length),
   },
   maidName: nameArg.slice('--cafe-maid-name='.length),
   setShift: (shift) => ipcRenderer.send('cafe:set-shift', shift),
   cast: () => ipcRenderer.invoke('cafe:cast'),
+  charactersDir: charactersArg.slice('--cafe-characters-dir='.length),
+  characterInstallError: decodeURIComponent(characterErrorArg.slice('--cafe-character-error='.length)),
   start: (runId, prompt, images) => ipcRenderer.send('cafe:start', runId, prompt, images),
   answer: (askId, value) => ipcRenderer.send('cafe:answer', askId, value),
   interrupt: () => ipcRenderer.send('cafe:interrupt'),

@@ -22,6 +22,7 @@ afterEach(() => {
 function createDoing() {
   return {
     onNewSession: vi.fn(),
+    onChooseMaid: vi.fn(),
     onOpenHistory: vi.fn(),
     onCompact: vi.fn(),
     onOpenPanel: vi.fn(),
@@ -49,7 +50,7 @@ function renderBar(overrides: { conversation?: string | null; openFolder?: () =>
       conversation={overrides.conversation ?? null}
       locale="en"
       speech={{ language: '', chosen: '' }}
-      backdrop={{ scene: 'mucha', edge: 'none' }}
+      backdrop="art-nouveau"
       doing={doing}
       onClose={onClose}
     />,
@@ -58,6 +59,21 @@ function renderBar(overrides: { conversation?: string | null; openFolder?: () =>
 }
 
 describe('CommandBar', () => {
+  it('offers separate commands for a new conversation and choosing another maid', async () => {
+    const { doing } = renderBar()
+
+    await act(async () => {
+      screen.getByText('Start a new conversation').closest('button')?.click()
+    })
+    expect(doing.onNewSession).toHaveBeenCalledOnce()
+    expect(doing.onChooseMaid).not.toHaveBeenCalled()
+
+    await act(async () => {
+      screen.getByText('Choose a maid for a new conversation').closest('button')?.click()
+    })
+    expect(doing.onChooseMaid).toHaveBeenCalledOnce()
+  })
+
   it('browse: waits for the dialog and closes exactly once with the real outcome', async () => {
     let resolvePick: (path: string | null) => void = () => {}
     const openFolder = vi.fn(() => new Promise<string | null>((resolve) => (resolvePick = resolve)))

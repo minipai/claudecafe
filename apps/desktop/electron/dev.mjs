@@ -17,7 +17,7 @@ await server.listen()
 const url = server.resolvedUrls?.local?.[0]
 if (!url) throw new Error('Vite did not report a local URL')
 
-const args = ['.', ...(folder ? [`--dir=${folder}`] : [])]
+const args = ['.', ...(folder ? [`--dir=${folder}`] : []), ...(process.env.CAFE_DEV_NO_SANDBOX ? ['--no-sandbox'] : [])]
 const electron = spawn(electronPath, args, {
   stdio: 'inherit',
   env: { ...process.env, VITE_DEV_SERVER_URL: url },

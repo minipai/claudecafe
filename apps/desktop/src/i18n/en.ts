@@ -20,6 +20,7 @@ export const en = {
     folder: 'Work somewhere else',
     resume: 'Go back to a conversation',
     newSession: 'Start a new conversation',
+    newMaid: 'Choose a maid for a new conversation',
     mode: 'Permission mode',
     log: 'Conversation history',
     compact: 'Compact the context',
@@ -32,7 +33,6 @@ export const en = {
     locale: 'Interface language',
     speech: 'What she speaks',
     backdrop: 'What is behind her',
-    edge: 'How the backdrop ends',
     followCafe: 'Follow the café setting',
     speakThis: 'Have her speak: {said}',
     typeYourself: 'Type it yourself…',
@@ -47,25 +47,10 @@ export const en = {
     system: 'Follow the system',
   },
   backdrop: {
-    /** Named as short as they can be: the picker shows them under a thumbnail
-     * the width of a thumb, and anything longer than a word or two is cut off. */
-    scene: {
-      none: 'None',
-      cafe: 'Café',
-      spring: 'Spring',
-      summer: 'Summer',
-      autumn: 'Autumn',
-      winter: 'Winter',
-      mucha: 'Panel',
-    },
-    edge: {
-      none: 'None',
-      blur: 'Blur',
-      brush: 'Wash',
-      strokes: 'Strokes',
-      grid: 'Panes',
-      cinema: 'Film',
-    },
+    none: 'None',
+    'art-nouveau': 'Art Nouveau',
+    'ukiyo-e': 'Ukiyo-e',
+    'shojo-manga': 'Shojo manga',
   },
   mode: {
     follow: 'However the terminal is set',
@@ -175,9 +160,11 @@ export const en = {
     close: 'Close {what}',
   },
   shift: {
+    directory: 'Character folder',
+    loading: 'Loading maids…',
+    empty: 'Put maid folders in the characters folder beside the café settings. Each maid needs a persona file and portraits/neutral.webp.',
     title: 'Who is on shift',
     body: 'She starts the next conversation as whoever is picked here. A maid already in one cannot be told she is somebody else halfway through.',
-    wearing: 'Wearing',
     start: 'Start her shift',
     keep: 'Never mind',
   },

@@ -157,17 +157,7 @@ const SCENE_BRIEF = `You are being watched through a window, not a terminal — 
  * no python3 the café's greeting and mirror go quiet, but the maid is still the
  * maid; without this she would answer as a plain assistant in her own window.
  */
-/**
- * Who the window carries artwork for, as the renderer's own glob of the staged
- * cast has it — told to the main process when the page announces itself, and
- * the same for every window, because it is a property of the build.
- *
- * The main process cannot work this out for itself: the sprites are bundled
- * into the renderer at build time, and the plugin's persona folder is a wider
- * list than the drawn one (a maid hired for the terminal has a persona here and
- * no face). It only matters for the one decision that picks a maid nobody
- * asked for — taking a conversation back to whoever served it.
- */
+/** The current runtime cast, used when restoring a conversation's maid. */
 let carried: string[] = []
 
 export function nowCarrying(maids: string[]) {
@@ -175,7 +165,7 @@ export function nowCarrying(maids: string[]) {
 }
 
 function shiftBrief(maid: string) {
-  const persona = personaOf(CAFE_PLUGIN, maid)
+  const persona = personaOf(maid)
   return [
     persona && `Adopt this persona for the entire session — it overrides the default assistant voice:\n\n${persona}`,
     SCENE_BRIEF,
@@ -253,6 +243,8 @@ export class MaidSession {
       // opens as her.
       this.takeBackShift(previous.sessionId)
     }
+    const shift = chosenShift()
+    this.emit({ kind: 'shift', shift, maidName: maidName(shift.maid) })
     // Sent even when there is nothing: arriving somewhere new must clear what
     // was on screen, not leave the last folder's conversation standing.
     this.emit({
@@ -288,6 +280,7 @@ export class MaidSession {
     if (this.writingLines) return
     const language = replyLanguage()
     const maid = chosenShift().maid
+    if (!maid) return
     const kept = knownLines(maid, language)
     if (kept) {
       this.lines = kept
@@ -297,7 +290,7 @@ export class MaidSession {
     this.writingLines = true
     let written: Lines | null
     try {
-      written = await askForLines(maid, language, personaOf(CAFE_PLUGIN, maid))
+      written = await askForLines(maid, language, personaOf(maid))
     } finally {
       this.writingLines = false
     }
@@ -379,6 +372,10 @@ export class MaidSession {
    * stdin. */
   ask(runId: string, prompt: string, images: Attachment[] = []) {
     if (!this.stream) this.open()
+    if (!this.stream) {
+      this.emit({ kind: 'done', runId, error: 'No maid characters found in the café settings characters folder.' })
+      return
+    }
     const inFlight = this.runs.length > 0
     this.runs.push({ runId, turn: new Turn(prompt) })
     if (inFlight) this.backlog.push({ runId, prompt, images })
@@ -437,10 +434,7 @@ export class MaidSession {
    *
    * Legal here for the same reason handing the shift over is legal at a fresh
    * conversation — the connection has just been dropped, and her persona is
-   * fixed when the next one opens. What she is wearing does not come back with
-   * her: the sheet holds a name and nothing else, and the café clothes are the
-   * one outfit every maid has. Anything the window cannot dress her in it
-   * quietly puts right anyway.
+   * fixed when the next one opens.
    */
   private takeBackShift(sessionId: string) {
     const served = whoServed(sessionId)
@@ -450,11 +444,11 @@ export class MaidSession {
     // on: a name plate and a persona that disagree with the sprite underneath
     // them read worse than her reading somebody else's log.
     if (!carried.includes(served)) return
-    const shift = { maid: served, outfit: 'uniform' }
+    const shift = { maid: served }
     rememberShift(shift)
     this.lines = null
     void this.tellLines()
-    this.emit({ kind: 'shift', shift, maidName: maidName(CAFE_PLUGIN, served) })
+    this.emit({ kind: 'shift', shift, maidName: maidName(served) })
   }
 
   /** Throw the conversation away — the next prompt starts a blank one. */
@@ -504,6 +498,7 @@ export class MaidSession {
     // effect when the next conversation opens, which is this. Kept on the
     // session too, so the transcript can be signed with her once it has an id.
     const maid = (this.onShift = chosenShift().maid)
+    if (!maid) return
     const options: Options = {
       cwd: this.cwd,
       pathToClaudeCodeExecutable: CLAUDE_EXECUTABLE,

@@ -37,7 +37,7 @@ vi.mock('./history', () => ({
   conversationBacklog: vi.fn(),
   listConversations: vi.fn(),
   chosenSpeech: vi.fn(),
-  chosenShift: vi.fn(() => ({ maid: 'kotone', outfit: 'uniform' })),
+  chosenShift: vi.fn(() => ({ maid: 'kotone' })),
   rememberShift: vi.fn(),
   rememberWhoServed: vi.fn(),
   whoServed: vi.fn(),
@@ -54,13 +54,14 @@ vi.mock('./status', () => ({
 import { CLAUDE_EXECUTABLE, contextTokens, MaidSession, nameOf, nowCarrying, PromptQueue, readUsage, readWindows, whyStopped } from './maid'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
-import { chosenSpeech, conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings, rememberShift, whoServed } from './history'
+import { chosenShift, chosenSpeech, conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings, rememberShift, whoServed } from './history'
 import { readGit } from './status'
 
 /** A clean slate for every test, whether or not it cares — a MaidSession test
  * that forgets to configure one of these should get an obviously-wrong
  * default (English, no persona, nobody home) rather than another test's. */
 beforeEach(() => {
+  vi.mocked(chosenShift).mockReturnValue({ maid: 'kotone' })
   vi.mocked(query).mockReset()
   vi.mocked(askForLines).mockReset().mockResolvedValue(null)
   vi.mocked(knownLines).mockReset().mockReturnValue(null)
@@ -393,6 +394,20 @@ function trackConnections(models: unknown[] = []) {
   })
   return fakes
 }
+
+describe('MaidSession — no characters configured', () => {
+  it('does not open an assistant session or generate lines without a maid', () => {
+    vi.mocked(chosenShift).mockReturnValue({ maid: '' })
+    const emit = vi.fn()
+    const session = new MaidSession('/tmp/cafe-empty-cast', emit)
+    session.refresh()
+    session.ask('empty-run', 'Hello')
+    expect(query).not.toHaveBeenCalled()
+    expect(askForLines).not.toHaveBeenCalled()
+    expect(emit).toHaveBeenCalledWith({ kind: 'done', runId: 'empty-run', error: 'No maid characters found in the café settings characters folder.' })
+    session.close()
+  })
+})
 
 describe('MaidSession — reopen closes out an in-flight run (finding #1)', () => {
   it('tells the run it is done, and does not let the next one answer under its id', async () => {
@@ -824,10 +839,10 @@ describe('MaidSession — resume/reset/refresh', () => {
 
     session.resume('conv-kurumi')
 
-    expect(rememberShift).toHaveBeenCalledWith({ maid: 'kurumi', outfit: 'uniform' })
+    expect(rememberShift).toHaveBeenCalledWith({ maid: 'kurumi' })
     expect(events).toContainEqual({
       kind: 'shift',
-      shift: { maid: 'kurumi', outfit: 'uniform' },
+      shift: { maid: 'kurumi' },
       maidName: 'くるみ',
     })
   })
@@ -868,7 +883,7 @@ describe('MaidSession — resume/reset/refresh', () => {
 
     session.refresh()
 
-    expect(rememberShift).toHaveBeenCalledWith({ maid: 'kurumi', outfit: 'uniform' })
+    expect(rememberShift).toHaveBeenCalledWith({ maid: 'kurumi' })
     expect(events.some((event) => event.kind === 'shift')).toBe(true)
   })
 
