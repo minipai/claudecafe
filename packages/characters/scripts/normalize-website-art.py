@@ -27,6 +27,12 @@ CANVAS_SIZE = (1024, 1920)
 OUTPUT_CROP = (0, 0, 864, 1760)
 AVATAR_CROP = (226, 32, 610, 416)
 AVATAR_SIZE = (128, 128)
+PORTRAIT_AVATAR_CROPS = {
+    "kurumi": (320, 48, 768, 496),
+    "kokona": (288, 32, 736, 480),
+    "kotone": (1152, 264, 2400, 1512),
+}
+PORTRAIT_AVATAR_SIZE = (512, 512)
 COMMON_CSS = {"x": -150, "y": -20, "height": 1700}
 TARGET_HEAD = {"center_x": 220, "top": 58, "bottom": 291}
 
@@ -121,12 +127,21 @@ def normalize(name: str, config: dict[str, object]) -> None:
     output = canvas.crop(OUTPUT_CROP)
     output.save(WEB_ROOT / f"maid-{name}.webp", quality=88, method=6)
 
-    avatar = output.crop(AVATAR_CROP).resize(
-        AVATAR_SIZE, Image.Resampling.LANCZOS
-    )
+    if name in PORTRAIT_AVATAR_CROPS:
+        # Frame the face closely; hair may extend beyond square or circular crops.
+        portrait = Image.open(drawing(name, "portraits", "neutral")).convert("RGBA")
+        avatar = portrait.crop(PORTRAIT_AVATAR_CROPS[name]).convert("RGBa").resize(
+            PORTRAIT_AVATAR_SIZE, Image.Resampling.LANCZOS
+        ).convert("RGBA")
+        avatar_quality = 95
+    else:
+        avatar = output.crop(AVATAR_CROP).resize(
+            AVATAR_SIZE, Image.Resampling.LANCZOS
+        )
+        avatar_quality = 90
     avatar_path = CAST_ROOT / name / "avatar.webp"
-    avatar.save(avatar_path, quality=90, method=6)
-    avatar.save(WEB_ROOT / f"avatar-{name}.webp", quality=90, method=6)
+    avatar.save(avatar_path, quality=avatar_quality, method=6)
+    avatar.save(WEB_ROOT / f"avatar-{name}.webp", quality=avatar_quality, method=6)
 
     alpha_bbox = output.getchannel("A").getbbox()
     print(
