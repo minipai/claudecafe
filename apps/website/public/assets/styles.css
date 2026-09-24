@@ -1109,8 +1109,19 @@ html.home-snapping {
     text-decoration: none;
 }
 
+.home-pill::after {
+    content: "→";
+    display: inline-block;
+    margin-left: 0.4em;
+    transition: transform 0.15s;
+}
+
 .home-pill:hover {
     background: var(--header-bg);
+}
+
+.home-pill:hover::after {
+    transform: translateX(3px);
 }
 
 .home-pill:focus-visible {
