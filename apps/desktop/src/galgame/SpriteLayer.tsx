@@ -1,4 +1,4 @@
-import type { Backdrop as Chosen, Shift } from '@/agent'
+import type { Backdrop as Chosen, CastMember } from '@/agent'
 import type { Expression } from './types'
 import { spriteFor } from './cast'
 import { Backdrop, WidescreenBackdrop } from './Backdrop'
@@ -10,12 +10,12 @@ import { Backdrop, WidescreenBackdrop } from './Backdrop'
  */
 export function SpriteLayer({
   expression,
-  shift,
+  maid,
   name,
   backdrop,
 }: {
   expression: Expression
-  shift: Shift
+  maid: CastMember
   /** Whoever is standing there, so a screen reader is told who rather than
    * being told "maid". */
   name: string
@@ -42,13 +42,14 @@ export function SpriteLayer({
             its own width to centre it makes it a layer of its own, so what is
             set on her inside it counts for nothing out here — without this the
             backdrop simply covered her. */}
-        <div className="pointer-events-none absolute -bottom-[460px] left-1/2 z-[2] w-[min(100vw,512px)] -translate-x-1/2 max-sm:-bottom-[100px]">
+        <div className="pointer-events-none absolute bottom-0 left-1/2 z-[2] flex w-[min(100vw,512px)] -translate-x-1/2 justify-center">
           {/* She catches the pointer again — the window is transparent, and a maid
             you can click straight through is a ghost. Only where she is drawn:
             the alpha under the pointer decides (see useClickThrough), which is
             also what makes her a handle you can only grab by the sleeve. */}
           <img
-            src={spriteFor(shift, expression)}
+            src={spriteFor(maid, expression)}
+            crossOrigin="anonymous"
             alt={name}
             draggable={false}
             data-art
@@ -56,7 +57,7 @@ export function SpriteLayer({
               if (event.button !== 0) return
               window.cafe?.startDrag()
             }}
-            className="pointer-events-auto relative z-[2] h-auto w-full cursor-grab select-none active:cursor-grabbing"
+            className="pointer-events-auto relative z-[2] h-auto max-h-screen w-auto max-w-full cursor-grab select-none active:cursor-grabbing"
           />
         </div>
       </div>

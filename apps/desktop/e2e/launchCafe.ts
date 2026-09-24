@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { _electron as electron, expect, test as base, type ElectronApplication, type Locator, type Page } from '@playwright/test'
@@ -12,6 +12,8 @@ export type Cafe = {
   page: Page
   /** The scratch folder she was opened on. */
   project: string
+  /** The characters folder beside the scratch café settings. */
+  characters: string
 }
 
 /**
@@ -20,7 +22,7 @@ export type Cafe = {
  * real café. `os.homedir()` follows $HOME, which sandboxes `~/.claude`; the
  * window's own userData does not, hence `CAFE_USERDATA` (see main.ts).
  */
-async function openCafe(): Promise<Cafe> {
+async function openCafe(maid = 'kotone'): Promise<Cafe> {
   // Literally /tmp rather than os.tmpdir(): on macOS the latter resolves to
   // the long-form /var/folders/.../T path, and CommandBar's folder row
   // (label, the full path as a note, and a chevron all in one flex line —
@@ -30,9 +32,15 @@ async function openCafe(): Promise<Cafe> {
   const userData = await mkdtemp(path.join('/tmp', 'cafe-e2e-userdata-'))
   const project = await mkdtemp(path.join('/tmp', 'cafe-e2e-project-'))
 
+  await writeFile(path.join(userData, 'speech.json'), JSON.stringify({ language: 'English' }))
+  const characters = path.join(home, '.config', 'claudecafe', 'characters')
+  await writeMaid(characters, maid, maid === 'kotone' ? 'ことね' : 'Folder Maid')
+  await mkdir(path.join(home, '.config', 'claudecafe'), { recursive: true })
+  await writeFile(path.join(userData, 'shift.json'), JSON.stringify({ maid }))
+
   const app = await electron.launch({
-    args: [path.join(repoRoot, 'dist-electron/main.e2e.mjs'), `--dir=${project}`],
-    env: { ...process.env, HOME: home, CAFE_USERDATA: userData },
+    args: [path.join(repoRoot, 'dist-electron/main.e2e.mjs'), `--dir=${project}`, ...(process.env.CAFE_HEADLESS ? ['--headless', '--ozone-platform=headless', '--no-sandbox'] : [])],
+    env: { ...process.env, HOME: home, XDG_CONFIG_HOME: path.join(home, '.config'), CAFE_USERDATA: userData },
   })
   app.once('close', () => {
     void Promise.all([rm(home, { recursive: true, force: true }), rm(userData, { recursive: true, force: true }), rm(project, { recursive: true, force: true })])
@@ -44,7 +52,7 @@ async function openCafe(): Promise<Cafe> {
   // once, rather than on a fixed pause that outlives its reason the moment
   // any of those gets slower.
   await page.getByText('Goshujin-sama').first().waitFor()
-  return { app, page, project }
+  return { app, page, project, characters }
 }
 
 /**
@@ -56,9 +64,10 @@ async function openCafe(): Promise<Cafe> {
  * leaked one for focus. `use()` throwing is exactly the failed-assertion
  * case, so the close lives in `finally` rather than after it.
  */
-export const test = base.extend<{ cafe: Cafe }>({
-  cafe: async ({}, use) => {
-    const cafe = await openCafe()
+export const test = base.extend<{ cafe: Cafe; maid: string }>({
+  maid: 'kotone',
+  cafe: async ({ maid }, use) => {
+    const cafe = await openCafe(maid)
     try {
       await use(cafe)
     } finally {
@@ -111,4 +120,14 @@ export async function waitForLine(page: Page, text: string) {
     await expect(line).toBeVisible({ timeout: 250 })
   }).toPass({ timeout: 10_000 })
   return line
+}
+
+/** Tiny real WebP files keep the fixture independent of the repository cast. */
+export async function writeMaid(directory: string, id: string, name: string) {
+  const maid = path.join(directory, id)
+  await mkdir(path.join(maid, 'portraits'), { recursive: true })
+  await writeFile(path.join(maid, 'persona.en.md'), `---\nname: ${name}\n---\nYou are ${name}, the test maid.\n`)
+  const image = Buffer.from('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA', 'base64')
+  await writeFile(path.join(maid, 'avatar.webp'), image)
+  await writeFile(path.join(maid, 'portraits', 'neutral.webp'), image)
 }

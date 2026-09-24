@@ -287,7 +287,7 @@ function assistantText(text: string, sessionId: string): SDKMessage {
     type: 'assistant',
     session_id: sessionId,
     uuid: randomUUID(),
-    message: { model: 'fake-model', content: [{ type: 'text', text }], usage: { output_tokens: 5 } },
+    message: { model: 'fake-model', content: [{ type: 'text', text }], usage: { output_tokens: 5, input_tokens: 800, cache_read_input_tokens: 500, cache_creation_input_tokens: 200 } },
     parent_tool_use_id: null,
   } as unknown as SDKMessage
 }

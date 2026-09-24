@@ -175,9 +175,10 @@ export const en = {
     close: 'Close {what}',
   },
   shift: {
+    loading: 'Loading maids…',
+    empty: 'Put maid folders in the characters folder beside the café settings. Each maid needs a persona file and portraits/neutral.webp.',
     title: 'Who is on shift',
     body: 'She starts the next conversation as whoever is picked here. A maid already in one cannot be told she is somebody else halfway through.',
-    wearing: 'Wearing',
     start: 'Start her shift',
     keep: 'Never mind',
   },

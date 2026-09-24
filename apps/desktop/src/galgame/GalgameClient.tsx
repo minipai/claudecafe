@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { Stage } from './Stage'
 import { SpriteLayer } from './SpriteLayer'
-import { MAIDS, hasArtwork, wearable } from './cast'
+import { hasArtwork, availableShift } from './cast'
 import { ShiftPanel } from './ShiftPanel'
 import { KAOMOJI } from '@/agent/expressions'
 import { DialogueBox } from './DialogueBox'
@@ -35,7 +35,7 @@ import { toast } from 'sonner'
 import { createChatMessage, createPreviewHistory, recordToolResult } from './chatlog'
 import { choreograph, type Scene } from './choreography'
 import { applyWindowEvent, type WindowScene } from './windowEvents'
-import type { Backdrop as Chosen, Shift } from '@/agent'
+import type { Backdrop as Chosen, CastMember, Shift } from '@/agent'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
 import { lines as currentLines } from './content'
 import { fill, her, nowServing, text } from '@/i18n'
@@ -82,7 +82,15 @@ type ChoiceRequest = {
 let whisperId = 0
 let choiceRequestId = 0
 
-export function GalgameClient() {
+export function GalgameClient({
+  cast,
+  directory,
+  onRefreshCharacters,
+}: {
+  cast: CastMember[]
+  directory: string
+  onRefreshCharacters: () => Promise<void>
+}) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [readerOpen, setReaderOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -134,12 +142,15 @@ export function GalgameClient() {
   const [backdrop, setBackdrop] = useState<Chosen>(
     () => window.cafe?.backdrop ?? { scene: 'mucha', edge: 'none' },
   )
-  /** Who is standing there and what she is wearing. Off the bridge for the same
+  /** Who is standing there. Off the bridge for the same
    * reason as the room behind her: the first frame has to have the right maid
    * in it. */
-  const [shift, setShift] = useState<Shift>(() => wearable(window.cafe?.shift ?? { maid: 'kotone', outfit: 'uniform' }))
-  /** Asked as a conversation is started over, which is the only moment she can
-   * be swapped: her persona is in the session's system prompt. */
+  const [shift, setShift] = useState<Shift>(() => availableShift(cast, window.cafe?.shift ?? { maid: cast[0].id }))
+  const maid = cast.find((maid) => maid.id === shift.maid) ?? cast[0]
+  nowServing(maid.name)
+  const castRef = useRef(cast)
+  castRef.current = cast
+  /** A new conversation is the moment to change the maid's persona. */
   const [pickingShift, setPickingShift] = useState(false)
   /** Nobody on this machine has ever said what she should speak or what the
    * window should be drawn in, so both are asked once before anything else. */
@@ -175,7 +186,7 @@ export function GalgameClient() {
    * it cannot interrupt or overwrite the foreground conversation. */
   const ambientMessages = useRef<AgentMessage[]>([])
   /** The bridge listener lives for the mount, but the scene it calls changes
-   * with the maid and her outfit. Always point it at the newest closure. */
+   * with the maid. Always point it at the newest closure. */
   const playAmbientRef = useRef<(message: AgentMessage) => void>(() => {})
 
   const {
@@ -265,7 +276,7 @@ export function GalgameClient() {
    * or she signed a line with it. */
   function showFace(expr: Expression) {
     setExpression(expr)
-    setStandIn(hasArtwork(shift, expr) ? null : KAOMOJI[expr])
+    setStandIn(hasArtwork(maid, expr) ? null : KAOMOJI[expr])
   }
 
   /** The same scene both prompted and unsolicited turns play through. Kept in
@@ -334,8 +345,8 @@ export function GalgameClient() {
       setSpeech,
       setLocale,
       setBackdrop,
-      // Whoever the window cannot dress is put back in something it has.
-      setShift: (next: Shift) => setShift(wearable(next)),
+      // A removed maid is replaced by the first available character.
+      setShift: (next: Shift) => setShift(availableShift(castRef.current, next)),
       setLines,
       setChatMessages,
       setTrouble,
@@ -355,7 +366,7 @@ export function GalgameClient() {
       if (event.kind === 'ambient-message') playAmbientRef.current(event.message)
       else applyWindowEvent(event, windowScene)
     })
-    window.cafe?.refresh(MAIDS)
+    window.cafe?.refresh(cast.map((maid) => maid.id))
     return stop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -557,8 +568,9 @@ export function GalgameClient() {
    * moment to ask: her persona goes into the session's system prompt, and there
    * is no telling a maid mid-conversation that she is somebody else.
    */
-  function startNewSession() {
+  async function startNewSession() {
     if (changingSession) return
+    await onRefreshCharacters()
     setPickingShift(true)
   }
 
@@ -748,7 +760,7 @@ export function GalgameClient() {
             her feet again it goes, or a half-ticked list from the last thing
             asked stays pinned over the next conversation. */}
         <TodoBoard todos={historyOpen || readerOpen || phase === 'idle' ? [] : todos} />
-        <SpriteLayer expression={expression} shift={shift} name={her()} backdrop={backdrop} />
+        <SpriteLayer expression={expression} maid={maid} name={her()} backdrop={backdrop} />
 
         {/* The band above the box is where the whispers float; there is nothing
             to click there, so the pointer goes through it too. */}
@@ -858,6 +870,8 @@ export function GalgameClient() {
       <WelcomePanel open={welcoming} onDone={() => setWelcoming(false)} />
       <ShiftPanel
         open={pickingShift}
+        cast={cast}
+        directory={directory}
         chosen={shift}
         onStart={handOverShift}
         onCancel={() => setPickingShift(false)}

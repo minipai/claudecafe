@@ -370,7 +370,4 @@ export const LOOK_BY_TIER = {
  * The two maids the window is drawn with, for a browser with no café behind it.
  * Live, this comes off their persona files — see castOf in electron/lines.ts.
  */
-export const MOCK_CAST: CastMember[] = [
-  { id: 'kotone', name: 'ことね', outfits: [{ id: 'uniform', label: '女僕裝' }, { id: 'one-piece', label: '連身裙' }] },
-  { id: 'kurumi', name: 'くるみ', outfits: [{ id: 'uniform', label: '女僕裝' }] },
-]
+export const MOCK_CAST: CastMember[] = []

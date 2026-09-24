@@ -27,8 +27,9 @@ is all a second artist has to go on — they don't own her persona file.
 
 - **The website** takes the persona files (the package's `files` allowlist is
   persona files only, so the deploy image stays small).
-- **The desktop app** copies the sprites in at build time — `pack-sprites.sh`
-  globs `*.webp`, so `panel.faces` stays out of the window's bundle.
+- **The desktop app** reads `$XDG_CONFIG_HOME/claudecafe/characters` at runtime
+  using `avatar.webp` and `portraits/<expression>.webp`. Copy character folders
+  there; the app does not bundle a fixed cast.
 - **A terminal panel** (the `cc-maid` mod today) reads `panel.faces`: a palette
   and three index planes per mood, gzipped and base64'd, because a plugin reads
   files as UTF-8 text. `art-masters/kotone/panel/tools/export-faces.py` writes it.

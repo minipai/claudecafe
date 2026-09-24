@@ -168,9 +168,10 @@ export const zhTW: Text = {
     close: '關閉{what}',
   },
   shift: {
+    loading: '載入女僕中…',
+    empty: '請把女僕資料夾放在咖啡廳設定旁的 characters 資料夾。每位女僕需要角色設定檔和 portraits/neutral.webp。',
     title: '誰來上班',
     body: '這裡選的人，會從下一段對話開始上班。已經在對話裡的女僕沒辦法講到一半換成別人。',
-    wearing: '穿',
     start: '開始上班',
     keep: '算了',
   },

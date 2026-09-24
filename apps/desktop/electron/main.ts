@@ -1,10 +1,11 @@
 import { execFile } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
-import { CAFE_PLUGIN, MaidSession, nowCarrying } from './maid'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, protocol, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
+import { MaidSession, nowCarrying } from './maid'
+import { characterImage, charactersDir } from './characters'
 import {
   chosenBackdrop,
   chosenLocale,
@@ -23,6 +24,8 @@ import type { Backdrop, Shift } from '../src/agent/bridge'
 import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
+
+protocol.registerSchemesAsPrivileged([{ scheme: 'cafe-character', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }])
 
 // Two of her can be open at once — the one being used and the one being worked
 // on — and they must not share a drawer. Everything with her name on it hangs
@@ -80,8 +83,9 @@ function openWindow(cwd: string) {
         `--cafe-locale=${drawnIn()}`,
         `--cafe-locale-choice=${chosenLocale()}`,
         `--cafe-backdrop=${backdrop.scene}/${backdrop.edge}`,
-        `--cafe-shift=${shift.maid}/${shift.outfit}`,
-        `--cafe-maid-name=${nameOf(CAFE_PLUGIN, shift.maid)}`,
+        `--cafe-shift=${shift.maid}`,
+        `--cafe-characters-dir=${charactersDir()}`,
+        `--cafe-maid-name=${nameOf(shift.maid)}`,
       ],
     },
   })
@@ -203,8 +207,12 @@ ipcMain.handle('cafe:conversations', (event) => shiftOf(event)?.conversations() 
 ipcMain.handle('cafe:folders', () => recentFolders())
 // Read off disk rather than asked of her: the persona is what the session was
 // opened with, so it is there to show even when there is no session to ask.
-ipcMain.handle('cafe:persona', () => personaOf(CAFE_PLUGIN, chosenShift().maid))
-ipcMain.handle('cafe:cast', () => castOf(CAFE_PLUGIN))
+ipcMain.handle('cafe:persona', () => personaOf(chosenShift().maid))
+ipcMain.handle('cafe:cast', () => {
+  const cast = castOf()
+  nowCarrying(cast.map((maid) => maid.id))
+  return cast
+})
 // Asked on every page rather than handed over as the window is built: a page
 // that reloads after the welcome card was answered must not put it up again.
 // A file read, not a session — a window that cannot sign in still asks.
@@ -247,13 +255,15 @@ ipcMain.on('cafe:set-backdrop', (event, chosen: Backdrop) => {
 })
 
 /**
- * Someone else on shift, or the same maid in something else. Nothing reopens
+ * Someone else on shift. Nothing reopens
  * here either — but unlike the room behind her, this one is not what the window
  * is showing until the next conversation starts: her persona goes into the
  * system prompt, and a session already running cannot be told she is somebody
  * else halfway through.
  */
-ipcMain.on('cafe:set-shift', (_event, shift: Shift) => rememberShift(shift))
+ipcMain.on('cafe:set-shift', (_event, shift: Shift) => {
+  if (castOf().some((maid) => maid.id === shift.maid)) rememberShift({ maid: shift.maid })
+})
 
 /** Another language for her — free text, empty to follow the café's setting. */
 ipcMain.on('cafe:set-speech', (event, language: string) => {
@@ -290,7 +300,7 @@ ipcMain.handle('cafe:open-folder', async (event) => {
 ipcMain.on('cafe:notify', (event, body: string, waiting: boolean) => {
   const window = windowOf(event)
   if (!window || window.isFocused()) return
-  const her = nameOf(CAFE_PLUGIN, chosenShift().maid)
+  const her = nameOf(chosenShift().maid)
   const note = new Notification({ title: waiting ? `${her} is waiting` : her, body })
   note.on('click', () => {
     if (window.isDestroyed()) return
@@ -372,6 +382,15 @@ ipcMain.on('cafe:drag-end', (event) => {
 })
 
 void app.whenReady().then(() => {
+  protocol.handle('cafe-character', (request) => {
+    const file = characterImage(request.url)
+    if (!file) return new Response(null, { status: 404 })
+    try {
+      return new Response(readFileSync(file), { headers: { 'Content-Type': 'image/webp', 'Access-Control-Allow-Origin': '*' } })
+    } catch {
+      return new Response(null, { status: 404 })
+    }
+  })
   app.dock?.setIcon(nativeImage.createFromPath(ICON))
   // The checkout says so on its own icon, so the one being worked on and the
   // one being used can sit side by side in the Dock.

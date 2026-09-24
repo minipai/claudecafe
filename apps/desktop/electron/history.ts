@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { app } from 'electron'
 import { cafeRoot } from './cafehome'
+import { castOf } from './characters'
 import { REPORT_TOOL } from './tools'
 import { describeTool, FALLBACK_LABEL, hasShape, isLongForm, openingLine } from './translate'
 import type { BacklogLine, Backdrop, KeptSettings, Shift } from '../src/agent/bridge'
@@ -246,7 +247,7 @@ export function chosenBackdrop(): Backdrop {
 }
 
 /**
- * Who is on shift in this window, and what she is wearing.
+ * Who is on shift in this window.
  *
  * Kept rather than drawn fresh: the café hands a terminal session a random maid
  * because a terminal is one shift among many, but this window is a thing on the
@@ -262,20 +263,15 @@ export function rememberShift(shift: Shift) {
 }
 
 export function chosenShift(): Shift {
+  const cast = castOf()
   try {
     const kept = JSON.parse(fs.readFileSync(shiftFile(), 'utf8')) as Partial<Shift>
-    return {
-      maid: typeof kept.maid === 'string' && kept.maid ? kept.maid : DEFAULT_SHIFT.maid,
-      outfit: typeof kept.outfit === 'string' && kept.outfit ? kept.outfit : DEFAULT_SHIFT.outfit,
-    }
+    if (cast.some((maid) => maid.id === kept.maid)) return { maid: kept.maid! }
   } catch {
-    return DEFAULT_SHIFT
+    // No previous choice, or the saved choice could not be read.
   }
+  return { maid: cast[0]?.id ?? '' }
 }
-
-/** Who opens the café on a machine that has never been asked: the maid the
- * window was built around, in the clothes she works in. */
-const DEFAULT_SHIFT: Shift = { maid: 'kotone', outfit: 'uniform' }
 
 /**
  * Who served one conversation, written where the café's own hooks look it up.

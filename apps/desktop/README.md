@@ -26,14 +26,18 @@ the other.
 
 ## Her artwork
 
-`scripts/pack-sprites.sh` copies the maids named in it out of
-`packages/characters` into `src/assets/cast/`, which is then the single source of
-truth: the window globs that folder for who can be picked, and the packaging step
-reads the same folder to decide whose persona travels inside the app. `pnpm dev`
-and `pnpm build` run it for you.
+The app discovers maids at runtime from `$XDG_CONFIG_HOME/claudecafe/characters`
+(default `~/.config/claudecafe/characters`). Keep that folder beside the café
+settings; the app does not offer a separate folder chooser or bundle a fixed cast.
 
-Sprite and persona have to arrive together. A maid the window can stand up but
-has no persona for would answer as a plain assistant wearing her face.
+Each maid subfolder contains a `persona.zh.md` or `persona.en.md` and
+`portraits/neutral.webp`. An optional `avatar.webp` supplies the picker thumbnail.
+Other `portraits/<expression>.webp` files supply expressions; missing expressions
+use neutral. The persona and artwork come from
+the same folder. Only the default portraits are used; there is no outfit picker.
+
+With no valid maids in that folder, the app shows its expected location. Reopen
+the maid picker to refresh the list after adding or removing a maid.
 
 ## Releasing
 

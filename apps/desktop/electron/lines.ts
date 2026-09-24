@@ -5,7 +5,7 @@ import { app } from 'electron'
 import { chosenSpeech } from './history'
 import { cafeRoot } from './cafehome'
 import { query } from '@anthropic-ai/claude-agent-sdk'
-import type { CastMember, Lines } from '../src/agent/bridge'
+import type { Lines } from '../src/agent/bridge'
 
 /**
  * The handful of lines the window puts in her mouth — the opening, the one she
@@ -109,104 +109,7 @@ export async function askForLines(maid: string, language: string, persona: strin
   }
 }
 
-/**
- * The persona of whoever is on shift — the instructions that make the session
- * her rather than an assistant, and what the window's own lines have to sound
- * like.
- *
- * A master who hired her from the café himself has his own copy of her, and
- * that is the one his terminal reads, so it is read here first: the maid in the
- * window and the maid in his terminal should not be two different drafts. The
- * app's own copy stands behind it, which is the whole of it on a machine that
- * has never heard of the café.
- */
-export function personaOf(pluginRoot: string, maid: string) {
-  return maidFiles(pluginRoot, maid).map(bodyOf).find(Boolean) ?? ''
-}
-
-/**
- * Everyone with a persona the window could put on shift, named as their own
- * file names them.
- *
- * The window narrows this to the maids it carries artwork for, so what comes
- * back here is deliberately everything: the hired and the bundled together,
- * hers winning where both exist. A file with no name in it is nobody the master
- * could be shown, so it is left out rather than listed as its own filename.
- */
-export function castOf(pluginRoot: string): CastMember[] {
-  const found = new Map<string, CastMember>()
-  for (const dir of [path.join(pluginRoot, 'maids'), personasDir()]) {
-    for (const file of markdownIn(dir)) {
-      const id = file.replace(/\.md$/, '')
-      const front = frontmatterOf(path.join(dir, file))
-      const name = /^name:[ \t]*(.+)$/m.exec(front)?.[1].trim()
-      if (name) found.set(id, { id, name, outfits: outfitsIn(front) })
-    }
-  }
-  return [...found.values()].sort((one, other) => one.id.localeCompare(other.id))
-}
-
-/** What to call whoever is on shift. Her id stands if she has no persona here
- * — that is a maid with artwork and nothing written, which the window would
- * rather name badly than leave the plate empty over. */
-export function nameOf(pluginRoot: string, maid: string) {
-  return castOf(pluginRoot).find((one) => one.id === maid)?.name ?? maid
-}
-
-/** The wording for her outfits, as an `outfits:` block of `<folder>: <name>`.
- * Only the maid's own author can write this, so a wardrobe drawn by somebody
- * else simply is not in here and the folder's name stands instead. */
-function outfitsIn(front: string) {
-  const block = /^outfits:[ \t]*\n((?:[ \t]+\S.*\n?)*)/m.exec(front)?.[1] ?? ''
-  return [...block.matchAll(/^[ \t]+([\w-]+):[ \t]*(.+)$/gm)].map((line) => ({
-    id: line[1],
-    label: line[2].trim(),
-  }))
-}
-
-/** Where a maid of this id might be written down, nearest first. */
-function maidFiles(pluginRoot: string, maid: string) {
-  return [path.join(personasDir(), `${maid}.md`), path.join(pluginRoot, 'maids', `${maid}.md`)]
-}
-
-function markdownIn(dir: string) {
-  try {
-    return fs.readdirSync(dir).filter((name) => name.endsWith('.md'))
-  } catch {
-    return [] // nothing hired, or no plugin staged beside the app
-  }
-}
-
-/** Just the settings block at the top of a persona file — her name, and the
- * wording for what she has to wear. */
-function frontmatterOf(file: string) {
-  try {
-    return /^---\n([\s\S]*?)\n---\n/.exec(fs.readFileSync(file, 'utf8'))?.[1] ?? ''
-  } catch {
-    return ''
-  }
-}
-
-function bodyOf(file: string) {
-  try {
-    return fs.readFileSync(file, 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').trim()
-  } catch {
-    return ''
-  }
-}
-
-/** Where the master keeps the maids he has hired, as the café reads it. */
-function personasDir() {
-  const home = cafeRoot()
-  try {
-    const config = JSON.parse(fs.readFileSync(path.join(home, 'config.json'), 'utf8'))
-    const told = String(config.personas_dir ?? '').trim()
-    if (told) return told.replace(/^~(?=\/|$)/, os.homedir())
-  } catch {
-    // no café config: the default place, which may not exist either
-  }
-  return path.join(home, 'personas')
-}
+export { castOf, nameOf, personaOf } from './characters'
 
 function writingBrief(language: string, persona: string) {
   return `${persona}

@@ -67,11 +67,10 @@ or status line reads it.
   (`release/mac-arm64/ClaudeCafe.app`) and keeps separate state from the dev build
   (`ClaudeCafe` vs `ClaudeCafe (dev)` under Application Support). Leave it alone when
   restarting dev.
-- **The cast is copied in, not read live**: `scripts/pack-sprites.sh` mirrors
-  `packages/characters/<maid>/expressions/<outfit>/` into `src/assets/cast/`, which is then
-  the single source of truth — the window globs it for who can be picked, and
-  `electron/build.mjs` reads it to decide whose persona ships. `pnpm dev` and `pnpm build`
-  run it themselves.
+- **The cast is discovered at runtime**: the desktop app reads
+  `$XDG_CONFIG_HOME/claudecafe/characters` (default `~/.config/claudecafe/characters`),
+  with a persona, optional `avatar.webp`, and `portraits/neutral.webp`
+  per maid. It does not bundle a fixed cast or offer outfit selection.
 - **Language split**: the interface is English, but what she says follows the user's
   language — the lines the window feeds her are generated once at startup per the café
   config's `lang` into `lines.json` under userData (`electron/lines.ts`).
