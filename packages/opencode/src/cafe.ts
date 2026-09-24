@@ -179,6 +179,26 @@ export function castPool(): string[] {
   return drawFrom([personasDir(), maidsDir()], characterIds())
 }
 
+/** Every selectable persona, including an explicit off-duty or nameless maid. */
+export function availableCharacters(): Character[] {
+  const ids = new Set(characterIds())
+  for (const dir of [personasDir(), maidsDir()]) {
+    try {
+      for (const file of readdirSync(dir)) {
+        if (!file.endsWith(".md")) continue
+        const id = file.slice(0, -3)
+        if (id === id.toLowerCase()) ids.add(id)
+      }
+    } catch {
+      // A missing flat directory is normal.
+    }
+  }
+  return [...ids]
+    .sort()
+    .map((id) => characterForMaid(id))
+    .filter((character): character is Character => character !== null)
+}
+
 /**
  * The persona body with the configured Git attribution for a Café maid. A maid
  * hired from claudecafe.dev (id claudecafe/<slug>) signs commits as
@@ -279,16 +299,17 @@ type Shift = {
 }
 
 /**
- * Shift order: OPENCODE_MAID/CLAUDE_MAID env (a one-shot override) > this
- * session's own shift file (the persisted draw, which is what lets two windows
- * run different maids) > config "maid" (a fixed pick) > a draw from the pool.
- * "none" means nobody on shift: no persona, but the liveliness still runs.
+ * Shift order: this session's explicit picker choice > OPENCODE_MAID/CLAUDE_MAID
+ * env (a one-shot override) > the persisted draw > config "maid" > a draw from
+ * the pool. "none" means nobody on shift: no persona, but the liveliness still
+ * runs.
  */
 function resolveMaid(sessionID?: string): string | null {
+  const fromSelection = sessionID ? read(join(stateDir(sessionID, false), "selected-maid")).trim() : ""
   const fromEnv = firstEnv("OPENCODE_MAID", "CLAUDE_MAID")
   const fromShift = sessionID ? read(join(stateDir(sessionID, false), "on-shift")).trim() : ""
   const fromConfig = String(config().maid ?? "").trim()
-  let maid = fromEnv || fromShift || fromConfig
+  let maid = fromSelection || fromEnv || fromShift || fromConfig
 
   if (!maid) {
     const cast = castPool()
@@ -469,6 +490,20 @@ export function createCafe(directory: string) {
   }
 
   return {
+    async selectMaid(sessionID: string, requested: string): Promise<Character | null> {
+      const maid = requested.trim().toLowerCase()
+      if (maid !== "none" && !/^[a-z0-9][a-z0-9-]*$/.test(maid)) {
+        throw new Error(`Invalid maid id: ${requested}`)
+      }
+      if (maid !== "none" && !personaFile(maid)) {
+        throw new Error(`Maid not found: ${requested}`)
+      }
+      writeFileSync(join(stateDir(sessionID), "selected-maid"), maid, "utf8")
+      shifts.delete(sessionID)
+      greeted.delete(sessionID)
+      return maid === "none" ? null : characterForMaid(maid)
+    },
+
     async character(sessionID: string): Promise<Character | null> {
       const shift = await startShift(sessionID)
       return shift.maid ? characterForMaid(shift.maid) : null

@@ -55,9 +55,11 @@ $XDG_CONFIG_HOME/claudecafe/characters/<id>/
 
 OpenCode picks `persona.zh.md` for Chinese language settings and
 `persona.en.md` otherwise, with the other language as a fallback. The pack's
-frontmatter `name` is shown in the sidebar. To add a maid, create another
-lowercase `<id>/` folder; it joins the draw without being overwritten. Restart
-or reload OpenCode after adding a pack so the sidebar rediscovers its faces.
+frontmatter `name` is shown in the sidebar. `/maid` writes an explicit choice
+for the current session, so it takes precedence over the environment for that
+session. To add a maid, create another lowercase `<id>/` folder; it joins the
+draw without being overwritten. Restart or reload OpenCode after adding a pack
+so the sidebar rediscovers its faces.
 
 ## TUI: the portrait
 
@@ -72,10 +74,12 @@ The framed crop fills the inner width of the 42-column sidebar, which OpenCode
 shows automatically above 120 terminal columns (toggle with the `sidebar_toggle`
 binding, normally `ctrl+x b`).
 
-Run `/maid` to pick a face manually, or let the model do it: the server
-validates the face against the active character's installed `*.gif` files. V2
-RPC carries the character and face to the TUI and restores them when a session's
-panel mounts. The current face name appears beside the selected maid's name.
+Run `/maid` to choose the maid for the current session, or `/face` to pick a
+face manually. The model can still drive faces through `set_expression`: the
+server validates the face against the active character's installed `*.gif`
+files. V2 RPC carries the character and face to the TUI and restores them when
+a session's panel mounts. The current face name appears beside the selected
+maid's name.
 Each session keeps its own portrait, so two windows do not fight over one
 character. A pack without `pixels/` still supplies its persona, but has no
 portrait to draw. There are no heuristic reactions; the model drives the panel.

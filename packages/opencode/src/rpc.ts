@@ -10,6 +10,10 @@ export const cafeRpc = Rpc.define({
       input: z.object({ sessionID: z.string() }),
       output: expression,
     },
+    selectMaid: {
+      input: z.object({ sessionID: z.string(), maid: z.string() }),
+      output: expression,
+    },
   },
   events: {
     expression: { schema: expression.extend({ sessionID: z.string() }) },

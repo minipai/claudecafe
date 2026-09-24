@@ -15,6 +15,7 @@ export default Plugin.define({
     const expressionInput = z.object({
       face: z.string().describe("The GIF face to show; it must belong to the active character's installed pixels"),
     })
+    let notifyExpression: ((event: { sessionID: string; maid: string | null; face: string }) => Promise<void>) | undefined
     const rpc = await context.rpc.register(cafeRpc, {
       expression: async ({ sessionID }) => {
         const character = await cafe.character(sessionID)
@@ -24,7 +25,21 @@ export default Plugin.define({
           availableFaceNames(character),
         )
       },
+      selectMaid: async ({ sessionID, maid }) => {
+        const character = await cafe.selectMaid(sessionID, maid)
+        const value = expressionState(
+          await context.storage.get(expressionKey(sessionID)),
+          character?.id ?? null,
+          availableFaceNames(character),
+        )
+        await context.storage.set(expressionKey(sessionID), value)
+        await notifyExpression?.({ sessionID, ...value })
+        return value
+      },
     })
+    notifyExpression = async (event) => {
+      await rpc.events.emit("expression", event)
+    }
 
     void consumeEvents(context.event.subscribe({ signal: abort.signal }), cafe.event)
 

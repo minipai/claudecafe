@@ -2,7 +2,7 @@
 import { StyledText, type TextRenderable } from "@opentui/core"
 import { Plugin } from "@opencode/plugin/tui"
 import { createEffect, createMemo, createSignal, onCleanup } from "solid-js"
-import { characterForMaid } from "./cafe.ts"
+import { availableCharacters, characterForMaid } from "./cafe.ts"
 import { defaultFace, type Expression } from "./expressions.ts"
 import { FACE_COLUMNS, FACE_ROWS, loadFaces, renderFace, type Face } from "./faces.ts"
 import { cafeRpc } from "./rpc.ts"
@@ -139,16 +139,40 @@ function MaidCommands(props: {
   api: Context
   expression: (sessionID: string) => Expression
   setExpression: SetExpression
+  selectMaid: (sessionID: string, maid: string) => Promise<void>
 }) {
-  const { api, expression, setExpression } = props
+  const { api, expression, setExpression, selectMaid } = props
   api.keymap.layer(() => ({
     commands: [
+      {
+        id: "maid.character",
+        title: "Choose maid",
+        group: "Maid",
+        palette: true,
+        slash: { name: "maid" },
+        async run() {
+          const sessionID = currentSession(api)
+          if (!sessionID) return
+          const current = expression(sessionID)
+          const options = availableCharacters().map((character) => ({
+            title: `${character.name} (${character.id})`,
+            value: character.id,
+          }))
+          options.unshift({ title: "No maid", value: "none" })
+          const value = await api.ui.dialog.select({
+            title: "Choose maid",
+            current: current.maid ?? undefined,
+            options,
+          })
+          if (value) await selectMaid(sessionID, value)
+        },
+      },
       {
         id: "maid.expression",
         title: "Maid face",
         group: "Maid",
         palette: true,
-        slash: { name: "maid" },
+        slash: { name: "face" },
         async run() {
           const sessionID = currentSession(api)
           if (!sessionID) return
@@ -192,6 +216,10 @@ export default Plugin.define({
       api.renderer.requestRender()
     }
     const rpc = api.client.rpc(cafeRpc)
+    const selectMaid = async (sessionID: string, maid: string): Promise<void> => {
+      const value = await rpc.selectMaid({ sessionID, maid })
+      await setExpression(sessionID, value)
+    }
     const stopExpressionEvents = rpc.events.on("expression", (event) => {
       const { sessionID, ...value } = event.data
       void setExpression(sessionID, value)
@@ -210,7 +238,14 @@ export default Plugin.define({
 
     const removeCommands = api.ui.slot({
       append: "app",
-      render: () => <MaidCommands api={api} expression={expression} setExpression={setExpression} />,
+      render: () => (
+        <MaidCommands
+          api={api}
+          expression={expression}
+          setExpression={setExpression}
+          selectMaid={selectMaid}
+        />
+      ),
     })
     const removePortrait = api.ui.slot({
       append: "sidebar.footer",

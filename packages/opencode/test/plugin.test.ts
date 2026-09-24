@@ -391,11 +391,31 @@ describe("shift persistence", () => {
     await transform({ sessionID: "sid", system: [] })
     expect(existsSync(shiftFile("sid"))).toBe(false)
   })
+
+  test("the picker choice overrides the environment for that session", async () => {
+    writeCharacter("alpha", "Alpha", "Alpha body.")
+    writeCharacter("beta", "Beta", "Beta body.")
+    process.env.OPENCODE_MAID = "beta"
+    const first = hooks()
+    const selected = await first.selectMaid("sid", "alpha")
+    expect(selected?.id).toBe("alpha")
+    expect(readFileSync(join(cafe.stateDir("sid", false), "selected-maid"), "utf8")).toBe("alpha")
+
+    const output = context("sid")
+    await first.context(output)
+    expect(systemText(output)).toContain("Alpha body.")
+
+    const resumed = hooks()
+    const resumedOutput = context("sid")
+    await resumed.context(resumedOutput)
+    expect(systemText(resumedOutput)).toContain("Alpha body.")
+  })
 })
 
 describe("expression tool", () => {
   test("stores the active character's GIF face per session", async () => {
     seedExpressionPack("testmaid", "Test Maid", ["neutral", "happy", "focused"])
+    seedExpressionPack("othermaid", "Other Maid", ["neutral"])
     process.env.OPENCODE_MAID = "testmaid"
     let definition: {
       execute: (
@@ -409,6 +429,9 @@ describe("expression tool", () => {
     let currentExpression:
       | ((input: { sessionID: string }) => Promise<{ maid: string | null; face: string }>)
       | undefined
+    let selectMaid:
+      | ((input: { sessionID: string; maid: string }) => Promise<{ maid: string | null; face: string }>)
+      | undefined
     const cleanup = await plugin.setup({
       location: { directory: SANDBOX },
       event: { subscribe: () => emptyEvents() },
@@ -417,9 +440,11 @@ describe("expression tool", () => {
           _definition: unknown,
           handlers: {
             expression: (input: { sessionID: string }) => Promise<{ maid: string | null; face: string }>
+            selectMaid: (input: { sessionID: string; maid: string }) => Promise<{ maid: string | null; face: string }>
           },
         ) => {
           currentExpression = handlers.expression
+          selectMaid = handlers.selectMaid
           return {
             events: { emit: async (...event: unknown[]) => emitted.push(event) },
             dispose: async () => {},
@@ -455,6 +480,10 @@ describe("expression tool", () => {
     await definition?.execute({ face: "focused" }, { sessionID: "two" })
     expect(await currentExpression?.({ sessionID: "one" })).toEqual({ maid: "testmaid", face: "happy" })
     expect(await currentExpression?.({ sessionID: "two" })).toEqual({ maid: "testmaid", face: "focused" })
+
+    expect(await selectMaid?.({ sessionID: "one", maid: "othermaid" })).toEqual({ maid: "othermaid", face: "neutral" })
+    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ maid: "othermaid", face: "neutral" })
+    expect(emitted.at(-1)).toEqual(["expression", { sessionID: "one", maid: "othermaid", face: "neutral" }])
     await expect(definition?.execute({ face: "missing" }, { sessionID: "one" })).rejects.toThrow("not available")
     await cleanup?.()
   })
