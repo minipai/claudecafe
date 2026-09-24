@@ -154,6 +154,7 @@ export const zhTW: Text = {
     close: '關閉{what}',
   },
   shift: {
+    directory: '角色資料夾',
     loading: '載入女僕中…',
     empty: '請把女僕資料夾放在咖啡廳設定旁的 characters 資料夾。每位女僕需要角色設定檔和 portraits/neutral.webp。',
     title: '誰來上班',

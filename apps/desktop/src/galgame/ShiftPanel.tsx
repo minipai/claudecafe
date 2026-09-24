@@ -42,17 +42,20 @@ export function ShiftPanel({
           <div className="border-b border-border px-6 py-5">
             <DialogTitle className="text-lg font-semibold text-foreground">{t.title}</DialogTitle>
             <DialogDescription className="mt-1.5 text-sm text-muted-foreground">{t.body}</DialogDescription>
+            <p className="mt-3 rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+              {t.directory}：<code className="break-all font-mono text-foreground/80">{directory}</code>
+            </p>
           </div>
-          <div className="flex max-h-[50vh] flex-wrap gap-3 overflow-y-auto px-6 py-5">
+          <div className="flex max-h-[40vh] flex-wrap justify-center gap-3 overflow-y-auto px-6 py-5">
             {cast.map((maid) => (
               <label
                 key={maid.id}
-                className={`flex min-w-[132px] flex-1 cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-1.5 transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring ${
+                className={`flex w-36 cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-1.5 transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring ${
                   maid.id === picked.maid ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-muted'
                 }`}
               >
                 <input className="sr-only" type="radio" name="maid" value={maid.id} checked={maid.id === picked.maid} onChange={() => setPicked({ maid: maid.id })} />
-                <span className="block aspect-square w-full overflow-hidden rounded-md bg-muted/40">
+                <span className="block size-32 overflow-hidden rounded-md bg-muted/40">
                   <img src={maid.avatar} alt="" aria-hidden draggable={false} className="size-full object-contain select-none" />
                 </span>
                 <span className="truncate text-sm font-medium text-foreground">{maid.name}</span>
@@ -64,7 +67,6 @@ export function ShiftPanel({
             <Button type="submit" size="sm">{t.start}</Button>
           </div>
         </form>
-        <p className="break-all border-t border-border px-6 py-3 text-xs text-muted-foreground">{directory}</p>
       </DialogContent>
     </Dialog>
   )

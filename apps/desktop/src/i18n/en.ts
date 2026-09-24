@@ -159,6 +159,7 @@ export const en = {
     close: 'Close {what}',
   },
   shift: {
+    directory: 'Character folder',
     loading: 'Loading maids…',
     empty: 'Put maid folders in the characters folder beside the café settings. Each maid needs a persona file and portraits/neutral.webp.',
     title: 'Who is on shift',
