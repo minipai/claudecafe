@@ -6,35 +6,57 @@ import { promisify } from 'node:util'
 import { cafeRoot } from './cafehome'
 import type { CastMember } from '../src/agent/bridge'
 
-const KOTONE_URL = 'https://github.com/minipai/claudecafe/releases/download/kotone-characters-v1/ClaudeCafe-Kotone-characters-v1.zip'
-const KOTONE_SHA256 = 'f56a792afb10f1085c7412b00a110d6662f5bf87db852d618896dd3a65507f5f'
+const characterPacks = [
+  {
+    id: 'kotone',
+    url: 'https://github.com/minipai/claudecafe/releases/download/kotone-characters-v1/ClaudeCafe-Kotone-characters-v1.zip',
+    sha256: 'f56a792afb10f1085c7412b00a110d6662f5bf87db852d618896dd3a65507f5f',
+  },
+  {
+    id: 'kurumi',
+    url: 'https://github.com/minipai/claudecafe/releases/download/kurumi-characters-v1/ClaudeCafe-Kurumi-characters-v1.zip',
+    sha256: '837005d27df4bd5df143dae29928cb04f62800fbed63efe95d11ab6883459092',
+  },
+  {
+    id: 'kokona',
+    url: 'https://github.com/minipai/claudecafe/releases/download/kokona-characters-v1/ClaudeCafe-Kokona-characters-v1.zip',
+    sha256: 'e1dce3e80fa9e6be2b839fe335841fa17a303eaa8e9093acf6606e39168d588f',
+  },
+] as const
 const unzip = promisify(execFile)
 
 /** Characters live beside the shared café settings, not in an app chooser. */
 export const charactersDir = () => path.join(cafeRoot(), 'characters')
 
-/** Install the default maid once, leaving any existing character folders alone. */
-export async function installKotone() {
+/** Install published maids once, leaving existing character folders alone. */
+export async function installCharacters() {
+  const results = await Promise.allSettled(characterPacks.map(installCharacter))
+  return results.flatMap((result, index) => result.status === 'rejected'
+    ? [`${characterPacks[index].id}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
+    : [])
+}
+
+async function installCharacter(pack: typeof characterPacks[number]) {
   const root = charactersDir()
-  const target = path.join(root, 'kotone')
-  if (castOf().some((maid) => maid.id === 'kotone')) return
-  if (fs.existsSync(target)) throw new Error(`Incomplete Kotone folder at ${target}`)
+  const target = path.join(root, pack.id)
+  if (castOf().some((maid) => maid.id === pack.id)) return
+  if (fs.existsSync(target)) throw new Error(`Incomplete character folder at ${target}`)
 
   await fs.promises.mkdir(root, { recursive: true })
-  const staging = await fs.promises.mkdtemp(path.join(root, '.kotone-'))
+  const staging = await fs.promises.mkdtemp(path.join(root, `.${pack.id}-`))
   try {
-    const response = await fetch(KOTONE_URL, { signal: AbortSignal.timeout(30_000) })
-    if (!response.ok) throw new Error(`Kotone download failed: HTTP ${response.status}`)
+    const response = await fetch(pack.url, { signal: AbortSignal.timeout(30_000) })
+    if (!response.ok) throw new Error(`Download failed: HTTP ${response.status}`)
     const archive = Buffer.from(await response.arrayBuffer())
-    if (createHash('sha256').update(archive).digest('hex') !== KOTONE_SHA256) {
-      throw new Error('Kotone download did not match its published checksum')
+    if (createHash('sha256').update(archive).digest('hex') !== pack.sha256) {
+      throw new Error('Download did not match its published checksum')
     }
 
-    const zip = path.join(staging, 'kotone.zip')
+    const zip = path.join(staging, `${pack.id}.zip`)
     await fs.promises.writeFile(zip, archive)
     await unzip('unzip', ['-q', zip, '-d', staging])
-    if (!castOf(staging).some((maid) => maid.id === 'kotone')) throw new Error('Kotone archive has no usable character')
-    if (!fs.existsSync(target)) await fs.promises.rename(path.join(staging, 'kotone'), target)
+    if (!castOf(staging).some((maid) => maid.id === pack.id)) throw new Error('Archive has no usable character')
+    if (!fs.existsSync(target)) await fs.promises.rename(path.join(staging, pack.id), target)
   } finally {
     await fs.promises.rm(staging, { recursive: true, force: true })
   }

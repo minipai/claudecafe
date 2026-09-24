@@ -36,6 +36,8 @@ async function openCafe(maid = 'kotone'): Promise<Cafe> {
   const characters = path.join(home, '.config', 'claudecafe', 'characters')
   await writeMaid(characters, maid, maid === 'kotone' ? 'ことね' : 'Folder Maid')
   if (maid !== 'kotone') await writeMaid(characters, 'kotone', 'ことね')
+  await writeMaid(characters, 'kurumi', 'Kurumi')
+  await writeMaid(characters, 'kokona', 'Kokona')
   await mkdir(path.join(home, '.config', 'claudecafe'), { recursive: true })
   await writeFile(path.join(userData, 'shift.json'), JSON.stringify({ maid }))
 

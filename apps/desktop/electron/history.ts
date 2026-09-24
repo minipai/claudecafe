@@ -270,7 +270,7 @@ export function chosenShift(): Shift {
   } catch {
     // No previous choice, or the saved choice could not be read.
   }
-  return { maid: cast[0]?.id ?? '' }
+  return { maid: cast.find((maid) => maid.id === 'kotone')?.id ?? cast[0]?.id ?? '' }
 }
 
 /**

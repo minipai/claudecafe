@@ -29,10 +29,11 @@ the other.
 The app discovers maids at runtime from `$XDG_CONFIG_HOME/claudecafe/characters`
 (default `~/.config/claudecafe/characters`). Keep that folder beside the café
 settings; the app does not offer a separate folder chooser or bundle a fixed cast.
-On first launch it downloads the Kotone character zip from the website's GitHub
-release shelf, checks its SHA-256, and unpacks it as `characters/kotone`. Existing
-Kotone files are left alone. If the download fails, the app opens and shows the
-error; reopening it retries.
+On first launch it downloads the Kotone, Kurumi, and Kokona character zips from
+the website's GitHub release shelf, checks their SHA-256 hashes, and unpacks
+them into `characters/`. Existing character files are left alone. If any
+download fails, the others still install; the app opens and shows the error,
+then retries the missing one when reopened.
 
 Each maid subfolder contains a `persona.zh.md` or `persona.en.md` and
 `portraits/neutral.webp`. An optional `avatar.webp` supplies the picker thumbnail.

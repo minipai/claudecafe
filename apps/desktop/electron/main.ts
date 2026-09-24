@@ -5,7 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, protocol, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import { MaidSession, nowCarrying } from './maid'
-import { characterImage, charactersDir, installKotone } from './characters'
+import { characterImage, charactersDir, installCharacters } from './characters'
 import {
   chosenBackdrop,
   chosenLocale,
@@ -397,10 +397,9 @@ void app.whenReady().then(async () => {
   // The checkout says so on its own icon, so the one being worked on and the
   // one being used can sit side by side in the Dock.
   if (!app.isPackaged) app.dock?.setBadge('dev')
-  await installKotone().catch((error: unknown) => {
-    characterInstallError = error instanceof Error ? error.message : String(error)
-    console.error('Kotone could not be installed; opening the café without her.', error)
-  })
+  const failures = await installCharacters()
+  characterInstallError = failures.join('\n')
+  for (const failure of failures) console.error('Character could not be installed:', failure)
   // Where she was left. A folder given on the command line still wins — that is
   // someone saying where to open her — and with nothing to go on she opens at
   // home rather than wherever the command happened to be run from.

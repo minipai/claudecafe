@@ -53,6 +53,13 @@ describe('runtime characters', () => {
     expect(cast[0]).not.toHaveProperty('outfits')
   })
 
+  it('keeps Kotone as the initial shift when the other published maids are installed', () => {
+    addMaid('kokona', 'Kokona')
+    addMaid('kotone', 'Kotone')
+    addMaid('kurumi', 'Kurumi')
+    expect(chosenShift()).toEqual({ maid: 'kotone' })
+  })
+
   it('skips incomplete character folders and falls back from a removed saved maid', () => {
     addMaid('zeta', 'Zeta')
     const incomplete = addMaid('alpha', 'Alpha')

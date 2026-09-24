@@ -6,8 +6,9 @@ import type { CafeBridge, CastMember } from '@/agent/bridge'
 import { speakThis } from '@/i18n'
 import { App } from './App'
 
-const { castList } = vi.hoisted(() => ({ castList: vi.fn() }))
+const { castList, toastError } = vi.hoisted(() => ({ castList: vi.fn(), toastError: vi.fn() }))
 vi.mock('@/agent', () => ({ castList }))
+vi.mock('sonner', () => ({ toast: { error: toastError } }))
 vi.mock('./galgame/GalgameClient', () => ({
   GalgameClient: ({ cast, directory, onRefreshCharacters }: {
     cast: CastMember[]
@@ -50,5 +51,13 @@ describe('configured character folder', () => {
     expect(screen.getByText('/settings/claudecafe/characters')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Refresh maids' }))
     expect(await screen.findByText('Custom maid, New maid')).toBeInTheDocument()
+  })
+
+  it('reports a failed character download even when other maids are available', async () => {
+    castList.mockResolvedValue([maid])
+    window.cafe = { charactersDir: '/settings/claudecafe/characters', characterInstallError: 'kurumi: Download failed' } as unknown as CafeBridge
+    render(<App />)
+    expect(await screen.findByText('Custom maid')).toBeInTheDocument()
+    expect(toastError).toHaveBeenCalledWith('kurumi: Download failed', { id: 'character-install-error' })
   })
 })
