@@ -34,11 +34,11 @@ in non-interactive runs (`claude -p`) or on desktop and mobile.
 
 ## Use
 
-Just work as usual. Claude changes the portrait and the mood beside her name
-when its tone changes, and both stay until the next change. Above her, a
-status block keeps the shift's figures: the project and its git branch, HP for
-the context window still free, MP for the five-hour usage limit spent, then how
-long the session has run and what it has cost.
+Just work as usual. Claude changes the portrait when its visible expression
+changes, and it stays until the next change. Above her, a status block keeps the
+shift's figures: the project and its git branch, HP for the context window still
+free, MP for the five-hour usage limit spent, then how long the session has run
+and what it has cost.
 
 You can also ask for a face directly, for example "switch to happy". The
 expressions are:
@@ -50,7 +50,7 @@ expressions are:
 `worried`
 
 A text mood marker such as the `【 … 】` line that `cafe` personas end replies
-with does not change the panel; only Claude's expression tool does.
+with does not change the panel; only Claude's expression tool changes the face.
 
 ## Terminal font
 

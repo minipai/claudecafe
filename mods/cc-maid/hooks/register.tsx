@@ -10,7 +10,6 @@ const name = 'ことね'
 export const register: Register = (on) => {
   let faces: Record<string, Face> = {}
   let expression = 'neutral'
-  let mood = ''
   let stats: Stats | undefined
   let enabled = false
 
@@ -20,19 +19,17 @@ export const register: Register = (on) => {
       faces = await loadFaces($)
       await $.tool.register({
         name: 'set_expression',
-        description: 'Change the mood shown beside your name and your visible pixel portrait in the Cafe panel. '
-          + 'Mood is a short, freely worded description of your present emotional tone, in the language you are replying in; not an activity or progress update. '
-          + 'Use when your emotional tone changes or the user asks for an expression; do not call on every reply or repeat the current state. '
-          + 'Both stay until changed. neutral is calm; happy is smiling with closed eyes; '
+        description: 'Change the visible pixel portrait in the Cafe panel. '
+          + 'Choose one available expression when your visible expression meaningfully changes, or when the user asks; do not call on every reply or repeat the current state. '
+          + 'The expression stays until changed. neutral is calm; happy is smiling with closed eyes; '
           + 'flirty blows a kiss; excited is bright-eyed delight; surprised is shock; wink is a playful wink. '
-          + 'This changes the actual panel, independently of the text mood marker.',
+          + 'The panel shows only the face; this tool is independent of the text mood marker.',
         inputSchema: {
           type: 'object',
           properties: {
-            mood: { type: 'string', minLength: 1, maxLength: 24 },
             expression: { type: 'string', enum: Object.keys(faces) },
           },
-          required: ['mood', 'expression'],
+          required: ['expression'],
           additionalProperties: false,
         },
       })
@@ -60,9 +57,8 @@ export const register: Register = (on) => {
   })
 
   on('command.run', { command: 'clear' }, async ($, e, next) => {
-    if (expression !== 'neutral' || mood) {
+    if (expression !== 'neutral') {
       expression = 'neutral'
-      mood = ''
       await $.ui.invalidate('ui.render')
     }
     return next(e)
@@ -93,10 +89,8 @@ export const register: Register = (on) => {
     if (typeof selected !== 'string' || !Object.hasOwn(faces, selected)) {
       return { deny: `Unknown expression: ${String(selected)}` }
     }
-    const felt = typeof e.mood === 'string' ? e.mood.trim() : ''
-    if (selected !== expression || felt !== mood) {
+    if (selected !== expression) {
       expression = selected
-      mood = felt
       await $.ui.invalidate('ui.render')
     }
     return { result: `Expression: ${expression}` }
@@ -124,7 +118,6 @@ export const register: Register = (on) => {
           <Text dimColor>{rule(face)}</Text>
           <Box>
             <Text bold>{name}</Text>
-            {mood ? <Text dimColor>{` · ${mood}`}</Text> : null}
           </Box>
         </Box>
       </Box>

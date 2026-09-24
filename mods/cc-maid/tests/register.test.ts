@@ -38,8 +38,8 @@ describe('Cafe image pane', () => {
       expect(e.description.length > 0).toBe(true)
       expect(e.inputSchema).toMatchObject({
         type: 'object',
-        properties: { mood: { type: 'string' }, expression: { type: 'string', enum: Object.keys(expressions) } },
-        required: ['mood', 'expression'],
+        properties: { expression: { type: 'string', enum: Object.keys(expressions) } },
+        required: ['expression'],
       })
       return { value: { tool } }
     })
@@ -139,9 +139,9 @@ describe('Cafe image pane', () => {
     expect(context.blocks[2]?.name).toBe('cc-maid')
     expect(context.blocks[2]?.text).toContain(tool)
     expect(context.blocks[2]?.text).not.toBe('Outdated portrait instructions')
-    await $.tool.call({ tool, mood: 'pleased', expression: 'happy' })
+    await $.tool.call({ tool, expression: 'happy' })
     expect(await $.prompt.context(input)).toEqual(context)
-    await $.tool.call({ tool, mood: 'cross', expression: 'angry' })
+    await $.tool.call({ tool, expression: 'angry' })
     expect(await $.prompt.context(input)).toEqual(context)
   })
 
@@ -166,7 +166,7 @@ describe('Cafe image pane', () => {
     })
     on('ui.invalidate', (_, e) => { invalidations.push(e.event); return { value: undefined } })
     await start($, on)
-    await $.tool.call({ tool, mood: 'pleased', expression: 'happy' })
+    await $.tool.call({ tool, expression: 'happy' })
     invalidations.length = 0
 
     expect(await $.command.run(clear)).toEqual({ text: 'cleared' })
@@ -182,17 +182,17 @@ describe('Cafe image pane', () => {
     expect(invalidations).toEqual(['prompt.context'])
     invalidations.length = 0
     expect(Object.keys(expressions)).toHaveLength(3)
-    let previous = ''
+    let previous = 'neutral'
     let changes = 0
     for (const [expression, image] of Object.entries(expressions)) {
-      expect(await $.tool.call({ tool, mood: 'calm', expression })).toEqual({ result: `Expression: ${expression}` })
+      expect(await $.tool.call({ tool, expression })).toEqual({ result: `Expression: ${expression}` })
       if (expression !== previous) changes++
       expect(invalidations).toEqual(Array(changes).fill('ui.render'))
-      expect(await $.ui.render(pane())).toEqual(drawn(image, 'calm'))
-      await $.tool.call({ tool, mood: 'calm', expression })
+      expect(await $.ui.render(pane())).toEqual(drawn(image))
+      await $.tool.call({ tool, expression })
       await clock.advance(9000)
       expect(invalidations).toHaveLength(changes)
-      expect(await $.ui.render(pane())).toEqual(drawn(image, 'calm'))
+      expect(await $.ui.render(pane())).toEqual(drawn(image))
       previous = expression
     }
   })
@@ -203,11 +203,11 @@ describe('Cafe image pane', () => {
       on('ui.invalidate', () => { invalidations++; return { value: undefined } })
       await start($, on)
       invalidations = 0
-      await $.tool.call({ tool, mood: 'pleased', expression: 'happy' })
+      await $.tool.call({ tool, expression: 'happy' })
       expect(invalidations).toBe(1)
-      expect(await $.tool.call({ tool, mood: 'calm', expression })).toEqual({ deny: `Unknown expression: ${String(expression)}` })
+      expect(await $.tool.call({ tool, expression })).toEqual({ deny: `Unknown expression: ${String(expression)}` })
       expect(invalidations).toBe(1)
-      expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, 'pleased'))
+      expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!))
     })
   }
 
@@ -219,20 +219,11 @@ describe('Cafe image pane', () => {
     expect(invalidations).toBe(0)
   })
 
-  test('shows the mood beside her name', async ($, on) => {
+  test('shows only her name beside the portrait', async ($, on) => {
     on('ui.invalidate', () => ({ value: undefined }))
     await start($, on)
-    await $.tool.call({ tool, mood: ' quietly pleased ', expression: 'happy' })
-    expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, 'quietly pleased'))
-  })
-
-  test('clears the mood after /clear', async ($, on) => {
-    on('ui.invalidate', () => ({ value: undefined }))
-    on('command.run', () => ({ text: 'cleared' }))
-    await start($, on)
-    await $.tool.call({ tool, mood: 'pleased', expression: 'happy' })
-    await $.command.run(clear)
-    expect(await $.ui.render(pane())).toEqual(drawn(panelImage))
+    await $.tool.call({ tool, expression: 'happy' })
+    expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!))
   })
 
   test('refreshes the status when a turn ends and as the shift clock moves on', async ($, on) => {
@@ -242,11 +233,11 @@ describe('Cafe image pane', () => {
     Object.assign(figures, { percent: 81, quota: undefined, usd: undefined, branch: '' })
     await $.turn.complete({ reason: 'answer', answer: 'Done.', durationMs: 10, isAborted: false, turnId: 't1' })
     const later: Figures = { ...figures, shiftMinutes: 7 * 60 + 7 }
-    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, '', later))
+    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, later))
 
     figures.shiftMinutes = 8 * 60
     await clock.advance(60_000)
-    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, '', { ...later, shiftMinutes: 8 * 60 }))
+    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, { ...later, shiftMinutes: 8 * 60 }))
   })
 
   test('leaves the status alone when a subagent turn ends', async ($, on) => {
@@ -337,10 +328,9 @@ function face(...cells: number[][]): Face {
   return { columns: cells.length, rows: 1, cells: btoa(String.fromCharCode(...bytes)) }
 }
 
-/** The panel: the status block on top, then the portrait framed with her name and mood beneath it. */
-function drawn(image: Face, mood = '', figures: Figures = shift): RenderElement {
+/** The panel: the status block on top, then the portrait framed with her name beneath it. */
+function drawn(image: Face, figures: Figures = shift): RenderElement {
   const title: RenderElement[] = [{ type: 'Text', props: { bold: true }, children: ['ことね'] }]
-  if (mood) title.push({ type: 'Text', props: { dimColor: true }, children: [` · ${mood}`] })
   return {
     type: 'Box', props: { flexDirection: 'column', alignItems: 'center', width: 38, height: 40 },
     children: [

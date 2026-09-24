@@ -335,10 +335,10 @@ describe("shift persistence", () => {
 })
 
 describe("expression tool", () => {
-  test("set_expression stores the mood and GIF face per session", async () => {
+  test("set_expression stores the GIF face per session", async () => {
     let definition: {
       execute: (
-        input: { mood: string; face: string },
+        input: { face: string },
         context: { sessionID: string },
       ) => Promise<{ content?: string }>
     } | undefined
@@ -346,7 +346,7 @@ describe("expression tool", () => {
     const writes: unknown[] = []
     const emitted: unknown[] = []
     let currentExpression:
-      | ((input: { sessionID: string }) => Promise<{ mood: string; face: string }>)
+      | ((input: { sessionID: string }) => Promise<{ face: string }>)
       | undefined
     const cleanup = await plugin.setup({
       location: { directory: SANDBOX },
@@ -355,7 +355,7 @@ describe("expression tool", () => {
         register: async (
           _definition: unknown,
           handlers: {
-            expression: (input: { sessionID: string }) => Promise<{ mood: string; face: string }>
+            expression: (input: { sessionID: string }) => Promise<{ face: string }>
           },
         ) => {
           currentExpression = handlers.expression
@@ -382,24 +382,18 @@ describe("expression tool", () => {
     } as never)
 
     expect(definition).toBeDefined()
-    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ mood: "neutral", face: "neutral" })
+    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ face: "neutral" })
 
-    const result = await definition?.execute(
-      { mood: "quietly delighted", face: "happy" },
-      { sessionID: "one" },
-    )
-    expect(result?.content).toBe("Mood: quietly delighted; face: happy")
-    expect(writes).toEqual([{ key: "expression:one", value: { mood: "quietly delighted", face: "happy" } }])
+    const result = await definition?.execute({ face: "happy" }, { sessionID: "one" })
+    expect(result?.content).toBe("Face: happy")
+    expect(writes).toEqual([{ key: "expression:one", value: { face: "happy" } }])
     expect(emitted).toEqual([
-      ["expression", { sessionID: "one", mood: "quietly delighted", face: "happy" }],
+      ["expression", { sessionID: "one", face: "happy" }],
     ])
 
-    await definition?.execute({ mood: "focused", face: "focused" }, { sessionID: "two" })
-    expect(await currentExpression?.({ sessionID: "one" })).toEqual({
-      mood: "quietly delighted",
-      face: "happy",
-    })
-    expect(await currentExpression?.({ sessionID: "two" })).toEqual({ mood: "focused", face: "focused" })
+    await definition?.execute({ face: "focused" }, { sessionID: "two" })
+    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ face: "happy" })
+    expect(await currentExpression?.({ sessionID: "two" })).toEqual({ face: "focused" })
     await cleanup?.()
   })
 

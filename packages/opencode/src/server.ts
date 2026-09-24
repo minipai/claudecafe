@@ -17,9 +17,6 @@ export default Plugin.define({
     const faces = loadFaceNames()
     const fallbackFace = defaultFace(faces)
     const expressionInput = z.object({
-      mood: z.string().trim().min(1).describe(
-        "A short description of your current emotional tone only, not an activity, task, subject, or progress update",
-      ),
       face: z.enum(faces).describe("The GIF portrait to show; values come from the installed face filenames"),
     })
     const rpc = await context.rpc.register(cafeRpc, {
@@ -38,7 +35,7 @@ export default Plugin.define({
         async execute(expression, tool) {
           await context.storage.set(expressionKey(tool.sessionID), expression)
           await rpc.events.emit("expression", { sessionID: tool.sessionID, ...expression })
-          return { content: `Mood: ${expression.mood}; face: ${expression.face}` }
+          return { content: `Face: ${expression.face}` }
         },
       })
     })
@@ -57,8 +54,8 @@ function expressionState(
   faces: readonly [string, ...string[]],
   fallbackFace: string,
 ): Expression {
-  const parsed = z.object({ mood: z.string().min(1), face: z.enum(faces) }).safeParse(value)
-  return parsed.success ? parsed.data : { mood: "neutral", face: fallbackFace }
+  const parsed = z.object({ face: z.enum(faces) }).safeParse(value)
+  return parsed.success ? parsed.data : { face: fallbackFace }
 }
 
 async function consumeEvents(

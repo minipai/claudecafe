@@ -15,8 +15,8 @@ const faces = loadFaces(FACE_DIRECTORY)
 const faceNames = Object.keys(faces)
 const fallbackFace = defaultFace(faceNames)
 
-function storedLook(value: unknown): { mood?: unknown; face?: unknown } {
-  return typeof value === "object" && value !== null ? (value as { mood?: unknown; face?: unknown }) : {}
+function storedFace(value: unknown): { face?: unknown } {
+  return typeof value === "object" && value !== null ? (value as { face?: unknown }) : {}
 }
 
 function MaidCard(props: {
@@ -97,7 +97,6 @@ function MaidCard(props: {
       >
         <text fg={props.api.theme.text.default} wrapMode="none">
           <b>ことね</b>
-          <span style={{ fg: props.api.theme.text.subdued }}> {props.expression().mood}</span>
         </text>
       </box>
     </box>
@@ -146,15 +145,14 @@ export default Plugin.define({
   async setup(api) {
     const [looks, setLooks] = api.storage.store<Record<string, unknown>>("expressions", { initial: {} })
     const expression = (sessionID: string): Expression => {
-      const look = storedLook(looks[sessionID])
+      const look = storedFace(looks[sessionID])
       return {
-        mood: typeof look.mood === "string" && look.mood ? look.mood : "neutral",
         face: typeof look.face === "string" && faces[look.face] ? look.face : fallbackFace,
       }
     }
     const setExpression: SetExpression = async (sessionID, value) => {
       await setLooks((draft) => {
-        draft[sessionID] = { mood: value.mood, face: value.face }
+        draft[sessionID] = { face: value.face }
       })
       api.renderer.requestRender()
     }
