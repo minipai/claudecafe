@@ -1,4 +1,4 @@
-import type { AgentMessage, Attachment, Look, Question, Report } from './types'
+import type { AgentMessage, Attachment, Look, Question } from './types'
 import type { ChatMessage } from '@/galgame/types'
 
 /**
@@ -132,9 +132,6 @@ export type BacklogLine = {
   role: 'user' | 'assistant' | 'event'
   content: string
   at: number
-  /** The write-up she handed over on this line, so a reopened log still has the
-   * link that opens it. */
-  report?: Report
   /** Written out with shape to it — markdown, laid out in the box rather than
    * read back as one spoken line. */
   laidOut?: boolean
@@ -169,7 +166,7 @@ export type Lines = {
 }
 
 /** The windows that stand beside her rather than over her. */
-export type SideWindow = 'log' | 'settings' | 'projects' | 'session' | 'report'
+export type SideWindow = 'log' | 'settings' | 'projects' | 'session'
 
 /** The session window's tabs, each one a slash command the CLI also answers. */
 export type SessionTab = 'usage' | 'context' | 'agents' | 'mcp' | 'status'
@@ -197,8 +194,6 @@ export type SceneShare = {
   /** Which tab the session window was last asked to show. `asked` counts the
    * asking, so asking for the tab already up still brings it back to the top. */
   session: { tab: SessionTab; asked: number }
-  /** The write-up she last handed over, if any. */
-  report: Report | null
 }
 
 /** What a side window asks the scene to do. */

@@ -8,13 +8,11 @@ describe('createChatMessage', () => {
     expect(second.id).toBe(first.id + 1)
   })
 
-  it('carries role, content, report and detail through', () => {
-    const report = { label: 'Report', body: 'the body' }
-    const message = createChatMessage('assistant', 'said this', report, 123, 'the detail')
+  it('carries role, content and detail through', () => {
+    const message = createChatMessage('assistant', 'said this', 123, 'the detail')
     expect(message).toMatchObject({
       role: 'assistant',
       content: 'said this',
-      report,
       detail: 'the detail',
       createdAt: 123,
     })

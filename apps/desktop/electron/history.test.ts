@@ -128,19 +128,6 @@ describe('conversationBacklog', () => {
     ])
   })
 
-  it('gives back a long answer she never handed over the way the scene showed it — one line said, the rest in the panel', () => {
-    const cwd = '/Users/master/proj'
-    const written = `# What I found\n\n${'The pool cap is five. '.repeat(80)}`
-    writeTranscript(home, cwd, 'sess', [assistantRow(`${written}【 得意 ᕙ( •̀ ᗜ •́)ᕗ 】`)])
-    const [line] = conversationBacklog(cwd, 'sess')!
-    // The panel holds the whole of it, without the marker she signed it with.
-    expect(line.report).toEqual({ label: 'View full report →', body: written.trim() })
-    // And what is said is one line of it, still signed — the face comes off that.
-    expect(line.content.length).toBeLessThan(written.length)
-    expect(line.content).toContain('【 得意 ᕙ( •̀ ᗜ •́)ᕗ 】')
-    expect(line.laidOut).toBeUndefined()
-  })
-
   it('drops a slash command wrapped in <command-name>, a tag Claude Code itself writes', () => {
     const cwd = '/Users/master/proj'
     writeTranscript(home, cwd, 'sess', [userRow('<command-name>/compact</command-name>')])
@@ -174,41 +161,6 @@ describe('conversationBacklog', () => {
     expect(backlog).toHaveLength(60)
     expect(backlog[0].content).toBe('msg 10')
     expect(backlog[59].content).toBe('msg 69')
-  })
-
-  it('brings the write-up back off the call she handed it over on — the transcript keeps no other copy of it', () => {
-    const cwd = '/Users/master/proj'
-    writeTranscript(home, cwd, 'sess', [
-      userRow('how does the login work?'),
-      assistantRow([
-        {
-          type: 'tool_use',
-          name: 'mcp__cafe__report',
-          input: { line: 'All written down~', label: 'read it →', body: '# Login\n\nit goes like this' },
-        },
-      ]),
-    ])
-    const backlog = conversationBacklog(cwd, 'sess')!
-    expect(backlog[1]).toEqual({
-      role: 'assistant',
-      content: 'All written down~',
-      at: expect.any(Number),
-      report: { label: 'read it →', body: '# Login\n\nit goes like this' },
-    })
-  })
-
-  it('keeps what she said out loud as the line, with the write-up hanging off it', () => {
-    const cwd = '/Users/master/proj'
-    writeTranscript(home, cwd, 'sess', [
-      assistantRow([
-        { type: 'text', text: 'Done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】' },
-        { type: 'tool_use', name: 'mcp__cafe__report', input: { line: 'All written down~', body: 'the body' } },
-      ]),
-    ])
-    const backlog = conversationBacklog(cwd, 'sess')!
-    expect(backlog[0].content).toBe('Done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】')
-    // No label of her own: the panel still needs a way in.
-    expect(backlog[0].report).toEqual({ label: 'View full report →', body: 'the body' })
   })
 
   it('is null when the transcript file does not exist', () => {

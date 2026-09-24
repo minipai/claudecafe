@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import type { Options, Query, SDKMessage, SDKUserMessage } from '@anthropic-ai/claude-agent-sdk'
-import { REPORT_TOOL } from '../electron/tools'
 
 /**
  * Stands in for the real Agent SDK at e2e bundle time (`build.mjs --fake-sdk`
@@ -158,7 +157,6 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
   async function answer(said: string) {
     if (said.includes('ask permission')) return askPermission()
     if (said.includes('ask a question')) return askQuestion()
-    if (said.includes('write report')) return writeReport()
     if (said.includes('go offline')) return goOffline()
     if (said.includes('slow')) return workSlowly()
     return echo(said)
@@ -206,14 +204,6 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
     const text = `Noted — ${picked}, then ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】`
     push(assistantText(text, sessionId))
     push(result(text, sessionId))
-  }
-
-  async function writeReport() {
-    const id = toolId()
-    const line = 'Here — I wrote the whole thing up for you.'
-    push(assistantToolUse(id, REPORT_TOOL, { line, label: 'Read the report →', body: '# Report\n\nSome **markdown** body.' }, sessionId))
-    push(toolResult(id, 'Report delivered — the master can open it from the scene.', sessionId))
-    push(result(line, sessionId))
   }
 
   async function workSlowly() {

@@ -1,5 +1,3 @@
-import type { Report } from '@/agent'
-
 export type { Expression } from '@/agent/expressions'
 
 export type Phase = 'idle' | 'working' | 'done'
@@ -19,7 +17,6 @@ export type ChatMessage = {
   id: number
   role: 'user' | 'assistant' | 'event' | 'boundary'
   content: string
-  report?: Report
   detail?: string
   createdAt: number
   /** The tool call this row recorded, so its answer can be put with it. */

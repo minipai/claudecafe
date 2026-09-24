@@ -48,7 +48,6 @@ import {
   type SideWindow,
   type ModelChoice,
   type Question,
-  type Report,
   type SessionSettings,
   type Lines,
   type Todo,
@@ -106,13 +105,11 @@ export function GalgameClient({
   const [mood, setMood] = useState<string | null>(null)
   /** The kaomoji standing in for a face she has no artwork for. */
   const [standIn, setStandIn] = useState<string | null>(null)
-  const [ctaVisible, setCtaVisible] = useState(false)
   const [laidOut, setLaidOut] = useState<string | null>(null)
   const [whispers, setWhispers] = useState<Whisper[]>([])
   // A real look is shot by the plugin once there is work to shoot; until then
   // there is nothing to peek at. The mock opens with a canned one.
   const [look, setLook] = useState<Look | null>(isLive ? null : INITIAL_LOOK)
-  const [report, setReport] = useState<Report | null>(null)
   const [lookUnread, setLookUnread] = useState(true)
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequest | null>(null)
   const [permissionExpanded, setPermissionExpanded] = useState(false)
@@ -237,12 +234,9 @@ export function GalgameClient({
     cutIn(text)
   }
 
-  const appendChatMessage = useCallback(
-    (role: ChatMessage['role'], content: string, report?: Report) => {
-      setChatMessages((current) => [...current, createChatMessage(role, content, report)])
-    },
-    [],
-  )
+  const appendChatMessage = useCallback((role: ChatMessage['role'], content: string) => {
+    setChatMessages((current) => [...current, createChatMessage(role, content)])
+  }, [])
 
   /** Things that happened between the spoken lines — tools, permissions,
    * interruptions. `output` is what it answered, when that is known already;
@@ -250,7 +244,7 @@ export function GalgameClient({
   const appendEvent = useCallback((content: string, detail?: string, toolId?: string, output?: string) => {
     setChatMessages((current) => [
       ...current,
-      { ...createChatMessage('event', content, undefined, Date.now(), detail), toolId, output },
+      { ...createChatMessage('event', content, Date.now(), detail), toolId, output },
     ])
   }, [])
 
@@ -291,7 +285,7 @@ export function GalgameClient({
 
   /** The same scene both prompted and unsolicited turns play through. Kept in
    * one place so a background completion is rendered with exactly the same
-   * log, speech, report and expression semantics as an ordinary answer. */
+   * log, speech and expression semantics as an ordinary answer. */
   function currentScene(): Scene {
     return {
       appendChatMessage,
@@ -303,13 +297,10 @@ export function GalgameClient({
       showFace,
       pushWhisper,
       setPhase,
-      setReport,
-      setCtaVisible,
       setTodos,
       setOutputTokens,
       setLook,
       setLookUnread,
-      openReport,
       setLaidOut,
       notify: (body) => window.cafe?.notify(body, false),
     }
@@ -363,8 +354,6 @@ export function GalgameClient({
       setPhase,
       setConversation,
       setExpression,
-      setReport,
-      setCtaVisible,
       setLaidOut,
       resetScene,
       cut,
@@ -397,9 +386,8 @@ export function GalgameClient({
       },
       settings: { locale: locale.choice, speech, backdrop },
       session: sessionAsk,
-      report,
     })
-  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, speech, backdrop, sessionAsk, report])
+  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, speech, backdrop, sessionAsk])
 
   /** What was clicked in them is done here, the way the scene would have done it. */
   const sideActionRef = useRef<(action: SceneAction) => void>(() => {})
@@ -436,7 +424,7 @@ export function GalgameClient({
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return
       // A folded-out plan is drawn over everything, so a panel opened under it is one
       // the master can neither see nor close — and it would take the next esc
-      // meant for the report.
+      // meant for the plan.
       if (permissionExpanded || trouble) return
       // Shift turns the key into a capital, and not on every layout the same way.
       if (event.shiftKey && event.key.toLowerCase() === 'p') {
@@ -491,8 +479,8 @@ export function GalgameClient({
       // Mid-composition Space is the IME picking a word, never a page turn.
       if (event.isComposing) return
       if (queued === 0 || !isDone) return
-      // Except while something else holds the scene — a report, a folded-out
-      // permission, a panel — where there is no box to turn.
+      // Except while something else holds the scene — a folded-out permission,
+      // a panel — where there is no box to turn.
       if (permissionExpanded || switching || personaOpen) return
       event.preventDefault()
       event.stopPropagation()
@@ -582,9 +570,9 @@ export function GalgameClient({
 
   /**
    * What is cleared whenever the scene starts over somewhere it was not — a
-   * new session, a folder she was sent to, a conversation resumed. A report
-   * and the mood it was signed with belonged to whatever she was saying
-   * before; a standing "always allow" belonged to what she was doing before,
+   * new session, a folder she was sent to, a conversation resumed. The mood
+   * her last line was signed with belonged to whatever she was saying before;
+   * a standing "always allow" belonged to what she was doing before,
    * which is exactly why it does not follow her anywhere else.
    */
   function resetScene() {
@@ -644,7 +632,7 @@ export function GalgameClient({
 
   /**
    * Everything the old session accumulated goes with it — backlog, tasks,
-   * report, standing permissions — and she greets the master again, the way she
+   * standing permissions — and she greets the master again, the way she
    * does at the start of any session.
    */
   function startOver() {
@@ -656,9 +644,7 @@ export function GalgameClient({
 
     window.setTimeout(() => {
       setPhase('idle')
-      setCtaVisible(false)
       setTodos([])
-      setReport(null)
       resetScene()
       // Read through the ref, not the closure: the session answers a handover
       // with the new maid's lines while this pause is still running, and the
@@ -725,7 +711,6 @@ export function GalgameClient({
     // The master has moved the scene on himself: anything of hers still waiting
     // to be clicked through belongs to the question before this one.
     clearSpeech()
-    setCtaVisible(false)
     setTodos([])
     setOutputTokens(0)
 
@@ -769,12 +754,6 @@ export function GalgameClient({
     }
   }
 
-  /** The report opens beside her; the spoken line and its read-more link
-   * stay, so it can be brought back as many times as the master likes. */
-  function openReport() {
-    openSideWindow('report')
-  }
-
   /** The session window, on the tab asked for. */
   function showSession(tab: SessionTab) {
     setSessionAsk((current) => ({ tab, asked: current.asked + 1 }))
@@ -789,8 +768,6 @@ export function GalgameClient({
     clearSpeech()
     setPhase('idle')
     setTodos([])
-    setReport(null)
-    setCtaVisible(false)
     resetScene()
   }
 
@@ -836,8 +813,6 @@ export function GalgameClient({
               onAdvance={advance}
               pace={pace}
               onPace={setPace}
-              cta={ctaVisible ? (report?.label ?? null) : null}
-              onOpenReport={openReport}
               onOpenPersona={() => setPersonaOpen(true)}
               utility={
                 <SessionPlaque

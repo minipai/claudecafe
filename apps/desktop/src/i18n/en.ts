@@ -57,10 +57,6 @@ export const en = {
   session: {
     title: 'Session',
   },
-  report: {
-    title: 'Report',
-    none: 'She has not handed anything over yet.',
-  },
   settings: {
     title: 'Settings',
     speak: 'Use this',

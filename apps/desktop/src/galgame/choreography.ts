@@ -1,4 +1,4 @@
-import type { AgentMessage, Look, Report, Todo } from '@/agent'
+import type { AgentMessage, Look, Todo } from '@/agent'
 import { EXPRESSIONS } from '@/agent/expressions'
 import { text } from '@/i18n'
 import { shorten, signed } from './chatlog'
@@ -11,7 +11,7 @@ import type { ChatMessage, Expression, Phase, Whisper } from './types'
  * decides which ones fire and in what order, never how they are stored.
  */
 export type Scene = {
-  appendChatMessage: (role: ChatMessage['role'], content: string, report?: Report) => void
+  appendChatMessage: (role: ChatMessage['role'], content: string) => void
   appendEvent: (content: string, detail?: string, toolId?: string, output?: string) => void
   recordResult: (toolId: string, output: string, failed: boolean) => void
   say: (text: string, hooks?: Hooks) => void
@@ -22,14 +22,10 @@ export type Scene = {
   showFace: (expr: Expression) => void
   pushWhisper: (text: string, kind: Whisper['kind']) => void
   setPhase: (phase: Phase) => void
-  setReport: (report: Report | null) => void
-  setCtaVisible: (visible: boolean) => void
   setTodos: (todos: Todo[]) => void
   setOutputTokens: (tokens: number) => void
   setLook: (look: Look) => void
   setLookUnread: (unread: boolean) => void
-  /** Put the report up beside her. */
-  openReport: () => void
   setLaidOut: (line: string | null) => void
   notify: (body: string) => void
 }
@@ -60,12 +56,9 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
     case 'command_output':
       // The café's own paperwork, handed over on the spot: it is not
       // dialogue, so nothing is typed into the box and her face stays put.
-      // The paper itself goes on the record with it: the panel can be shut,
-      // and the log is where the master looks for what was already handed over.
+      // It goes on the record instead, where the master looks for what she
+      // actually did and what came back of it.
       scene.appendEvent(msg.label, text().scene.printedAnswer, undefined, msg.body)
-      scene.setReport({ label: `${msg.label} →`, body: msg.body })
-      scene.setCtaVisible(true)
-      scene.openReport()
       // Nothing follows it — the turn asked no model and has no result to
       // put her back on her feet.
       scene.setPhase('done')
@@ -109,19 +102,10 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
       scene.notify(shorten(msg.line))
       // A line already spoken went on the record when she said it, marker
       // included; the result is that same line coming back round.
-      if (!msg.said) scene.appendChatMessage('assistant', signed(msg.line, msg.mood), msg.report)
-      if (msg.tier === 'heavy') {
-        scene.setPhase('done')
-        scene.setReport(msg.report ?? null)
-        if (msg.said) scene.setCtaVisible(true)
-        else
-          scene.say(msg.line, {
-            onShow: () => scene.wear(msg.expression, msg.mood),
-            onDone: () => scene.setCtaVisible(true),
-          })
-        break
-      }
-      scene.setPhase('idle')
+      if (!msg.said) scene.appendChatMessage('assistant', signed(msg.line, msg.mood))
+      // A long piece of work leaves her board up; anything shorter puts her
+      // back to waiting the moment the line lands.
+      scene.setPhase(msg.tier === 'heavy' ? 'done' : 'idle')
       // Already on screen: the result is just the record of what she said.
       if (msg.said) break
       if (msg.tier === 'medium') {

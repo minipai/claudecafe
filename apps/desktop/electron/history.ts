@@ -4,8 +4,7 @@ import path from 'node:path'
 import { app } from 'electron'
 import { cafeRoot } from './cafehome'
 import { castOf } from './characters'
-import { REPORT_TOOL } from './tools'
-import { describeTool, FALLBACK_LABEL, hasShape, isLongForm, openingLine } from './translate'
+import { describeTool, hasShape } from './translate'
 import type { BacklogLine, Backdrop, KeptSettings, Shift } from '../src/agent/bridge'
 
 /**
@@ -398,26 +397,11 @@ function readBacklog(transcript: string): BacklogLine[] {
     const at = Date.parse(row.timestamp ?? '') || lastAt
     lastAt = at
     const content = spokenText(row.message?.content)
-    // A report is written into the call that handed it over, never into
-    // anything she said — read only the text back and the whole write-up is
-    // gone, with nothing on the row to open.
-    const handed = reportHandedOver(row.message?.content)
     // How long a line is decides how it comes back, and the marker she signed
     // it with is not part of its length — measured with it on, a line either
     // side of the boundary comes back in a different shape than it was said in.
-    const { said, marker } = withoutMood(content)
-    if (handed) {
-      lines.push({ role: 'assistant', content: content || handed.line, at, report: handed.report })
-    } else if (row.type === 'assistant' && isLongForm(said)) {
-      // Too long to say, and she never handed it over herself — the scene put
-      // it in a panel and said one line of it, so that is how it comes back.
-      lines.push({
-        role: 'assistant',
-        content: [openingLine(said), marker].filter(Boolean).join(' '),
-        at,
-        report: { label: FALLBACK_LABEL, body: said },
-      })
-    } else if (row.type === 'assistant' && hasShape(said)) {
+    const { said } = withoutMood(content)
+    if (row.type === 'assistant' && hasShape(said)) {
       // She wrote this one out rather than said it, and it has to be laid out
       // again coming back: read as speech, its paragraphs and its list run
       // together into one wall of text.
@@ -490,24 +474,6 @@ const TRANSCRIPT_WRAPPER_TAGS = new Set([
 function wrapsInTranscriptTag(trimmed: string) {
   const opening = trimmed.match(/^<([a-z-]+)>/)
   return opening !== null && TRANSCRIPT_WRAPPER_TAGS.has(opening[1])
-}
-
-/**
- * The write-up she handed over on this row, if she handed one over. She writes
- * the body into the call itself and says nothing of it out loud, so the tool
- * call is the only copy the transcript keeps.
- */
-function reportHandedOver(content: string | Block[] | undefined) {
-  if (typeof content === 'string' || !content) return null
-  const handing = content.find((block) => block.type === 'tool_use' && block.name === REPORT_TOOL)
-  if (!handing) return null
-  const written = handing.input ?? {}
-  const body = String(written.body ?? '')
-  if (!body) return null
-  return {
-    line: String(written.line ?? ''),
-    report: { label: String(written.label ?? '') || FALLBACK_LABEL, body },
-  }
 }
 
 /** Her tool calls, described the same way the live log describes them. */

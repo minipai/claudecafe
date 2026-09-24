@@ -204,19 +204,6 @@ export function LogWindow({ log, conversation }: { log: SceneShare['log']; conve
                             }}
                           />
                         )}
-                        {message.report && (
-                          <details className="mt-3 whitespace-normal">
-                            <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
-                              {message.report.label}
-                            </summary>
-                            <div
-                              className="report-md mt-4 rounded-lg border border-border/80 bg-background/55 p-5 text-sm"
-                              dangerouslySetInnerHTML={{
-                                __html: marked.parse(message.report.body, { async: false }),
-                              }}
-                            />
-                          </details>
-                        )}
                       </div>
                     </article>
                   )

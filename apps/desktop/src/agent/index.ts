@@ -38,7 +38,7 @@ export const folderConversations = isLive
 export const openingStatus = isLive ? null : MOCK_SESSION
 
 export { INITIAL_LOOK } from './content.mock'
-export type { AgentMessage, Attachment, Look, PermissionResult, QueryOptions, Question, Report, Tier, Todo } from './types'
+export type { AgentMessage, Attachment, Look, PermissionResult, QueryOptions, Question, Tier, Todo } from './types'
 export type {
   Backdrop,
   BacklogLine,

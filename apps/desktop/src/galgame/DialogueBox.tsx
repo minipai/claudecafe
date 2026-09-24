@@ -1,7 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { marked } from 'marked'
-import { Button } from '@/components/ui/button'
 import { NamePlate } from './NamePlate'
 import { WaitingLine } from './WaitingLine'
 import { InnerVoice } from './InnerVoice'
@@ -32,9 +31,6 @@ type DialogueBoxProps = {
   /** Who is turning the pages — him, or the scene itself. */
   pace: Pace
   onPace: (pace: Pace) => void
-  /** The words she wrote on the link to her report; absent while there is none. */
-  cta: string | null
-  onOpenReport: () => void
   /** Pressing her name plate — it opens the persona she is wearing. */
   onOpenPersona: () => void
   footer: ReactNode
@@ -47,8 +43,8 @@ type DialogueBoxProps = {
  * The galgame dialogue panel — one frame holding the spoken line on top and
  * the demo/input footer below a divider. Short-tier replies just type into
  * it in place, and it grows/shrinks in place for the medium tier. It shares
- * a layoutId with ReportView so Motion morphs it into the big report panel
- * for the heavy tier instead of it being a separate transition.
+ * a layoutId with ReportView so Motion morphs it into the panel a folded-out
+ * plan is read in instead of it being a separate transition.
  */
 export function DialogueBox({
   line,
@@ -64,8 +60,6 @@ export function DialogueBox({
   onAdvance,
   pace,
   onPace,
-  cta,
-  onOpenReport,
   onOpenPersona,
   footer,
   utility,
@@ -135,8 +129,8 @@ export function DialogueBox({
               className={`report-md text-base leading-[1.9] transition-opacity duration-500 ${
                 isPast ? 'opacity-35' : 'opacity-100'
               }`}
-              // Single line breaks are kept, the same as the report panel and
-              // the log: she writes a line per point as often as she leaves a
+              // Single line breaks are kept, the same as the log does: she
+              // writes a line per point as often as she leaves a
               // blank line between them, and run together they read as one.
               dangerouslySetInnerHTML={{ __html: marked.parse(laidOut, { async: false, breaks: true }) }}
             />
@@ -155,8 +149,7 @@ export function DialogueBox({
             >
               {/* Her line is speech, so only the marks that fit inside a spoken
                   sentence are read — bold, a code span, a link. Headings and
-                  lists belong to a laid-out answer above, and anything longer
-                  than that she hands over as a report. Without this the box
+                  lists belong to a laid-out answer above. Without this the box
                   read markdown when she laid something out and printed the
                   asterisks when she spoke, which flipped mid-conversation. */}
               <span dangerouslySetInnerHTML={{ __html: marked.parseInline(line, { async: false }) }} />
@@ -222,21 +215,6 @@ export function DialogueBox({
             </button>
           </div>
 
-        {cta && (
-          <div className="mt-3 flex gap-2.5">
-            <Button
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-muted-foreground underline underline-offset-4 hover:text-foreground"
-              onClick={(e) => {
-                e.stopPropagation()
-                onOpenReport()
-              }}
-            >
-              {cta}
-            </Button>
-          </div>
-        )}
       </motion.div>
 
       <motion.div layout className="flex flex-col gap-2 border-t border-border px-4 pt-3 pb-3">

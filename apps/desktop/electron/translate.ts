@@ -1,6 +1,6 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
-import type { AgentMessage, Report, Todo } from '../src/agent/types'
-import { EXPRESSION_TOOL, REPORT_TOOL } from './tools'
+import type { AgentMessage, Todo } from '../src/agent/types'
+import { EXPRESSION_TOOL } from './tools'
 import { faceFor, type Expression } from '../src/agent/expressions'
 
 /** The model a locally-answered slash command comes back as: the CLI printed it
@@ -24,9 +24,6 @@ export class Turn {
   /** Tasks she has just asked for, by the call that asked — the board can only
    * list one once the tool answers with the number it gave it. */
   private opening = new Map<string, string>()
-  /** Set once she calls the report tool: what the panel shows, and the line she
-   * says while handing it over. */
-  private report: (Report & { line: string }) | null = null
   /** The last line already put on screen, so the result does not repeat it. */
   private spoken: string | null = null
   /** How many tokens she has written this turn, for the line he waits at. */
@@ -131,13 +128,6 @@ export class Turn {
           this.todos = readTodos(input.todos)
           out.push(this.todoList())
         }
-        if (block.name === REPORT_TOOL) {
-          this.report = {
-            line: String(input.line ?? ''),
-            label: String(input.label ?? '') || FALLBACK_LABEL,
-            body: String(input.body ?? ''),
-          }
-        }
         // Every call is reported, because the log is where the master goes to
         // find out what she actually did. `silent` only means it has its own
         // place on screen already and should not also whisper past as narration.
@@ -147,7 +137,7 @@ export class Turn {
           name: block.name === EXPRESSION_TOOL ? 'set_expression' : block.name,
           label,
           input,
-          silent: SILENT_TOOLS.has(block.name) || block.name === REPORT_TOOL,
+          silent: SILENT_TOOLS.has(block.name),
         })
       }
     }
@@ -228,37 +218,8 @@ export class Turn {
     // mood belongs to that line, not to whatever she ended on.
     const mood = ending?.marker ?? undefined
 
-    // She handed over a report: that is the answer, whatever she said after.
-    if (this.report) {
-      const { line, label, body } = this.report
-      this.report = null
-      return [
-        {
-          type: 'result',
-          tier: 'heavy',
-          line: line || text || openingLine(body),
-          mood,
-          expression,
-          report: { label, body },
-        },
-      ]
-    }
     if (!text) return []
 
-    // No tool call, but the answer came out long anyway — still worth a panel.
-    if (isLongForm(text)) {
-      return [
-        {
-          type: 'result',
-          tier: 'heavy',
-          line: openingLine(text),
-          mood,
-          expression,
-          said,
-          report: { label: FALLBACK_LABEL, body: text },
-        },
-      ]
-    }
     return [{ type: 'result', tier: hasShape(text) ? 'medium' : 'light', line: text, mood, expression, said }]
   }
 
@@ -305,28 +266,18 @@ const TASK_STATUS: Record<string, Todo['status']> = {
   killed: 'completed',
 }
 
-/** She forgot to hand it over, but it is far too long to say — the panel takes
- * it anyway. A medium-length answer is still spoken. */
-export function isLongForm(text: string) {
-  return text.length > 1200 || /^#{1,4} /m.test(text) || text.includes('```')
-}
-
 /**
- * Markdown she meant as markdown — a list, inline code, a bold run — or simply
- * more than fits on one line of the box. Said out loud either way, but laid out
- * instead of read as raw characters.
+ * Markdown she meant as markdown — a heading, a list, a code block, a bold run
+ * — or simply more than fits on one line of the box. Said out loud either way,
+ * but laid out instead of read as raw characters.
  */
 export function hasShape(text: string) {
-  return text.length > 160 || /(^|\n)\s*[-*+] |(^|\n)\s*\d+\. |`[^`]+`|\*\*[^*]+\*\*/.test(text)
-}
-
-/** Used when she never wrote a label herself — the panel still needs a way in. */
-export const FALLBACK_LABEL = 'View full report →'
-
-/** The line said out loud when the body goes to the report panel. */
-export function openingLine(text: string) {
-  const first = text.split('\n').find((line) => line.trim() && !line.startsWith('#'))?.trim() ?? ''
-  return first.length > 120 ? `${first.slice(0, 118)}…` : first || 'Done — the write-up is ready.'
+  return (
+    text.length > 160
+    || /^#{1,4} /m.test(text)
+    || text.includes('```')
+    || /(^|\n)\s*[-*+] |(^|\n)\s*\d+\. |`[^`]+`|\*\*[^*]+\*\*/.test(text)
+  )
 }
 
 /** As much of a tool's answer as is worth keeping in a window. A grep over a
@@ -379,7 +330,6 @@ const FIELD_BY_TOOL: Record<string, string> = {
   Skill: 'skill',
   TaskCreate: 'subject',
   [EXPRESSION_TOOL]: 'expression',
-  [REPORT_TOOL]: 'label',
 }
 
 /** A plain label for the whisper bubble — what she is doing, in a few words. */

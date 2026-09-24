@@ -12,7 +12,7 @@ import {
   type SlashCommand,
 } from '@anthropic-ai/claude-agent-sdk'
 import { Turn } from './translate'
-import { cafeTools, EXPRESSION_TOOL, REPORT_TOOL } from './tools'
+import { cafeTools, EXPRESSION_TOOL } from './tools'
 import { watchLook } from './look'
 import { askForLines, knownLines, nameOf as maidName, personaOf, replyLanguage } from './lines'
 import { chosenShift, chosenSpeech, rememberShift, rememberWhoServed, whoServed } from './history'
@@ -144,7 +144,6 @@ const WAY_IN_TIMEOUT = 15_000
 const SCENE_BRIEF = `You are being watched through a window, not a terminal — the master sees you standing there, one spoken line at a time.
 
 - Speak in short replies — a few sentences, the way someone standing there would. A paragraph or two is still fine to say out loud.
-- Only what is genuinely too long to say belongs in the ${REPORT_TOOL} tool: an investigation, a walkthrough, a comparison, anything with headings or code blocks. It puts the body behind a link the master opens when he wants it, and she only says the one line you give it. Never paste something that long into your reply instead.
 - Call ${EXPRESSION_TOOL} when your mood changes, so your face keeps up with the work.`
 
 /**
@@ -810,7 +809,7 @@ export class MaidSession {
     if (!run) return { behavior: 'deny', message: 'No conversation is running.' }
 
     // Her own two tools only move the scene around — nothing to ask about.
-    if (toolName === EXPRESSION_TOOL || toolName === REPORT_TOOL) return { behavior: 'allow' }
+    if (toolName === EXPRESSION_TOOL) return { behavior: 'allow' }
 
     if (toolName === 'AskUserQuestion') {
       return { behavior: 'allow', updatedInput: await this.collectAnswers(run.runId, input) }

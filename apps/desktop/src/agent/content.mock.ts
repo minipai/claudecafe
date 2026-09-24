@@ -25,7 +25,7 @@ export const ABOUT_ANSWER = `Whatever Claude Code can do, Master — because tha
 
 - **read your code and explain it**, in as many words as it takes
 - **run things and change files** — I ask first, and show you exactly what I am changing
-- **go after a bug on my own**, and hand you a written report at the end
+- **go after a bug on my own**, and tell you what it turned out to be
 - **plan it out first**, when you would rather see the steps before I start
 
 And I am a maid of the café, not the app itself ♪ For now I am the only one with a full set of faces, so I am the one who answers this door.`
@@ -54,52 +54,9 @@ export const PEEK_LOOK = {
 
 export const HEAVY_INTRO = 'Leave it to me! I will go and look right away ～'
 
-export const HEAVY_DONE_LINE = 'All written up! Please have a look, Master ♪'
+export const HEAVY_DONE_LINE = 'Found it and fixed it — the sign-in pool was far too small ♪'
 
 export const HEAVY_DENIED_LINE = 'Eh… not allowed? Then… then I will leave the tests alone…'
-
-export const HEAVY_REPORT_MD = `# Intermittent timeouts in the sign-in flow
-
-**INCIDENT REPORT #482**　Looked into by ことね｜Status: fixed｜Took: 14 minutes
-
-## What was happening
-
-Over the last 24 hours about 3% of sign-ins stalled while the session was being created. The visitor sat on "please wait" for more than 8 seconds and then failed outright. The failures clustered around the top of each hour, and only ever hit sign-ins with "remember me" ticked.
-
-## How I found it
-
-I lined the peak-hour access logs up against each other, and every timed-out request was stuck in the same place — the write that stores the long-lived session token. Following that upstream landed on the connection pool:
-
-> ＊opened up config.json, and found the long-session pool capped at 5 — where the ordinary API pool is allowed 50.＊
-
-Once enough "remember me" sign-ins arrive at the same moment, those 5 connections are all busy and everyone else queues, right up until they time out. Which is also why it only bites near the top of the hour: that is when people sign in together.
-
-## The fix
-
-Give the long-session pool the same ceiling as the ordinary API pool, and let a request that has queued too long fail fast instead of piling up:
-
-\`\`\`ts
-// config/session-pool.ts
-export const longSessionPool = {
-  max: 50,              // 5 → 50, matching the ordinary API pool
-  queueTimeoutMs: 1500, // new: queue longer than 1.5s and fail fast
-  idleTimeoutMs: 30000,
-};
-\`\`\`
-
-I also wrote a small load test that recreates the top-of-the-hour rush, and under the new setting p99 comes down from 8.2s to 210ms.
-
-## What I would suggest next
-
-- Put an alarm on pool usage at 80%, so this says something before a visitor has to.
-- The "remember me" path could batch its writes, which would flatten the peak rather than survive it.
-- Next time a pool gets resized, please land it with a load test attached ～ I was going on instinct this time, and it was a little scary.
-
-> ＊closed the notebook, gave a satisfied little nod＊ —— and that is the whole story, Master. Thank you for your hard work!
-`
-
-/** In a real session she writes the link's wording herself, per report. */
-export const HEAVY_REPORT = { label: 'See what I dug up →', body: HEAVY_REPORT_MD }
 
 export const PLAN_INTRO = 'Certainly ♪ I will lay the steps out first, so you can see them ～'
 

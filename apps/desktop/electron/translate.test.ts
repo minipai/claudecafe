@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { AgentMessage } from '../src/agent/types'
 import { describeTool, Turn } from './translate'
-import { EXPRESSION_TOOL, REPORT_TOOL } from './tools'
+import { EXPRESSION_TOOL } from './tools'
 
 const HAPPY = '【 開心 ＼(ˆ ᗜ ˆ)／ 】'
 
@@ -149,7 +149,7 @@ describe('Turn — result tiers', () => {
     expect(out).toEqual([{ type: 'result', tier: 'light', line: 'Sure thing.', mood: undefined, expression: undefined, said: false }])
   })
 
-  it('a longer answer with no markdown shape is still light, just because it is long-ish but under the heavy cutoff', () => {
+  it('a longer answer with no markdown shape is laid out anyway, on length alone', () => {
     const turn = new Turn('hi')
     const text = 'a'.repeat(170)
     const out = turn.read(result(text))
@@ -160,12 +160,6 @@ describe('Turn — result tiers', () => {
     const turn = new Turn('hi')
     const out = turn.read(result('a'.repeat(160)))
     expect(out[0]).toMatchObject({ tier: 'light' })
-  })
-
-  it('exactly 1200 characters is still medium, not heavy — isLongForm\'s cutoff is strictly greater-than', () => {
-    const turn = new Turn('hi')
-    const out = turn.read(result('a'.repeat(1200)))
-    expect(out[0]).toMatchObject({ tier: 'medium' })
   })
 
   it('a list is laid out as medium', () => {
@@ -182,35 +176,18 @@ describe('Turn — result tiers', () => {
     expect(out[0]).toMatchObject({ tier: 'medium' })
   })
 
-  it('over 1200 characters becomes a heavy report with an opening line', () => {
+  it('says a very long answer in full — there is nowhere else for it to go', () => {
     const turn = new Turn('hi')
     const text = 'x'.repeat(1300)
     const out = turn.read(result(text))
-    expect(out[0]).toMatchObject({
-      type: 'result',
-      tier: 'heavy',
-      report: { label: 'View full report →', body: text },
-    })
-    expect((out[0] as { line: string }).line.length).toBeLessThanOrEqual(119)
+    expect(out[0]).toMatchObject({ type: 'result', tier: 'medium', line: text })
   })
 
-  it('a heading makes it heavy even under the length cutoff', () => {
+  it('lays out an answer with a heading in it rather than reading the hashes', () => {
     const turn = new Turn('hi')
     const text = '# Title\nThe actual first line of substance.'
     const out = turn.read(result(text))
-    expect(out[0]).toMatchObject({
-      type: 'result',
-      tier: 'heavy',
-      line: 'The actual first line of substance.',
-      report: { label: 'View full report →', body: text },
-    })
-  })
-
-  it('a code fence makes it heavy too', () => {
-    const turn = new Turn('hi')
-    const text = 'Here:\n```ts\nconst a = 1\n```'
-    const out = turn.read(result(text))
-    expect(out[0]).toMatchObject({ tier: 'heavy' })
+    expect(out[0]).toMatchObject({ type: 'result', tier: 'medium', line: text })
   })
 })
 
@@ -235,48 +212,6 @@ describe('Turn — said dedup', () => {
     const turn = new Turn('hi')
     const out = turn.read(result('Fresh answer.'))
     expect(out[0]).toMatchObject({ said: false })
-  })
-})
-
-describe('Turn — the report tool', () => {
-  it('hands the body to a heavy result with the given label and line', () => {
-    const turn = new Turn('hi')
-    turn.read(
-      assistant([
-        toolUseBlock('t1', REPORT_TOOL, { line: 'Here you go~', label: 'Read the report →', body: '# findings\n\nlots of detail' }),
-      ]),
-    )
-    const out = turn.read(result('whatever she said after'))
-    expect(out).toEqual([
-      {
-        type: 'result',
-        tier: 'heavy',
-        line: 'Here you go~',
-        mood: undefined,
-        expression: undefined,
-        report: { label: 'Read the report →', body: '# findings\n\nlots of detail' },
-      },
-    ])
-  })
-
-  it('falls back to the default label when she wrote none', () => {
-    const turn = new Turn('hi')
-    turn.read(assistant([toolUseBlock('t1', REPORT_TOOL, { line: '', label: '', body: 'the body' })]))
-    const out = turn.read(result(''))
-    expect(out[0]).toMatchObject({ report: { label: 'View full report →' } })
-  })
-
-  it('falls back to the opening line of the body when there is no line and no result text', () => {
-    const turn = new Turn('hi')
-    turn.read(assistant([toolUseBlock('t1', REPORT_TOOL, { line: '', label: 'x', body: '# Title\nThe real opener.' })]))
-    const out = turn.read(result(''))
-    expect(out[0]).toMatchObject({ line: 'The real opener.' })
-  })
-
-  it('marks the report tool_use as silent', () => {
-    const turn = new Turn('hi')
-    const out = turn.read(assistant([toolUseBlock('t1', REPORT_TOOL, { line: 'a', label: 'b', body: 'c' })]))
-    expect(out.find((m) => m.type === 'tool_use')).toMatchObject({ silent: true })
   })
 })
 

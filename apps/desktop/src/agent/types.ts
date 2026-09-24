@@ -1,8 +1,8 @@
 import type { Expression } from './expressions'
 /** Shapes inspired by @anthropic-ai/claude-agent-sdk, simplified for the mock. */
 
-/** How the answer reaches the master: said plainly, said with shape (lists,
- * code, emphasis — laid out in the box), or handed over as writing. */
+/** How much of a turn the answer ends: said plainly, said with shape (lists,
+ * code, emphasis — laid out in the box), or the end of a long piece of work. */
 export type Tier = 'light' | 'medium' | 'heavy'
 
 /** One row of the model's own task list. The real SDK streams this as per-item
@@ -14,10 +14,6 @@ export type Todo = { content: string; status: 'pending' | 'in_progress' | 'compl
  * third-person scene + one line of dialogue, regenerated when a piece of work
  * finishes. Stays on screen until the next one replaces it. */
 export type Look = { scene: string; dialogue: string }
-
-/** Writing she hands over instead of saying out loud: the markdown body, plus
- * the words she puts on the link that opens it. */
-export type Report = { label: string; body: string }
 
 export type AgentMessage =
   | { type: 'system'; subtype: 'init' | 'compact_boundary' } // compact_boundary fires after the history is summarised
@@ -40,7 +36,7 @@ export type AgentMessage =
   | { type: 'todos'; todos: Todo[] } // the model's task list, replaced wholesale on every write
   // mood = the 【…】 marker she signed with, for the log
   // said = the line is already on screen; the result is only the record of it
-  | { type: 'result'; tier: Tier; line: string; report?: Report; mood?: string; said?: boolean; expression?: Expression }
+  | { type: 'result'; tier: Tier; line: string; mood?: string; said?: boolean; expression?: Expression }
 
 export type PermissionResult = { behavior: 'allow' } | { behavior: 'deny' }
 

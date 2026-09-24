@@ -1,4 +1,3 @@
-import type { Report } from '@/agent'
 import type { ChatMessage } from './types'
 
 let chatMessageId = 0
@@ -6,7 +5,6 @@ let chatMessageId = 0
 export function createChatMessage(
   role: ChatMessage['role'],
   content: string,
-  report?: Report,
   createdAt = Date.now(),
   detail?: string,
 ): ChatMessage {
@@ -14,7 +12,6 @@ export function createChatMessage(
     id: chatMessageId++,
     role,
     content,
-    report,
     detail,
     createdAt,
   }
@@ -45,11 +42,11 @@ export function signed(line: string, mood?: string) {
 export function createPreviewHistory(greeting: string) {
   const now = Date.now()
   return [
-    createChatMessage('assistant', greeting, undefined, now - 10 * 60_000),
-    createChatMessage('user', 'the status line is a bit hard to read — keep the model and the effort though', undefined, now - 8 * 60_000),
-    createChatMessage('assistant', 'Done ♪ I raised the contrast, and lined the controls back up neatly.', undefined, now - 7 * 60_000),
-    createChatMessage('user', 'can I read back over what we said earlier?', undefined, now - 3 * 60_000),
-    createChatMessage('assistant', 'Of course — open LOG and the whole conversation is waiting there ♪', undefined, now - 2 * 60_000),
+    createChatMessage('assistant', greeting, now - 10 * 60_000),
+    createChatMessage('user', 'the status line is a bit hard to read — keep the model and the effort though', now - 8 * 60_000),
+    createChatMessage('assistant', 'Done ♪ I raised the contrast, and lined the controls back up neatly.', now - 7 * 60_000),
+    createChatMessage('user', 'can I read back over what we said earlier?', now - 3 * 60_000),
+    createChatMessage('assistant', 'Of course — open LOG and the whole conversation is waiting there ♪', now - 2 * 60_000),
   ]
 }
 

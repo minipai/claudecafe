@@ -97,8 +97,8 @@ function site(locale: Locale) {
       locale === "zh" ? "ClaudeCafe——最可愛的 Claude Code" : "ClaudeCafe — the most adorable Claude Code";
     const description =
       locale === "zh"
-        ? "同一個 Claude Code，跑在沒有邊框的視窗裡：一位女僕站在你的桌面上回話、動手前先問你、長答案給你一份報告。可以在頁面上直接試玩。"
-        : "The same Claude Code, in a window with no frame: a maid on your desktop who answers in her own voice, asks before she touches anything, and writes a report when the answer is long. Try her on the page.";
+        ? "同一個 Claude Code，跑在沒有邊框的視窗裡：一位女僕站在你的桌面上回話、動手前先問你、做完了告訴你發生什麼事。可以在頁面上直接試玩。"
+        : "The same Claude Code, in a window with no frame: a maid on your desktop who answers in her own voice, asks before she touches anything, and tells you what she found. Try her on the page.";
     return c.html(
       <Layout locale={locale} title={title} description={description} path="/app">
         <AppPage locale={locale} />

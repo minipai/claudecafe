@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Look, Report } from '@/agent'
+import type { Look } from '@/agent'
 import { choreograph, type Scene } from './choreography'
 
 function createScene(): Scene {
@@ -15,13 +15,10 @@ function createScene(): Scene {
     showFace: vi.fn(),
     pushWhisper: vi.fn(),
     setPhase: vi.fn(),
-    setReport: vi.fn(),
-    setCtaVisible: vi.fn(),
     setTodos: vi.fn(),
     setOutputTokens: vi.fn(),
     setLook: vi.fn(),
     setLookUnread: vi.fn(),
-    openReport: vi.fn(),
     setLaidOut: vi.fn(),
     notify: vi.fn(),
   }
@@ -32,11 +29,6 @@ function createScene(): Scene {
 function showLastLine(scene: Scene) {
   const call = vi.mocked(scene.say).mock.calls.at(-1)
   call?.[1]?.onShow?.()
-}
-
-function finishLastLine(scene: Scene) {
-  const call = vi.mocked(scene.say).mock.calls.at(-1)
-  call?.[1]?.onDone?.()
 }
 
 describe('choreograph', () => {
@@ -74,13 +66,10 @@ describe('choreograph', () => {
     expect(scene.setLookUnread).toHaveBeenCalledWith(true)
   })
 
-  it('command_output: hands the paper over and ends the turn at phase done, without touching her face', () => {
+  it('command_output: puts the paper on the record and ends the turn at phase done, without touching her face', () => {
     const scene = createScene()
     choreograph({ type: 'command_output', label: '/usage', body: 'the printed answer' }, scene)
     expect(scene.appendEvent).toHaveBeenCalledWith('/usage', expect.any(String), undefined, 'the printed answer')
-    expect(scene.setReport).toHaveBeenCalledWith({ label: '/usage →', body: 'the printed answer' })
-    expect(scene.setCtaVisible).toHaveBeenCalledWith(true)
-    expect(scene.openReport).toHaveBeenCalled()
     expect(scene.setPhase).toHaveBeenCalledWith('done')
     expect(scene.say).not.toHaveBeenCalled()
     expect(scene.wear).not.toHaveBeenCalled()
@@ -171,13 +160,9 @@ describe('choreograph', () => {
   describe('result: light', () => {
     it('not already said: logs it signed, says it, and goes idle', () => {
       const scene = createScene()
-      const report: Report = { label: 'label', body: 'body' }
-      choreograph(
-        { type: 'result', tier: 'light', line: 'all done~', mood: '【 開心 】', expression: 'happy', report },
-        scene,
-      )
+      choreograph({ type: 'result', tier: 'light', line: 'all done~', mood: '【 開心 】', expression: 'happy' }, scene)
       expect(scene.notify).toHaveBeenCalledWith('all done~')
-      expect(scene.appendChatMessage).toHaveBeenCalledWith('assistant', 'all done~ 【 開心 】', report)
+      expect(scene.appendChatMessage).toHaveBeenCalledWith('assistant', 'all done~ 【 開心 】')
       expect(scene.setPhase).toHaveBeenCalledWith('idle')
       expect(scene.setLaidOut).not.toHaveBeenCalled()
       expect(scene.say).toHaveBeenCalledWith('all done~', expect.any(Object))
@@ -217,37 +202,22 @@ describe('choreograph', () => {
   })
 
   describe('result: heavy', () => {
-    it('not already said: ends the turn at phase done, with the report, and shows the CTA once she is through saying it', () => {
+    it('not already said: says it, and leaves her board up rather than going idle', () => {
       const scene = createScene()
-      const report: Report = { label: 'label', body: 'body' }
-      choreograph({ type: 'result', tier: 'heavy', line: 'here is what I did', report, expression: 'proud' }, scene)
+      choreograph({ type: 'result', tier: 'heavy', line: 'here is what I did', expression: 'proud' }, scene)
       expect(scene.setPhase).toHaveBeenCalledWith('done')
-      expect(scene.setReport).toHaveBeenCalledWith(report)
-      expect(scene.setCtaVisible).not.toHaveBeenCalled()
       expect(scene.say).toHaveBeenCalledWith('here is what I did', expect.any(Object))
       showLastLine(scene)
       expect(scene.wear).toHaveBeenCalledWith('proud', undefined)
-      expect(scene.setCtaVisible).not.toHaveBeenCalled()
-      finishLastLine(scene)
-      expect(scene.setCtaVisible).toHaveBeenCalledWith(true)
     })
 
-    it('not already said, no report: falls back to null rather than undefined', () => {
+    it('already said: ends the turn at phase done with nothing left to type out', () => {
       const scene = createScene()
-      choreograph({ type: 'result', tier: 'heavy', line: 'here is what I did' }, scene)
-      expect(scene.setReport).toHaveBeenCalledWith(null)
-    })
-
-    it('already said: ends the turn at phase done and shows the CTA immediately — nothing left to type out', () => {
-      const scene = createScene()
-      const report: Report = { label: 'label', body: 'body' }
       choreograph(
-        { type: 'result', tier: 'heavy', line: 'here is what I did', report, mood: '【 誇らしい 】', said: true },
+        { type: 'result', tier: 'heavy', line: 'here is what I did', mood: '【 誇らしい 】', said: true },
         scene,
       )
       expect(scene.setPhase).toHaveBeenCalledWith('done')
-      expect(scene.setReport).toHaveBeenCalledWith(report)
-      expect(scene.setCtaVisible).toHaveBeenCalledWith(true)
       expect(scene.say).not.toHaveBeenCalled()
       // Already on screen, and already on the record with its marker.
       expect(scene.appendChatMessage).not.toHaveBeenCalled()

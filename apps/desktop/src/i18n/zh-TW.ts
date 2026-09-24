@@ -52,10 +52,6 @@ export const zhTW: Text = {
   session: {
     title: '工作階段',
   },
-  report: {
-    title: '報告',
-    none: '她還沒交出任何東西。',
-  },
   settings: {
     title: '設定',
     speak: '就用這個',
