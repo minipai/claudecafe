@@ -32,9 +32,8 @@ export type SessionSettings = {
   modePicked: boolean
 }
 
-/** What is standing behind her: which room, and how the picture of it is cut
- * off at the edges. `none` for either is nothing and a plain rectangle. */
-export type Backdrop = { scene: string; edge: string }
+/** Which transparent illustration stands behind her. */
+export type Backdrop = 'none' | 'art-nouveau' | 'ukiyo-e' | 'shojo-manga'
 
 /** The folder name of the maid serving this window. */
 export type Shift = { maid: string }

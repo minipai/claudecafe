@@ -221,29 +221,20 @@ export function chosenSpeech(): string {
   }
 }
 
-/**
- * What is standing behind her — which room, and how its picture is cut off at
- * the edges. Two names, not one: the scenes are ordinary rectangles and the
- * shape is decided over the top of whichever one is up, so changing the room
- * must not throw away the edge that was chosen for it.
- *
- * Unset is the window as it always looked: the one painted backdrop it shipped
- * with, drawn as it is.
- */
+/** The illustration behind her, saved between launches. */
 export function rememberBackdrop(chosen: Backdrop) {
   fs.writeFileSync(backdropFile(), JSON.stringify(chosen, null, 2))
 }
 
 export function chosenBackdrop(): Backdrop {
   try {
-    const kept = JSON.parse(fs.readFileSync(backdropFile(), 'utf8')) as Partial<Backdrop>
-    return {
-      scene: typeof kept.scene === 'string' && kept.scene ? kept.scene : 'mucha',
-      edge: typeof kept.edge === 'string' && kept.edge ? kept.edge : 'none',
-    }
+    const kept: unknown = JSON.parse(fs.readFileSync(backdropFile(), 'utf8'))
+    if (kept === 'none' || kept === 'art-nouveau' || kept === 'ukiyo-e' || kept === 'shojo-manga') return kept
+    if (typeof kept === 'object' && kept !== null && 'scene' in kept && kept.scene === 'none') return 'none'
   } catch {
-    return { scene: 'mucha', edge: 'none' }
+    // An unset preference uses the original illustration.
   }
+  return 'art-nouveau'
 }
 
 /**

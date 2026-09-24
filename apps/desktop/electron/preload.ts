@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import type { BridgeEvent, CafeBridge } from '../src/agent/bridge'
+import type { Backdrop, BridgeEvent, CafeBridge } from '../src/agent/bridge'
 
 const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? ''
 const localeArg = process.argv.find((arg) => arg.startsWith('--cafe-locale=')) ?? ''
@@ -16,12 +16,7 @@ const bridge: CafeBridge = {
   localeChoice: choiceArg.slice('--cafe-locale-choice='.length),
   setLocale: (choice) => ipcRenderer.send('cafe:set-locale', choice),
   setSpeech: (language) => ipcRenderer.send('cafe:set-speech', language),
-  // Handed over as one string and split here, so the window has something to
-  // draw on its very first frame rather than a flash of nothing behind her.
-  backdrop: {
-    scene: backdropArg.slice('--cafe-backdrop='.length).split('/')[0] || 'mucha',
-    edge: backdropArg.slice('--cafe-backdrop='.length).split('/')[1] || 'none',
-  },
+  backdrop: (backdropArg.slice('--cafe-backdrop='.length) || 'art-nouveau') as Backdrop,
   setBackdrop: (chosen) => ipcRenderer.send('cafe:set-backdrop', chosen),
   shift: {
     maid: shiftArg.slice('--cafe-shift='.length),

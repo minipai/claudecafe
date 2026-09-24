@@ -140,7 +140,7 @@ export function GalgameClient({
   /** Which room is behind her and how its picture is cut off. Read off the
    * bridge rather than defaulted here, so the first frame is already right. */
   const [backdrop, setBackdrop] = useState<Chosen>(
-    () => window.cafe?.backdrop ?? { scene: 'mucha', edge: 'none' },
+    () => window.cafe?.backdrop ?? 'art-nouveau',
   )
   /** Who is standing there. Off the bridge for the same
    * reason as the room behind her: the first frame has to have the right maid

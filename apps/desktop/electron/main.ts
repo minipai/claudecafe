@@ -83,7 +83,7 @@ function openWindow(cwd: string) {
         `--cafe-cwd=${cwd}`,
         `--cafe-locale=${drawnIn()}`,
         `--cafe-locale-choice=${chosenLocale()}`,
-        `--cafe-backdrop=${backdrop.scene}/${backdrop.edge}`,
+        `--cafe-backdrop=${backdrop}`,
         `--cafe-shift=${shift.maid}`,
         `--cafe-characters-dir=${charactersDir()}`,
         `--cafe-character-error=${encodeURIComponent(characterInstallError)}`,
@@ -249,7 +249,7 @@ ipcMain.on('cafe:set-locale', (event, choice: string) => {
   windowOf(event)?.webContents.send('cafe:event', { kind: 'locale', locale: drawnIn(), choice })
 })
 
-/** Another room behind her, or another shape cut out of it. Nothing reopens:
+/** Another illustration behind her. Nothing reopens:
  * the window redraws, and the choice is kept for the next start. */
 ipcMain.on('cafe:set-backdrop', (event, chosen: Backdrop) => {
   rememberBackdrop(chosen)

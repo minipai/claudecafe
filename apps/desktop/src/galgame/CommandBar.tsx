@@ -145,7 +145,7 @@ export function CommandBar({
     { key: 'speech', icon: MessageCircle, label: t.bar.speech, find: eng.bar.speech, note: speechNote, into: 'speech' },
     // The choosing is done down where the dialogue box is, not in here: what
     // is being picked is the picture behind her, and this bar sits on top of it.
-    { key: 'backdrop', icon: Picture, label: t.bar.backdrop, find: eng.bar.backdrop, note: t.backdrop.scene[backdrop.scene as keyof typeof t.backdrop.scene], run: doing.onPickBackdrop },
+    { key: 'backdrop', icon: Picture, label: t.bar.backdrop, find: eng.bar.backdrop, note: t.backdrop[backdrop], run: doing.onPickBackdrop },
   ]
 
   const wanted = typed.trim().toLowerCase()
