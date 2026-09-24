@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import type { Maid } from "../utils/maids.js";
 import { MaidCard } from "./MaidCard.js";
 import { href, type Locale } from "../i18n.js";
@@ -115,7 +117,12 @@ const FACES = [
   "pouty", "surprised", "proud", "sad",
   "wink", "smug", "worried", "angry",
   "confused", "sorry", "relieved", "excited",
-];
+].map((name) => {
+  const version = createHash("sha256")
+    .update(readFileSync(new URL(`../assets/home/faces/${name}.webp`, import.meta.url)))
+    .digest("hex").slice(0, 10);
+  return { name, src: `/assets/home/faces/${name}.webp?v=${version}` };
+});
 
 export function HomePage({ maids, locale }: { maids: Maid[]; locale: Locale }) {
   const t = copy[locale];
@@ -174,7 +181,7 @@ export function HomePage({ maids, locale }: { maids: Maid[]; locale: Locale }) {
               <p class="home-lead">{t.appLede}</p>
               <ul class="home-faces">
                 {FACES.map((face) => (
-                  <li><img src={`/assets/home/faces/${face}.webp`} alt={face} loading="lazy" /></li>
+                  <li><img src={face.src} alt={face.name} loading="lazy" /></li>
                 ))}
               </ul>
             </section>
