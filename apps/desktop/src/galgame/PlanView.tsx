@@ -6,19 +6,19 @@ import { marked } from 'marked'
 import { Button } from '@/components/ui/button'
 import { text } from '@/i18n'
 
-type ReportViewProps = {
+type PlanViewProps = {
   shortline: string
-  report: string
+  plan: string
   onClose: () => void
-  /** Shown in a bar under the body — used when the panel is a plan waiting on an answer. */
-  actions?: ReactNode
+  /** The answers to the plan, in a bar under the body. */
+  actions: ReactNode
 }
 
 /**
- * The same dialogue box, grown into a full report panel. Shares layoutId
- * "dialogue-frame" with DialogueBox so Motion morphs between them.
+ * The same dialogue box, grown into a panel the whole plan is read in. Shares
+ * layoutId "dialogue-frame" with DialogueBox so Motion morphs between them.
  */
-export function ReportView({ shortline, report, onClose, actions }: ReportViewProps) {
+export function PlanView({ shortline, plan, onClose, actions }: PlanViewProps) {
   const [contentVisible, setContentVisible] = useState(false)
   const [shortlineFaded, setShortlineFaded] = useState(false)
 
@@ -77,20 +77,17 @@ export function ReportView({ shortline, report, onClose, actions }: ReportViewPr
       >
         <div
           className="report-md mx-auto max-w-[620px]"
-          // Line breaks are kept: a slash command prints plain text whose lines
-          // are the layout, and markdown would otherwise run them together.
-          dangerouslySetInnerHTML={{ __html: marked.parse(report, { async: false, breaks: true }) }}
+          // Line breaks are kept, the same as the dialogue box and the log.
+          dangerouslySetInnerHTML={{ __html: marked.parse(plan, { async: false, breaks: true }) }}
         />
       </div>
 
-      {actions && (
-        <div
-          className="flex items-center justify-end gap-2 border-t border-border px-6 py-3.5"
-          style={{ opacity: contentVisible ? 1 : 0, transition: 'opacity .3s ease' }}
-        >
-          {actions}
-        </div>
-      )}
+      <div
+        className="flex items-center justify-end gap-2 border-t border-border px-6 py-3.5"
+        style={{ opacity: contentVisible ? 1 : 0, transition: 'opacity .3s ease' }}
+      >
+        {actions}
+      </div>
     </motion.div>
   )
 }

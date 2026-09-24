@@ -43,7 +43,7 @@ type DialogueBoxProps = {
  * The galgame dialogue panel — one frame holding the spoken line on top and
  * the demo/input footer below a divider. Short-tier replies just type into
  * it in place, and it grows/shrinks in place for the medium tier. It shares
- * a layoutId with ReportView so Motion morphs it into the panel a folded-out
+ * a layoutId with PlanView so Motion morphs it into the panel a folded-out
  * plan is read in instead of it being a separate transition.
  */
 export function DialogueBox({

@@ -8,7 +8,7 @@ import { hasArtwork, availableShift } from './cast'
 import { ShiftPanel } from './ShiftPanel'
 import { KAOMOJI } from '@/agent/expressions'
 import { DialogueBox } from './DialogueBox'
-import { ReportView } from './ReportView'
+import { PlanView } from './PlanView'
 import { WelcomePanel } from './WelcomePanel'
 import { PersonaPanel } from './PersonaPanel'
 import { CommandBar } from './CommandBar'
@@ -908,10 +908,10 @@ export function GalgameClient({
 
       <AnimatePresence>
         {permissionExpanded && permissionRequest?.ask.expand && (
-          <ReportView
+          <PlanView
             key="permission-doc"
             shortline={permissionRequest.ask.askLine}
-            report={permissionRequest.ask.expand}
+            plan={permissionRequest.ask.expand}
             onClose={() => setPermissionExpanded(false)}
             actions={
               <>

@@ -140,7 +140,7 @@
   0%, 100% { opacity: .45; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(4px); }
 }
-/* rendered markdown inside ReportView */
+/* rendered markdown: the dialogue box, the log, the plan panel, a persona */
 .report-md {
   font-size: 1rem;
   line-height: 1.7;
