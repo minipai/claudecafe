@@ -114,7 +114,7 @@ const FACES = [
   "happy", "curious", "thinking", "embarrassed",
   "pouty", "surprised", "proud", "sad",
   "wink", "smug", "worried", "angry",
-  "confused", "sorry", "relieved", "impressed",
+  "confused", "sorry", "relieved", "excited",
 ];
 
 export function HomePage({ maids, locale }: { maids: Maid[]; locale: Locale }) {
