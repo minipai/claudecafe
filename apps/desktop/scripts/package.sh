@@ -24,6 +24,8 @@ fi
 
 pnpm build
 electron-builder --mac --dir
+# Both the app and the SDK's default lookup use the same staged executable.
+ln -s ../../../dist-electron/claude "$APP/Contents/Resources/app/node_modules/@anthropic-ai/claude-agent-sdk-darwin-arm64/claude"
 codesign --force --deep --sign - "$APP"
 # Proof rather than hope: an unsigned bundle opens nowhere, so a package step
 # that cannot say the signature is good has not finished.
