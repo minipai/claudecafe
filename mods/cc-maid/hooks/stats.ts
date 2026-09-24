@@ -20,9 +20,9 @@ export function statusRows(stats: Stats): Segment[][] {
   return [
     [{ text: stats.project, bold: true, wrap: 'truncate-start' }],
     ...(stats.branch ? [[{ text: `⎇ ${stats.branch}` }]] : []),
-    [{ text: 'HP ' }, ...bar(stats.contextLeft, hpColor(stats.contextLeft)), { text: `  context 餘 ${stats.contextLeft}%` }],
-    [{ text: 'MP ' }, ...bar(stats.quota ?? 0, 'cyan'), { text: `  5h 額度 ${quota}` }],
-    [{ text: `⏱ 上班 ${duration(stats.shiftMs)}${cost}` }],
+    [{ text: 'HP ' }, ...bar(stats.contextLeft, hpColor(stats.contextLeft)), { text: `  context left ${stats.contextLeft}%` }],
+    [{ text: 'MP ' }, ...bar(stats.quota ?? 0, 'cyan'), { text: `  5h used ${quota}` }],
+    [{ text: `⏱ on shift ${duration(stats.shiftMs)}${cost}` }],
   ]
 }
 

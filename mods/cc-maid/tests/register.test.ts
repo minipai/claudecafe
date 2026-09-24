@@ -371,9 +371,9 @@ function status({ percent, quota, usd, shiftMinutes, branch }: Figures): RenderE
   return [
     [{ type: 'Text', props: { bold: true, wrap: 'truncate-start' }, children: ['~/Dev/claudecafe'] }],
     ...(branch ? [[text(`⎇ ${branch}`)]] : []),
-    [text('HP '), ...bar(left, left > 50 ? 'green' : left > 20 ? 'yellow' : 'red'), text(`  context 餘 ${left}%`)],
-    [text('MP '), ...bar(quota ?? 0, 'cyan'), text(`  5h 額度 ${quota === undefined ? '—' : `${quota}%`}`)],
-    [text(`⏱ 上班 ${time}${usd === undefined ? '' : `    $${usd.toFixed(2)}`}`)],
+    [text('HP '), ...bar(left, left > 50 ? 'green' : left > 20 ? 'yellow' : 'red'), text(`  context left ${left}%`)],
+    [text('MP '), ...bar(quota ?? 0, 'cyan'), text(`  5h used ${quota === undefined ? '—' : `${quota}%`}`)],
+    [text(`⏱ on shift ${time}${usd === undefined ? '' : `    $${usd.toFixed(2)}`}`)],
   ]
 }
 
