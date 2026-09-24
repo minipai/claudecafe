@@ -46,8 +46,8 @@ describe('runtime characters', () => {
     const cast = castOf()
     expect(cast).toHaveLength(1)
     expect(cast[0]).toMatchObject({ id: 'new-maid', name: 'New Maid' })
-    expect(characterImage(cast[0].avatar)).toBe(path.join(folder, 'avatar.webp'))
-    expect(characterImage(cast[0].expressions.happy)).toBe(path.join(folder, 'portraits/happy.webp'))
+    expect(characterImage(cast[0].avatar)).toBe(fs.realpathSync(path.join(folder, 'avatar.webp')))
+    expect(characterImage(cast[0].expressions.happy)).toBe(fs.realpathSync(path.join(folder, 'portraits/happy.webp')))
     expect(personaOf('new-maid')).toBe('Persona for New Maid')
     expect(chosenShift()).toEqual({ maid: 'new-maid' })
     expect(cast[0]).not.toHaveProperty('outfits')
@@ -67,7 +67,7 @@ describe('runtime characters', () => {
     rememberShift({ maid: 'removed' })
     expect(castOf().map((maid) => maid.id)).toEqual(['zeta'])
     expect(chosenShift()).toEqual({ maid: 'zeta' })
-    expect(characterImage(castOf()[0].avatar)).toBe(path.join(root, 'zeta/portraits/neutral.webp'))
+    expect(characterImage(castOf()[0].avatar)).toBe(fs.realpathSync(path.join(root, 'zeta/portraits/neutral.webp')))
   })
 
   it('does not reuse image URLs when another folder contains the same maid', () => {
