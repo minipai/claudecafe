@@ -9,18 +9,18 @@ import type { CastMember } from '../src/agent/bridge'
 const characterPacks = [
   {
     id: 'kotone',
-    url: 'https://github.com/minipai/claudecafe/releases/download/kotone-characters-v1.1.0/ClaudeCafe-Kotone-characters-v1.1.0.zip',
-    sha256: '6fc7547085c95275e6348e1028f758fc6d26a353e8e061fa0086c84184ea04ef',
+    url: 'https://github.com/minipai/claudecafe/releases/download/kotone-characters-v1.1.1/ClaudeCafe-Kotone-characters-v1.1.1.zip',
+    sha256: '9a7db8832cb95653c40dc8388ca74f99c9b9f378e10da862d438d8fd80407512',
   },
   {
     id: 'kurumi',
-    url: 'https://github.com/minipai/claudecafe/releases/download/kurumi-characters-v1.1.0/ClaudeCafe-Kurumi-characters-v1.1.0.zip',
-    sha256: '248d5db8f02c75ac732cd401c021bd51bf4ed86b53c2ff9bd20c026b511e67af',
+    url: 'https://github.com/minipai/claudecafe/releases/download/kurumi-characters-v1.1.1/ClaudeCafe-Kurumi-characters-v1.1.1.zip',
+    sha256: '724c2b828af4c623197d56bb133e02f2d24fd23bcca91a8c99a5dc7fb8041d0a',
   },
   {
     id: 'kokona',
-    url: 'https://github.com/minipai/claudecafe/releases/download/kokona-characters-v1.1.0/ClaudeCafe-Kokona-characters-v1.1.0.zip',
-    sha256: '20d137453961f42d9b5c075fd287b80d140b779e4b469a28047a3e9e32228371',
+    url: 'https://github.com/minipai/claudecafe/releases/download/kokona-characters-v1.1.1/ClaudeCafe-Kokona-characters-v1.1.1.zip',
+    sha256: '3b80254c13262c32643f40ede7cd48a2f4687147862358cfedab202e0b6f8da7',
   },
 ] as const
 const unzip = promisify(execFile)
