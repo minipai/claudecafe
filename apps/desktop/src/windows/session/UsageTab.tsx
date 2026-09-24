@@ -1,30 +1,22 @@
-import { CommandPanel, Figure, Heading, Meter, useAnswer } from './CommandPanel'
+import { PanelBody, Figure, Heading, Meter, useAnswer } from '@/galgame/CommandPanel'
 import { fill, text } from '@/i18n'
 import { usageReport } from '@/agent'
 import type { UsageReport } from '@/agent'
-
-type UsagePanelProps = {
-  open: boolean
-  onClose: () => void
-}
 
 /**
  * What the plan has been spent on, drawn from the session's own figures rather
  * than from the text `/usage` prints — the printout is a flattened copy of
  * these, and a window can afford the bars the terminal draws.
  */
-export function UsagePanel({ open, onClose }: UsagePanelProps) {
+export function UsageTab() {
   const t = text().panel.usage
-  const { answer: report, ready } = useAnswer<UsageReport>(open, () => usageReport())
+  const { answer: report, ready } = useAnswer<UsageReport>(true, () => usageReport())
 
   return (
-    <CommandPanel
-      open={open}
-      title="/usage"
+    <PanelBody
       description={t.description}
       ready={ready}
       missing={report ? undefined : t.missing}
-      onClose={onClose}
     >
       {report && (
         <>
@@ -80,7 +72,7 @@ export function UsagePanel({ open, onClose }: UsagePanelProps) {
           )}
         </>
       )}
-    </CommandPanel>
+    </PanelBody>
   )
 }
 

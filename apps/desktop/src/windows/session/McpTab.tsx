@@ -1,4 +1,4 @@
-import { CommandPanel, useAnswer } from './CommandPanel'
+import { PanelBody, useAnswer } from '@/galgame/CommandPanel'
 import { fill, text } from '@/i18n'
 import { mcpServers } from '@/agent'
 import type { McpServer } from '@/agent'
@@ -18,18 +18,15 @@ const TONE: Record<McpServer['status'], string> = {
  * connection belongs to the session, so this is the only place that can say —
  * and a server that failed is why a tool she reached for was not there.
  */
-export function McpPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function McpTab() {
   const t = text().panel.mcp
-  const { answer: servers, ready } = useAnswer<McpServer[]>(open, () => mcpServers())
+  const { answer: servers, ready } = useAnswer<McpServer[]>(true, () => mcpServers())
 
   return (
-    <CommandPanel
-      open={open}
-      title="/mcp"
+    <PanelBody
       description={t.description}
       ready={ready}
       missing={servers?.length ? undefined : t.missing}
-      onClose={onClose}
     >
       <section className="flex flex-col gap-3.5">
         {servers?.map((server) => (
@@ -46,6 +43,6 @@ export function McpPanel({ open, onClose }: { open: boolean; onClose: () => void
           </article>
         ))}
       </section>
-    </CommandPanel>
+    </PanelBody>
   )
 }

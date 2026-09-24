@@ -6,7 +6,6 @@ type DemoTask = {
 }
 
 type DemoRowProps = {
-  isDisabled: boolean
   onSelect: (prompt: string) => void
 }
 
@@ -22,7 +21,7 @@ const TASKS: DemoTask[] = [
   { label: 'What are you up to?', title: 'A peek at what she is doing between errands' },
 ]
 
-export function DemoRow({ isDisabled, onSelect }: DemoRowProps) {
+export function DemoRow({ onSelect }: DemoRowProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {TASKS.map((task) => (
@@ -31,7 +30,6 @@ export function DemoRow({ isDisabled, onSelect }: DemoRowProps) {
           variant="outline"
           size="sm"
           title={task.title}
-          disabled={isDisabled}
           onClick={() => onSelect(task.label)}
         >
           {task.label}

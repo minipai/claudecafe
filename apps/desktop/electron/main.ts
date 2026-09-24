@@ -11,6 +11,7 @@ import {
   chosenLocale,
   chosenShift,
   lastBounds,
+  listConversations,
   recentFolders,
   rememberBackdrop,
   rememberBounds,
@@ -149,7 +150,10 @@ function openSideWindow(name: SideWindow) {
 
 const SIDE_SIZE: Record<SideWindow, Electron.BrowserWindowConstructorOptions> = {
   log: { width: 860, height: 760, minWidth: 520, minHeight: 420 },
-  settings: { width: 560, height: 620, minWidth: 440, minHeight: 420 },
+  settings: { width: 560, height: 680, minWidth: 440, minHeight: 420 },
+  projects: { width: 820, height: 560, minWidth: 600, minHeight: 380 },
+  session: { width: 600, height: 640, minWidth: 440, minHeight: 420 },
+  report: { width: 860, height: 760, minWidth: 520, minHeight: 420 },
 }
 
 /** The scene, or one of its side windows when named. */
@@ -224,12 +228,17 @@ function drawnIn() {
   return choice === 'system' ? app.getLocale() : choice
 }
 
+/** The scene a page belongs to: itself, or the one a side window stands beside. */
+function sceneOf(sender: Electron.WebContents) {
+  if (sides.has(sender)) return sender
+  return [...sides.entries()].find(([, side]) => side.owns(sender))?.[0] ?? sender
+}
+
 /** Which maid the window that sent this is talking to. */
-const shiftOf = (event: IpcMainEvent | IpcMainInvokeEvent) => shifts.get(event.sender)
+const shiftOf = (event: IpcMainEvent | IpcMainInvokeEvent) => shifts.get(sceneOf(event.sender))
 const windowOf = (event: IpcMainEvent) => BrowserWindow.fromWebContents(event.sender)
 /** The side windows of the scene that sent this, or of the side window that did. */
-const sidesOf = (event: IpcMainEvent) =>
-  sides.get(event.sender) ?? [...sides.values()].find((side) => side.owns(event.sender))
+const sidesOf = (event: IpcMainEvent) => sides.get(sceneOf(event.sender))
 
 ipcMain.on('cafe:open-side-window', (event, name: SideWindow) => sidesOf(event)?.show(name))
 ipcMain.on('cafe:share-scene', (event, scene: SceneShare) => sidesOf(event)?.share(scene))
@@ -253,8 +262,8 @@ ipcMain.handle('cafe:context', (event) => shiftOf(event)?.context() ?? null)
 ipcMain.handle('cafe:agents', (event) => shiftOf(event)?.agents() ?? [])
 ipcMain.handle('cafe:mcp', (event) => shiftOf(event)?.mcpServers() ?? [])
 ipcMain.handle('cafe:status', (event) => shiftOf(event)?.status() ?? null)
-ipcMain.handle('cafe:conversations', (event) => shiftOf(event)?.conversations() ?? [])
 ipcMain.handle('cafe:folders', () => recentFolders())
+ipcMain.handle('cafe:folder-conversations', (_event, folder: string) => listConversations(folder))
 // Read off disk rather than asked of her: the persona is what the session was
 // opened with, so it is there to show even when there is no session to ask.
 ipcMain.handle('cafe:persona', () => personaOf(chosenShift().maid))

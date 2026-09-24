@@ -17,7 +17,6 @@ afterEach(() => {
 function logOf(overrides: Partial<SceneShare['log']> = {}): SceneShare['log'] {
   return {
     messages: [createChatMessage('assistant', 'welcome back')],
-    conversation: null,
     isBusy: false,
     isCompacting: false,
     isAwaitingAnswer: false,
@@ -26,23 +25,23 @@ function logOf(overrides: Partial<SceneShare['log']> = {}): SceneShare['log'] {
 }
 
 /** The window reads its bridge once, on import — so it is put in place first. */
-async function mount(log: SceneShare['log']) {
+async function mount(log: SceneShare['log'], conversation: string | null = null) {
   const bridge = { sendToScene: vi.fn() } as unknown as CafeBridge
   ;(window as unknown as { cafe: CafeBridge }).cafe = bridge
   vi.resetModules()
   const { LogWindow } = await import('./LogWindow')
-  render(<LogWindow log={log} />)
+  render(<LogWindow log={log} conversation={conversation} />)
   return bridge
 }
 
 describe('LogWindow', () => {
   it('hides the resume command until the master has spoken in the conversation', async () => {
-    await mount(logOf({ conversation: 'fresh-session' }))
+    await mount(logOf(), 'fresh-session')
     expect(screen.queryByText('claude --resume fresh-session')).not.toBeInTheDocument()
   })
 
   it('shows the resume command once the conversation has an id and a word from him', async () => {
-    await mount(logOf({ conversation: 'session-123', messages: [createChatMessage('user', 'hello')] }))
+    await mount(logOf({ messages: [createChatMessage('user', 'hello')] }), 'session-123')
     expect(screen.getByText('claude --resume session-123')).toBeInTheDocument()
   })
 

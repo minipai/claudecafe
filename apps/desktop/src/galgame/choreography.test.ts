@@ -21,7 +21,7 @@ function createScene(): Scene {
     setOutputTokens: vi.fn(),
     setLook: vi.fn(),
     setLookUnread: vi.fn(),
-    setReaderOpen: vi.fn(),
+    openReport: vi.fn(),
     setLaidOut: vi.fn(),
     notify: vi.fn(),
   }
@@ -80,7 +80,7 @@ describe('choreograph', () => {
     expect(scene.appendEvent).toHaveBeenCalledWith('/usage', expect.any(String), undefined, 'the printed answer')
     expect(scene.setReport).toHaveBeenCalledWith({ label: '/usage →', body: 'the printed answer' })
     expect(scene.setCtaVisible).toHaveBeenCalledWith(true)
-    expect(scene.setReaderOpen).toHaveBeenCalledWith(true)
+    expect(scene.openReport).toHaveBeenCalled()
     expect(scene.setPhase).toHaveBeenCalledWith('done')
     expect(scene.say).not.toHaveBeenCalled()
     expect(scene.wear).not.toHaveBeenCalled()

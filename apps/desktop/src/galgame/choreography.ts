@@ -28,7 +28,8 @@ export type Scene = {
   setOutputTokens: (tokens: number) => void
   setLook: (look: Look) => void
   setLookUnread: (unread: boolean) => void
-  setReaderOpen: (open: boolean) => void
+  /** Put the report up beside her. */
+  openReport: () => void
   setLaidOut: (line: string | null) => void
   notify: (body: string) => void
 }
@@ -64,7 +65,7 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
       scene.appendEvent(msg.label, text().scene.printedAnswer, undefined, msg.body)
       scene.setReport({ label: `${msg.label} →`, body: msg.body })
       scene.setCtaVisible(true)
-      scene.setReaderOpen(true)
+      scene.openReport()
       // Nothing follows it — the turn asked no model and has no result to
       // put her back on her feet.
       scene.setPhase('done')

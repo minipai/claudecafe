@@ -1,4 +1,4 @@
-import { CommandPanel, useAnswer } from './CommandPanel'
+import { PanelBody, useAnswer } from '@/galgame/CommandPanel'
 import { text } from '@/i18n'
 import { subagents } from '@/agent'
 import type { Subagent } from '@/agent'
@@ -8,18 +8,15 @@ import type { Subagent } from '@/agent'
  * plus whatever this folder and the master's settings define — so it is a
  * roster of this project, not of the app.
  */
-export function AgentsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AgentsTab() {
   const t = text().panel.agents
-  const { answer: agents, ready } = useAnswer<Subagent[]>(open, () => subagents())
+  const { answer: agents, ready } = useAnswer<Subagent[]>(true, () => subagents())
 
   return (
-    <CommandPanel
-      open={open}
-      title="/agents"
+    <PanelBody
       description={t.description}
       ready={ready}
       missing={agents?.length ? undefined : t.missing}
-      onClose={onClose}
     >
       <section className="flex flex-col gap-4">
         {agents?.map((agent) => (
@@ -38,6 +35,6 @@ export function AgentsPanel({ open, onClose }: { open: boolean; onClose: () => v
           </article>
         ))}
       </section>
-    </CommandPanel>
+    </PanelBody>
   )
 }

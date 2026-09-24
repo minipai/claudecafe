@@ -1,4 +1,4 @@
-import { CommandPanel, Figure, Heading, useAnswer } from './CommandPanel'
+import { PanelBody, Figure, Heading, useAnswer } from '@/galgame/CommandPanel'
 import { text } from '@/i18n'
 import { sessionStatus } from '@/agent'
 import type { StatusReport } from '@/agent'
@@ -8,18 +8,15 @@ import type { StatusReport } from '@/agent'
  * line is something the session reported; nothing here is the window's own
  * guess about itself.
  */
-export function StatusPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function StatusTab() {
   const t = text().panel.status
-  const { answer: status, ready } = useAnswer<StatusReport>(open, () => sessionStatus())
+  const { answer: status, ready } = useAnswer<StatusReport>(true, () => sessionStatus())
 
   return (
-    <CommandPanel
-      open={open}
-      title="/status"
+    <PanelBody
       description={t.description}
       ready={ready}
       missing={status ? undefined : t.missing}
-      onClose={onClose}
     >
       {status && (
         <>
@@ -55,7 +52,7 @@ export function StatusPanel({ open, onClose }: { open: boolean; onClose: () => v
           </section>
         </>
       )}
-    </CommandPanel>
+    </PanelBody>
   )
 }
 

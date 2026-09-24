@@ -169,16 +169,21 @@ export type Lines = {
 }
 
 /** The windows that stand beside her rather than over her. */
-export type SideWindow = 'log' | 'settings'
+export type SideWindow = 'log' | 'settings' | 'projects' | 'session' | 'report'
+
+/** The session window's tabs, each one a slash command the CLI also answers. */
+export type SessionTab = 'usage' | 'context' | 'agents' | 'mcp' | 'status'
 
 /** Everything the side windows draw, as the scene has it. */
 export type SceneShare = {
   /** The language code to draw them in, already resolved. */
   locale: string
   maidName: string
+  /** Where she is working, and the conversation she is on there. */
+  folder: string
+  conversation: string | null
   log: {
     messages: ChatMessage[]
-    conversation: string | null
     isBusy: boolean
     isCompacting: boolean
     isAwaitingAnswer: boolean
@@ -189,6 +194,11 @@ export type SceneShare = {
     speech: { language: string; chosen: string }
     backdrop: Backdrop
   }
+  /** Which tab the session window was last asked to show. `asked` counts the
+   * asking, so asking for the tab already up still brings it back to the top. */
+  session: { tab: SessionTab; asked: number }
+  /** The write-up she last handed over, if any. */
+  report: Report | null
 }
 
 /** What a side window asks the scene to do. */
@@ -200,6 +210,12 @@ export type SceneAction =
   | { kind: 'locale'; choice: string }
   | { kind: 'speech'; language: string }
   | { kind: 'backdrop'; backdrop: Backdrop }
+  /** Send her to a folder, on whatever was last said there. */
+  | { kind: 'folder'; folder: string }
+  /** Ask for a folder that is not in the list, and go there. */
+  | { kind: 'browse' }
+  /** Go back to a conversation, in whichever folder it was had. */
+  | { kind: 'conversation'; folder: string; sessionId: string }
 
 export type BridgeEvent =
   | { kind: 'status'; status: SessionStatus }
@@ -308,10 +324,10 @@ export type CafeBridge = {
    * café. Asked every time the page loads, so an answered welcome does not
    * come back with the next reload. */
   askLanguage(): Promise<boolean>
-  /** The conversations held in this folder, newest first. */
-  conversations(): Promise<Conversation[]>
   /** The folders she has been opened on, most recent first. */
   folders(): Promise<string[]>
+  /** The conversations held in any folder, newest first. */
+  folderConversations(folder: string): Promise<Conversation[]>
   /** Send her to another folder — this window, a fresh conversation there. */
   switchFolder(cwd: string): void
   /** Go back to one of them; the backlog comes back with it. */

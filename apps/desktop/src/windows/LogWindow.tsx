@@ -22,8 +22,8 @@ function formatTime(timestamp: number) {
  * record, drawn as the scene shares it; compacting and starting over are the
  * scene's to do, so the buttons ask it to.
  */
-export function LogWindow({ log }: { log: SceneShare['log'] }) {
-  const { messages, conversation, isBusy, isCompacting, isAwaitingAnswer } = log
+export function LogWindow({ log, conversation }: { log: SceneShare['log']; conversation: string | null }) {
+  const { messages, isBusy, isCompacting, isAwaitingAnswer } = log
   const t = text()
   const hasStarted = messages.some((message) => message.role === 'user')
   const resumeCommand = conversation && hasStarted ? `claude --resume ${conversation}` : null

@@ -1,30 +1,22 @@
-import { CommandPanel, Figure, Heading, Meter, tokens, useAnswer } from './CommandPanel'
+import { PanelBody, Figure, Heading, Meter, tokens, useAnswer } from '@/galgame/CommandPanel'
 import { fill, text } from '@/i18n'
 import { contextReport } from '@/agent'
 import type { ContextReport } from '@/agent'
-
-type ContextPanelProps = {
-  open: boolean
-  onClose: () => void
-}
 
 /**
  * What is filling the context window, category by category. The same accounting
  * `/context` prints, except the shares are drawn instead of tabulated — and
  * measured now, not at the end of the last turn like the status line.
  */
-export function ContextPanel({ open, onClose }: ContextPanelProps) {
+export function ContextTab() {
   const t = text().panel.context
-  const { answer: report, ready } = useAnswer<ContextReport>(open, () => contextReport())
+  const { answer: report, ready } = useAnswer<ContextReport>(true, () => contextReport())
 
   return (
-    <CommandPanel
-      open={open}
-      title="/context"
+    <PanelBody
       description={t.description}
       ready={ready}
       missing={report ? undefined : t.missing}
-      onClose={onClose}
     >
       {report && (
         <>
@@ -78,7 +70,7 @@ export function ContextPanel({ open, onClose }: ContextPanelProps) {
           )}
         </>
       )}
-    </CommandPanel>
+    </PanelBody>
   )
 }
 

@@ -4,12 +4,13 @@ import { LOCALES, SPOKEN, text } from '@/i18n'
 import { sendToScene } from '@/agent/windows'
 import type { SceneAction, SceneShare } from '@/agent'
 import { BackdropPicker } from './BackdropPicker'
+import { Keys } from './Keys'
 
 /**
  * What the café looks and sounds like, in a window of its own: the language the
- * window is drawn in, the one she speaks, and the room behind her. Each choice
- * is sent to the scene, which keeps it — this window only shows what the scene
- * says is chosen now.
+ * window is drawn in, the one she speaks, and the room behind her — and, at
+ * the bottom, the keys it all answers to. Each choice is sent to the scene,
+ * which keeps it — this window only shows what the scene says is chosen now.
  */
 export function SettingsWindow({ settings }: { settings: SceneShare['settings'] }) {
   const t = text()
@@ -71,6 +72,11 @@ export function SettingsWindow({ settings }: { settings: SceneShare['settings'] 
         <Section title={t.bar.backdrop}>
           <BackdropPicker chosen={backdrop} onChoose={(chosen) => sendToScene({ kind: 'backdrop', backdrop: chosen })} />
         </Section>
+
+        <section className="border-t border-border pt-5">
+          <h2 className="mb-4 text-sm font-medium">{t.bar.keys}</h2>
+          <Keys />
+        </section>
       </div>
     </main>
   )

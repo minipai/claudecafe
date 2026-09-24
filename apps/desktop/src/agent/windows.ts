@@ -23,8 +23,10 @@ export const listenToSideWindows = window.cafe ? liveListen : browserListen
 /** Which side window this page is, if it is one at all. */
 export function sideWindowOf(search: string): SideWindow | null {
   const name = new URLSearchParams(search).get('window')
-  return name === 'log' || name === 'settings' ? name : null
+  return SIDE_WINDOWS.find((each) => each === name) ?? null
 }
+
+const SIDE_WINDOWS: SideWindow[] = ['log', 'settings', 'projects', 'session', 'report']
 
 function liveOpen(name: SideWindow) {
   window.cafe!.openSideWindow(name)

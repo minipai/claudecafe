@@ -56,7 +56,6 @@ function createBridge() {
     maidName: 'ことね',
     setShift: vi.fn(),
     cast: vi.fn().mockResolvedValue(cast),
-    conversations: vi.fn().mockResolvedValue([]),
     folders: vi.fn().mockResolvedValue([]),
     switchFolder: vi.fn(),
     resume: vi.fn(),
@@ -195,8 +194,8 @@ describe('GalgameClient', () => {
     await act(async () => emit({ kind: 'conversation', sessionId: 'fresh-session' }))
     await act(async () => submit('hello'))
 
-    const { log } = lastShared(bridge)
-    expect(log.conversation).toBe('fresh-session')
+    const { conversation, log } = lastShared(bridge)
+    expect(conversation).toBe('fresh-session')
     expect(log.messages.map((message) => message.content)).toContain('hello')
   })
 
@@ -213,12 +212,40 @@ describe('GalgameClient', () => {
     expect(lastShared(bridge).settings.backdrop).toBe('ukiyo-e')
   })
 
-  it('/keys is answered by the window itself — the keys are written down somewhere findable', async () => {
+  it('opening a conversation in another folder sends her there first, then back into it', async () => {
+    const { bridge, emit } = await mountLive()
+
+    await act(async () =>
+      emit({ kind: 'side-window', action: { kind: 'conversation', folder: '/elsewhere', sessionId: 'old-one' } }),
+    )
+
+    expect(bridge.switchFolder).toHaveBeenCalledWith('/elsewhere')
+    expect(bridge.resume).toHaveBeenCalledWith('old-one')
+    expect(vi.mocked(bridge.switchFolder).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(bridge.resume).mock.invocationCallOrder[0],
+    )
+  })
+
+  it('a conversation in the folder she is already in is only resumed', async () => {
+    const { bridge, emit } = await mountLive()
+
+    await act(async () =>
+      emit({ kind: 'side-window', action: { kind: 'conversation', folder: '/mock/project', sessionId: 'old-one' } }),
+    )
+
+    expect(bridge.switchFolder).not.toHaveBeenCalled()
+    expect(bridge.resume).toHaveBeenCalledWith('old-one')
+  })
+
+  it('the window answers its own slash commands by opening the window that has them', async () => {
     const { bridge } = await mountLive()
 
+    await act(async () => submit('/context'))
+    expect(lastShared(bridge).session.tab).toBe('context')
     await act(async () => submit('/keys'))
+    await act(async () => submit('/resume'))
 
-    expect(screen.getByText('Everything said so far')).toBeInTheDocument()
+    expect(vi.mocked(bridge.openSideWindow).mock.calls).toEqual([['session'], ['settings'], ['projects']])
     // Answered here, not sent to her as a prompt.
     expect(bridge.start).not.toHaveBeenCalled()
   })
@@ -314,9 +341,7 @@ describe('GalgameClient', () => {
 
     // Sent somewhere else — a standing "yes" from that folder does not follow.
     vi.mocked(bridge.openFolder).mockResolvedValue('/somewhere/else')
-    await act(async () => screen.getByLabelText('Open the command bar').click())
-    await act(async () => screen.getByText('Work somewhere else').closest('button')!.click())
-    await act(async () => screen.getByText('Somewhere not on this list…').closest('button')!.click())
+    await act(async () => emit({ kind: 'side-window', action: { kind: 'browse' } }))
 
     await act(async () => submit('run the tests once more'))
     runId = lastRunId(bridge)

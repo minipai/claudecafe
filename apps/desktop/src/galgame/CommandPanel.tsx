@@ -26,8 +26,7 @@ type CommandPanelProps = {
 }
 
 /**
- * The frame a slash command's answer opens in — the backlog's modal, so
- * everything that comes up over the scene comes up the same way. Nothing is
+ * The frame a slash command's answer opens in over the scene. Nothing is
  * painted over the window behind it: the panel floats, and she goes on standing
  * where she was.
  */
@@ -58,23 +57,47 @@ export function CommandPanel({
           </DialogClose>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-          {ready ? (
-            missing ? (
-              <div className="flex h-full items-center justify-center">
-                <p className="max-w-[320px] text-center text-sm text-muted-foreground">{missing}</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-7">{children}</div>
-            )
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <Spinner />
-            </div>
-          )}
-        </div>
+        <PanelBody ready={ready} missing={missing}>
+          {children}
+        </PanelBody>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/**
+ * What a panel or a session tab shows: a spinner while the session is being
+ * asked, a sentence when it answered with nothing, and the figures otherwise.
+ */
+export function PanelBody({
+  description,
+  ready,
+  missing,
+  children,
+}: {
+  /** Said above the figures, when the frame has nowhere else to say it. */
+  description?: string
+  ready: boolean
+  missing?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+      {description && <p className="mb-5 text-xs text-muted-foreground">{description}</p>}
+      {ready ? (
+        missing ? (
+          <div className="flex h-full items-center justify-center">
+            <p className="max-w-[320px] text-center text-sm text-muted-foreground">{missing}</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-7">{children}</div>
+        )
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <Spinner />
+        </div>
+      )}
+    </div>
   )
 }
 

@@ -406,11 +406,6 @@ export class MaidSession {
     this.closeRuns()
   }
 
-  /** The conversations held in this folder, for the master to pick from. */
-  conversations() {
-    return listConversations(this.cwd)
-  }
-
   /**
    * Go back to a conversation this folder has had. The connection is dropped
    * rather than told — the SDK resumes a session when it opens, so the next

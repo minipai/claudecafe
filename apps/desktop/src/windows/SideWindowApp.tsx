@@ -4,6 +4,9 @@ import { watchScene } from '@/agent/windows'
 import type { SceneShare, SideWindow } from '@/agent'
 import { LogWindow } from './LogWindow'
 import { SettingsWindow } from './SettingsWindow'
+import { ProjectsWindow } from './ProjectsWindow'
+import { SessionWindow } from './session/SessionWindow'
+import { ReportWindow } from './ReportWindow'
 
 /**
  * A side window draws nothing until the scene has shared itself: what it would
@@ -23,10 +26,23 @@ export function SideWindowApp({ name }: { name: SideWindow }) {
   )
 
   useEffect(() => {
-    if (!scene) return
-    document.title = name === 'log' ? text().bar.log : text().settings.title
+    if (scene) document.title = titleOf(name, scene)
   }, [name, scene])
 
   if (!scene) return <main className="min-h-screen bg-card" />
-  return name === 'log' ? <LogWindow log={scene.log} /> : <SettingsWindow settings={scene.settings} />
+  if (name === 'log') return <LogWindow log={scene.log} conversation={scene.conversation} />
+  if (name === 'settings') return <SettingsWindow settings={scene.settings} />
+  if (name === 'projects') return <ProjectsWindow folder={scene.folder} conversation={scene.conversation} />
+  if (name === 'session') return <SessionWindow session={scene.session} />
+  return <ReportWindow report={scene.report} />
+}
+
+function titleOf(name: SideWindow, scene: SceneShare) {
+  const t = text()
+  if (name === 'log') return t.bar.log
+  if (name === 'settings') return t.settings.title
+  if (name === 'projects') return t.projects.title
+  if (name === 'session') return t.session.title
+  // The link under the box names the report; the arrow is only there to be clicked.
+  return scene.report?.label.replace(/\s*→$/, '') ?? t.report.title
 }

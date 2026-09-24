@@ -1,18 +1,18 @@
-import { CommandPanel, Heading } from './CommandPanel'
+import { Heading } from '@/galgame/CommandPanel'
 import { text } from '@/i18n'
 
 /**
- * The keys the window answers to, written down. Everything here works whether
+ * The keys the scene answers to, written down. Everything here works whether
  * it is read or not — this is the one place that says so, since a frameless
  * window has no menu bar to hang them off and nowhere on the scene to print
  * them without standing in front of her.
  */
-export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function Keys() {
   const t = text().panel.keys
 
   const groups = [
     { heading: t.scene, keys: [['Space', t.turn], ['esc', t.stop]] },
-    { heading: t.panels, keys: [['⌘K', t.bar], ['⌘L', t.log], ['esc', t.close]] },
+    { heading: t.panels, keys: [['⌘K', t.bar], ['⌘L', t.log], ['⌘,', t.settings], ['esc', t.close]] },
     {
       heading: t.composer,
       keys: [['⏎', t.send], ['⇧⏎', t.newline], ['/', t.slash], ['⌘V', t.paste]],
@@ -20,7 +20,7 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
   ]
 
   return (
-    <CommandPanel open={open} title="/keys" description={t.description} ready onClose={onClose}>
+    <div className="flex flex-col gap-5">
       {groups.map((group) => (
         <section key={group.heading}>
           <Heading>{group.heading}</Heading>
@@ -36,6 +36,6 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
           </div>
         </section>
       ))}
-    </CommandPanel>
+    </div>
   )
 }
