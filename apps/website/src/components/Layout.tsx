@@ -1,7 +1,16 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import type { Child } from "hono/jsx";
 import { href, ui, type Locale } from "../i18n.js";
 
 const SITE_URL = "https://claudecafe.dev";
+/** The stylesheet's URL carries its own hash. Assets are cached for half an
+ * hour, and a page served after a deploy must not be dressed in the stylesheet
+ * from before it. */
+const STYLES_URL = `/assets/styles.css?v=${createHash("sha256")
+  .update(readFileSync(new URL("../assets/styles.css", import.meta.url)))
+  .digest("hex")
+  .slice(0, 10)}`;
 const DEFAULT_DESCRIPTION =
   "Give your Claude a maid persona. Browse, pick, and make it yours.";
 
@@ -58,7 +67,7 @@ export function Layout({
         />
         <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
         {/* maid bg images loaded by maid-bg.js */}
-        <link rel="stylesheet" href="/assets/styles.css" />
+        <link rel="stylesheet" href={STYLES_URL} />
       </head>
       <body {...(maid ? { 'data-maid': maid } : {})}>
         <header class="site-header">

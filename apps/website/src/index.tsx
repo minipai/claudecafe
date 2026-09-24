@@ -65,7 +65,6 @@ function site(locale: Locale) {
   page.get("/", (c) => {
     const accept = c.req.header("Accept") || "";
     const maids = getAllMaids(locale);
-    const posts = getAllPosts(locale);
 
     if (accept.includes("text/markdown")) {
       const index = maids
@@ -77,7 +76,7 @@ function site(locale: Locale) {
 
     return c.html(
       <Layout locale={locale}>
-        <HomePage maids={maids} posts={posts} locale={locale} />
+        <HomePage maids={maids} locale={locale} />
       </Layout>,
     );
   });
