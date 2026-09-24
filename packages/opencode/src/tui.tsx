@@ -97,6 +97,7 @@ function MaidCard(props: {
       >
         <text fg={props.api.theme.text.default} wrapMode="none">
           <b>ことね</b>
+          <span style={{ fg: props.api.theme.text.subdued }}> · {props.expression().face}</span>
         </text>
       </box>
     </box>

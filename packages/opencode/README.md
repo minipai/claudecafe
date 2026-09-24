@@ -55,8 +55,9 @@ binding, normally `ctrl+x b`).
 Run `/maid` to pick a face manually, or let the model do it: the server registers
 a `set_expression` tool with a `face` enum discovered from the installed `*.gif`
 files. V2 RPC carries the face to the TUI and restores it when a session's panel
-mounts. Each session keeps its own face, so two windows do not fight over one
-portrait. There are no heuristic reactions; the model drives the panel.
+mounts. The current face name appears to the right of Kotone's name. Each session
+keeps its own face, so two windows do not fight over one portrait. There are no
+heuristic reactions; the model drives the panel.
 
 Every terminal gets the same raster rendering.
 

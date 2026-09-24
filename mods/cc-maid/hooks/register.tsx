@@ -118,6 +118,7 @@ export const register: Register = (on) => {
           <Text dimColor>{rule(face)}</Text>
           <Box>
             <Text bold>{name}</Text>
+            <Text dimColor>{` · ${expression}`}</Text>
           </Box>
         </Box>
       </Box>

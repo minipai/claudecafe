@@ -188,11 +188,11 @@ describe('Cafe image pane', () => {
       expect(await $.tool.call({ tool, expression })).toEqual({ result: `Expression: ${expression}` })
       if (expression !== previous) changes++
       expect(invalidations).toEqual(Array(changes).fill('ui.render'))
-      expect(await $.ui.render(pane())).toEqual(drawn(image))
+      expect(await $.ui.render(pane())).toEqual(drawn(image, shift, expression))
       await $.tool.call({ tool, expression })
       await clock.advance(9000)
       expect(invalidations).toHaveLength(changes)
-      expect(await $.ui.render(pane())).toEqual(drawn(image))
+      expect(await $.ui.render(pane())).toEqual(drawn(image, shift, expression))
       previous = expression
     }
   })
@@ -207,7 +207,7 @@ describe('Cafe image pane', () => {
       expect(invalidations).toBe(1)
       expect(await $.tool.call({ tool, expression })).toEqual({ deny: `Unknown expression: ${String(expression)}` })
       expect(invalidations).toBe(1)
-      expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!))
+      expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, shift, 'happy'))
     })
   }
 
@@ -219,11 +219,11 @@ describe('Cafe image pane', () => {
     expect(invalidations).toBe(0)
   })
 
-  test('shows only her name beside the portrait', async ($, on) => {
+  test('shows the current expression beside her name', async ($, on) => {
     on('ui.invalidate', () => ({ value: undefined }))
     await start($, on)
     await $.tool.call({ tool, expression: 'happy' })
-    expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!))
+    expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, shift, 'happy'))
   })
 
   test('refreshes the status when a turn ends and as the shift clock moves on', async ($, on) => {
@@ -328,9 +328,12 @@ function face(...cells: number[][]): Face {
   return { columns: cells.length, rows: 1, cells: btoa(String.fromCharCode(...bytes)) }
 }
 
-/** The panel: the status block on top, then the portrait framed with her name beneath it. */
-function drawn(image: Face, figures: Figures = shift): RenderElement {
-  const title: RenderElement[] = [{ type: 'Text', props: { bold: true }, children: ['ことね'] }]
+/** The panel: the status block on top, then the portrait framed with her name and expression beneath it. */
+function drawn(image: Face, figures: Figures = shift, expression = 'neutral'): RenderElement {
+  const title: RenderElement[] = [
+    { type: 'Text', props: { bold: true }, children: ['ことね'] },
+    { type: 'Text', props: { dimColor: true }, children: [` · ${expression}`] },
+  ]
   return {
     type: 'Box', props: { flexDirection: 'column', alignItems: 'center', width: 38, height: 40 },
     children: [

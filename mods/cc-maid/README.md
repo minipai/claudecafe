@@ -35,10 +35,11 @@ in non-interactive runs (`claude -p`) or on desktop and mobile.
 ## Use
 
 Just work as usual. Claude changes the portrait when its visible expression
-changes, and it stays until the next change. Above her, a status block keeps the
-shift's figures: the project and its git branch, HP for the context window still
-free, MP for the five-hour usage limit spent, then how long the session has run
-and what it has cost.
+changes, and the current face name appears to the right of Kotone's name. It
+stays until the next change. Above her, a status block keeps the shift's figures:
+the project and its git branch, HP for the context window still free, MP for the
+five-hour usage limit spent, then how long the session has run and what it has
+cost.
 
 You can also ask for a face directly, for example "switch to happy". The
 expressions are:
