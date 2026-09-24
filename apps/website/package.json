@@ -4,7 +4,7 @@
   "description": "AI 女僕 persona 展示網站",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --port 5050",
+    "dev": "wrangler dev --port 5050 --ip 0.0.0.0",
     "ship": "wrangler deploy",
     "check": "tsx scripts/build-cast.ts && tsc --noEmit"
   },
