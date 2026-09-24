@@ -164,14 +164,13 @@ class CastPoolTest(CafeTest):
 
 
 class CommitAuthorshipTest(CafeTest):
-    PERSONA = """# Personality
+    PERSONA = """---
+id: claudecafe/kokona
+name: ここな
+---
+# Personality
 
 Maid instructions.
-
-## Git
-
-When creating commits, use this Co-Authored-By line instead of the default:
-`Co-Authored-By: ここな <kokona@claudecafe.dev>`
 """
 
     def test_co_author_is_the_default_and_explicitly_excludes_author(self):
@@ -180,6 +179,7 @@ When creating commits, use this Co-Authored-By line instead of the default:
             "`Co-Authored-By: ここな <kokona@claudecafe.dev>`", body)
         self.assertIn("Do not use `--author` for the maid.", body)
         self.assertIn("Do not print the trailer in ordinary replies", body)
+        self.assertNotIn("id: claudecafe/kokona", body)
 
     def test_author_uses_maid_identity_without_co_author_trailer(self):
         set_config({"commit_authorship": "author"})
@@ -196,9 +196,26 @@ When creating commits, use this Co-Authored-By line instead of the default:
         self.assertIn("Co-Authored-By:", body)
         self.assertNotIn('`--author="', body)
 
+    def test_an_older_downloads_git_section_gives_way(self):
+        legacy = self.PERSONA + """
+## Git
+
+When creating commits, use this Co-Authored-By line instead of the default:
+`Co-Authored-By: ここな <kokona@claudecafe.dev>`
+
+## Voice
+
+Speak plainly.
+"""
+        body = load_persona.commit_authorship(legacy)
+        self.assertEqual(body.count("## Git"), 1)
+        self.assertEqual(body.count("Co-Authored-By:"), 1)
+        self.assertIn("## Voice\n\nSpeak plainly.", body)
+
     def test_custom_persona_without_cafe_identity_is_unchanged(self):
-        body = "# Personality\n\nCustom instructions.\n"
-        self.assertEqual(load_persona.commit_authorship(body), body)
+        body = "---\nid: mymaid\nname: M\n---\n# Personality\n\nCustom instructions.\n"
+        self.assertEqual(load_persona.commit_authorship(body),
+                         "# Personality\n\nCustom instructions.\n")
 
 
 class FestivalTest(CafeTest):
@@ -260,14 +277,10 @@ class HookProcessTest(CafeTest):
     def test_load_persona_applies_author_mode(self):
         set_config({"commit_authorship": "author"})
         write(f"{CAFE}/personas/testmaid.md", """---
+id: claudecafe/testmaid
 name: T
 ---
 Test persona body.
-
-## Git
-
-When creating commits, use this Co-Authored-By line instead of the default:
-`Co-Authored-By: T <testmaid@claudecafe.dev>`
 """)
         r = self._run("hooks/load-persona.py", env={"CLAUDE_MAID": "testmaid"})
         self.assertIn('`--author="T <testmaid@claudecafe.dev>"`', r.stdout)

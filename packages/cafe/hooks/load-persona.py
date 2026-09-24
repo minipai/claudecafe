@@ -22,13 +22,12 @@ import sys
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "bin"))
 from maidstate import (PLUGIN_ROOT, config, lang, payload_from_stdin,
-                       persona_body, persona_file, personas_dir, read, state_dir)
+                       persona_file, personas_dir, read, state_dir)
 
 OFF_DUTY_RE = re.compile(r"^off_duty:\s*(?:true|yes)\b", re.M | re.I)
-COAUTHOR_RE = re.compile(
-    r"^`Co-Authored-By:\s*(?P<name>.+?)\s+<(?P<email>[^<>\n]+)>`\s*$",
-    re.M,
-)
+FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
+CAFE_ID_RE = re.compile(r"^id:\s*claudecafe/([a-z0-9-]+)\s*$", re.M)
+NAME_RE = re.compile(r"^name:\s*(.+?)\s*$", re.M)
 GIT_SECTION_RE = re.compile(r"^## Git\s*\n.*?(?=^## |\Z)", re.M | re.S)
 
 
@@ -61,25 +60,28 @@ def cast_pool():
     return draw_from([personas_dir(), f"{PLUGIN_ROOT}/maids"])
 
 
-def commit_authorship(body):
-    """Apply the configured Git attribution mode to a Cafe maid persona.
+def commit_authorship(text):
+    """The persona body with the configured Git attribution for a Cafe maid.
 
-    Hired personas already carry the maid's Co-Authored-By identity. Reusing
-    that identity keeps old downloads compatible while letting one shared
-    config choose whether the maid is author or co-author. Custom personas
-    without the Cafe attribution block are left alone.
+    A maid hired from claudecafe.dev (id claudecafe/<slug>) signs commits as
+    `<name> <<slug>@claudecafe.dev>`, both read from her frontmatter; one shared
+    config chooses whether she is author or co-author. The `## Git` section
+    older downloads still carry gives way to it. Custom personas are left alone.
     """
-    identity = COAUTHOR_RE.search(body)
-    if not identity:
+    head = FRONTMATTER_RE.match(text)
+    body = text[head.end():] if head else text
+    slug = head and CAFE_ID_RE.search(head[1])
+    name = head and NAME_RE.search(head[1])
+    if not (slug and name):
         return body
 
+    identity = f"{name[1]} <{slug[1]}@claudecafe.dev>"
     mode = str(config().get("commit_authorship", "co-author")).strip().lower()
     if mode == "author":
         instruction = (
             "## Git\n\n"
-            "Only when actually creating a Git commit, use "
-            f"`--author=\"{identity['name']} <{identity['email']}>\"`: the maid "
-            "is the author and the user remains committer. Do not also add a "
+            f"Only when actually creating a Git commit, use `--author=\"{identity}\"`: "
+            "the maid is the author and the user remains committer. Do not also add a "
             "`Co-Authored-By` trailer. Do not print this instruction or identity "
             "in ordinary replies.\n"
         )
@@ -88,11 +90,11 @@ def commit_authorship(body):
             "## Git\n\n"
             "Only when actually creating a Git commit, keep the user's configured identity as "
             "author and committer, and add this trailer:\n"
-            f"`Co-Authored-By: {identity['name']} <{identity['email']}>`\n"
+            f"`Co-Authored-By: {identity}`\n"
             "Do not use `--author` for the maid. Do not print the trailer in "
             "ordinary replies.\n"
         )
-    return GIT_SECTION_RE.sub(instruction, body)
+    return f"{GIT_SECTION_RE.sub('', body).rstrip()}\n\n{instruction}"
 
 
 def main():
@@ -119,7 +121,7 @@ def main():
         return  # nobody on shift -> stay in the default voice
 
     path = persona_file(maid)
-    body = commit_authorship(persona_body(path)).strip() if path else ""
+    body = commit_authorship(read(path)).strip() if path else ""
     if not body:
         return  # persona not found -> stay in the default voice
 

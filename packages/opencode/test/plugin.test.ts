@@ -141,14 +141,13 @@ describe("cast pool", () => {
 })
 
 describe("commit authorship", () => {
-  const PERSONA = `# Personality
+  const PERSONA = `---
+id: claudecafe/kokona
+name: ここな
+---
+# Personality
 
 Maid instructions.
-
-## Git
-
-When creating commits, use this Co-Authored-By line instead of the default:
-\`Co-Authored-By: ここな <kokona@claudecafe.dev>\`
 `
 
   test("co-author is the default and excludes --author", () => {
@@ -156,6 +155,7 @@ When creating commits, use this Co-Authored-By line instead of the default:
     expect(body).toContain("`Co-Authored-By: ここな <kokona@claudecafe.dev>`")
     expect(body).toContain("Do not use `--author` for the maid.")
     expect(body).toContain("Do not print the trailer in ordinary replies")
+    expect(body).not.toContain("id: claudecafe/kokona")
   })
 
   test("author mode swaps in the maid identity without a trailer", () => {
@@ -174,16 +174,26 @@ When creating commits, use this Co-Authored-By line instead of the default:
     expect(body).not.toContain('`--author="')
   })
 
-  test("a custom persona without the block is untouched", () => {
-    const body = "# Personality\n\nCustom instructions.\n"
-    expect(cafe.commitAuthorship(body)).toBe(body)
+  test("a custom persona is untouched", () => {
+    const body = "---\nid: mymaid\nname: M\n---\n# Personality\n\nCustom instructions.\n"
+    expect(cafe.commitAuthorship(body)).toBe("# Personality\n\nCustom instructions.\n")
   })
 
-  test("the Git section stops at the next heading", () => {
-    const withTail = `${PERSONA}\n## Voice\n\nSpeak plainly.\n`
-    const body = cafe.commitAuthorship(withTail)
+  test("an older download's Git section gives way", () => {
+    const legacy = `${PERSONA}
+## Git
+
+When creating commits, use this Co-Authored-By line instead of the default:
+\`Co-Authored-By: ここな <kokona@claudecafe.dev>\`
+
+## Voice
+
+Speak plainly.
+`
+    const body = cafe.commitAuthorship(legacy)
+    expect(body.split("## Git").length).toBe(2)
+    expect(body.split("Co-Authored-By:").length).toBe(2)
     expect(body).toContain("## Voice\n\nSpeak plainly.")
-    expect(body.indexOf("## Git")).toBeLessThan(body.indexOf("## Voice"))
   })
 })
 

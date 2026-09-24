@@ -164,41 +164,37 @@ export function castPool(): string[] {
   return drawFrom([personasDir(), maidsDir()])
 }
 
-const COAUTHOR_RE = /^`Co-Authored-By:\s*(.+?)\s+<([^<>\n]+)>`\s*$/m
-
 /**
- * Apply the configured Git attribution mode to a Café persona. Hired personas
- * already carry the maid's Co-Authored-By identity; reusing it lets one shared
- * config choose whether the maid is author or co-author. Custom personas
- * without the block are left alone.
+ * The persona body with the configured Git attribution for a Café maid. A maid
+ * hired from claudecafe.dev (id claudecafe/<slug>) signs commits as
+ * `<name> <<slug>@claudecafe.dev>`, both read from her frontmatter; one shared
+ * config chooses whether she is author or co-author. The `## Git` section older
+ * downloads still carry gives way to it. Custom personas are left alone.
  */
-export function commitAuthorship(body: string): string {
-  const identity = COAUTHOR_RE.exec(body)
-  if (!identity) return body
-  const name = identity[1] ?? ""
-  const email = identity[2] ?? ""
+export function commitAuthorship(text: string): string {
+  const head = /^---\n([\s\S]*?)\n---\n/.exec(text)
+  const body = head ? text.slice(head[0].length) : text
+  const slug = head && /^id:\s*claudecafe\/([a-z0-9-]+)\s*$/m.exec(head[1] ?? "")
+  const name = head && /^name:\s*(.+?)\s*$/m.exec(head[1] ?? "")
+  if (!slug || !name) return body
+
+  const identity = `${name[1]} <${slug[1]}@claudecafe.dev>`
   const mode = String(config().commit_authorship ?? "co-author").trim().toLowerCase()
   const instruction =
     mode === "author"
       ? "## Git\n\n" +
-        `Only when actually creating a Git commit, use \`--author="${name} <${email}>"\`: the maid ` +
-        "is the author and the user remains committer. Do not also add a " +
+        `Only when actually creating a Git commit, use \`--author="${identity}"\`: ` +
+        "the maid is the author and the user remains committer. Do not also add a " +
         "`Co-Authored-By` trailer. Do not print this instruction or identity " +
         "in ordinary replies.\n"
       : "## Git\n\n" +
         "Only when actually creating a Git commit, keep the user's configured identity as " +
         "author and committer, and add this trailer:\n" +
-        `\`Co-Authored-By: ${name} <${email}>\`\n` +
+        `\`Co-Authored-By: ${identity}\`\n` +
         "Do not use `--author` for the maid. Do not print the trailer in " +
         "ordinary replies.\n"
-  return replaceGitSection(body, instruction)
-}
-
-function replaceGitSection(body: string, instruction: string): string {
-  const beforeNextHeading = /^## Git[ \t]*\n[\s\S]*?(?=^## )/m
-  if (beforeNextHeading.test(body)) return body.replace(beforeNextHeading, instruction)
-  const throughEnd = /^## Git[ \t]*\n[\s\S]*$/m
-  return body.replace(throughEnd, instruction)
+  const rest = body.replace(/^## Git[ \t]*\n[\s\S]*?(?=^## |(?![\s\S]))/m, "").trimEnd()
+  return `${rest}\n\n${instruction}`
 }
 
 // ---------------------------------------------------------------------------
@@ -448,7 +444,7 @@ export function createCafe(directory: string) {
     shift.maid = resolveMaid(sessionID)
     if (shift.maid) {
       const path = personaFile(shift.maid)
-      shift.persona = path ? commitAuthorship(personaBody(path)).trim() : ""
+      shift.persona = path ? commitAuthorship(read(path)).trim() : ""
       if (!shift.persona) shift.maid = null
     }
     // The briefing is housekeeping's counterpart, not part of the persona:
