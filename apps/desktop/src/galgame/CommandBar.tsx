@@ -55,7 +55,7 @@ type Doing = {
 const MODES: SessionSettings['mode'][] = ['default', 'auto', 'acceptEdits', 'plan']
 
 /**
- * ⌘K: what she can be asked to do that is not said out loud — start over, pick
+ * ⌘⇧P: what she can be asked to do that is not said out loud — start over, pick
  * how much she asks, open one of the windows beside her. Where she works and
  * what she said there is the projects window's, which has room to show both.
  */

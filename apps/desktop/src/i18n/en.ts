@@ -193,7 +193,7 @@ export const en = {
     interface: 'The window is drawn in',
     speaks: 'She answers in',
     otherLanguage: 'Something else — write it in any words',
-    later: 'Both can be changed later with ⌘K',
+    later: 'Both can be changed later with ⌘,',
     start: 'Save settings',
   },
   trouble: {
@@ -226,7 +226,7 @@ export const en = {
     history: 'Conversation history (⌘L)',
     openHistory: 'Open conversation history',
     openPersona: 'Who {her} is',
-    commandBar: 'Everything else (⌘K)',
+    commandBar: 'Everything else (⌘⇧P)',
     openCommandBar: 'Open the command bar',
     model: 'Model',
     effort: 'Effort',

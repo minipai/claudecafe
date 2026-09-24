@@ -188,7 +188,7 @@ export const zhTW: Text = {
     interface: '介面用',
     speaks: '她回話用',
     otherLanguage: '其他語言——想怎麼寫都可以',
-    later: '兩個之後都能用 ⌘K 改',
+    later: '兩個之後都能用 ⌘, 改',
     start: '儲存設定',
   },
   trouble: {
@@ -221,7 +221,7 @@ export const zhTW: Text = {
     history: '對話紀錄（⌘L）',
     openHistory: '打開對話紀錄',
     openPersona: '{her}是誰',
-    commandBar: '其他所有的事（⌘K）',
+    commandBar: '其他所有的事（⌘⇧P）',
     openCommandBar: '打開指令列',
     model: '模型',
     effort: '思考量',

@@ -19,7 +19,7 @@ import type { Lines } from '../src/agent/bridge'
  * that cannot be translated without being rebuilt.
  */
 const ENGLISH: Lines = {
-  greeting: 'Goshujin-sama~ what can I do for you today? Ask away, or press ⌘K to send me somewhere else ♪',
+  greeting: 'Goshujin-sama~ what can I do for you today? Ask away, or press ⌘⇧P to send me somewhere else ♪',
   interrupted: 'Eh, stopping there? O-okay…',
   commandAsk: 'Goshujin-sama, I would like to run this — may I?',
   editAsk: 'I would like to change this file~ have a look at what I am changing first?',
@@ -40,7 +40,7 @@ const ENGLISH: Lines = {
  * she speaks in here exactly as she does in the master's terminal.
  */
 export function replyLanguage() {
-  // What the window was told, if anything: ⌘K sets this, and it is the only
+  // What the window was told, if anything: the settings window sets this, and it is the only
   // language setting that belongs to the app rather than to the café.
   const told = chosenSpeech().trim()
   if (told) return told
@@ -120,7 +120,7 @@ The maid above works inside a desktop window rather than a terminal. The window 
 
 Return JSON and nothing else, with exactly these keys:
 
-- "greeting": what she says as the window opens and whenever a fresh conversation starts. Mention that ⌘K is how she is sent to another folder or back to an earlier conversation.
+- "greeting": what she says as the window opens and whenever a fresh conversation starts. Mention that ⌘⇧P is how she is sent to another folder or back to an earlier conversation.
 - "interrupted": she has just been stopped in the middle of working.
 - "commandAsk": she is asking to be allowed to run a shell command. The command itself is printed on the card beside her, so the line must not contain it or describe which one it is.
 - "editAsk": she is asking to be allowed to change a file. The file name and the diff are shown beside her, so the line must not name the file.

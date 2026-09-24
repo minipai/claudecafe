@@ -427,10 +427,10 @@ export function GalgameClient({
   }
   useEffect(() => listenToSideWindows((action) => sideActionRef.current(action)), [])
 
-  /** ⌘K is where she is sent somewhere else — another folder, or back into a
-   * conversation this one has had. ⌘L is the log, which is otherwise a button
-   * on the plate and a row inside ⌘K — the one window opened often enough to be
-   * worth a key of its own. ⌘, is the settings, where every Mac app keeps them. */
+  /** ⌘⇧P is the command palette, the key editors already use for it. ⌘L is
+   * the log, which is otherwise a button on the plate and a row inside the
+   * palette — the one window opened often enough to be worth a key of its own.
+   * ⌘, is the settings, where every Mac app keeps them. */
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return
@@ -438,7 +438,8 @@ export function GalgameClient({
       // the master can neither see nor close — and it would take the next esc
       // meant for the report.
       if (permissionExpanded || trouble) return
-      if (event.key === 'k') {
+      // Shift turns the key into a capital, and not on every layout the same way.
+      if (event.shiftKey && event.key.toLowerCase() === 'p') {
         event.preventDefault()
         setSwitching(true)
       } else if (event.key === 'l') {

@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import { test } from './launchCafe'
 
 test('⌘, opens the settings beside her, and a language picked there redraws both windows', async ({ cafe: { app, page } }) => {
-  // Dispatched straight at the window, for the same reason as ⌘K in command-bar.spec.ts.
+  // Dispatched straight at the window, for the same reason as ⌘⇧P in command-bar.spec.ts.
   const opening = app.waitForEvent('window')
   await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', metaKey: true, bubbles: true, cancelable: true })))
   const settings = await opening

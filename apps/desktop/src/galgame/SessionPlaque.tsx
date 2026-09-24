@@ -1,4 +1,4 @@
-import { ChevronDown, History } from 'lucide-react'
+import { ChevronDown, History, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fill, text } from '@/i18n'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -110,16 +110,19 @@ export function SessionPlaque({
       />
 
       {/* Everything else she can be asked to do is in the command bar, so the
-          plaque points at it rather than keeping a second copy of the list. */}
+          plaque points at it rather than keeping a second copy of the list.
+          Named like LOG beside it: a chord of symbols this small is unreadable,
+          so the key is left to the hover and the shortcut list. */}
       <Button
         variant="outline"
         size="sm"
-        className="h-8 px-2 font-mono text-[11px] text-muted-foreground"
+        className="h-8 px-2.5 font-mono text-[11px] tracking-[0.08em] text-muted-foreground"
         aria-label={t.openCommandBar}
         title={t.commandBar}
         onClick={onSwitch}
       >
-        ⌘K
+        <Menu className="size-3.5" />
+        MENU
       </Button>
     </ButtonGroup>
   )

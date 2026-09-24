@@ -11,7 +11,7 @@ import type { Lines } from '@/agent'
  * wedging them into the sentence only makes the sentence untranslatable.
  */
 export const ENGLISH_LINES: Lines = {
-  greeting: 'Goshujin-sama~ what can I do for you today? Ask away, or press ⌘K to send me somewhere else ♪',
+  greeting: 'Goshujin-sama~ what can I do for you today? Ask away, or press ⌘⇧P to send me somewhere else ♪',
   interrupted: 'Eh, stopping there? O-okay…',
   commandAsk: 'Goshujin-sama, I would like to run this — may I?',
   editAsk: 'I would like to change this file~ have a look at what I am changing first?',

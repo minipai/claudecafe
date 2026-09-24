@@ -12,7 +12,7 @@ export function Keys() {
 
   const groups = [
     { heading: t.scene, keys: [['Space', t.turn], ['esc', t.stop]] },
-    { heading: t.panels, keys: [['⌘K', t.bar], ['⌘L', t.log], ['⌘,', t.settings], ['esc', t.close]] },
+    { heading: t.panels, keys: [['⌘⇧P', t.bar], ['⌘L', t.log], ['⌘,', t.settings], ['esc', t.close]] },
     {
       heading: t.composer,
       keys: [['⏎', t.send], ['⇧⏎', t.newline], ['/', t.slash], ['⌘V', t.paste]],
