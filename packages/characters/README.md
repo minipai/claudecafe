@@ -50,6 +50,38 @@ actual persona.
   decodes static or animated frames, and draws them as ordinary text cells.
 - The café plugin ships none of it: maids are hired from the site.
 
+## Publishing a character pack
+
+Character packs are published independently from the desktop app and plugin.
+The release tag is `<maid-id>-characters-v<version>`, where `<version>` comes
+from every `persona.*.md` frontmatter in the character folder. The uploaded asset
+is `ClaudeCafe-<Name>-characters-v<version>.zip`, with the maid folder as the
+archive's top-level directory. The script derives `<Name>` by capitalizing the
+first letter of the maid ID, matching the existing `Kotone`, `Kokona`, and
+`Kurumi` assets.
+
+Bump and commit the persona version, then run from the repository root:
+
+```sh
+scripts/ship-characters.sh kotone
+```
+
+The script refuses a dirty working tree, pins each release tag to the current
+commit, validates the persona metadata and `portraits/neutral.webp`, builds one
+or more archives, and creates immutable GitHub Releases in `minipai/claudecafe`.
+Set `CHARACTER_REPO` and `CHARACTER_DIST` for a fork or a different local
+output directory. After uploading, it downloads the asset again and verifies
+its SHA-256. Pass several maid IDs to release a group together. Use
+`SHIP_DRY=1` to build and validate without contacting GitHub:
+
+```sh
+SHIP_DRY=1 scripts/ship-characters.sh kotone kurumi kokona
+```
+
+The script requires `gh`, `python3`, `zip`, and `shasum` (or `sha256sum`). It
+prints the asset URL and SHA-256 after publishing; copy those values into
+`apps/desktop/electron/characters.ts` before shipping a desktop build.
+
 ## Persona interaction eval
 
 `eval.mjs` gives every maid the same six situations in isolated model calls: two
