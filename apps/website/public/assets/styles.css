@@ -923,6 +923,25 @@ html.home-snapping {
 
 .home {
     position: relative;
+    isolation: isolate;
+    /* On a narrow screen she is wider than the row; the rest of her is cut. */
+    overflow-x: clip;
+}
+
+/* Faint graph paper in the margins either side of the header's width,
+   fading out before the content. */
+.home::before {
+    --margin: max(0px, (100vw - 960px) / 2);
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background:
+        linear-gradient(rgb(60 47 47 / 0.07) 1px, transparent 1px) 0 0 / 26px 26px,
+        linear-gradient(90deg, rgb(60 47 47 / 0.07) 1px, transparent 1px) 0 0 / 26px 26px;
+    mask: linear-gradient(to right,
+        #000 calc(var(--margin) * 0.3), transparent var(--margin),
+        transparent calc(100% - var(--margin)), #000 calc(100% - var(--margin) * 0.3));
 }
 
 .home-top-stop {
@@ -946,13 +965,23 @@ html.home-snapping {
     margin: 0 auto;
     padding: 0 16px;
     display: grid;
-    /* Her clips are 600 × 800, never shown larger. Up to half of her stands
-       out past the header's left edge — as much as the margin has room for,
-       never off the screen — which leaves the slides the rest of the row. */
-    --her: min(600px, (100vh - 48px) * 3 / 4, 50vw);
-    --out: min(var(--her) / 2, max(0px, (100vw - 960px) / 2 + 16px));
-    grid-template-columns: calc(var(--her) - var(--out)) minmax(0, 1fr);
-    gap: 48px;
+    /* Her clips are 600 × 800, never shown larger. Up to a third of her
+       stands out past the header's left edge — two thirds of what the margin
+       has room for, never off the screen. The slides keep a fixed width at the
+       right edge; when the row runs short they lie over her rather than shrink. */
+    --her: min(600px, (100vh - 48px) * 3 / 4);
+    --out: min(var(--her) / 3, max(0px, (100vw - 960px) / 2 + 16px) * 2 / 3);
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.home-maid,
+.home-slides {
+    grid-area: 1 / 1;
+}
+
+.home-slides {
+    justify-self: end;
+    width: min(540px, 100%);
 }
 
 .home-stops i {
@@ -972,7 +1001,7 @@ html.home-snapping {
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    margin-left: calc(-1 * var(--out));
 }
 
 .home-frame {
@@ -986,7 +1015,9 @@ html.home-snapping {
    Safari drops the alpha of a WebM, and a flat background never needed it.
    Browsers colour-manage video and CSS a hair apart, so every edge fades out
    rather than meeting the paper on a line — and close up, the frame cuts
-   through her, so the bottom fades furthest. */
+   through her, so the bottom fades furthest. The mask is a blurred rounded
+   rectangle, so the corners fade round too; it runs past the top, which
+   stays sharp. */
 .home-frame video {
     position: absolute;
     inset: 0;
@@ -994,10 +1025,7 @@ html.home-snapping {
     height: 100%;
     object-fit: contain;
     opacity: 0;
-    mask:
-        linear-gradient(to right, transparent, #000 6%, #000 94%, transparent),
-        linear-gradient(to bottom, transparent, #000 4%, #000 86%, transparent);
-    mask-composite: intersect;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800' preserveAspectRatio='none'%3E%3Cfilter id='f' filterUnits='userSpaceOnUse' x='0' y='0' width='600' height='800'%3E%3CfeGaussianBlur stdDeviation='28'/%3E%3C/filter%3E%3Crect x='44' y='-200' width='512' height='926' rx='110' filter='url(%23f)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 
 .home-frame video.on {
@@ -1030,12 +1058,19 @@ html.home-snapping {
     position: relative;
 }
 
+/* Each slide is as tall as what it says, centred in the column. Paper sits
+   right behind it with soft edges: unseen on the page, it only shows where
+   the words lie over her. */
 .home-slide {
     position: absolute;
     inset: 0;
+    height: fit-content;
+    margin: auto 0;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    background: rgb(from var(--bg) r g b / 0.82);
+    box-shadow: 0 0 24px 20px rgb(from var(--bg) r g b / 0.82);
+    border-radius: 12px;
     opacity: 0;
     transform: translateY(56px);
     pointer-events: none;
@@ -1062,7 +1097,7 @@ html.home-snapping {
 /* The greeting is the first slide: she is already standing there. It sits a
    little above centre, nearer her face than her feet. */
 .home-hello {
-    padding-bottom: 22vh;
+    bottom: 22vh;
 }
 
 .home-hello h1 {
@@ -1274,29 +1309,56 @@ html.home-snapping {
 }
 
 @media (max-width: 820px) {
+    /* Room on the right for the dots, and the same on the left. */
     .home-stage {
-        grid-template-columns: 1fr;
-        grid-template-rows: 34vh 1fr;
-        gap: 0;
-    }
-
-    .home-frame {
-        height: 100%;
-        width: auto;
+        padding: 0 32px;
     }
 
     .home-maid {
         justify-content: center;
+        margin-left: 0;
     }
+
+    .home-slides {
+        justify-self: center;
+    }
+
+    /* Each slide as wide as its widest line, centred, low on the screen so
+       her face stays clear; the lines stay left. */
+    .home-slide {
+        width: fit-content;
+        max-width: 100%;
+        margin: auto auto 8vh;
+    }
+
+    /* The greeting's screen starts under the header, so it ends that much lower. */
+    .home-hello {
+        bottom: 0;
+        margin-bottom: calc(8vh + 57px);
+    }
+
 
     .home-dots {
-        right: 8px;
-        top: 17vh;
+        right: 14px;
     }
 
-    .home-slide {
-        justify-content: flex-start;
-        padding-top: 8px;
+    /* One row of faces, swiped sideways. */
+    .home-faces {
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: 96px;
+        width: calc(100vw - 64px);
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+    }
+
+    .home-faces li {
+        scroll-snap-align: start;
+    }
+
+    .home-end {
+        padding: 0 24px;
     }
 
     .home-way-list {
@@ -1324,17 +1386,9 @@ html.home-snapping {
     }
 }
 
-/* Short phones: she steps back a little so the conversation still fits. */
+/* Short phones: the conversation still fits. */
 @media (max-width: 820px) and (max-height: 720px) {
-    .home-stage {
-        grid-template-rows: 22vh 1fr;
-    }
-
     .home-chat-her {
         font-size: 14px;
-    }
-
-    .home-faces {
-        max-width: 260px;
     }
 }
