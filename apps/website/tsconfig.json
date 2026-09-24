@@ -7,9 +7,10 @@
     "jsxImportSource": "hono/jsx",
     "strict": true,
     "esModuleInterop": true,
-    "outDir": "dist",
-    "rootDir": "src",
-    "skipLibCheck": true
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "types": ["@cloudflare/workers-types", "node"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "scripts/**/*"]
 }

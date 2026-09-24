@@ -14,7 +14,7 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../../.." && pwd)
 cast=${ART_MASTERS:-$root/art-masters}/kotone/portraits
-out=$root/apps/website/src/assets/home/faces
+out=$root/apps/website/public/assets/home/faces
 
 faces=(happy:476:37 curious:500:66 thinking:448:21 embarrassed:483:42
        pouty:483:50 surprised:470:37 proud:470:63 sad:472:54

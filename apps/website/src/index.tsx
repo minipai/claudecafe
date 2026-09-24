@@ -1,7 +1,5 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { getCookie, setCookie } from "hono/cookie";
 import { Layout } from "./components/Layout.js";
 import { HomePage } from "./components/HomePage.js";
@@ -11,12 +9,9 @@ import { AppPage } from "./pages/AppPage.js";
 
 import { NotFoundPage, notFoundQuote } from "./pages/NotFoundPage.js";
 import { getAllMaids, getMaid } from "./utils/maids.js";
-import { BlogPostPage } from "./pages/BlogPostPage.js";
-import { BlogIndexPage } from "./pages/BlogIndexPage.js";
-import { getAllPosts, getPost } from "./utils/blog.js";
 import { href, ui, type Locale } from "./i18n.js";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: { PLUGINS: R2Bucket } }>();
 
 function render404(c: Context, locale: Locale) {
   const pick = notFoundQuote(locale);
@@ -52,10 +47,26 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-app.use("/assets/*", serveStatic({ root: "./src/" }));
-
 app.get("/robots.txt", (c) => {
   return c.text("User-agent: *\nAllow: /\n");
+});
+
+// The Claude Code plugin shelf: marketplace.json plus the versioned zips it
+// points at, uploaded to R2 by scripts/ship-plugin.sh. A published zip never
+// changes; the marketplace does with every release.
+app.get("/plugins/:file", async (c) => {
+  const file = c.req.param("file");
+  const object = await c.env.PLUGINS.get(file);
+  if (!object) return c.notFound();
+
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("ETag", object.httpEtag);
+  headers.set(
+    "Cache-Control",
+    file.endsWith(".zip") ? "public, max-age=31536000, immutable" : "no-cache",
+  );
+  return new Response(object.body, { headers });
 });
 
 // The same site, once per language: English at the root, Chinese under /zh.
@@ -77,25 +88,6 @@ function site(locale: Locale) {
     return c.html(
       <Layout locale={locale}>
         <HomePage maids={maids} locale={locale} />
-      </Layout>,
-    );
-  });
-
-  page.get("/notes", (c) => {
-    const posts = getAllPosts(locale);
-    return c.html(
-      <Layout locale={locale} title="Blog" description="The Claude Café Blog" path="/notes">
-        <BlogIndexPage posts={posts} locale={locale} />
-      </Layout>,
-    );
-  });
-
-  page.get("/notes/:slug", (c) => {
-    const post = getPost(c.req.param("slug"), locale);
-    if (!post) return render404(c, locale);
-    return c.html(
-      <Layout locale={locale} title={post.title} description={post.title} path={`/notes/${post.slug}`} maid={post.author}>
-        <BlogPostPage post={post} />
       </Layout>,
     );
   });
@@ -169,6 +161,4 @@ app.notFound((c) => {
   return render404(c, locale);
 });
 
-const port = 5050;
-console.log(`☕ The Claude Café is serving at http://localhost:${port}`);
-serve({ fetch: app.fetch, port });
+export default app;

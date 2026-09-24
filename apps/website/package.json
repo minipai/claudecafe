@@ -4,24 +4,24 @@
   "description": "AI 女僕 persona 展示網站",
   "type": "module",
   "scripts": {
-    "dev": "tsx src/index.tsx",
-    "start": "bun src/index.tsx",
-    "ship": "bash scripts/ship.sh",
-    "check": "tsc --noEmit"
+    "dev": "wrangler dev --port 5050",
+    "ship": "wrangler deploy",
+    "check": "tsx scripts/build-cast.ts && tsc --noEmit"
   },
   "keywords": [],
   "author": "minipai",
   "license": "MIT",
   "dependencies": {
-    "@hono/node-server": "^1.19.9",
-    "gray-matter": "^4.0.3",
     "hono": "^4.12.3",
-    "@claudecafe/characters": "workspace:*",
     "marked": "^17.0.3"
   },
   "devDependencies": {
+    "@claudecafe/characters": "workspace:*",
+    "@cloudflare/workers-types": "^5.20260924.1",
     "@types/node": "^25.3.3",
+    "gray-matter": "^4.0.3",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wrangler": "^4.137.0"
   }
 }

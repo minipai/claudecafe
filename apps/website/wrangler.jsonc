@@ -1,0 +1,24 @@
+{
+  // claudecafe.dev: Hono rendering pages in a Worker, with public/ served as
+  // static assets in front of it.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "claudecafe",
+  "main": "src/index.tsx",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public"
+  },
+  // The plugin shelf behind /plugins/*, filled by scripts/ship-plugin.sh.
+  "r2_buckets": [
+    {
+      "binding": "PLUGINS",
+      "bucket_name": "claudecafe-plugins"
+    }
+  ],
+  // The persona files are parsed into src/cast.json before bundling; wrangler
+  // dev reruns this when anything in the cast changes.
+  "build": {
+    "command": "tsx scripts/build-cast.ts",
+    "watch_dir": "../../packages/characters"
+  }
+}

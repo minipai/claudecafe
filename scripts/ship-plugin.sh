@@ -3,7 +3,8 @@ set -euo pipefail
 
 # Ship one marketplace plugin to the public shelf at claudecafe.dev/plugins/:
 # run its tests, zip a versioned archive, update its entry in the public
-# marketplace.json (archive source + sha256) and upload both.
+# marketplace.json (archive source + sha256) and upload both to the R2 bucket
+# the website's Worker serves /plugins/* from.
 #
 #   scripts/ship-plugin.sh <cafe|cc-maid>
 #
@@ -16,13 +17,13 @@ set -euo pipefail
 
 NAME="${1:?usage: scripts/ship-plugin.sh <cafe|cc-maid>}"
 
-DROPLET="root@134.199.156.190"
-# Inside caddy's existing RW mount (/opt/caddy-data → /data), so serving
-# /plugins needed only a Caddyfile edit + reload, no container recreation.
-REMOTE_DIR="/opt/caddy-data/plugins"
+BUCKET="claudecafe-plugins"
 BASE_URL="https://claudecafe.dev/plugins"
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+wrangler() { pnpm --silent --dir "$REPO_ROOT/apps/website" exec wrangler "$@"; }
+shelf_get() { wrangler r2 object get "$BUCKET/$1" --remote --pipe; }
+shelf_put() { wrangler r2 object put "$BUCKET/$(basename "$1")" --remote --file "$1" --content-type "$2" >/dev/null; }
 
 # Each plugin stages only what it needs at runtime (no build/test tooling).
 case "$NAME" in
@@ -52,7 +53,7 @@ ZIP="$NAME-$VERSION.zip"
 
 # A published version is frozen; republishing the same number would hand two
 # different sha256s to the world.
-if [ -z "${SHIP_DRY:-}" ] && curl -sfI "$BASE_URL/$ZIP" >/dev/null 2>&1; then
+if [ -z "${SHIP_DRY:-}" ] && shelf_get "$ZIP" >/dev/null 2>&1; then
     echo "✗ $ZIP is already on the shelf — bump the version first." >&2
     exit 1
 fi
@@ -67,7 +68,7 @@ find "$DIST/stage" -type d -name __pycache__ -exec rm -rf {} +
 
 SHA=$(shasum -a 256 "$DIST/$ZIP" | cut -d' ' -f1)
 
-curl -sf "$BASE_URL/marketplace.json" -o "$DIST/live.json"
+shelf_get marketplace.json > "$DIST/live.json"
 
 # name/description/author come from the repo marketplace so the two never
 # drift; the other plugins keep their live archive entries.
@@ -102,12 +103,12 @@ EOF
 echo "dist ready: $ZIP (sha256 $SHA)"
 [ -n "${SHIP_DRY:-}" ] && { echo "(dry run — nothing uploaded)"; exit 0; }
 
-ssh "$DROPLET" "mkdir -p $REMOTE_DIR"
-scp -q "$DIST/$ZIP" "$DIST/marketplace.json" "$DROPLET:$REMOTE_DIR/"
+shelf_put "$DIST/$ZIP" application/zip
+shelf_put "$DIST/marketplace.json" application/json
 
 # The shelf must agree with what we just built, byte for byte.
-LIVE_SHA=$(curl -sf "$BASE_URL/$ZIP" | shasum -a 256 | cut -d' ' -f1)
+LIVE_SHA=$(shelf_get "$ZIP" | shasum -a 256 | cut -d' ' -f1)
 [ "$LIVE_SHA" = "$SHA" ] || { echo "✗ live zip sha mismatch!" >&2; exit 1; }
-curl -sf "$BASE_URL/marketplace.json" | python3 -m json.tool >/dev/null
+shelf_get marketplace.json | python3 -m json.tool >/dev/null
 
 echo "=== shipped: $BASE_URL/marketplace.json → $ZIP ==="

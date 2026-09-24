@@ -51,11 +51,7 @@ or status line reads it.
 ## Workspace
 
 - pnpm workspace (`pnpm-workspace.yaml` → `apps/*`, `packages/*`), **one lockfile** at the
-  root serving both local development and the Docker deploy.
-- The web image is a multi-stage build (`apps/website/Dockerfile`, **context = repo root**):
-  stage 1 installs with node+pnpm `--frozen-lockfile` and runs
-  `pnpm --filter @claudecafe/website --legacy deploy --prod`; stage 2 runs the bundle on
-  `oven/bun`.
+  root.
 - `pnpm install`, `pnpm dev:web`, `pnpm -r check`,
   `pnpm --filter @claudecafe/website ship`.
 
@@ -81,11 +77,12 @@ or status line reads it.
 
 ## apps/website
 
-- Persona files are found through `require.resolve('@claudecafe/characters/package.json')`
-  — works through the pnpm symlink in dev and through the deploy bundle in Docker.
+- It runs as a **Cloudflare Worker** (`wrangler.jsonc`): no filesystem at runtime, so no
+  `node:fs` under `src/`. `scripts/build-cast.ts` parses the persona files into
+  `src/cast.json` (gitignored) before bundling; `wrangler dev` reruns it when the cast changes.
+  `public/` is served as static assets in front of the Worker.
 - **i18n**: English at the root, Chinese under `/zh/`; `href()` in `src/i18n.ts` builds every
-  URL. English content is a translation file beside the Chinese one (`persona.en.md`,
-  `blog/en/<same-name>.md`), falling back to the Chinese version when missing.
-- **Verify a deploy on a maid's page, not the home page.** A content directory the app
-  cannot find returns an empty list, and the home page answers 200 all the same.
-- The blog lives at `/notes`; its writing style guide is the `CLAUDE.md` in `blog/`.
+  URL. English content is a translation file beside the Chinese one (`persona.en.md`),
+  falling back to the Chinese version when missing.
+- The site no longer serves a blog. The posts are kept in `packages/blog/`
+  (writing style guide: `packages/blog/CLAUDE.md`).

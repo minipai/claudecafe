@@ -12,7 +12,7 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../../.." && pwd)
 masters=${ART_MASTERS:-$root/art-masters}/kotone/transitions/video
-out=$root/apps/website/src/assets/home
+out=$root/apps/website/public/assets/home
 paper=0xfaf6f0 # --bg in styles.css
 
 [ -d "$masters" ] || { echo "missing masters: $masters" >&2; exit 1; }
