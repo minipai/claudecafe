@@ -83,6 +83,10 @@ export const zhTW: Text = {
     keepPlanning: '再想想',
     readIt: '看全文 →',
   },
+  reply: {
+    title: '她的回答',
+    empty: '還沒有回答。',
+  },
   log: {
     title: '對話紀錄',
     empty: '還沒有東西——這段對話剛開始。',
@@ -223,6 +227,7 @@ export const zhTW: Text = {
     effort: '思考量',
     switchSetting: '切換{what}，目前是 {value}',
     autoPace: '自動翻頁',
+    openReply: '開視窗看全文',
     oneMore: '還有 1 句',
     more: '還有 {count} 句',
     handedOverOne: '交給她一張圖',

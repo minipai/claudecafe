@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { marked } from 'marked'
 import { NamePlate } from './NamePlate'
@@ -31,6 +31,8 @@ type DialogueBoxProps = {
   /** Who is turning the pages — him, or the scene itself. */
   pace: Pace
   onPace: (pace: Pace) => void
+  /** Opens her answer, whole, in a window of its own. */
+  onOpenReply: () => void
   /** Pressing her name plate — it opens the persona she is wearing. */
   onOpenPersona: () => void
   footer: ReactNode
@@ -60,6 +62,7 @@ export function DialogueBox({
   onAdvance,
   pace,
   onPace,
+  onOpenReply,
   onOpenPersona,
   footer,
   utility,
@@ -81,6 +84,20 @@ export function DialogueBox({
   useEffect(() => {
     if (isTyping && !laidOut && said.current) said.current.scrollTop = said.current.scrollHeight
   }, [line, isTyping, laidOut])
+
+  // Whether what she said runs past the box, so the master is told there is a
+  // window it fits in. The box's cap is a share of the window's height, so a
+  // resize can change the answer as much as a new line can.
+  const [overflowing, setOverflowing] = useState(false)
+  useEffect(() => {
+    const measure = () => {
+      const box = said.current
+      setOverflowing(!!box && box.scrollHeight > box.clientHeight)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [line, laidOut])
 
   return (
     <motion.div
@@ -198,6 +215,15 @@ export function DialogueBox({
                   space
                 </kbd>
                 <span className="block h-0 w-0 animate-[tri-blink_1.1s_ease-in-out_infinite] border-t-[11px] border-r-[7px] border-l-[7px] border-t-primary border-r-transparent border-l-transparent" />
+              </button>
+            )}
+            {overflowing && (
+              <button
+                type="button"
+                onClick={onOpenReply}
+                className="rounded px-1.5 py-1 text-xs leading-none text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t.openReply} ↗
               </button>
             )}
             <button

@@ -88,6 +88,10 @@ export const en = {
     keepPlanning: 'Keep planning',
     readIt: 'Read in full →',
   },
+  reply: {
+    title: 'Her answer',
+    empty: 'Nothing said yet.',
+  },
   log: {
     title: 'HISTORY',
     empty: 'Nothing here yet — this session just started.',
@@ -228,6 +232,7 @@ export const en = {
     effort: 'Effort',
     switchSetting: 'Switch {what}, currently {value}',
     autoPace: 'Turn pages automatically',
+    openReply: 'Read it in a window',
     oneMore: '1 more line',
     more: '{count} more lines',
     handedOverOne: 'Handed over an image',

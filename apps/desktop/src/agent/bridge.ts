@@ -166,7 +166,7 @@ export type Lines = {
 }
 
 /** The windows that stand beside her rather than over her. */
-export type SideWindow = 'log' | 'settings' | 'projects' | 'session'
+export type SideWindow = 'log' | 'reply' | 'settings' | 'projects' | 'session'
 
 /** The session window's tabs, each one a slash command the CLI also answers. */
 export type SessionTab = 'usage' | 'context' | 'agents' | 'mcp' | 'status'

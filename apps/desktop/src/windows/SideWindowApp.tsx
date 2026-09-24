@@ -3,6 +3,7 @@ import { nowServing, speakThis, text } from '@/i18n'
 import { watchScene } from '@/agent/windows'
 import type { SceneShare, SideWindow } from '@/agent'
 import { LogWindow } from './LogWindow'
+import { ReplyWindow } from './ReplyWindow'
 import { SettingsWindow } from './SettingsWindow'
 import { ProjectsWindow } from './ProjectsWindow'
 import { SessionWindow } from './session/SessionWindow'
@@ -30,6 +31,7 @@ export function SideWindowApp({ name }: { name: SideWindow }) {
 
   if (!scene) return <main className="min-h-screen bg-card" />
   if (name === 'log') return <LogWindow log={scene.log} conversation={scene.conversation} />
+  if (name === 'reply') return <ReplyWindow log={scene.log} />
   if (name === 'settings') return <SettingsWindow settings={scene.settings} />
   if (name === 'projects') return <ProjectsWindow folder={scene.folder} conversation={scene.conversation} />
   return <SessionWindow session={scene.session} />
@@ -38,6 +40,7 @@ export function SideWindowApp({ name }: { name: SideWindow }) {
 function titleOf(name: SideWindow) {
   const t = text()
   if (name === 'log') return t.bar.log
+  if (name === 'reply') return t.reply.title
   if (name === 'settings') return t.settings.title
   if (name === 'projects') return t.projects.title
   return t.session.title

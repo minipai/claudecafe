@@ -813,6 +813,7 @@ export function GalgameClient({
               onAdvance={advance}
               pace={pace}
               onPace={setPace}
+              onOpenReply={() => openSideWindow('reply')}
               onOpenPersona={() => setPersonaOpen(true)}
               utility={
                 <SessionPlaque
