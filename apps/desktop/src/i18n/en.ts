@@ -20,6 +20,7 @@ export const en = {
     folder: 'Work somewhere else',
     resume: 'Go back to a conversation',
     newSession: 'Start a new conversation',
+    newMaid: 'Choose a maid for a new conversation',
     mode: 'Permission mode',
     log: 'Conversation history',
     compact: 'Compact the context',

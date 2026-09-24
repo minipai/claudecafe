@@ -15,6 +15,7 @@ export const zhTW: Text = {
     folder: '去別的地方工作',
     resume: '回到之前的對話',
     newSession: '開一段新對話',
+    newMaid: '選女僕開一段新對話',
     mode: '權限模式',
     log: '對話紀錄',
     compact: '壓縮上下文',

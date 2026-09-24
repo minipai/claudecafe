@@ -150,7 +150,7 @@ export function GalgameClient({
   nowServing(maid.name)
   const castRef = useRef(cast)
   castRef.current = cast
-  /** A new conversation is the moment to change the maid's persona. */
+  /** Whether the master is choosing a maid for a new conversation. */
   const [pickingShift, setPickingShift] = useState(false)
   /** Nobody on this machine has ever said what she should speak or what the
    * window should be drawn in, so both are asked once before anything else. */
@@ -562,13 +562,14 @@ export function GalgameClient({
     appendChatMessage('assistant', lines.interrupted)
   }
 
-  /**
-   * Start over in this folder — but ask who is taking it first. A fresh
-   * conversation is the only moment the shift can change hands, so it is the
-   * moment to ask: her persona goes into the session's system prompt, and there
-   * is no telling a maid mid-conversation that she is somebody else.
-   */
-  async function startNewSession() {
+  /** Start over with the maid already on shift. */
+  function startNewSession() {
+    if (changingSession) return
+    startOver()
+  }
+
+  /** Refresh the cast before choosing who will serve the next conversation. */
+  async function chooseNewMaid() {
     if (changingSession) return
     await onRefreshCharacters()
     setPickingShift(true)
@@ -885,6 +886,7 @@ export function GalgameClient({
         conversation={conversation}
         doing={{
           onNewSession: startNewSession,
+          onChooseMaid: chooseNewMaid,
           onOpenHistory: () => setHistoryOpen(true),
           onCompact: compactSession,
           onOpenPanel: setPanel,

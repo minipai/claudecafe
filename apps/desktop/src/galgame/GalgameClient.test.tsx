@@ -381,6 +381,17 @@ describe('GalgameClient', () => {
     expect(screen.getAllByText('the foreground question').length).toBeGreaterThan(0)
   })
 
+  it('starts a new conversation with the maid already on shift without opening the picker', async () => {
+    const { bridge } = await mountLive({ shift: { maid: 'kurumi' } })
+
+    await act(async () => screen.getByLabelText('Open the command bar').click())
+    await act(async () => screen.getByText('Start a new conversation').closest('button')!.click())
+
+    expect(bridge.newSession).toHaveBeenCalledOnce()
+    expect(bridge.setShift).not.toHaveBeenCalled()
+    expect(screen.queryByRole('radio', { name: 'ことね' })).not.toBeInTheDocument()
+  })
+
   it("Bug 5 — handing over the shift greets in the new maid's voice, not whoever stood there before her", async () => {
     const KURUMI = 'ご主人様～♪ くるみ在這裡等你好久了呢！'
     const KOTONE = '歡迎回來，ご主人様。ことね隨時為您效勵喔～'
@@ -389,9 +400,9 @@ describe('GalgameClient', () => {
     // くるみ is on shift, and her lines were written in her own voice once.
     await act(async () => emit({ kind: 'lines', lines: linesIn(KURUMI) }))
 
-    // A new conversation asks who is taking over; the master picks ことね.
+    // Choosing a maid asks who is taking over; the master picks ことね.
     await act(async () => screen.getByLabelText('Open the command bar').click())
-    await act(async () => screen.getByText('Start a new conversation').closest('button')!.click())
+    await act(async () => screen.getByText('Choose a maid for a new conversation').closest('button')!.click())
     await act(async () => screen.getByRole('radio', { name: 'ことね' }).click())
     await act(async () => screen.getByRole('button', { name: 'Start her shift' }).click())
 

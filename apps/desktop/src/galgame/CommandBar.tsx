@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Shrink,
   UserCog,
+  UserRoundPlus,
   Users,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -44,6 +45,7 @@ type Entry = {
 
 type Doing = {
   onNewSession: () => void
+  onChooseMaid: () => void
   onOpenHistory: () => void
   onCompact: () => void
   onOpenPanel: (command: '/usage' | '/context' | '/agents' | '/mcp' | '/status' | '/keys') => void
@@ -132,6 +134,7 @@ export function CommandBar({
     { key: 'folder', icon: FolderOpen, label: t.bar.folder, find: eng.bar.folder, note: shorten(folder), into: 'folder' },
     { key: 'resume', icon: Clock, label: t.bar.resume, find: eng.bar.resume, into: 'conversation' },
     { key: 'new', icon: MessageSquarePlus, label: t.bar.newSession, find: eng.bar.newSession, run: doing.onNewSession },
+    { key: 'new-maid', icon: UserRoundPlus, label: t.bar.newMaid, find: eng.bar.newMaid, run: doing.onChooseMaid },
     { key: 'mode', icon: ShieldCheck, label: t.bar.mode, find: eng.bar.mode, note: t.mode.note[doing.mode], into: 'mode' },
     { key: 'log', icon: ScrollText, label: t.bar.log, find: eng.bar.log, note: '⌘L', run: doing.onOpenHistory },
     { key: 'compact', icon: Shrink, label: t.bar.compact, find: eng.bar.compact, run: doing.onCompact },
