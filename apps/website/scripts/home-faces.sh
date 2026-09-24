@@ -7,7 +7,8 @@
 # of them leaves faces off to one side. The numbers are the middle of her hair
 # across the head and the top of her headdress, in pixels of the 960 × 1280
 # portrait. Scale those coordinates to the master before cropping, then
-# resize only once to 480px for high-density screens.
+# resize only once to 256px for the roughly 125px grid cells on Retina screens.
+# A light luminance sharpen keeps fine lines legible after downsampling.
 # A worktree can pass ART_MASTERS=<path>.
 set -euo pipefail
 
@@ -25,6 +26,6 @@ mkdir -p "$out"
 for entry in "${faces[@]}"; do
   IFS=: read -r face centre top <<< "$entry"
   ffmpeg -v error -y -i "$cast/$face.png" \
-    -vf "crop=iw*330/960:ih*330/1280:iw*$((centre - 165))/960:ih*$((top + 75))/1280,scale=480:480:flags=lanczos" \
+    -vf "crop=iw*330/960:ih*330/1280:iw*$((centre - 165))/960:ih*$((top + 75))/1280,scale=256:256:flags=lanczos,unsharp=3:3:0.4:3:3:0" \
     -c:v libwebp -quality 95 "$out/$face.webp"
 done
