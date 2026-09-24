@@ -20,9 +20,15 @@ export function loadFaces(directory: string): Record<string, Face> {
     .filter((entry) => entry.isFile() && extname(entry.name).toLowerCase() === ".gif")
     .sort((a, b) => a.name.localeCompare(b.name))
 
-  return Object.fromEntries(
-    files.map((file) => [file.name.slice(0, -extname(file.name).length), loadFace(join(directory, file.name))]),
-  )
+  const faces: Record<string, Face> = {}
+  for (const file of files) {
+    try {
+      faces[file.name.slice(0, -extname(file.name).length)] = loadFace(join(directory, file.name))
+    } catch {
+      // One broken custom GIF should not hide the rest of the maid's faces.
+    }
+  }
+  return faces
 }
 
 export function renderFace(face: Face, frameIndex = 0): StyledText {

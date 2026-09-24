@@ -1,27 +1,29 @@
 import { Plugin } from "@opencode/plugin"
 import { z } from "zod"
-import { createCafe } from "./cafe.ts"
-import {
-  defaultFace,
-  expressionToolDescription,
-  loadFaceNames,
-  type Expression,
-} from "./expressions.ts"
+import { characterForMaid, createCafe } from "./cafe.ts"
+import { characterIds, syncPublishedCharacters } from "./characters.ts"
+import { availableFaceNames, defaultFace, expressionToolDescription, type Expression } from "./expressions.ts"
 import { cafeRpc } from "./rpc.ts"
 
 export default Plugin.define({
   id: "claudecafe",
   async setup(context) {
+    await syncPublishedCharacters()
     const cafe = createCafe(context.location.directory)
     const abort = new AbortController()
-    const faces = loadFaceNames()
-    const fallbackFace = defaultFace(faces)
+    const allFaces = [...new Set(characterIds().flatMap((id) => availableFaceNames(characterForMaid(id))))]
     const expressionInput = z.object({
-      face: z.enum(faces).describe("The GIF portrait to show; values come from the installed face filenames"),
+      face: z.string().describe("The GIF face to show; it must belong to the active character's installed pixels"),
     })
     const rpc = await context.rpc.register(cafeRpc, {
-      expression: async ({ sessionID }) =>
-        expressionState(await context.storage.get(expressionKey(sessionID)), faces, fallbackFace),
+      expression: async ({ sessionID }) => {
+        const character = await cafe.character(sessionID)
+        return expressionState(
+          await context.storage.get(expressionKey(sessionID)),
+          character?.id ?? null,
+          availableFaceNames(character),
+        )
+      },
     })
 
     void consumeEvents(context.event.subscribe({ signal: abort.signal }), cafe.event)
@@ -30,12 +32,18 @@ export default Plugin.define({
     await context.tool.transform((tools) => {
       tools.add({
         name: "set_expression",
-        description: expressionToolDescription(faces),
+        description: expressionToolDescription(allFaces),
         input: expressionInput,
         async execute(expression, tool) {
-          await context.storage.set(expressionKey(tool.sessionID), expression)
-          await rpc.events.emit("expression", { sessionID: tool.sessionID, ...expression })
-          return { content: `Face: ${expression.face}` }
+          const character = await cafe.character(tool.sessionID)
+          const faces = availableFaceNames(character)
+          if (!faces.includes(expression.face)) {
+            throw new Error(`Face is not available for ${character?.name ?? "the active character"}`)
+          }
+          const value: Expression = { maid: character?.id ?? null, face: expression.face }
+          await context.storage.set(expressionKey(tool.sessionID), value)
+          await rpc.events.emit("expression", { sessionID: tool.sessionID, ...value })
+          return { content: `Face: ${value.face}` }
         },
       })
     })
@@ -51,11 +59,14 @@ function expressionKey(sessionID: string): string {
 
 function expressionState(
   value: unknown,
-  faces: readonly [string, ...string[]],
-  fallbackFace: string,
+  maid: string | null,
+  faces: readonly string[],
 ): Expression {
-  const parsed = z.object({ face: z.enum(faces) }).safeParse(value)
-  return parsed.success ? parsed.data : { face: fallbackFace }
+  const parsed = z.object({ maid: z.string().nullable().optional(), face: z.string() }).safeParse(value)
+  if (parsed.success && (parsed.data.maid === undefined || parsed.data.maid === maid) && faces.includes(parsed.data.face)) {
+    return { maid, face: parsed.data.face }
+  }
+  return { maid, face: defaultFace(faces) }
 }
 
 async function consumeEvents(

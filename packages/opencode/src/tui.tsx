@@ -1,22 +1,41 @@
 /** @jsxImportSource @opentui/solid */
-import type { TextRenderable } from "@opentui/core"
+import { StyledText, type TextRenderable } from "@opentui/core"
 import { Plugin } from "@opencode/plugin/tui"
 import { createEffect, createMemo, createSignal, onCleanup } from "solid-js"
-import { defaultFace, FACE_DIRECTORY, type Expression } from "./expressions.ts"
-import { FACE_COLUMNS, FACE_ROWS, loadFaces, renderFace } from "./faces.ts"
+import { characterForMaid } from "./cafe.ts"
+import { defaultFace, type Expression } from "./expressions.ts"
+import { FACE_COLUMNS, FACE_ROWS, loadFaces, renderFace, type Face } from "./faces.ts"
 import { cafeRpc } from "./rpc.ts"
 
 type SetExpression = (sessionID: string, value: Expression) => Promise<void>
 type Context = Plugin.Context
 
-// The sidebar's inner width is normally 38 cells: 36 for the portrait and two for its frame.
-const IMAGE_ROWS = FACE_ROWS / 2
-const faces = loadFaces(FACE_DIRECTORY)
-const faceNames = Object.keys(faces)
-const fallbackFace = defaultFace(faceNames)
+type FaceBundle = {
+  faces: Record<string, Face>
+  names: string[]
+  fallback: string
+}
 
-function storedFace(value: unknown): { face?: unknown } {
-  return typeof value === "object" && value !== null ? (value as { face?: unknown }) : {}
+const IMAGE_ROWS = FACE_ROWS / 2
+const faceBundles = new Map<string, FaceBundle | null>()
+
+function faceBundle(maid: string | null): FaceBundle | null {
+  if (!maid) return null
+  if (!faceBundles.has(maid)) {
+    const character = characterForMaid(maid)
+    if (!character?.pixelsDir) {
+      faceBundles.set(maid, null)
+    } else {
+      const faces = loadFaces(character.pixelsDir)
+      const names = Object.keys(faces)
+      faceBundles.set(maid, names.length ? { faces, names, fallback: defaultFace(names) } : null)
+    }
+  }
+  return faceBundles.get(maid) ?? null
+}
+
+function storedExpression(value: unknown): { maid?: unknown; face?: unknown } {
+  return typeof value === "object" && value !== null ? (value as { maid?: unknown; face?: unknown }) : {}
 }
 
 function MaidCard(props: {
@@ -26,8 +45,19 @@ function MaidCard(props: {
   sync: (sessionID: string) => void
 }) {
   const [frameIndex, setFrameIndex] = createSignal(0)
-  const face = createMemo(() => faces[props.expression().face] ?? faces[fallbackFace]!)
-  const portrait = createMemo(() => renderFace(face(), frameIndex()))
+  const character = createMemo(() => {
+    const maid = props.expression().maid
+    return maid ? characterForMaid(maid) : null
+  })
+  const bundle = createMemo(() => faceBundle(character()?.id ?? null))
+  const face = createMemo(() => {
+    const loaded = bundle()
+    return loaded?.faces[props.expression().face] ?? (loaded ? loaded.faces[loaded.fallback] : undefined)
+  })
+  const portrait = createMemo(() => {
+    const selected = face()
+    return selected ? renderFace(selected, frameIndex()) : new StyledText([])
+  })
   let portraitNode: TextRenderable | undefined
 
   createEffect(() => props.sync(props.sessionID))
@@ -37,6 +67,7 @@ function MaidCard(props: {
     let index = 0
     let timer: ReturnType<typeof setTimeout> | undefined
     setFrameIndex(0)
+    if (!selected) return
 
     const advance = () => {
       index = (index + 1) % selected.frames.length
@@ -96,7 +127,7 @@ function MaidCard(props: {
         overflow="hidden"
       >
         <text fg={props.api.theme.text.default} wrapMode="none">
-          <b>ことね</b>
+          <b>{character()?.name ?? "Maid"}</b>
           <span style={{ fg: props.api.theme.text.subdued }}> · {props.expression().face}</span>
         </text>
       </box>
@@ -121,12 +152,14 @@ function MaidCommands(props: {
         async run() {
           const sessionID = currentSession(api)
           if (!sessionID) return
+          const current = expression(sessionID)
+          const bundle = faceBundle(current.maid)
           const value = await api.ui.dialog.select({
             title: "Maid face",
-            current: expression(sessionID).face,
-            options: faceNames.map((item) => ({ title: item, value: item })),
+            current: current.face,
+            options: (bundle?.names ?? []).map((item) => ({ title: item, value: item })),
           })
-          if (value) await setExpression(sessionID, { ...expression(sessionID), face: value })
+          if (value) await setExpression(sessionID, { maid: current.maid, face: value })
         },
       },
     ],
@@ -146,14 +179,15 @@ export default Plugin.define({
   async setup(api) {
     const [looks, setLooks] = api.storage.store<Record<string, unknown>>("expressions", { initial: {} })
     const expression = (sessionID: string): Expression => {
-      const look = storedFace(looks[sessionID])
-      return {
-        face: typeof look.face === "string" && faces[look.face] ? look.face : fallbackFace,
-      }
+      const look = storedExpression(looks[sessionID])
+      const maid = typeof look.maid === "string" ? look.maid : null
+      const bundle = faceBundle(maid)
+      const face = typeof look.face === "string" && bundle?.faces[look.face] ? look.face : bundle?.fallback ?? "neutral"
+      return { maid, face }
     }
     const setExpression: SetExpression = async (sessionID, value) => {
       await setLooks((draft) => {
-        draft[sessionID] = { face: value.face }
+        draft[sessionID] = { maid: value.maid, face: value.face }
       })
       api.renderer.requestRender()
     }

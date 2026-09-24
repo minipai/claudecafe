@@ -1,13 +1,23 @@
 import { describe, expect, test } from "bun:test"
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { FACE_DIRECTORY, loadFaceNames } from "../src/expressions.ts"
+import { loadFaceNames } from "../src/expressions.ts"
 import { loadFaces, renderFace } from "../src/faces.ts"
 
+const FACE_DIRECTORY = join(import.meta.dir, "..", "..", "characters", "kotone", "pixels")
 const faces = loadFaces(FACE_DIRECTORY)
 
 describe("terminal faces", () => {
   test("the available faces come from GIF filenames", () => {
-    expect(Object.keys(faces)).toEqual(loadFaceNames())
+    expect(Object.keys(faces)).toEqual(loadFaceNames(FACE_DIRECTORY))
+  })
+
+  test("a malformed extra GIF does not hide valid faces", () => {
+    const directory = mkdtempSync("/tmp/opencode/face-test-")
+    copyFileSync(join(import.meta.dir, "fixtures", "animated", "blink.gif"), join(directory, "blink.gif"))
+    writeFileSync(join(directory, "broken.gif"), "not a gif")
+    expect(Object.keys(loadFaces(directory))).toEqual(["blink"])
+    rmSync(directory, { recursive: true, force: true })
   })
 
   test("a 36x48 GIF renders as 36x24 styled terminal cells", () => {

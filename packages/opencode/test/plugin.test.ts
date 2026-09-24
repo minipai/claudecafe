@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import * as cafe from "../src/cafe.ts"
-import { FACE_DIRECTORY, loadFaceNames } from "../src/expressions.ts"
+import { charactersDir, characterForId, characterVersion, shouldUpdateCharacter } from "../src/characters.ts"
 import plugin from "../src/server.ts"
 
 /**
@@ -19,6 +19,7 @@ import plugin from "../src/server.ts"
 const SANDBOX = mkdtempSync(join(tmpdir(), "opencode-cafe-test-"))
 const ROOT = join(SANDBOX, "claudecafe")
 const BUNDLED = join(SANDBOX, "cafe-plugin")
+const SOURCE_PIXELS = join(import.meta.dir, "..", "..", "characters", "kotone", "pixels")
 
 function write(path: string, text: string): void {
   mkdirSync(join(path, ".."), { recursive: true })
@@ -29,12 +30,32 @@ function setConfig(data: unknown): void {
   write(join(ROOT, "config.json"), JSON.stringify(data))
 }
 
+function writeCharacter(id: string, name: string, body = "Character body.", version = "1.1.1"): void {
+  write(
+    join(charactersDir(), id, "persona.en.md"),
+    `---\nid: claudecafe/${id}\nname: ${name}\nversion: ${version}\n---\n${body}\n`,
+  )
+}
+
+function seedExpressionPack(id: string, name: string, faces: string[]): void {
+  writeCharacter(id, name)
+  for (const face of faces) {
+    const target = join(charactersDir(), id, "pixels", `${face}.gif`)
+    mkdirSync(join(charactersDir(), id, "pixels"), { recursive: true })
+    copyFileSync(join(SOURCE_PIXELS, `${face}.gif`), target)
+  }
+}
+
 beforeEach(() => {
   rmSync(SANDBOX, { recursive: true, force: true })
   mkdirSync(SANDBOX, { recursive: true })
   // A fake café plugin root keeps the bundled nameless maid under the sandbox.
   write(join(BUNDLED, "maids", "noname.md"), "---\nname: ？？？\n---\nThe maid with no name.\n")
   process.env.XDG_CONFIG_HOME = SANDBOX
+  // Keep the published packs out of the draw and make their sync a no-op.
+  for (const id of ["kotone", "kurumi", "kokona"]) {
+    write(join(charactersDir(), id, "persona.en.md"), `---\nid: claudecafe/${id}\nname: ${id}\nversion: 1.1.1\noff_duty: true\n---\nbody\n`)
+  }
   process.env.CAFE_PLUGIN_ROOT = BUNDLED
   for (const name of ["OPENCODE_MAID", "CLAUDE_MAID", "OPENCODE_MAID_LANG", "CLAUDE_MAID_LANG"]) {
     delete process.env[name]
@@ -58,8 +79,22 @@ function realPrompts(): void {
 describe("root and config", () => {
   test("root follows XDG_CONFIG_HOME", () => {
     expect(cafe.cafeRoot()).toBe(ROOT)
+    expect(charactersDir()).toBe(join(ROOT, "characters"))
     process.env.XDG_CONFIG_HOME = join(SANDBOX, "elsewhere")
     expect(cafe.cafeRoot()).toBe(join(SANDBOX, "elsewhere", "claudecafe"))
+  })
+
+  test("published character versions only update older packs", () => {
+    expect(shouldUpdateCharacter("1.1.0", "1.1.1")).toBe(true)
+    expect(shouldUpdateCharacter("1.1.1", "1.1.1")).toBe(false)
+    expect(shouldUpdateCharacter("1.1.2", "1.1.1")).toBe(false)
+    expect(shouldUpdateCharacter(null, "1.1.1")).toBe(true)
+  })
+
+  test("a character folder exposes its version and name", () => {
+    writeCharacter("newmaid", "New", "Body.", "1.0.0")
+    expect(characterVersion("newmaid")).toBe("1.0.0")
+    expect(characterForId("newmaid")?.name).toBe("New")
   })
 
   test("missing, broken, and non-object configs are all empty", () => {
@@ -89,6 +124,25 @@ describe("personas", () => {
     expect(cafe.personaBody(path ?? "").trim()).toBe("Mine.")
   })
 
+  test("a local character folder is a persona source", () => {
+    writeCharacter("mymaid", "My Pack", "Pack body.")
+    expect(cafe.personaFile("mymaid")).toBe(join(charactersDir(), "mymaid", "persona.en.md"))
+    expect(cafe.characterForMaid("mymaid")?.name).toBe("My Pack")
+  })
+
+  test("Chinese language prefers the Chinese persona when both exist", () => {
+    writeCharacter("bilingual", "English", "English body.")
+    write(join(charactersDir(), "bilingual", "persona.zh.md"), "---\nname: 中文\n---\n中文內容。\n")
+    setConfig({ lang: "zh-TW" })
+    expect(cafe.personaFile("bilingual")).toBe(join(charactersDir(), "bilingual", "persona.zh.md"))
+  })
+
+  test("a flat persona still overrides the same-id character pack", () => {
+    writeCharacter("mymaid", "Pack", "Pack body.")
+    write(join(ROOT, "personas", "mymaid.md"), "---\nname: Flat\n---\nFlat body.\n")
+    expect(cafe.personaFile("mymaid")).toBe(join(ROOT, "personas", "mymaid.md"))
+    expect(cafe.characterForMaid("mymaid")?.name).toBe("Flat")
+  })
   test("a retirement stub does not shadow an explicit pick", () => {
     write(join(ROOT, "personas", "noname.md"), "---\noff_duty: true\n---\n")
     expect(cafe.personaFile("noname")).toBe(join(BUNDLED, "maids", "noname.md"))
@@ -115,6 +169,11 @@ describe("cast pool", () => {
   test("hiring anyone relieves the nameless maid", () => {
     write(join(ROOT, "personas", "mymaid.md"), "---\nname: M\n---\nbody\n")
     expect(cafe.castPool()).toEqual(["mymaid"])
+  })
+
+  test("a manually added character folder joins the draw", () => {
+    writeCharacter("newmaid", "New")
+    expect(cafe.castPool()).toEqual(["newmaid"])
   })
 
   test("everyone off duty brings the nameless maid back", () => {
@@ -335,7 +394,9 @@ describe("shift persistence", () => {
 })
 
 describe("expression tool", () => {
-  test("set_expression stores the GIF face per session", async () => {
+  test("stores the active character's GIF face per session", async () => {
+    seedExpressionPack("testmaid", "Test Maid", ["neutral", "happy", "focused"])
+    process.env.OPENCODE_MAID = "testmaid"
     let definition: {
       execute: (
         input: { face: string },
@@ -346,7 +407,7 @@ describe("expression tool", () => {
     const writes: unknown[] = []
     const emitted: unknown[] = []
     let currentExpression:
-      | ((input: { sessionID: string }) => Promise<{ face: string }>)
+      | ((input: { sessionID: string }) => Promise<{ maid: string | null; face: string }>)
       | undefined
     const cleanup = await plugin.setup({
       location: { directory: SANDBOX },
@@ -355,7 +416,7 @@ describe("expression tool", () => {
         register: async (
           _definition: unknown,
           handlers: {
-            expression: (input: { sessionID: string }) => Promise<{ face: string }>
+            expression: (input: { sessionID: string }) => Promise<{ maid: string | null; face: string }>
           },
         ) => {
           currentExpression = handlers.expression
@@ -382,25 +443,20 @@ describe("expression tool", () => {
     } as never)
 
     expect(definition).toBeDefined()
-    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ face: "neutral" })
+    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ maid: "testmaid", face: "neutral" })
 
     const result = await definition?.execute({ face: "happy" }, { sessionID: "one" })
     expect(result?.content).toBe("Face: happy")
-    expect(writes).toEqual([{ key: "expression:one", value: { face: "happy" } }])
+    expect(writes).toEqual([{ key: "expression:one", value: { maid: "testmaid", face: "happy" } }])
     expect(emitted).toEqual([
-      ["expression", { sessionID: "one", face: "happy" }],
+      ["expression", { sessionID: "one", maid: "testmaid", face: "happy" }],
     ])
 
     await definition?.execute({ face: "focused" }, { sessionID: "two" })
-    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ face: "happy" })
-    expect(await currentExpression?.({ sessionID: "two" })).toEqual({ face: "focused" })
+    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ maid: "testmaid", face: "happy" })
+    expect(await currentExpression?.({ sessionID: "two" })).toEqual({ maid: "testmaid", face: "focused" })
+    await expect(definition?.execute({ face: "missing" }, { sessionID: "one" })).rejects.toThrow("not available")
     await cleanup?.()
-  })
-
-  test("every discovered face has a GIF sprite", () => {
-    for (const name of loadFaceNames()) {
-      expect(existsSync(join(FACE_DIRECTORY, `${name}.gif`))).toBe(true)
-    }
   })
 })
 

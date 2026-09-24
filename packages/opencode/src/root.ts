@@ -1,0 +1,13 @@
+import { homedir } from "node:os"
+import { join } from "node:path"
+
+export function expandHome(path: string): string {
+  if (path === "~") return homedir()
+  if (path.startsWith("~/")) return join(homedir(), path.slice(2))
+  return path
+}
+
+export function cafeRoot(): string {
+  const base = (process.env.XDG_CONFIG_HOME ?? "").trim() || join(homedir(), ".config")
+  return join(expandHome(base), "claudecafe")
+}

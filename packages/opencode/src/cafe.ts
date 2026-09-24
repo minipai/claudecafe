@@ -1,16 +1,20 @@
 import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs"
-import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { characterForId, characterIds, personaFileInCharacters, type Character } from "./characters.ts"
 import { expressionPrompt } from "./expressions.ts"
+import { cafeRoot, expandHome } from "./root.ts"
+
+export { cafeRoot } from "./root.ts"
 
 /**
  * Claude Café's liveliness layer, ported to OpenCode.
  *
  * The state lives in the same shared root as the Claude Code and Codex plugin
- * (`$XDG_CONFIG_HOME/claudecafe`), so one `config.json` and one `personas/`
- * pool serve every host: hire a maid once and every agent has her.
+ * (`$XDG_CONFIG_HOME/claudecafe`), so one `config.json`, the downloaded
+ * `characters/` packs, and the legacy `personas/` pool serve every host: hire a
+ * maid once and every agent has her.
  *
  * What the café does here:
  *
@@ -30,12 +34,6 @@ const STALE_DAYS = 7
 // ---------------------------------------------------------------------------
 // Paths: one shared root, resolved fresh so a running process picks up edits.
 // ---------------------------------------------------------------------------
-
-/** The one Café data root, shared by every host that runs the café. */
-export function cafeRoot(): string {
-  const base = (process.env.XDG_CONFIG_HOME ?? "").trim() || join(homedir(), ".config")
-  return join(expandHome(base), "claudecafe")
-}
 
 export function configPath(): string {
   return join(cafeRoot(), "config.json")
@@ -66,12 +64,6 @@ function maidsDir(): string {
 
 function promptsDir(): string {
   return join(cafePluginRoot(), "prompts")
-}
-
-function expandHome(path: string): string {
-  if (path === "~") return homedir()
-  if (path.startsWith("~/")) return join(homedir(), path.slice(2))
-  return path
 }
 
 function read(path: string): string {
@@ -109,7 +101,7 @@ function firstEnv(...names: string[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// Personas: an <id>.md file, frontmatter included, body spoken by the maid.
+// Personas: a character folder or a flat <id>.md file, frontmatter included.
 // ---------------------------------------------------------------------------
 
 /** The persona instructions: the file minus its YAML frontmatter. */
@@ -119,11 +111,29 @@ export function personaBody(path: string): string {
 
 /** A frontmatter-only stub (a retirement) still lets an explicit pick load her, so it never shadows the bundled maid. */
 export function personaFile(maidID: string): string | null {
-  for (const dir of [personasDir(), maidsDir()]) {
-    const path = join(dir, `${maidID}.md`)
-    if (existsSync(path) && personaBody(path).trim()) return path
+  const flat = join(personasDir(), `${maidID}.md`)
+  if (existsSync(flat) && personaBody(flat).trim()) return flat
+
+  const packed = personaFileInCharacters(maidID, lang())
+  if (packed && personaBody(packed).trim()) return packed
+
+  const bundled = join(maidsDir(), `${maidID}.md`)
+  return existsSync(bundled) && personaBody(bundled).trim() ? bundled : null
+}
+
+/** The active persona plus the artwork belonging to the same local character id. */
+export function characterForMaid(maidID: string): Character | null {
+  const personaPath = personaFile(maidID)
+  if (!personaPath) return null
+  const packed = characterForId(maidID, lang())
+  if (packed?.personaPath === personaPath) return packed
+  const name = /^name:[ \t]*(.+)$/m.exec(read(personaPath))?.[1]?.trim().replace(/^(['"])(.*)\1$/, "$2")
+  return {
+    id: maidID,
+    name: name || maidID,
+    personaPath,
+    pixelsDir: packed?.pixelsDir ?? null,
   }
-  return null
 }
 
 /** True when the frontmatter says off_duty: she sits out the random draw. */
@@ -135,7 +145,7 @@ export function offDuty(body: string): boolean {
 }
 
 /** The ids a draw may pick from; the user's folder comes first, so a same-id file wins. */
-export function drawFrom(dirs: string[]): string[] {
+export function drawFrom(dirs: string[], extraIDs: string[] = []): string[] {
   const pool = new Map<string, string>()
   for (const dir of dirs) {
     let files: string[]
@@ -151,6 +161,11 @@ export function drawFrom(dirs: string[]): string[] {
       if (!pool.has(id)) pool.set(id, join(dir, file))
     }
   }
+  for (const id of extraIDs) {
+    if (pool.has(id)) continue
+    const path = personaFileInCharacters(id, lang())
+    if (path) pool.set(id, path)
+  }
   return [...pool.entries()]
     .filter(([, path]) => !offDuty(read(path)))
     .map(([id]) => id)
@@ -159,9 +174,9 @@ export function drawFrom(dirs: string[]): string[] {
 
 /** The hired maids; while there are none, the bundled nameless maid keeps the place open. */
 export function castPool(): string[] {
-  const hired = drawFrom([personasDir()])
+  const hired = drawFrom([personasDir()], characterIds())
   if (hired.length || config().builtin_cast === false) return hired
-  return drawFrom([personasDir(), maidsDir()])
+  return drawFrom([personasDir(), maidsDir()], characterIds())
 }
 
 /**
@@ -454,6 +469,11 @@ export function createCafe(directory: string) {
   }
 
   return {
+    async character(sessionID: string): Promise<Character | null> {
+      const shift = await startShift(sessionID)
+      return shift.maid ? characterForMaid(shift.maid) : null
+    },
+
     event(event: CafeEvent): void {
       if (event.type === "session.created" && event.data.parentID) {
         // A task subagent is not a window: it shares the café's maid instead of

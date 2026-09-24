@@ -1,16 +1,13 @@
 import { readdirSync } from "node:fs"
-import { createRequire } from "node:module"
-import { dirname, extname, join } from "node:path"
-
-const charactersRoot = dirname(createRequire(import.meta.url).resolve("@claudecafe/characters/package.json"))
-
-export const FACE_DIRECTORY = join(charactersRoot, "kotone", "pixels")
+import { extname } from "node:path"
+import type { Character } from "./characters.ts"
 
 export type Expression = {
+  maid: string | null
   face: string
 }
 
-export function loadFaceNames(directory = FACE_DIRECTORY): [string, ...string[]] {
+export function loadFaceNames(directory: string): [string, ...string[]] {
   const names = readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isFile() && extname(entry.name).toLowerCase() === ".gif")
     .map((entry) => entry.name.slice(0, -extname(entry.name).length))
@@ -20,15 +17,25 @@ export function loadFaceNames(directory = FACE_DIRECTORY): [string, ...string[]]
   return names as [string, ...string[]]
 }
 
+export function availableFaceNames(character: Character | null): string[] {
+  if (!character?.pixelsDir) return []
+  try {
+    return [...loadFaceNames(character.pixelsDir)]
+  } catch {
+    return []
+  }
+}
+
 export function defaultFace(faces: readonly string[]): string {
-  return faces.includes("neutral") ? "neutral" : faces[0]!
+  return faces.includes("neutral") ? "neutral" : faces[0] ?? "neutral"
 }
 
 export function expressionToolDescription(faces: readonly string[]): string {
+  const available = faces.length ? `Available faces: ${faces.join(", ")}. ` : "No GIF faces are installed for this character. "
   return (
     "Change the visible portrait in the Café panel. " +
     "Choose one available face when your visible expression meaningfully changes, or when the user asks; do not call on every reply or repeat the current state. " +
-    `Available faces: ${faces.join(", ")}. ` +
+    available +
     "The panel shows only the face; it has no mood field. The selection stays until changed."
   )
 }

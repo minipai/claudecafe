@@ -46,8 +46,10 @@ actual persona.
 - **The desktop app** installs character folders under
   `$XDG_CONFIG_HOME/claudecafe/characters` at runtime. It uses the root
   `avatar.webp` and default `portraits/`; visual variants are not shown there.
-- **The OpenCode terminal panel** discovers 36×48 `*.gif` files by filename,
-  decodes static or animated frames, and draws them as ordinary text cells.
+- **The OpenCode terminal panel** discovers the active character's 36×48
+  `pixels/*.gif` files by filename, decodes static or animated frames, and draws
+  them as ordinary text cells. It syncs the three published packs into
+  `characters/` and accepts additional folders there.
 - The café plugin ships none of it: maids are hired from the site.
 
 ## Publishing a character pack
