@@ -8,7 +8,6 @@ import { hasArtwork, availableShift } from './cast'
 import { ShiftPanel } from './ShiftPanel'
 import { KAOMOJI } from '@/agent/expressions'
 import { DialogueBox } from './DialogueBox'
-import { BackdropPicker } from './BackdropPicker'
 import { ReportView } from './ReportView'
 import { UsagePanel } from './UsagePanel'
 import { ContextPanel } from './ContextPanel'
@@ -20,7 +19,6 @@ import { WelcomePanel } from './WelcomePanel'
 import { PersonaPanel } from './PersonaPanel'
 import { CommandBar } from './CommandBar'
 import { TroublePanel } from './TroublePanel'
-import { ChatHistory } from './ChatHistory'
 import { DemoRow } from './DemoRow'
 import { InputBar } from './InputBar'
 import { PermissionPrompt } from './PermissionPrompt'
@@ -39,6 +37,7 @@ import type { Backdrop as Chosen, CastMember, Shift } from '@/agent'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
 import { lines as currentLines } from './content'
 import { fill, her, nowServing, text } from '@/i18n'
+import { listenToSideWindows, openSideWindow, shareScene } from '@/agent/windows'
 import {
   INITIAL_LOOK,
   isLive,
@@ -50,6 +49,7 @@ import {
   type CafeCommand,
   type Look,
   type PermissionResult,
+  type SceneAction,
   type ModelChoice,
   type Question,
   type Report,
@@ -93,7 +93,6 @@ export function GalgameClient({
 }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [readerOpen, setReaderOpen] = useState(false)
-  const [historyOpen, setHistoryOpen] = useState(false)
   const [expression, setExpression] = useState<Expression>('neutral')
   /** The 【…】 she signed her last line with, kept as she wrote it. Empty until
    * she has signed one — the window has nothing of its own to put there. */
@@ -130,11 +129,13 @@ export function GalgameClient({
    * elsewhere, so it is state rather than something read once at startup. */
   const [folder, setFolder] = useState(workingDirectory ?? '')
   const [switching, setSwitching] = useState(false)
-  /** Whether the backdrop picker is up in place of the dialogue box. */
-  const [dressing, setDressing] = useState(false)
-  /** The interface's language, which is not hers: a code, kept so switching it
-   * redraws everything under this component. */
-  const [locale, setLocale] = useState(window.cafe?.localeChoice ?? 'system')
+  /** The interface's language, which is not hers: what was picked (maybe
+   * `system`) and the code it is drawn in, kept so switching it redraws
+   * everything under this component — and the side windows with it. */
+  const [locale, setLocale] = useState(() => ({
+    choice: window.cafe?.localeChoice ?? 'system',
+    drawn: window.cafe?.locale ?? navigator.language,
+  }))
   /** What she is speaking, as the session reports it — a sentence, not a code. */
   const [speech, setSpeech] = useState({ language: '', chosen: '' })
   /** Which room is behind her and how its picture is cut off. Read off the
@@ -371,10 +372,44 @@ export function GalgameClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /** The log and the settings stand in windows of their own; they draw what
+   * the scene shares with them, as it changes. */
+  useEffect(() => {
+    shareScene({
+      locale: locale.drawn,
+      maidName: maid.name,
+      log: {
+        messages: chatMessages,
+        conversation,
+        isBusy: phase === 'working',
+        isCompacting: compacting,
+        isAwaitingAnswer: permissionRequest !== null || choiceRequest !== null,
+      },
+      settings: { locale: locale.choice, speech, backdrop },
+    })
+  }, [locale, maid.name, chatMessages, conversation, phase, compacting, permissionRequest, choiceRequest, speech, backdrop])
+
+  /** What was clicked in them is done here, the way the scene would have done it. */
+  const sideActionRef = useRef<(action: SceneAction) => void>(() => {})
+  sideActionRef.current = (action) => {
+    if (action.kind === 'compact') void compactSession()
+    else if (action.kind === 'new-session') startNewSession()
+    else if (action.kind === 'return') window.focus()
+    else if (action.kind === 'locale') window.cafe?.setLocale(action.choice)
+    else if (action.kind === 'speech') window.cafe?.setSpeech(action.language)
+    else if (action.kind === 'backdrop') {
+      // Shown at once and kept by the main process; the event it sends back
+      // lands on a window already drawing it.
+      setBackdrop(action.backdrop)
+      window.cafe?.setBackdrop(action.backdrop)
+    }
+  }
+  useEffect(() => listenToSideWindows((action) => sideActionRef.current(action)), [])
+
   /** ⌘K is where she is sent somewhere else — another folder, or back into a
    * conversation this one has had. ⌘L is the log, which is otherwise a button
-   * on the plate and a row inside ⌘K — the one panel opened often enough to be
-   * worth a key of its own, and the same key puts it away again. */
+   * on the plate and a row inside ⌘K — the one window opened often enough to be
+   * worth a key of its own. ⌘, is the settings, where every Mac app keeps them. */
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return
@@ -387,7 +422,10 @@ export function GalgameClient({
         setSwitching(true)
       } else if (event.key === 'l') {
         event.preventDefault()
-        setHistoryOpen((open) => !open)
+        openSideWindow('log')
+      } else if (event.key === ',') {
+        event.preventDefault()
+        openSideWindow('settings')
       }
     }
     window.addEventListener('keydown', shortcut)
@@ -407,7 +445,7 @@ export function GalgameClient({
       // Mid-composition Esc is the IME dropping what was being spelled out.
       if (event.isComposing) return
       if (phase !== 'working') return
-      if (readerOpen || permissionExpanded || historyOpen || switching || panel || trouble) return
+      if (readerOpen || permissionExpanded || switching || panel || trouble) return
       if (permissionRequest || choiceRequest) return
       event.preventDefault()
       stop()
@@ -415,7 +453,7 @@ export function GalgameClient({
     window.addEventListener('keydown', interrupt)
     return () => window.removeEventListener('keydown', interrupt)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, readerOpen, permissionExpanded, historyOpen, switching, panel, trouble, permissionRequest, choiceRequest])
+  }, [phase, readerOpen, permissionExpanded, switching, panel, trouble, permissionRequest, choiceRequest])
 
   /**
    * Space turns the page, the way a galgame does — and it is taken in the
@@ -433,14 +471,14 @@ export function GalgameClient({
       if (queued === 0 || !isDone) return
       // Except while something else holds the scene — a report, a folded-out
       // permission, a panel — where there is no box to turn.
-      if (readerOpen || permissionExpanded || historyOpen || switching || panel) return
+      if (readerOpen || permissionExpanded || switching || panel) return
       event.preventDefault()
       event.stopPropagation()
       advance()
     }
     window.addEventListener('keydown', turn, true)
     return () => window.removeEventListener('keydown', turn, true)
-  }, [queued, isDone, advance, readerOpen, permissionExpanded, historyOpen, switching, panel])
+  }, [queued, isDone, advance, readerOpen, permissionExpanded, switching, panel])
 
   /** Only the reader blocks the scene now — a prompt sent while she is working
    * just queues up behind the one she is on. */
@@ -465,7 +503,6 @@ export function GalgameClient({
       say(ask.askLine, {
         halt: true,
         onShow: () => {
-          setHistoryOpen(false)
           askPermission({ ask, resolve })
           // She has stopped on this and cannot go on without an answer, so it
           // follows the master wherever he is looking.
@@ -502,7 +539,6 @@ export function GalgameClient({
       say(question.question, {
         halt: true,
         onShow: () => {
-          setHistoryOpen(false)
           setChoiceRequest({ id: choiceRequestId++, question, resolve })
           window.cafe?.notify(question.question, true)
         },
@@ -605,7 +641,6 @@ export function GalgameClient({
     window.setTimeout(() => {
       setPhase('idle')
       setReaderOpen(false)
-      setHistoryOpen(false)
       setCtaVisible(false)
       setTodos([])
       setReport(null)
@@ -760,29 +795,14 @@ export function GalgameClient({
         {/* Her board belongs to the work, not to the window: once she is off
             her feet again it goes, or a half-ticked list from the last thing
             asked stays pinned over the next conversation. */}
-        <TodoBoard todos={historyOpen || readerOpen || phase === 'idle' ? [] : todos} />
+        <TodoBoard todos={readerOpen || phase === 'idle' ? [] : todos} />
         <SpriteLayer expression={expression} maid={maid} name={her()} backdrop={backdrop} />
 
         {/* The band above the box is where the whispers float; there is nothing
             to click there, so the pointer goes through it too. */}
         <div data-ghost className="absolute bottom-10 left-1/2 z-[6] w-[min(760px,92vw)] -translate-x-1/2">
           <WhisperZone whispers={whispers} />
-          {/* In place of the box rather than over it: what is being chosen is
-              the picture behind her, and it has to be looked at while choosing. */}
-          {!readerOpen && !permissionExpanded && dressing && (
-            <BackdropPicker
-              chosen={backdrop}
-              onChoose={(chosen) => {
-                // Shown at once and kept by the main process; the event it
-                // sends back lands on a window already drawing it, which is
-                // what makes looking through them feel like looking.
-                setBackdrop(chosen)
-                window.cafe?.setBackdrop(chosen)
-              }}
-              onClose={() => setDressing(false)}
-            />
-          )}
-          {!readerOpen && !permissionExpanded && !dressing && (
+          {!readerOpen && !permissionExpanded && (
             <DialogueBox
               line={line}
               laidOut={laidOut}
@@ -802,7 +822,7 @@ export function GalgameClient({
               onOpenPersona={() => setPanel('/persona')}
               utility={
                 <SessionPlaque
-                  onOpenHistory={() => setHistoryOpen(true)}
+                  onOpenHistory={() => openSideWindow('log')}
                   onSwitch={() => setSwitching(true)}
                   settings={settings}
                   models={models}
@@ -880,19 +900,16 @@ export function GalgameClient({
       <CommandBar
         open={switching}
         folder={folder}
-        locale={locale}
-        speech={speech}
-        backdrop={backdrop}
         conversation={conversation}
         doing={{
           onNewSession: startNewSession,
           onChooseMaid: chooseNewMaid,
-          onOpenHistory: () => setHistoryOpen(true),
+          onOpenHistory: () => openSideWindow('log'),
+          onOpenSettings: () => openSideWindow('settings'),
           onCompact: compactSession,
           onOpenPanel: setPanel,
           mode: settings.mode,
           modePicked: settings.modePicked,
-          onPickBackdrop: () => setDressing(true),
           onMode: (mode) => {
             // Null hands it back to his terminal: the window stops having an
             // opinion, and what the session reports next is what it shows.
@@ -962,21 +979,6 @@ export function GalgameClient({
       </AnimatePresence>
 
       <Toaster position="top-center" />
-
-      <ChatHistory
-        open={historyOpen}
-        messages={chatMessages}
-        conversation={conversation}
-        isBusy={phase === 'working'}
-        isCompacting={compacting}
-        isAwaitingAnswer={permissionRequest !== null || choiceRequest !== null}
-        onClose={() => setHistoryOpen(false)}
-        onCompact={compactSession}
-        onNewSession={() => {
-          setHistoryOpen(false)
-          startNewSession()
-        }}
-      />
     </>
   )
 }

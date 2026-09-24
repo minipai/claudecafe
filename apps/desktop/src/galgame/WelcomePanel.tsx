@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { SPOKEN } from './CommandBar'
-import { fill, her, LOCALES, text } from '@/i18n'
+import { fill, her, LOCALES, SPOKEN, text } from '@/i18n'
 
 /**
  * The first thing a machine that has never had her sees. Two languages are

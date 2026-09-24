@@ -22,6 +22,11 @@ export const LOCALES = [
   { code: 'zh-TW', label: '繁體中文' },
 ]
 
+/** What she is most often asked to speak, offered so the common case is one
+ * click. Anything typed instead is taken as it stands — she is told to reply in
+ * it, and a sentence with an instruction in it works as well as a language's name. */
+export const SPOKEN = ['English', '繁體中文', '日本語', '简体中文', '한국어']
+
 /**
  * Which catalogue a locale code lands on. Region is dropped when there is no
  * translation for it: `en-AU` and `en-GB` read the same words, and a Taiwanese

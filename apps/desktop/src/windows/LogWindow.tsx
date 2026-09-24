@@ -1,34 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowDown, ChevronRight, Plus, Shrink, X } from 'lucide-react'
+import { ArrowDown, ChevronRight, Plus, Shrink } from 'lucide-react'
 import { marked } from 'marked'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { fill, her, text } from '@/i18n'
-import type { ChatMessage } from './types'
-
-type ChatHistoryProps = {
-  open: boolean
-  messages: ChatMessage[]
-  /** The transcript this log belongs to. Until the SDK has assigned one,
-   * there is no conversation the CLI can resume yet. */
-  conversation: string | null
-  /** True while a run is in flight — compacting mid-turn is not allowed. */
-  isBusy: boolean
-  isCompacting: boolean
-  /** True while ことね is waiting on a permission answer back in the scene. */
-  isAwaitingAnswer: boolean
-  onClose: () => void
-  onCompact: () => void
-  onNewSession: () => void
-}
+import { sendToScene } from '@/agent/windows'
+import type { SceneShare } from '@/agent'
 
 function formatTime(timestamp: number) {
   return new Intl.DateTimeFormat(undefined, {
@@ -41,17 +17,13 @@ function formatTime(timestamp: number) {
   }).format(timestamp)
 }
 
-export function ChatHistory({
-  open,
-  messages,
-  conversation,
-  isBusy,
-  isCompacting,
-  isAwaitingAnswer,
-  onClose,
-  onCompact,
-  onNewSession,
-}: ChatHistoryProps) {
+/**
+ * Everything said so far, in a window of its own beside her. It is the scene's
+ * record, drawn as the scene shares it; compacting and starting over are the
+ * scene's to do, so the buttons ask it to.
+ */
+export function LogWindow({ log }: { log: SceneShare['log'] }) {
+  const { messages, conversation, isBusy, isCompacting, isAwaitingAnswer } = log
   const t = text()
   const hasStarted = messages.some((message) => message.role === 'user')
   const resumeCommand = conversation && hasStarted ? `claude --resume ${conversation}` : null
@@ -71,40 +43,30 @@ export function ChatHistory({
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!open) return
     const frame = window.requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [open, messages])
+  }, [messages])
 
   function jumpToLatest() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent showCloseButton={false} className="flex h-[min(760px,86vh)] w-[min(960px,90vw)] max-w-none flex-col gap-0 overflow-hidden border border-border bg-card/80 p-0 shadow-xl backdrop-blur-xl sm:max-w-[960px]">
-        <DialogHeader className="flex-row items-center justify-between border-b border-border px-4 py-2.5 text-left">
+    <main className="flex h-screen flex-col bg-card text-card-foreground">
+        <header className="flex items-center justify-between border-b border-border px-4 py-2.5">
           <div className="flex min-w-0 items-center gap-3">
-            <DialogTitle className="shrink-0 text-sm font-medium text-foreground">
+            <h1 className="shrink-0 text-sm font-medium text-foreground">
               {t.log.title}
-            </DialogTitle>
+            </h1>
             {resumeCommand && (
               <code className="min-w-0 truncate rounded border border-border bg-background/55 px-2 py-1 font-mono text-[10px] text-muted-foreground select-text">
                 {resumeCommand}
               </code>
             )}
           </div>
-          <DialogDescription className="sr-only">
-            {messages.length === 1 ? t.log.oneMessage : fill(t.log.messages, { count: messages.length })}
-          </DialogDescription>
-          <DialogClose asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={t.log.close}>
-              <X />
-            </Button>
-          </DialogClose>
-        </DialogHeader>
+        </header>
 
         <div
           ref={scrollRef}
@@ -262,7 +224,7 @@ export function ChatHistory({
               </div>
         </div>
 
-        <DialogFooter className="mx-0 mb-0 flex-row items-center justify-between rounded-none border-t bg-transparent px-4 py-3 sm:justify-between">
+        <footer className="flex items-center justify-between border-t border-border px-4 py-3">
           <div className="flex items-center gap-1">
             <p className="mr-2 text-xs text-muted-foreground">
               {messages.length === 1 ? t.log.oneMessage : fill(t.log.messages, { count: messages.length })}
@@ -276,7 +238,7 @@ export function ChatHistory({
           {/* Both actions act on this session's memory, so they live with it. */}
           <div className="flex items-center gap-1">
             {isAwaitingAnswer && (
-              <Button size="sm" className="mr-2 text-xs" onClick={onClose}>
+              <Button size="sm" className="mr-2 text-xs" onClick={() => sendToScene({ kind: 'return' })}>
                 {fill(t.log.waiting, { her: her() })}
               </Button>
             )}
@@ -285,7 +247,7 @@ export function ChatHistory({
               className="text-xs text-muted-foreground"
               disabled={isBusy || isCompacting}
               title={t.log.compactHint}
-              onClick={onCompact}
+              onClick={() => sendToScene({ kind: 'compact' })}
             >
               <Shrink data-icon="inline-start" />
               {isCompacting ? t.log.compacting : t.log.compact}
@@ -294,14 +256,13 @@ export function ChatHistory({
               variant="ghost"
               className="text-xs text-muted-foreground"
               title={t.log.newSessionHint}
-              onClick={onNewSession}
+              onClick={() => sendToScene({ kind: 'new-session' })}
             >
               <Plus data-icon="inline-start" />
               {t.log.newSession}
             </Button>
           </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </footer>
+    </main>
   )
 }

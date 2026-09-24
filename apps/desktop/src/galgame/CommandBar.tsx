@@ -2,17 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ChevronRight,
   Clock,
-  Image as Picture,
   FolderOpen,
   FolderSearch,
   Gauge,
   Keyboard,
-  Languages,
-  MessageCircle,
   MessageSquarePlus,
-  PenLine,
   Plug,
   ScrollText,
+  Settings,
   Search,
   ShieldCheck,
   Shrink,
@@ -21,8 +18,8 @@ import {
   Users,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { CATALOGUES, fill, her, LOCALES, text } from '@/i18n'
-import type { Backdrop, Conversation, SessionSettings } from '@/agent'
+import { CATALOGUES, fill, her, text } from '@/i18n'
+import type { Conversation, SessionSettings } from '@/agent'
 
 /** One thing the window can do, or one place it can go. */
 type Entry = {
@@ -37,7 +34,7 @@ type Entry = {
   /** Stays open after running — it changed what the bar itself is showing. */
   stay?: boolean
   /** Leads to a list of its own rather than doing something. */
-  into?: 'folder' | 'conversation' | 'mode' | 'locale' | 'speech'
+  into?: 'folder' | 'conversation' | 'mode'
   run?: () => void
   /** Where she already is: shown to say so, not offered as somewhere to go. */
   here?: boolean
@@ -47,6 +44,7 @@ type Doing = {
   onNewSession: () => void
   onChooseMaid: () => void
   onOpenHistory: () => void
+  onOpenSettings: () => void
   onCompact: () => void
   onOpenPanel: (command: '/usage' | '/context' | '/agents' | '/mcp' | '/status' | '/keys') => void
   /** How much she asks before doing, and how it is changed. Null is handing
@@ -54,14 +52,7 @@ type Doing = {
   mode: SessionSettings['mode']
   modePicked: boolean
   onMode: (mode: SessionSettings['mode'] | null) => void
-  /** Open the backdrop picker, which lives down by the dialogue box. */
-  onPickBackdrop: () => void
 }
-
-/** The usual answers, offered so the common case is one keystroke. Anything
- * typed instead is taken as it stands — she is told to reply in it, and a
- * sentence with an instruction in it works as well as a language's name. */
-export const SPOKEN = ['English', '繁體中文', '日本語', '简体中文', '한국어']
 
 /** The permission modes, worded as the CLI words them, with what each one means
  * for the master standing there watching. */
@@ -77,9 +68,6 @@ export function CommandBar({
   open,
   folder,
   conversation,
-  locale,
-  speech,
-  backdrop,
   doing,
   onClose,
 }: {
@@ -87,13 +75,6 @@ export function CommandBar({
   /** Where she is now, so the list can say so instead of offering it. */
   folder: string
   conversation: string | null
-  /** Which language was picked for the interface — `system` included. */
-  locale: string
-  /** What she is speaking now, and what was picked for it — empty when the
-   * window is leaving that to the café's own setting. */
-  speech: { language: string; chosen: string }
-  /** Which room is behind her, so the entry can say so before it is opened. */
-  backdrop: Backdrop
   doing: Doing
   /** `moved` when she was sent somewhere — the scene starts over on it. */
   onClose: (moved: boolean) => void
@@ -101,18 +82,8 @@ export function CommandBar({
   const t = text()
   /** The same words in English, matched against as well as the shown ones. */
   const eng = CATALOGUES.en
-  // What the master picked, which may be `system` — in which case the note says
-  // so rather than naming a language the window did not choose.
-  const localeNote = locale === 'system' ? t.bar.system : LOCALES.find((one) => one.code === locale)?.label
-  // Her language is a sentence, not a code, so the note is whatever it is set
-  // to — trimmed to the first few words when the master has written an essay.
-  const speechNote = speech.language.length > 24 ? `${speech.language.slice(0, 22)}…` : speech.language
-  const [step, setStep] = useState<'commands' | 'folder' | 'conversation' | 'mode' | 'locale' | 'speech'>(
-    'commands',
-  )
+  const [step, setStep] = useState<'commands' | 'folder' | 'conversation' | 'mode'>('commands')
   const [typed, setTyped] = useState('')
-  /** In the language step, typing her language rather than picking one. */
-  const [writing, setWriting] = useState(false)
   const [active, setActive] = useState(0)
   const [folders, setFolders] = useState<string[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -125,7 +96,6 @@ export function CommandBar({
     setStep('commands')
     setTyped('')
     setActive(0)
-    setWriting(false)
     void window.cafe?.folders().then(setFolders)
     void window.cafe?.conversations().then(setConversations)
   }, [open])
@@ -144,11 +114,7 @@ export function CommandBar({
     { key: 'mcp', icon: Plug, label: t.bar.mcp, find: eng.bar.mcp, note: '/mcp', run: () => doing.onOpenPanel('/mcp') },
     { key: 'status', icon: UserCog, label: t.bar.status, find: eng.bar.status, note: '/status', run: () => doing.onOpenPanel('/status') },
     { key: 'keys', icon: Keyboard, label: t.bar.keys, find: eng.bar.keys, note: '/keys', run: () => doing.onOpenPanel('/keys') },
-    { key: 'locale', icon: Languages, label: t.bar.locale, find: eng.bar.locale, note: localeNote, into: 'locale' },
-    { key: 'speech', icon: MessageCircle, label: t.bar.speech, find: eng.bar.speech, note: speechNote, into: 'speech' },
-    // The choosing is done down where the dialogue box is, not in here: what
-    // is being picked is the picture behind her, and this bar sits on top of it.
-    { key: 'backdrop', icon: Picture, label: t.bar.backdrop, find: eng.bar.backdrop, note: t.backdrop[backdrop], run: doing.onPickBackdrop },
+    { key: 'settings', icon: Settings, label: t.bar.settings, find: eng.bar.settings, note: '⌘,', run: doing.onOpenSettings },
   ]
 
   const wanted = typed.trim().toLowerCase()
@@ -202,64 +168,6 @@ export function CommandBar({
                 run: () => doing.onMode(mode),
               })),
             ]
-        : step === 'speech'
-          ? writing
-            ? [
-                // Her language is free text, so the whole list becomes the one
-                // line being written: what is typed is the answer itself.
-                {
-                  key: 'speech-typed',
-                  icon: PenLine,
-                  label: typed.trim() ? fill(t.bar.speakThis, { said: typed.trim() }) : t.bar.speakHint,
-                  here: !typed.trim(),
-                  run: () => window.cafe?.setSpeech(typed.trim()),
-                } satisfies Entry,
-              ]
-            : [
-                // First, because it is the one that takes any answer at all —
-                // the five under it are only the ones asked for most often.
-                {
-                  key: 'speech-write',
-                  icon: PenLine,
-                  label: t.bar.typeYourself,
-                  find: eng.bar.typeYourself,
-                  stay: true,
-                  run: () => {
-                    setWriting(true)
-                    setTyped('')
-                    setActive(0)
-                  },
-                } satisfies Entry,
-                {
-                  key: 'speech-cafe',
-                  icon: MessageCircle,
-                  label: t.bar.followCafe,
-                  find: eng.bar.followCafe,
-                  note: speech.chosen ? undefined : t.bar.current,
-                  here: !speech.chosen,
-                  run: () => window.cafe?.setSpeech(''),
-                } satisfies Entry,
-                ...SPOKEN.map((said): Entry => ({
-                  key: `speech-${said}`,
-                  icon: MessageCircle,
-                  label: said,
-                  note: said === speech.chosen ? t.bar.current : undefined,
-                  here: said === speech.chosen,
-                  run: () => window.cafe?.setSpeech(said),
-                })),
-              ]
-        : step === 'locale'
-          ? LOCALES.map((offered): Entry => ({
-              key: `locale-${offered.code}`,
-              icon: Languages,
-              // The system entry says what following the system lands on, since
-              // that is the one choice whose result is not its own name.
-              label: offered.code === 'system' ? t.bar.system : offered.label,
-              find: offered.code === 'system' ? eng.bar.system : offered.code,
-              note: offered.code === locale ? t.bar.current : undefined,
-              here: offered.code === locale,
-              run: () => window.cafe?.setLocale(offered.code),
-            }))
         : conversations.map((past): Entry => ({
             key: `past-${past.sessionId}`,
             icon: Clock,
@@ -297,7 +205,6 @@ export function CommandBar({
     setStep('commands')
     setTyped('')
     setActive(0)
-    setWriting(false)
   }
 
   return (
@@ -345,9 +252,7 @@ export function CommandBar({
               // command itself that goes.
               if (event.key === 'Backspace' && !typed && step !== 'commands') {
                 event.preventDefault()
-                // Out of the writing line first, back to the list it came from.
-                if (writing) setWriting(false)
-                else back()
+                back()
               }
             }}
             placeholder={fill(t.bar.placeholder[step], { her: her() })}

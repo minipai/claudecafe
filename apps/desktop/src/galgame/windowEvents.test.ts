@@ -99,7 +99,7 @@ describe('applyWindowEvent', () => {
   it('locale: keeps the choice, which may be "system", and actually draws the interface in it', () => {
     const scene = createScene()
     applyWindowEvent({ kind: 'locale', locale: 'zh-TW', choice: 'zh-TW' }, scene)
-    expect(scene.setLocale).toHaveBeenCalledWith('zh-TW')
+    expect(scene.setLocale).toHaveBeenCalledWith({ choice: 'zh-TW', drawn: 'zh-TW' })
     // speakThis is the handler's real job — the setter alone only redraws
     // whatever already reads `text()` fresh; it does not switch the catalogue.
     expect(text().ask.allow).toBe('可以')

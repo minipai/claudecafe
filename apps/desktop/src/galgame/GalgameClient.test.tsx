@@ -2,7 +2,7 @@
 import '@testing-library/jest-dom/vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { BridgeEvent, CafeBridge, CastMember } from '@/agent/bridge'
+import type { BridgeEvent, CafeBridge, CastMember, SceneShare } from '@/agent/bridge'
 
 const cast: CastMember[] = ['kotone', 'kurumi'].map((id) => ({
   id,
@@ -37,6 +37,7 @@ function createBridge() {
     askLanguage: vi.fn().mockResolvedValue(false),
     setLocale: vi.fn(),
     setSpeech: vi.fn(),
+    setBackdrop: vi.fn(),
     start: vi.fn(),
     answer: vi.fn(),
     interrupt: vi.fn(),
@@ -70,6 +71,8 @@ function createBridge() {
       listeners.add(onEvent)
       return () => listeners.delete(onEvent)
     }),
+    openSideWindow: vi.fn(),
+    shareScene: vi.fn(),
   } as unknown as CafeBridge
   return { bridge, emit: (event: BridgeEvent) => listeners.forEach((listen) => listen(event)) }
 }
@@ -89,6 +92,17 @@ async function mountLive(bridgeOverrides: Partial<CafeBridge> = {}) {
   const { GalgameClient } = await import('./GalgameClient')
   render(<GalgameClient cast={cast} directory="/mock/characters" onRefreshCharacters={vi.fn()} />)
   return { bridge, emit }
+}
+
+/** What the log and settings windows were last handed. */
+function lastShared(bridge: CafeBridge) {
+  const calls = vi.mocked(bridge.shareScene).mock.calls
+  return calls[calls.length - 1][0] as SceneShare
+}
+
+/** Everything the log window was last handed, as said. */
+function logged(bridge: CafeBridge) {
+  return lastShared(bridge).log.messages.map((message) => message.content)
 }
 
 function lastRunId(bridge: CafeBridge) {
@@ -165,47 +179,38 @@ describe('GalgameClient', () => {
     expect(screen.getByRole('button', { name: 'Always allow Bash git' })).toBeInTheDocument()
   })
 
-  it('⌘L opens the log, and closes it again', async () => {
-    await mountLive()
+  it('⌘L opens the log window and ⌘, the settings window, beside her rather than over her', async () => {
+    const { bridge } = await mountLive()
 
-    await act(async () => {
-      fireEvent.keyDown(window, { key: 'l', metaKey: true })
-    })
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.queryByText(/^claude --resume /)).not.toBeInTheDocument()
+    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
+    await act(async () => fireEvent.keyDown(window, { key: ',', metaKey: true }))
 
-    await act(async () => {
-      fireEvent.keyDown(window, { key: 'l', metaKey: true })
-    })
+    expect(bridge.openSideWindow).toHaveBeenNthCalledWith(1, 'log')
+    expect(bridge.openSideWindow).toHaveBeenNthCalledWith(2, 'settings')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('puts the CLI resume command in the log title once the conversation has an id', async () => {
-    const { emit } = await mountLive()
-    await act(async () =>
-      emit({
-        kind: 'backlog',
-        sessionId: 'session-123',
-        lines: [{ role: 'user', content: 'hello', at: 1 }],
-      }),
-    )
+  it('shares the conversation with the log window as it grows', async () => {
+    const { bridge, emit } = await mountLive()
+    await act(async () => emit({ kind: 'conversation', sessionId: 'fresh-session' }))
+    await act(async () => submit('hello'))
 
-    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
-
-    expect(screen.getByText('claude --resume session-123')).toBeInTheDocument()
+    const { log } = lastShared(bridge)
+    expect(log.conversation).toBe('fresh-session')
+    expect(log.messages.map((message) => message.content)).toContain('hello')
   })
 
-  it('hides the resume command before the master has spoken, then shows it once the conversation starts', async () => {
-    const { emit } = await mountLive()
-    await act(async () => emit({ kind: 'conversation', sessionId: 'fresh-session' }))
+  it('does what the side windows ask, the way the scene would do it itself', async () => {
+    const { bridge, emit } = await mountLive()
 
-    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
-    expect(screen.queryByText('claude --resume fresh-session')).not.toBeInTheDocument()
-    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
+    await act(async () => emit({ kind: 'side-window', action: { kind: 'locale', choice: 'zh-TW' } }))
+    await act(async () => emit({ kind: 'side-window', action: { kind: 'speech', language: '日本語' } }))
+    await act(async () => emit({ kind: 'side-window', action: { kind: 'backdrop', backdrop: 'ukiyo-e' } }))
 
-    await act(async () => submit('hello'))
-    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
-    expect(screen.getByText('claude --resume fresh-session')).toBeInTheDocument()
+    expect(bridge.setLocale).toHaveBeenCalledWith('zh-TW')
+    expect(bridge.setSpeech).toHaveBeenCalledWith('日本語')
+    expect(bridge.setBackdrop).toHaveBeenCalledWith('ukiyo-e')
+    expect(lastShared(bridge).settings.backdrop).toBe('ukiyo-e')
   })
 
   it('/keys is answered by the window itself — the keys are written down somewhere findable', async () => {
@@ -347,7 +352,7 @@ describe('GalgameClient', () => {
   })
 
   it('plays an unsolicited background completion when no foreground turn is running', async () => {
-    const { emit } = await mountLive()
+    const { bridge, emit } = await mountLive()
 
     await act(async () =>
       emit({
@@ -355,9 +360,8 @@ describe('GalgameClient', () => {
         message: { type: 'result', tier: 'light', line: 'The background task is done.' },
       }),
     )
-    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
 
-    expect(screen.getByText('The background task is done.')).toBeInTheDocument()
+    expect(logged(bridge)).toContain('The background task is done.')
   })
 
   it('defers a background completion until the foreground turn ends, preserving the submitted message', async () => {
@@ -371,14 +375,13 @@ describe('GalgameClient', () => {
         message: { type: 'result', tier: 'light', line: 'The background task is done.' },
       }),
     )
-    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
 
-    expect(screen.getAllByText('the foreground question').length).toBeGreaterThan(0)
-    expect(screen.queryByText('The background task is done.')).not.toBeInTheDocument()
+    expect(logged(bridge)).toContain('the foreground question')
+    expect(logged(bridge)).not.toContain('The background task is done.')
 
     await act(async () => emit({ kind: 'done', runId }))
-    await vi.waitFor(() => expect(screen.getByText('The background task is done.')).toBeInTheDocument())
-    expect(screen.getAllByText('the foreground question').length).toBeGreaterThan(0)
+    await vi.waitFor(() => expect(logged(bridge)).toContain('The background task is done.'))
+    expect(logged(bridge)).toContain('the foreground question')
   })
 
   it('starts a new conversation with the maid already on shift without opening the picker', async () => {
@@ -395,7 +398,7 @@ describe('GalgameClient', () => {
   it("Bug 5 — handing over the shift greets in the new maid's voice, not whoever stood there before her", async () => {
     const KURUMI = 'ご主人様～♪ くるみ在這裡等你好久了呢！'
     const KOTONE = '歡迎回來，ご主人様。ことね隨時為您效勵喔～'
-    const { emit } = await mountLive({ shift: { maid: 'kurumi' } })
+    const { bridge, emit } = await mountLive({ shift: { maid: 'kurumi' } })
 
     // くるみ is on shift, and her lines were written in her own voice once.
     await act(async () => emit({ kind: 'lines', lines: linesIn(KURUMI) }))
@@ -413,11 +416,10 @@ describe('GalgameClient', () => {
       emit({ kind: 'lines', lines: linesIn(KOTONE) })
     })
 
-    // Once the pause is over, the log opens with her — not a word of くるみ's.
+    // Once the pause is over, the log starts with her — not a word of くるみ's.
     await act(async () => new Promise((resolve) => setTimeout(resolve, 500)))
-    await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
-    expect(screen.getByText(KOTONE)).toBeInTheDocument()
-    expect(screen.queryByText(KURUMI)).not.toBeInTheDocument()
+    expect(logged(bridge)).toContain(KOTONE)
+    expect(logged(bridge)).not.toContain(KURUMI)
   })
 })
 

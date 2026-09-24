@@ -24,12 +24,12 @@ function createDoing() {
     onNewSession: vi.fn(),
     onChooseMaid: vi.fn(),
     onOpenHistory: vi.fn(),
+    onOpenSettings: vi.fn(),
     onCompact: vi.fn(),
     onOpenPanel: vi.fn(),
     mode: 'default' as const,
     modePicked: false,
     onMode: vi.fn(),
-    onPickBackdrop: vi.fn(),
   }
 }
 
@@ -48,9 +48,6 @@ function renderBar(overrides: { conversation?: string | null; openFolder?: () =>
       open
       folder="/tmp/project"
       conversation={overrides.conversation ?? null}
-      locale="en"
-      speech={{ language: '', chosen: '' }}
-      backdrop="art-nouveau"
       doing={doing}
       onClose={onClose}
     />,
@@ -59,6 +56,16 @@ function renderBar(overrides: { conversation?: string | null; openFolder?: () =>
 }
 
 describe('CommandBar', () => {
+  it('opens the settings window rather than choosing inside the bar', async () => {
+    const { doing, onClose } = renderBar()
+
+    await act(async () => {
+      screen.getByText('Settings').closest('button')?.click()
+    })
+    expect(doing.onOpenSettings).toHaveBeenCalledOnce()
+    expect(onClose).toHaveBeenCalledWith(false)
+  })
+
   it('offers separate commands for a new conversation and choosing another maid', async () => {
     const { doing } = renderBar()
 

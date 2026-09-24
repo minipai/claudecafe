@@ -2,6 +2,8 @@ import './index.css'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import { nowServing, speakThis } from './i18n'
+import { sideWindowOf } from './agent/windows'
+import { SideWindowApp } from './windows/SideWindowApp'
 
 // Before the first paint: the window is drawn in the machine's language unless
 // the master has said otherwise, and in the browser there is only the browser's.
@@ -10,4 +12,5 @@ speakThis(window.cafe?.locale ?? navigator.language)
 // once without it.
 if (window.cafe?.maidName) nowServing(window.cafe.maidName)
 
-createRoot(document.getElementById('root')!).render(<App />)
+const side = sideWindowOf(window.location.search)
+createRoot(document.getElementById('root')!).render(side ? <SideWindowApp name={side} /> : <App />)

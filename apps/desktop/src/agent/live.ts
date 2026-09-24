@@ -14,7 +14,7 @@ export async function* query(options: QueryOptions): AsyncGenerator<AgentMessage
   const stopListening = bridge.listen((event) => {
     // Only these belong to a run; the rest is the window's own business.
     if (event.kind === 'status' || event.kind === 'look' || event.kind === 'backlog' || event.kind === 'conversation' || event.kind === 'ambient-message') return
-    if (event.kind === 'commands' || event.kind === 'folder' || event.kind === 'trouble' || event.kind === 'lines' || event.kind === 'locale' || event.kind === 'speech' || event.kind === 'backdrop' || event.kind === 'shift') return
+    if (event.kind === 'commands' || event.kind === 'folder' || event.kind === 'trouble' || event.kind === 'lines' || event.kind === 'locale' || event.kind === 'speech' || event.kind === 'backdrop' || event.kind === 'shift' || event.kind === 'side-window') return
     if (event.kind === 'settings' || event.runId !== runId) return
     switch (event.kind) {
       case 'message':

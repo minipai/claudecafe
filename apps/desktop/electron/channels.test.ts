@@ -12,7 +12,10 @@ import { fileURLToPath } from 'node:url'
  */
 const here = path.dirname(fileURLToPath(import.meta.url))
 const preloadSource = stripComments(fs.readFileSync(path.join(here, 'preload.ts'), 'utf8'))
-const mainSource = stripComments(fs.readFileSync(path.join(here, 'main.ts'), 'utf8'))
+// The side windows are sent to from their own module, which main.ts owns.
+const mainSource = ['main.ts', 'sideWindows.ts']
+  .map((file) => stripComments(fs.readFileSync(path.join(here, file), 'utf8')))
+  .join('\n')
 
 function stripComments(source: string) {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
@@ -49,11 +52,12 @@ describe('cafe:* IPC channel parity', () => {
     expect([...mainSent].sort()).toEqual([...mainInitiated].sort())
   })
 
-  it('the one-sided channels are exactly these two, and here is why', () => {
+  it('the one-sided channels are exactly these three, and here is why', () => {
     // cafe:event carries the whole agent-message stream, cafe:pointer-at the
-    // maid's live pointer position while she is being dragged — main.ts
-    // pushes both at the renderer on its own schedule, and nothing the
-    // renderer does ever answers back on the same channel name.
-    expect([...mainInitiated].sort()).toEqual(['cafe:event', 'cafe:pointer-at'])
+    // maid's live pointer position while she is being dragged, cafe:scene what
+    // the log and settings windows draw — main.ts pushes each at the renderer
+    // on its own schedule, and nothing the renderer does ever answers back on
+    // the same channel name.
+    expect([...mainInitiated].sort()).toEqual(['cafe:event', 'cafe:pointer-at', 'cafe:scene'])
   })
 })

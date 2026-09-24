@@ -1,4 +1,5 @@
 import type { AgentMessage, Attachment, Look, Question, Report } from './types'
+import type { ChatMessage } from '@/galgame/types'
 
 /**
  * The wire between the window and the Electron main process, where the real
@@ -167,6 +168,39 @@ export type Lines = {
   waiting: string[]
 }
 
+/** The windows that stand beside her rather than over her. */
+export type SideWindow = 'log' | 'settings'
+
+/** Everything the side windows draw, as the scene has it. */
+export type SceneShare = {
+  /** The language code to draw them in, already resolved. */
+  locale: string
+  maidName: string
+  log: {
+    messages: ChatMessage[]
+    conversation: string | null
+    isBusy: boolean
+    isCompacting: boolean
+    isAwaitingAnswer: boolean
+  }
+  settings: {
+    /** What was picked for the interface, which may be `system`. */
+    locale: string
+    speech: { language: string; chosen: string }
+    backdrop: Backdrop
+  }
+}
+
+/** What a side window asks the scene to do. */
+export type SceneAction =
+  | { kind: 'compact' }
+  | { kind: 'new-session' }
+  /** The master is wanted back in front of her. */
+  | { kind: 'return' }
+  | { kind: 'locale'; choice: string }
+  | { kind: 'speech'; language: string }
+  | { kind: 'backdrop'; backdrop: Backdrop }
+
 export type BridgeEvent =
   | { kind: 'status'; status: SessionStatus }
   /** The session could not run at all — signed out, out of allowance, offline.
@@ -208,6 +242,8 @@ export type BridgeEvent =
   | { kind: 'ask-permission'; runId: string; askId: string; toolName: string; input: Record<string, unknown> }
   | { kind: 'ask-question'; runId: string; askId: string; question: Question }
   | { kind: 'done'; runId: string; error?: string }
+  /** Something clicked in a side window, for the scene to do. */
+  | { kind: 'side-window'; action: SceneAction }
 
 export type CafeBridge = {
   /** The folder this window was opened on. One window, one project. */
@@ -298,6 +334,14 @@ export type CafeBridge = {
   startDrag(): void
   endDrag(): void
   listen(onEvent: (event: BridgeEvent) => void): () => void
+  /** Open the log or the settings beside her, or bring it forward. */
+  openSideWindow(name: SideWindow): void
+  /** Scene: hand the side windows what they draw. */
+  shareScene(scene: SceneShare): void
+  /** Side window: what the scene last shared, then every change. */
+  watchScene(onScene: (scene: SceneShare) => void): () => void
+  /** Side window: ask the scene to do something. */
+  sendToScene(action: SceneAction): void
 }
 
 declare global {

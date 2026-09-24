@@ -13,7 +13,7 @@ afterEach(() => {
 it('offers the three OpenChan illustrations and no backdrop as one choice', () => {
   speakThis('en')
   const onChoose = vi.fn()
-  render(<BackdropPicker chosen="art-nouveau" onChoose={onChoose} onClose={vi.fn()} />)
+  render(<BackdropPicker chosen="art-nouveau" onChoose={onChoose} />)
 
   const buttons = ['None', 'Art Nouveau', 'Ukiyo-e', 'Shojo manga'].map((name) => screen.getByRole('button', { name }))
   expect(buttons).toHaveLength(4)

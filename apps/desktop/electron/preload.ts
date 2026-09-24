@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import type { Backdrop, BridgeEvent, CafeBridge } from '../src/agent/bridge'
+import type { Backdrop, BridgeEvent, CafeBridge, SceneShare } from '../src/agent/bridge'
 
 const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? ''
 const localeArg = process.argv.find((arg) => arg.startsWith('--cafe-locale=')) ?? ''
@@ -61,6 +61,15 @@ const bridge: CafeBridge = {
     ipcRenderer.on('cafe:event', forward)
     return () => ipcRenderer.off('cafe:event', forward)
   },
+  openSideWindow: (name) => ipcRenderer.send('cafe:open-side-window', name),
+  shareScene: (scene) => ipcRenderer.send('cafe:share-scene', scene),
+  watchScene: (onScene) => {
+    const forward = (_event: unknown, scene: SceneShare) => onScene(scene)
+    ipcRenderer.on('cafe:scene', forward)
+    ipcRenderer.send('cafe:side-window-ready')
+    return () => ipcRenderer.off('cafe:scene', forward)
+  },
+  sendToScene: (action) => ipcRenderer.send('cafe:to-scene', action),
 }
 
 contextBridge.exposeInMainWorld('cafe', bridge)

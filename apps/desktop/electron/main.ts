@@ -20,7 +20,8 @@ import {
   rememberSpeech,
 } from './history'
 import { castOf, languageSettled, nameOf, personaOf } from './lines'
-import type { Backdrop, Shift } from '../src/agent/bridge'
+import { SideWindows } from './sideWindows'
+import type { Backdrop, SceneAction, SceneShare, Shift, SideWindow } from '../src/agent/bridge'
 import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -51,6 +52,8 @@ const ICON = path.join(here, app.isPackaged ? 'app-icon.png' : 'app-icon-dev.png
 /** One window, one maid — she is sent to a folder rather than copied onto it,
  * so switching replaces the shift this window is watching. */
 const shifts = new Map<Electron.WebContents, MaidSession>()
+/** Each scene's log and settings, kept by the scene's own page. */
+const sides = new Map<Electron.WebContents, SideWindows>()
 let characterInstallError = ''
 
 function readFolderArg() {
@@ -93,6 +96,7 @@ function openWindow(cwd: string) {
   })
 
   startShift(window, cwd)
+  sides.set(window.webContents, new SideWindows(window, openSideWindow))
 
   // Where she is put down is written as it happens, not only on the way out —
   // after a force-quit is exactly when coming back to the middle of the screen
@@ -116,15 +120,58 @@ function openWindow(cwd: string) {
   window.on('closed', () => {
     shifts.get(contents)?.close()
     shifts.delete(contents)
+    sides.delete(contents)
     stopCarrying(window)
     stopWatching(window)
   })
 
-  const devServer = process.env.VITE_DEV_SERVER_URL
+  keepLinksOutside(contents)
+  loadPage(window)
+  if (process.env.VITE_DEV_SERVER_URL) window.webContents.openDevTools({ mode: 'detach' })
+}
 
-  // A link she writes belongs in the browser. Left alone the window navigates
-  // to it and she is gone — with no frame there is no back button, and the page
-  // has swallowed the café.
+/**
+ * The log or the settings, in a window of its own beside her: framed and
+ * opaque, an ordinary window to read in or click through, unlike hers.
+ */
+function openSideWindow(name: SideWindow) {
+  const side = new BrowserWindow({
+    ...SIDE_SIZE[name],
+    icon: ICON,
+    show: false,
+    webPreferences: { preload: path.join(here, 'preload.cjs') },
+  })
+  side.once('ready-to-show', () => side.show())
+  keepLinksOutside(side.webContents)
+  loadPage(side, name)
+  return side
+}
+
+const SIDE_SIZE: Record<SideWindow, Electron.BrowserWindowConstructorOptions> = {
+  log: { width: 860, height: 760, minWidth: 520, minHeight: 420 },
+  settings: { width: 560, height: 620, minWidth: 440, minHeight: 420 },
+}
+
+/** The scene, or one of its side windows when named. */
+function loadPage(window: BrowserWindow, side?: SideWindow) {
+  const query: Record<string, string> = side ? { window: side } : {}
+  const devServer = process.env.VITE_DEV_SERVER_URL
+  if (devServer) {
+    const url = new URL(devServer)
+    for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value)
+    void window.loadURL(url.toString())
+  } else {
+    void window.loadFile(path.join(here, '../dist/index.html'), { query })
+  }
+}
+
+/**
+ * A link she writes belongs in the browser. Left alone the window navigates to
+ * it and she is gone — with no frame there is no back button, and the page has
+ * swallowed the café.
+ */
+function keepLinksOutside(contents: Electron.WebContents) {
+  const devServer = process.env.VITE_DEV_SERVER_URL
   const openOutside = (url: string) => {
     if (/^(https?|mailto):/.test(url)) void shell.openExternal(url)
   }
@@ -139,13 +186,6 @@ function openWindow(cwd: string) {
     event.preventDefault()
     openOutside(url)
   })
-
-  if (devServer) {
-    void window.loadURL(devServer)
-    window.webContents.openDevTools({ mode: 'detach' })
-  } else {
-    void window.loadFile(path.join(here, '../dist/index.html'))
-  }
 }
 
 /**
@@ -187,6 +227,14 @@ function drawnIn() {
 /** Which maid the window that sent this is talking to. */
 const shiftOf = (event: IpcMainEvent | IpcMainInvokeEvent) => shifts.get(event.sender)
 const windowOf = (event: IpcMainEvent) => BrowserWindow.fromWebContents(event.sender)
+/** The side windows of the scene that sent this, or of the side window that did. */
+const sidesOf = (event: IpcMainEvent) =>
+  sides.get(event.sender) ?? [...sides.values()].find((side) => side.owns(event.sender))
+
+ipcMain.on('cafe:open-side-window', (event, name: SideWindow) => sidesOf(event)?.show(name))
+ipcMain.on('cafe:share-scene', (event, scene: SceneShare) => sidesOf(event)?.share(scene))
+ipcMain.on('cafe:side-window-ready', (event) => sidesOf(event)?.ready(event.sender))
+ipcMain.on('cafe:to-scene', (event, action: SceneAction) => sidesOf(event)?.toScene(action))
 
 ipcMain.on('cafe:start', (event, runId: string, prompt: string, images: Attachment[]) =>
   shiftOf(event)?.ask(runId, prompt, images),

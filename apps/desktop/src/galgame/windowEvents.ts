@@ -19,7 +19,9 @@ export type WindowScene = {
   setFolder: (cwd: string) => void
   setCommands: (commands: CafeCommand[]) => void
   setSpeech: (speech: { language: string; chosen: string }) => void
-  setLocale: (choice: string) => void
+  /** What was picked for the interface, which may be `system`, and the code it
+   * is drawn in. */
+  setLocale: (locale: { choice: string; drawn: string }) => void
   setBackdrop: (backdrop: Backdrop) => void
   /** Who is standing there — only ever set by the window itself, when a
    * conversation comes back to the maid who served it. */
@@ -68,7 +70,7 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
     scene.setSpeech({ language: event.language, chosen: event.chosen })
   } else if (event.kind === 'locale') {
     speakThis(event.locale)
-    scene.setLocale(event.choice)
+    scene.setLocale({ choice: event.choice, drawn: event.locale })
   } else if (event.kind === 'backdrop') {
     scene.setBackdrop(event.backdrop)
   } else if (event.kind === 'shift') {
