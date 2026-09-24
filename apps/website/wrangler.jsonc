@@ -8,6 +8,12 @@
   "assets": {
     "directory": "./public"
   },
+  "routes": [
+    {
+      "pattern": "claudecafe.dev",
+      "custom_domain": true
+    }
+  ],
   // The plugin shelf behind /plugins/*, filled by scripts/ship-plugin.sh.
   "r2_buckets": [
     {
