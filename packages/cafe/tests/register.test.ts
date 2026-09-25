@@ -396,15 +396,20 @@ function drawn(image: Face, figures: Figures = shift, expression = 'neutral'): R
 
 function status({ percent, quota, usd, shiftMinutes, branch }: Figures): RenderElement[][] {
   const left = 100 - percent
+  const quotaLeft = quota === undefined ? undefined : 100 - quota
   const hours = Math.floor(shiftMinutes / 60)
   const time = `${hours}h${String(shiftMinutes % 60).padStart(2, '0')}m`
   return [
     [{ type: 'Text', props: { bold: true, wrap: 'truncate-start' }, children: ['~/Dev/claudecafe'] }],
     ...(branch ? [[text(`⎇ ${branch}`)]] : []),
-    [text('HP '), ...bar(left, left > 50 ? 'green' : left > 20 ? 'yellow' : 'red'), text(`  context left ${left}%`)],
-    [text('MP '), ...bar(quota ?? 0, 'cyan'), text(`  5h used ${quota === undefined ? '—' : `${quota}%`}`)],
+    [text('HP '), ...bar(left, gauge(left, 'green')), text(`  context left ${left}%`)],
+    [text('MP '), ...bar(quotaLeft ?? 0, gauge(quotaLeft ?? 0, 'cyan')), text(`  5h left ${quotaLeft === undefined ? '—' : `${quotaLeft}%`}`)],
     [text(`⏱ on shift ${time}${usd === undefined ? '' : `    $${usd.toFixed(2)}`}`)],
   ]
+}
+
+function gauge(left: number, full: string): string {
+  return left > 50 ? full : left > 20 ? 'yellow' : 'red'
 }
 
 function bar(percent: number, color: string): RenderElement[] {

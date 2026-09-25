@@ -278,13 +278,13 @@ function encode(bytes) {
 
 // packages/cafe/hooks/function/stats.js
 function statusRows(stats) {
-  const quota = stats.quota === undefined ? "—" : `${Math.round(stats.quota)}%`;
+  const quotaLeft = stats.quota === undefined ? undefined : 100 - Math.round(stats.quota);
   const cost = stats.usd === undefined ? "" : `    $${stats.usd.toFixed(2)}`;
   return [
     [{ text: stats.project, bold: true, wrap: "truncate-start" }],
     ...stats.branch ? [[{ text: `⎇ ${stats.branch}` }]] : [],
-    [{ text: "HP " }, ...bar(stats.contextLeft, hpColor(stats.contextLeft)), { text: `  context left ${stats.contextLeft}%` }],
-    [{ text: "MP " }, ...bar(stats.quota ?? 0, "cyan"), { text: `  5h used ${quota}` }],
+    [{ text: "HP " }, ...bar(stats.contextLeft, gaugeColor(stats.contextLeft, "green")), { text: `  context left ${stats.contextLeft}%` }],
+    [{ text: "MP " }, ...bar(quotaLeft ?? 0, gaugeColor(quotaLeft ?? 0, "cyan")), { text: `  5h left ${quotaLeft === undefined ? "—" : `${quotaLeft}%`}` }],
     [{ text: `⏱ on shift ${duration(stats.shiftMs)}${cost}` }]
   ];
 }
@@ -295,9 +295,9 @@ function bar(percent, color) {
   const filled = Math.max(0, Math.min(10, Math.round(percent / 10)));
   return [{ text: "█".repeat(filled), color }, { text: "░".repeat(10 - filled), dimColor: true }];
 }
-function hpColor(left) {
+function gaugeColor(left, full) {
   if (left > 50)
-    return "green";
+    return full;
   if (left > 20)
     return "yellow";
   return "red";
