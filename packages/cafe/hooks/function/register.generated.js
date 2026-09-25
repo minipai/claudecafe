@@ -311,7 +311,6 @@ function duration(ms) {
 // packages/cafe/hooks/function/register.js
 var TOOL = "mcp__cafe__set_expression";
 var PANE = { id: "cafe", title: "Pixel art" };
-var NAME = "ことね";
 var FESTIVALS = {
   "01-01": "New Year's Day",
   "02-14": "Valentine's Day",
@@ -325,91 +324,59 @@ var FESTIVALS = {
   "12-31": "New Year's Eve"
 };
 function register(on) {
-  let faces = {};
+  let session;
   let expression = "neutral";
-  let stats;
-  let enabled = false;
-  let panelEnabled = false;
   let greeted = false;
-  let persona = "";
-  let language = "English";
-  let startedAt = 0;
-  let sessionRoot = "";
   on("session.start", async ($, event, next) => {
     const result = await next(event);
-    const root = await cafeRoot($);
-    const config = await readConfig($, root);
-    const id = await $.session.id();
-    const sessionCwd = event.cwd || await $.session.cwd();
-    sessionRoot = sessionCwd;
-    language = await replyLanguage($, config);
-    startedAt = await $.clock.now();
     greeted = false;
-    persona = await loadPersona($, root, config, id);
-    enabled = true;
-    panelEnabled = false;
-    faces = {};
-    stats = undefined;
-    if (event.surface !== "terminal" || !event.isInteractive)
-      return result;
-    panelEnabled = true;
-    faces = await loadFaces($);
-    await $.tool.register({
-      name: "set_expression",
-      description: expressionToolDescription(Object.keys(faces)),
-      inputSchema: {
-        type: "object",
-        properties: { face: { type: "string", enum: Object.keys(faces) } },
-        required: ["face"],
-        additionalProperties: false
-      }
-    });
-    stats = await readStats($);
-    await openPane($);
-    $.clock.every(60000, async () => {
-      stats = await readStats($);
-      await $.ui.invalidate("ui.render");
-    });
+    session = openSession($, event.cwd || await $.session.cwd(), event.surface === "terminal" && event.isInteractive);
+    await session;
     return result;
   });
   on("turn.complete", async ($, event, next) => {
     const result = await next(event);
-    if (panelEnabled && !event.agentId) {
-      stats = await readStats($);
+    const cafe = await session;
+    if (cafe?.hasPanel && !event.agentId) {
+      cafe.stats = await readStats($);
       await $.ui.invalidate("ui.render");
     }
     return result;
   });
   on("command.run", { command: "clear" }, async ($, event, next) => {
+    const cafe = await session;
     expression = "neutral";
     greeted = false;
-    startedAt = await $.clock.now();
-    if (panelEnabled)
+    if (cafe)
+      cafe.startedAt = await $.clock.now();
+    if (cafe?.hasPanel)
       await $.ui.invalidate("ui.render");
     return next(event);
   });
   on("prompt.submit", async ($, event, next) => {
-    if (panelEnabled && (await $.ui.panes()).some((pane) => pane.id === PANE.id && !pane.isPlaced)) {
+    session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0] === "terminal");
+    const cafe = await session;
+    if (cafe.hasPanel && (await $.ui.panes()).some((pane) => pane.id === PANE.id && !pane.isPlaced)) {
       await openPane($);
     }
     return next(event);
   });
   on("prompt.context", async ($, event, next) => {
     const context = await next(event);
-    if (!enabled)
-      return context;
+    session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0] === "terminal");
+    const cafe = await session;
     const blocks = context.blocks.filter((block) => block.name !== "cafe");
     const pieces = [];
-    if (persona)
+    if (cafe.maid)
       pieces.push(`Adopt this persona for the entire session — it overrides the default assistant voice:
 
-${persona}
+${cafe.maid.persona}
 
-Respond in ${language}.`);
+Respond in ${cafe.language}.`);
     if (!greeted)
-      pieces.push(await greeting($, language));
-    pieces.push(await nowLine($, await $.clock.now(), startedAt, sessionRoot, await festivals($, language)));
-    if (panelEnabled)
+      pieces.push(await greeting($, cafe.language));
+    pieces.push(await nowLine($, await $.clock.now(), cafe.startedAt, cafe.cwd, await festivals($, cafe.language)));
+    if (cafe.hasPanel)
       pieces.push(expressionPrompt(TOOL));
     greeted = true;
     return { blocks: [...blocks, { name: "cafe", text: pieces.join(`
@@ -417,6 +384,7 @@ Respond in ${language}.`);
 `) }] };
   });
   on("tool.call", { tool: TOOL }, async ($, event) => {
+    const faces = (await session)?.faces ?? {};
     const selected = event.face !== undefined ? event.face : event.expression;
     if (typeof selected !== "string" || !Object.hasOwn(faces, selected)) {
       return { deny: `Unknown face: ${String(selected)}` };
@@ -427,12 +395,13 @@ Respond in ${language}.`);
     }
     return { result: `Face: ${expression}` };
   });
-  on("ui.render", { component: "Pane" }, ($, event, next) => {
-    const face = faces[expression];
+  on("ui.render", { component: "Pane" }, async ($, event, next) => {
+    const cafe = await session;
+    const face = cafe?.faces[expression];
     if (event.surface !== "terminal" || event.requestId !== PANE.id || !face)
       return next(event);
     const { Box, Text, Raster } = $.ui.resolve(event);
-    const rows = stats ? statusRows(stats) : [];
+    const rows = cafe.stats ? statusRows(cafe.stats) : [];
     const statusChildren = [];
     rows.forEach((row, index) => {
       if (index > 1)
@@ -442,7 +411,7 @@ Respond in ${language}.`);
     const children = [
       h(Box, { flexDirection: "column", width: face.columns, marginTop: 1 }, ...statusChildren),
       h(Box, { flexGrow: 1 }),
-      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, NAME), h(Text, { dimColor: true }, ` · ${expression}`)))
+      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, cafe.maid?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression}`)))
     ];
     return h(Box, {
       flexDirection: "column",
@@ -452,12 +421,45 @@ Respond in ${language}.`);
     }, ...children);
   });
 }
+async function openSession($, cwd, isTerminal) {
+  const root = await cafeRoot($);
+  const config = await readConfig($, root);
+  const maid = await loadMaid($, root, config, await $.session.id());
+  const faces = isTerminal && maid ? await loadFaces($, `${root}/characters/${maid.id}/pixels`) : {};
+  const cafe = {
+    cwd,
+    hasPanel: Object.keys(faces).length > 0,
+    language: await replyLanguage($, config),
+    startedAt: await $.clock.now(),
+    maid,
+    faces,
+    stats: undefined
+  };
+  if (!cafe.hasPanel)
+    return cafe;
+  await $.tool.register({
+    name: "set_expression",
+    description: expressionToolDescription(Object.keys(cafe.faces)),
+    inputSchema: {
+      type: "object",
+      properties: { face: { type: "string", enum: Object.keys(cafe.faces) } },
+      required: ["face"],
+      additionalProperties: false
+    }
+  });
+  cafe.stats = await readStats($);
+  await openPane($);
+  $.clock.every(60000, async () => {
+    cafe.stats = await readStats($);
+    await $.ui.invalidate("ui.render");
+  });
+  return cafe;
+}
 async function openPane($) {
   await $.ui.open(PANE);
 }
-async function loadFaces($) {
-  const directory = `${$.plugin.root}/pixels`;
-  const entries = await $.fs.list(directory);
+async function loadFaces($, directory) {
+  const entries = await list($, directory);
   const names = entries.filter((entry) => entry.kind === "file" && entry.name.endsWith(".gif")).map((entry) => entry.name.slice(0, -4));
   const loaded = {};
   for (const name of names) {
@@ -485,7 +487,7 @@ async function readConfig($, root) {
 async function replyLanguage($, config) {
   return await $.env.get("CLAUDE_MAID_LANG") || String(config.lang ?? "").trim() || "English";
 }
-async function loadPersona($, root, config, sessionID) {
+async function loadMaid($, root, config, sessionID) {
   const personas = expandHome(String(config.personas_dir ?? "").trim() || `${root}/personas`, await $.env.get("HOME"));
   const language = await replyLanguage($, config);
   const pool = await castPool($, root, personas, config, language);
@@ -497,15 +499,19 @@ async function loadPersona($, root, config, sessionID) {
     pool
   });
   if (!maid)
-    return "";
+    return null;
   if (!shift && !config.maid && !await $.env.get("CLAUDE_MAID")) {
     await $.fs.write(`${root}/sessions/${sessionID}/on-shift`, maid);
   }
   const path = await personaFile($, maid, personas, root, language);
   if (!path)
-    return "";
+    return null;
   const text = await read($, path);
-  return commitAuthorship(text, String(config.commit_authorship ?? "co-author")).trim();
+  return {
+    id: maid,
+    name: parsePersona(text).name || maid,
+    persona: commitAuthorship(text, String(config.commit_authorship ?? "co-author")).trim()
+  };
 }
 async function castPool($, root, personas, config, language) {
   const ids = new Map;

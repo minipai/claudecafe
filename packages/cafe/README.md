@@ -54,7 +54,7 @@ The module owns the behavior previously split across the classic hooks:
 - strips frontmatter and injects the persona with the configured reply language
 - supplies the first-turn greeting, weather, mood-marker cue, current time, shift age, commit count, and festivals
 - registers `mcp__cafe__set_expression` and keeps the selected face per session
-- renders the terminal `cafe` pane from `pixels/*.gif`
+- renders the terminal `cafe` pane from the maid's `characters/<id>/pixels/*.gif`, with her name
 - resets the face on `/clear` and refreshes status after turns
 
 The panel is terminal-only and opens for interactive sessions. A character pack

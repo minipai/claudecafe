@@ -120,10 +120,19 @@ describe('Cafe image pane', () => {
     expect(opens).toBe(1)
   })
 
-  test('preserves context before the interactive session enables the tool', async ($, on) => {
-    const context = { blocks: [{ name: 'persona', text: 'Existing persona' }] }
+  test('picks the session back up when a reload skipped session.start', async ($, on) => {
+    world(on)
+    on('session.cwd', () => ({ value: '/work' }))
+    on('session.surfaces', () => ({ value: ['terminal'] }))
+    on('tool.register', () => ({ value: { tool } }))
+    on('ui.invalidate', () => ({ value: undefined }))
+    on('ui.open', () => ({ value: placed }))
     on('prompt.context', (_, e) => e)
-    expect(await $.prompt.context(context)).toEqual(context)
+    const context = await $.prompt.context({ blocks: [] })
+    expect(context.blocks[0]?.text).toContain('Adopt this persona')
+    expect(context.blocks[0]?.text).toContain('Kurumi body.')
+    expect(context.blocks[0]?.text).toContain(tool)
+    expect(await $.ui.render(pane())).toEqual(drawn(panelImage))
   })
 
   test('adds stable portrait instructions while preserving other context and replacing its own block', async ($, on) => {
@@ -282,10 +291,13 @@ describe('Cafe image pane', () => {
   })
 })
 
-/** Answers the cast directory's listing and reads, a stray file beside the GIFs included. */
+/** Answers the cast directory: one maid, くるみ, with her own GIFs and a stray file beside them. */
 function pixels(on: On): void {
   on('fs.list', (_, e) => {
-    if (e.path?.endsWith('/cafe/pixels')) {
+    if (e.path?.endsWith('/claudecafe/characters')) {
+      return { value: [{ name: 'kurumi', kind: 'directory' as const, size: 0, isLink: false }] }
+    }
+    if (e.path?.endsWith('/characters/kurumi/pixels')) {
       const names = [...Object.keys(gifs).map(name => `${name}.gif`), 'README.md']
       return { value: names.map(name => ({ name, kind: 'file' as const, size: 0, isLink: false })) }
     }
@@ -298,10 +310,12 @@ function pixels(on: On): void {
     if (e.path?.endsWith('/config.json')) return { value: '{}' }
     if (e.path?.endsWith('/prompts/greeting.md')) return { value: 'Greet at $time.' }
     if (e.path?.endsWith('/prompts/cues.md')) return { value: 'Cues for $lang.' }
-    if (e.path?.endsWith('/maids/noname.md')) return { value: '---\nname: Nameless\n---\nBody.\n' }
+    if (e.path?.endsWith('/characters/kurumi/persona.en.md')) return { value: '---\nname: くるみ\n---\nKurumi body.\n' }
     return { value: '' }
   })
-  on('fs.exists', (_, e) => ({ value: e.path?.endsWith('/maids/noname.md') === true }))
+  on('fs.exists', (_, e) => ({
+    value: e.path?.endsWith('/characters/kurumi/persona.en.md') === true,
+  }))
   on('fs.write', () => ({ value: undefined }))
 }
 
@@ -354,7 +368,7 @@ function face(...cells: number[][]): Face {
 /** The panel: the status block on top, then the portrait framed with her name and expression beneath it. */
 function drawn(image: Face, figures: Figures = shift, expression = 'neutral'): RenderElement {
   const title: RenderElement[] = [
-    { type: 'Text', props: { bold: true }, children: ['ことね'] },
+    { type: 'Text', props: { bold: true }, children: ['くるみ'] },
     { type: 'Text', props: { dimColor: true }, children: [` · ${expression}`] },
   ]
   return {

@@ -39,7 +39,6 @@ case "$NAME" in
             skills
             prompts
             maids
-            pixels
             README.md
         )
         run_tests() {
