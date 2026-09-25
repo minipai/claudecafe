@@ -50,7 +50,9 @@ actual persona.
   `pixels/*.gif` files by filename, decodes static or animated frames, and draws
   them as ordinary text cells. It syncs the three published packs into
   `characters/` and accepts additional folders there.
-- The café plugin ships none of it: maids are hired from the site.
+- **Published hosts** sync the released packs into
+  `$XDG_CONFIG_HOME/claudecafe/characters/` automatically; the site remains
+  the catalog and source for those releases.
 
 ## Publishing a character pack
 

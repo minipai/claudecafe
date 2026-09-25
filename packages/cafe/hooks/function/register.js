@@ -227,12 +227,12 @@ async function castPool($, root, personas, config, language) {
     const path = await packPersona($, `${root}/characters/${entry.name}`, language)
     if (path) ids.set(entry.name, path)
   }
-  const hired = []
+  const available = []
   for (const [id, path] of ids) {
     const text = await read($, path)
-    if (!parsePersona(text).offDuty) hired.push(id)
+    if (!parsePersona(text).offDuty) available.push(id)
   }
-  if (hired.length || config.builtin_cast === false) return hired.sort()
+  if (available.length || config.builtin_cast === false) return available.sort()
   const bundled = `${$.plugin.root}/maids/noname.md`
   return (await $.fs.exists(bundled)) ? ['noname'] : []
 }

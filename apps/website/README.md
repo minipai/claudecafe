@@ -1,7 +1,7 @@
 # website
 
-[claudecafe.dev](https://claudecafe.dev) — where the maids are introduced, and
-where they are hired from. Hono with JSX, rendered in a Cloudflare Worker; no
+[claudecafe.dev](https://claudecafe.dev) — where the maids are introduced and
+published. Hono with JSX, rendered in a Cloudflare Worker; no
 client framework.
 
 ## Running it
@@ -15,9 +15,9 @@ pnpm dev    # http://localhost:5050
 - **A page per maid**, built from `packages/characters/<id>/persona.<lang>.md`:
   the frontmatter is the page's metadata, the body is what you read. A Worker has
   no filesystem, so `scripts/build-cast.ts` bundles them in as `src/cast.json`.
-- **`/<id>.md`** — the same persona file, frontmatter included. This is the
-  hiring channel: `/cafe:hire` fetches that URL, and the maid page's call to
-  action is a link to it.
+- **`/<id>.md`** — the same persona file, frontmatter included. It is the
+  canonical catalog payload used by published character-pack tooling and by
+  clients that need the raw persona.
 - **The download page** for the desktop app, and the plugin page.
 - **`/plugins/*`** — the Claude Code plugin shelf (marketplace.json and versioned
   zips), read from the `claudecafe-plugins` R2 bucket that

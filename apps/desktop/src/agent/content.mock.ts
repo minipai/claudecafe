@@ -179,7 +179,7 @@ export const MOCK_STATUS: StatusReport = {
 }
 
 /** Her, as the plate opens her — the real one is read off the master's own copy
- * of the maid he hired, which in the browser there is none of. */
+ * of the maid he added, which in the browser there is none of. */
 export const MOCK_PERSONA = `# Personality
 
 You are ことね (Kotone), an AI maid — gentle, playful, and classic-style.

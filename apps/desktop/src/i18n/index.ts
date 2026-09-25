@@ -59,7 +59,7 @@ let onShift = 'ことね'
  * of them would be carrying one word a very long way.
  *
  * Her name is not a translation. It is what her own persona file calls her, and
- * a maid the master hired himself was never in either catalogue.
+ * a maid the master added himself was never in either catalogue.
  */
 export const her = () => onShift
 

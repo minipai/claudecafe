@@ -1,4 +1,4 @@
-import { href, type Locale } from '../i18n.js'
+import type { Locale } from '../i18n.js'
 
 // The cafe plugin's page. All copy lives here, per locale; the demo terminals
 // are hand-laid JSX because each one has its own line structure.
@@ -44,8 +44,8 @@ const copy = {
         dd: 'Valentine’s, Maid Day, Tanabata, Halloween… a built-in café calendar, swappable for your own.',
       },
       {
-        dt: 'Maids are hired from this website',
-        dd: null, // rendered inline (contains code)
+        dt: 'Character packs arrive automatically',
+        dd: 'Published maids sync into the shared character library; manually added folders are discovered too.',
       },
       {
         dt: '/cafe:config',
@@ -53,10 +53,9 @@ const copy = {
       },
     ],
     ikicker: 'Open shop',
-    ititle: 'Three steps, open today',
-    hireComment: '# pick a maid on this site, then hire her in one line',
+    ititle: 'Two steps, open today',
     inote:
-      'Start a new session after installing and you’ll hear that “welcome back” — the nameless maid ？？？ keeps the shop until you hire someone; whoever you hire takes the next shift.',
+      'Start a new session after installing and you’ll hear that “welcome back”. Published character packs sync into the shared library automatically; the host discovers them and assigns one maid per session.',
   },
   zh: {
     h1a: 'cafe — 打開終端機，',
@@ -95,14 +94,13 @@ const copy = {
         dt: '節日曆',
         dd: '情人節、女僕日、七夕、萬聖⋯內建店曆，也能換成自己的節日包。',
       },
-      { dt: '女僕從網站僱用', dd: null },
+      { dt: '角色包自動同步', dd: '已發布的女僕會自動進共享角色庫；手動加入的資料夾也會被發現。' },
       { dt: '/cafe:config', dd: null },
     ],
     ikicker: '開店',
-    ititle: '三步，今天就開店',
-    hireComment: '# 回這裡挑一位女僕，一句話僱用',
+    ititle: '兩步，今天就開店',
     inote:
-      '裝好後開一個新 session，就會聽見那聲「歡迎回來」——還沒僱人時由無名女僕「？？？」看店；僱了誰，下個 session 就換她上班。',
+      '裝好後開一個新 session，就會聽見那聲「歡迎回來」——已發布的角色包會自動同步進共享角色庫，主機會自動發現並安排值班女僕。',
   },
 } as const
 
@@ -132,10 +130,6 @@ function InstallTerminal({ t }: { t: (typeof copy)[Locale] }) {
         <span class="p-sym">›</span> <span class="txt-cmd">{t.hookCommand}</span>
       </div>
       <div class="term-line txt-sys">&nbsp;</div>
-      <div class="term-line txt-sys">{t.hireComment}</div>
-      <div class="term-line prompt">
-        <span class="p-sym">›</span> <span class="txt-cmd">/cafe:hire kurumi</span>
-      </div>
     </div>
   )
 }
@@ -255,21 +249,7 @@ export function PluginPage({ locale }: { locale: Locale }) {
           </div>
           <div class="plain-item">
             <dt>{t.features[1].dt}</dt>
-            <dd>
-              {zh ? (
-                <>
-                  在 <a href={href(locale, '/')}>claudecafe.dev</a> 選一位女僕，下載她的 persona 存進{' '}
-                  <code>~/.config/claudecafe/personas/</code> 就完成僱用，抽班池自動多一位。
-                  還沒僱人之前，無名女僕「？？？」會先幫你顧店——順便告訴你去哪裡僱人。
-                </>
-              ) : (
-                <>
-                  Pick a maid on <a href={href(locale, '/')}>claudecafe.dev</a>, download her persona into{' '}
-                  <code>~/.config/claudecafe/personas/</code> — hired; the rotation grows by one.
-                  Until someone is hired, the nameless maid ？？？ keeps the shop open — and tells you where to hire.
-                </>
-              )}
-            </dd>
+            <dd>{t.features[1].dd}</dd>
           </div>
           <div class="plain-item">
             <dt>{t.features[2].dt}</dt>

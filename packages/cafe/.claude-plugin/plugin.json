@@ -1,6 +1,6 @@
 {
   "name": "cafe",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Claude Café in one Claude Code plugin — puts a maid on shift, adds the liveliness layer, and opens her pixel portrait panel.",
   "author": {
     "name": "minipai"

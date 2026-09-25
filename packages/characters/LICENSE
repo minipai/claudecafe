@@ -12,8 +12,9 @@ repository root does not cover them.
 You are welcome to
 ------------------
 
-- Put any maid to work with Claude Code: hire her from claudecafe.dev, keep her
-  persona in `~/.config/claudecafe/personas/`, and let her serve you.
+- Put any maid to work with Claude Code: sync or install her published pack
+  from claudecafe.dev, keep it under `~/.config/claudecafe/characters/`, and
+  let her serve you.
 - Change her for your own use — rewrite her lines, redraw her, dress her
   differently — as long as the result stays something you use rather than
   something you publish.

@@ -432,7 +432,7 @@ export class MaidSession {
   private takeBackShift(sessionId: string) {
     const served = whoServed(sessionId)
     if (!served || served === chosenShift().maid) return
-    // Someone the window has no artwork for — a maid hired for the terminal,
+    // Someone the window has no artwork for — a maid added for the terminal,
     // or the plugin's nameless stand-in. The conversation stays with whoever is
     // on: a name plate and a persona that disagree with the sprite underneath
     // them read worse than her reading somebody else's log.

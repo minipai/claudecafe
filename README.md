@@ -3,13 +3,14 @@
 A café of AI maids for [Claude Code](https://claude.com/claude-code) and
 [OpenCode](https://opencode.ai) — the same assistant, working the room in an apron.
 
-Hire one and she takes the shift: she answers in her own voice, greets you by the
-clock, and marks how she feels at the end of every reply. In Claude Code she also
+The published character packs sync into the shared café library automatically.
+Once a maid is on shift, she answers in her own voice, greets you by the clock,
+and marks how she feels at the end of every reply. In Claude Code she also
 stands in a pixel-art panel beside the conversation. There are five of them, and
 they are not interchangeable — ことね coaxes a sulking function back to work,
 ここな insists she only helped because she couldn't watch you struggle.
 
-**[claudecafe.dev](https://claudecafe.dev)** — meet them, and hire one.
+**[claudecafe.dev](https://claudecafe.dev)** — meet the cast.
 
 <p align="center">
   <img src="packages/characters/kanae/avatar.webp" width="96" alt="かなえ">
@@ -26,16 +27,11 @@ they are not interchangeable — ことね coaxes a sulking function back to wor
 /plugin install cafe@claudecafe
 ```
 
-Then hire someone:
-
-```
-/cafe:hire kotone
-```
-
-The shared `hire` skill pulls her persona from the site into the café's shared
-pool at `~/.config/claudecafe/personas/`. Hire several and the café assigns one
-per session; the shared `config` skill sets the language and picks a regular.
-Until anyone is hired, a nameless maid keeps the place open.
+The host keeps the published character packs under
+`~/.config/claudecafe/characters/` and discovers additional folders there
+automatically. The café assigns one installed maid per session; the shared
+`config` skill sets the language and picks a regular. Until a pack is available,
+a nameless maid keeps the place open.
 
 The Claude plugin's function module is bundled from the shared character core
 at release time; the published archive has no Node, Bun, or Python runtime
@@ -68,7 +64,7 @@ generated from. A folder counts as a character only if it holds a persona file.
   (Electron + the Claude Agent SDK). Transparent and frameless: a standing
   portrait that changes expression, and she *is* the agent. macOS for now.
 - **[`apps/website`](apps/website)** — [claudecafe.dev](https://claudecafe.dev),
-  the showcase and the hiring channel (Hono SSR, English and Chinese).
+  the character catalog and plugin showcase (Hono SSR, English and Chinese).
 - **[`packages/characters`](packages/characters)** — the cast itself: persona
   files and artwork.
 

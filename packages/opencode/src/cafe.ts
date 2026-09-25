@@ -20,7 +20,7 @@ export { cafeRoot } from "./root.ts"
  *
  * The state lives in the same shared root as the Claude Code plugin
  * (`$XDG_CONFIG_HOME/claudecafe`), so one `config.json`, the downloaded
- * `characters/` packs, and the legacy `personas/` pool serve every host: hire a
+ * `characters/` packs, and the legacy `personas/` pool serve every host: install a
  * maid once and every agent has her.
  *
  * What the café does here:
@@ -176,10 +176,10 @@ export function drawFrom(dirs: string[], extraIDs: string[] = []): string[] {
     .sort()
 }
 
-/** The hired maids; while there are none, the bundled nameless maid keeps the place open. */
+/** The installed characters; while there are none, the bundled nameless maid keeps the place open. */
 export function castPool(): string[] {
-  const hired = drawFrom([personasDir()], characterIds())
-  if (hired.length || config().builtin_cast === false) return hired
+  const available = drawFrom([personasDir()], characterIds())
+  if (available.length || config().builtin_cast === false) return available
   return drawFrom([personasDir(), maidsDir()], characterIds())
 }
 
@@ -205,7 +205,7 @@ export function availableCharacters(): Character[] {
 
 /**
  * The persona body with the configured Git attribution for a Café maid. A maid
- * hired from claudecafe.dev (id claudecafe/<slug>) signs commits as
+ * from claudecafe.dev (id claudecafe/<slug>) signs commits as
  * `<name> <<slug>@claudecafe.dev>`, both read from her frontmatter; one shared
  * config chooses whether she is author or co-author. The `## Git` section older
  * downloads still carry gives way to it. Custom personas are left alone.

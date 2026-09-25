@@ -125,7 +125,7 @@ function site(locale: Locale) {
     const name = c.req.param("name");
 
     // /<slug>.md is the persona file itself, frontmatter included — the
-    // download link on her page, and what an agent hires her with.
+    // catalog payload used by the page, pack tooling, and host sync.
     if (name.endsWith(".md")) {
       const maid = getMaid(name.slice(0, -3), locale);
       if (!maid) return render404(c, locale);

@@ -5,8 +5,9 @@ shift, adds the time-aware liveliness layer, and opens her pixel portrait panel.
 The Claude function module is bundled from the same host-neutral contracts used
 by the OpenCode plugin.
 
-The cast is hired from [claudecafe.dev](https://claudecafe.dev). A persona is
-kept under the shared café root:
+The cast is published at [claudecafe.dev](https://claudecafe.dev). Hosts sync
+published character packs into the shared café root automatically; a persona is
+kept under:
 
 ```text
 $XDG_CONFIG_HOME/claudecafe/           # default ~/.config/claudecafe
@@ -18,7 +19,7 @@ $XDG_CONFIG_HOME/claudecafe/           # default ~/.config/claudecafe
 
 `characters/<id>/` is the canonical pack format. A flat `personas/<id>.md` file
 still works and wins over a same-id pack. The bundled `maids/noname.md` keeps
-the café open when no maid is hired.
+the café open when no character pack is installed.
 
 ## Claude function profile
 
