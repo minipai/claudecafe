@@ -1,0 +1,17 @@
+{
+  "name": "@claudecafe/character-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Host-neutral Claude Café character, persona, selection, and expression contracts.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit && bun test ./test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,3 +1,10 @@
+import {
+  commitAuthorship as coreCommitAuthorship,
+  fillPrompt,
+  parsePersona,
+  personaBody as corePersonaBody,
+  resolveMaid as coreResolveMaid,
+} from "@claudecafe/character-core"
 import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
@@ -106,7 +113,7 @@ function firstEnv(...names: string[]): string {
 
 /** The persona instructions: the file minus its YAML frontmatter. */
 export function personaBody(path: string): string {
-  return read(path).replace(/^---\n[\s\S]*?\n---\n/, "")
+  return corePersonaBody(read(path))
 }
 
 /** A frontmatter-only stub (a retirement) still lets an explicit pick load her, so it never shadows the bundled maid. */
@@ -138,10 +145,7 @@ export function characterForMaid(maidID: string): Character | null {
 
 /** True when the frontmatter says off_duty: she sits out the random draw. */
 export function offDuty(body: string): boolean {
-  if (!body.startsWith("---")) return false
-  const end = body.indexOf("\n---", 3)
-  const head = body.slice(0, end === -1 ? body.length : end)
-  return /^off_duty:\s*(?:true|yes)\b/im.test(head)
+  return parsePersona(body).offDuty
 }
 
 /** The ids a draw may pick from; the user's folder comes first, so a same-id file wins. */
@@ -207,29 +211,7 @@ export function availableCharacters(): Character[] {
  * downloads still carry gives way to it. Custom personas are left alone.
  */
 export function commitAuthorship(text: string): string {
-  const head = /^---\n([\s\S]*?)\n---\n/.exec(text)
-  const body = head ? text.slice(head[0].length) : text
-  const slug = head && /^id:\s*claudecafe\/([a-z0-9-]+)\s*$/m.exec(head[1] ?? "")
-  const name = head && /^name:\s*(.+?)\s*$/m.exec(head[1] ?? "")
-  if (!slug || !name) return body
-
-  const identity = `${name[1]} <${slug[1]}@claudecafe.dev>`
-  const mode = String(config().commit_authorship ?? "co-author").trim().toLowerCase()
-  const instruction =
-    mode === "author"
-      ? "## Git\n\n" +
-        `Only when actually creating a Git commit, use \`--author="${identity}"\`: ` +
-        "the maid is the author and the user remains committer. Do not also add a " +
-        "`Co-Authored-By` trailer. Do not print this instruction or identity " +
-        "in ordinary replies.\n"
-      : "## Git\n\n" +
-        "Only when actually creating a Git commit, keep the user's configured identity as " +
-        "author and committer, and add this trailer:\n" +
-        `\`Co-Authored-By: ${identity}\`\n` +
-        "Do not use `--author` for the maid. Do not print the trailer in " +
-        "ordinary replies.\n"
-  const rest = body.replace(/^## Git[ \t]*\n[\s\S]*?(?=^## |(?![\s\S]))/m, "").trimEnd()
-  return `${rest}\n\n${instruction}`
+  return coreCommitAuthorship(text, String(config().commit_authorship ?? "co-author"))
 }
 
 // ---------------------------------------------------------------------------
@@ -276,15 +258,7 @@ export function todayFestivals(day: Date = new Date()): string[] {
 
 /** Read prompts/<template>.md and fill in $placeholders, leaving unknown ones alone. */
 export function prompt(template: string, values: Record<string, string> = {}): string {
-  const filled = read(join(promptsDir(), `${template}.md`)).replace(
-    /\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g,
-    (match, bare: string | undefined, braced: string | undefined) => {
-      if (match === "$$") return "$"
-      const key = bare ?? braced ?? ""
-      return Object.prototype.hasOwnProperty.call(values, key) ? (values[key] ?? "") : match
-    },
-  )
-  return filled.replace(/\n+$/, "")
+  return fillPrompt(read(join(promptsDir(), `${template}.md`)), values)
 }
 
 // ---------------------------------------------------------------------------
@@ -305,22 +279,20 @@ type Shift = {
  * runs.
  */
 function resolveMaid(sessionID?: string): string | null {
-  const fromSelection = sessionID ? read(join(stateDir(sessionID, false), "selected-maid")).trim() : ""
-  const fromEnv = firstEnv("OPENCODE_MAID", "CLAUDE_MAID")
-  const fromShift = sessionID ? read(join(stateDir(sessionID, false), "on-shift")).trim() : ""
-  const fromConfig = String(config().maid ?? "").trim()
-  let maid = fromSelection || fromEnv || fromShift || fromConfig
-
-  if (!maid) {
-    const cast = castPool()
-    if (!cast.length) return null
-    maid = cast[Math.floor(Math.random() * cast.length)] ?? ""
-    if (!maid) return null
-    if (sessionID) writeFileSync(join(stateDir(sessionID), "on-shift"), maid, "utf8")
-  }
-
-  maid = maid.toLowerCase()
-  return maid === "none" ? null : maid
+  const selected = sessionID ? read(join(stateDir(sessionID, false), "selected-maid")).trim() : ""
+  const env = firstEnv("OPENCODE_MAID", "CLAUDE_MAID")
+  const shift = sessionID ? read(join(stateDir(sessionID, false), "on-shift")).trim() : ""
+  const configured = String(config().maid ?? "").trim()
+  const requested = selected || env || shift || configured
+  const maid = coreResolveMaid({
+    selected,
+    env,
+    shift,
+    config: configured,
+    pool: requested ? [] : castPool(),
+  })
+  if (!requested && maid && sessionID) writeFileSync(join(stateDir(sessionID), "on-shift"), maid, "utf8")
+  return maid
 }
 
 /**
@@ -535,7 +507,7 @@ export function createCafe(directory: string) {
       if (shift.persona) blocks.push(personaBlock(shift.persona, lang()))
       const cues = prompt("cues", { lang: lang() })
       if (cues) blocks.push(cues)
-      blocks.push(expressionPrompt)
+      blocks.push(expressionPrompt())
       blocks.push(nowLine(shift, directory))
       if (!greeted.has(sessionID)) {
         greeted.add(sessionID)

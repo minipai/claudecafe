@@ -109,6 +109,8 @@ changes.
 
 - `server.ts` — the conventional V2 server entrypoint.
 - `tui.ts` — the conventional V2 TUI entrypoint.
+- `@claudecafe/character-core` — host-neutral persona, selection, prompt, and
+  expression contracts shared with the Claude function profile.
 - `src/server.ts` — registers the published-pack sync, session context, RPC,
   and the expression tool.
 - `src/characters.ts` — the shared `characters/` catalog, pinned release
