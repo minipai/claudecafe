@@ -1,6 +1,6 @@
 import type { On, RenderElement, RenderInput } from 'claude-code'
 import { describe, expect, mock, test, type Engine, type MockClock } from 'claude-code/testing'
-import type { Face } from '../hooks/faces'
+import type { Face } from '../hooks/function/faces.js'
 
 // Three 2×2 GIFs, each with a transparent pixel or a shared colour, and the
 // half-block cells they decode to.
@@ -16,7 +16,7 @@ const expressions: Record<string, Face> = {
   angry: face([0x2580, 0xff0000, 0x0a0a0a], [0x2580, 0xff0000, DEFAULT]),
 }
 
-const tool = 'mcp__cc-maid__set_expression'
+const tool = 'mcp__cafe__set_expression'
 const panelImage = expressions.neutral!
 const placed = { isPlaced: true } as const
 const submission = { text: 'hello', wait: false, origin: { kind: 'composer' } } as const
@@ -38,8 +38,8 @@ describe('Cafe image pane', () => {
       expect(e.description.length > 0).toBe(true)
       expect(e.inputSchema).toMatchObject({
         type: 'object',
-        properties: { expression: { type: 'string', enum: Object.keys(expressions) } },
-        required: ['expression'],
+        properties: { face: { type: 'string', enum: Object.keys(expressions) } },
+        required: ['face'],
       })
       return { value: { tool } }
     })
@@ -49,12 +49,12 @@ describe('Cafe image pane', () => {
     })
     on('ui.open', (_, e) => {
       events.push('open')
-      expect(e).toEqual({ id: 'cc-maid', title: 'Pixel art' })
+      expect(e).toEqual({ id: 'cafe', title: 'Pixel art' })
       return { value: placed }
     })
     expect(await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true }))
       .toEqual({ cwd: '/work' })
-    expect(events).toEqual(['start', 'register', 'invalidate:prompt.context', 'open'])
+    expect(events).toEqual(['start', 'register', 'open'])
   })
 
   for (const context of [
@@ -63,7 +63,7 @@ describe('Cafe image pane', () => {
     { surface: 'mobile', isInteractive: true },
   ] as const) {
     test(`does not open for ${context.surface}, interactive=${context.isInteractive}`, async ($, on) => {
-      const clock = mock.clock(on)
+      const { clock } = world(on)
       const existing: RenderElement = { type: 'Text', children: ['Undrawn pane'] }
       on('ui.render', { component: 'Pane' }, () => existing)
       let opens = 0
@@ -76,7 +76,11 @@ describe('Cafe image pane', () => {
       expect(opens).toBe(0)
       expect(registrations).toBe(0)
       const prompt = { blocks: [{ name: 'persona', text: 'Existing persona' }] }
-      expect(await $.prompt.context(prompt)).toEqual(prompt)
+      const withCafe = await $.prompt.context(prompt)
+      expect(withCafe.blocks[0]).toEqual(prompt.blocks[0])
+      expect(withCafe.blocks[1]?.name).toBe('cafe')
+      expect(withCafe.blocks[1]?.text).toContain('Adopt this persona')
+      expect(withCafe.blocks[1]?.text).not.toContain('mcp__cafe__set_expression')
       await clock.advance(3000)
       expect(await $.ui.render(pane())).toEqual(existing)
     })
@@ -92,8 +96,8 @@ describe('Cafe image pane', () => {
       on('session.start', (_, e) => ({ cwd: e.cwd }))
       on('tool.register', () => ({ value: { tool } }))
       on('ui.invalidate', () => ({ value: undefined }))
-      on('ui.open', (_, e) => { opens++; expect(e).toEqual({ id: 'cc-maid', title: 'Pixel art' }); return { value: placed } })
-      on('ui.panes', () => ({ value: [{ id: 'cc-maid', title: 'Pixel art', isShown: true, isFocused: false, isPlaced }] }))
+      on('ui.open', (_, e) => { opens++; expect(e).toEqual({ id: 'cafe', title: 'Pixel art' }); return { value: placed } })
+      on('ui.panes', () => ({ value: [{ id: 'cafe', title: 'Pixel art', isShown: true, isFocused: false, isPlaced }] }))
       on('prompt.submit', (_, e) => ({ text: e.text }))
       await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
       expect(opens).toBe(1)
@@ -130,19 +134,24 @@ describe('Cafe image pane', () => {
     await start($, on)
     const input = { blocks: [
       { name: 'persona', text: 'Existing persona' },
-      { name: 'cc-maid', text: 'Outdated portrait instructions' },
+      { name: 'cafe', text: 'Outdated portrait instructions' },
     ] }
     const context = await $.prompt.context(input)
     expect(context.blocks).toHaveLength(3)
     expect(context.blocks[0]).toEqual(input.blocks[0])
     expect(context.blocks[1]).toEqual({ name: 'other-plugin', text: 'Other plugin context' })
-    expect(context.blocks[2]?.name).toBe('cc-maid')
+    expect(context.blocks[2]?.name).toBe('cafe')
+    expect(context.blocks[2]?.text).toContain('Current time:')
     expect(context.blocks[2]?.text).toContain(tool)
     expect(context.blocks[2]?.text).not.toBe('Outdated portrait instructions')
-    await $.tool.call({ tool, expression: 'happy' })
-    expect(await $.prompt.context(input)).toEqual(context)
-    await $.tool.call({ tool, expression: 'angry' })
-    expect(await $.prompt.context(input)).toEqual(context)
+    await $.tool.call({ tool, face: 'happy' })
+    const afterHappy = await $.prompt.context(input)
+    expect(afterHappy.blocks.slice(0, 2)).toEqual(context.blocks.slice(0, 2))
+    expect(afterHappy.blocks[2]?.name).toBe('cafe')
+    await $.tool.call({ tool, face: 'angry' })
+    const afterAngry = await $.prompt.context(input)
+    expect(afterAngry.blocks.slice(0, 2)).toEqual(context.blocks.slice(0, 2))
+    expect(afterAngry.blocks[2]?.name).toBe('cafe')
   })
 
   test('draws the status above the framed GIF and her name, with plugin raster provenance', async ($, on) => {
@@ -166,7 +175,7 @@ describe('Cafe image pane', () => {
     })
     on('ui.invalidate', (_, e) => { invalidations.push(e.event); return { value: undefined } })
     await start($, on)
-    await $.tool.call({ tool, expression: 'happy' })
+    await $.tool.call({ tool, face: 'happy' })
     invalidations.length = 0
 
     expect(await $.command.run(clear)).toEqual({ text: 'cleared' })
@@ -179,13 +188,13 @@ describe('Cafe image pane', () => {
     const invalidations: string[] = []
     on('ui.invalidate', (_, e) => { invalidations.push(e.event); return { value: undefined } })
     const { clock } = await start($, on)
-    expect(invalidations).toEqual(['prompt.context'])
+    expect(invalidations).toEqual([])
     invalidations.length = 0
     expect(Object.keys(expressions)).toHaveLength(3)
     let previous = 'neutral'
     let changes = 0
     for (const [expression, image] of Object.entries(expressions)) {
-      expect(await $.tool.call({ tool, expression })).toEqual({ result: `Expression: ${expression}` })
+      expect(await $.tool.call({ tool, expression })).toEqual({ result: `Face: ${expression}` })
       if (expression !== previous) changes++
       expect(invalidations).toEqual(Array(changes).fill('ui.render'))
       expect(await $.ui.render(pane())).toEqual(drawn(image, shift, expression))
@@ -203,9 +212,9 @@ describe('Cafe image pane', () => {
       on('ui.invalidate', () => { invalidations++; return { value: undefined } })
       await start($, on)
       invalidations = 0
-      await $.tool.call({ tool, expression: 'happy' })
+      await $.tool.call({ tool, face: 'happy' })
       expect(invalidations).toBe(1)
-      expect(await $.tool.call({ tool, expression })).toEqual({ deny: `Unknown expression: ${String(expression)}` })
+      expect(await $.tool.call({ tool, face: expression })).toEqual({ deny: `Unknown face: ${String(expression)}` })
       expect(invalidations).toBe(1)
       expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, shift, 'happy'))
     })
@@ -222,7 +231,7 @@ describe('Cafe image pane', () => {
   test('shows the current expression beside her name', async ($, on) => {
     on('ui.invalidate', () => ({ value: undefined }))
     await start($, on)
-    await $.tool.call({ tool, expression: 'happy' })
+    await $.tool.call({ tool, face: 'happy' })
     expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, shift, 'happy'))
   })
 
@@ -276,14 +285,24 @@ describe('Cafe image pane', () => {
 /** Answers the cast directory's listing and reads, a stray file beside the GIFs included. */
 function pixels(on: On): void {
   on('fs.list', (_, e) => {
-    expect(e.path?.endsWith('/cc-maid/pixels')).toBe(true)
-    const names = [...Object.keys(gifs).map(name => `${name}.gif`), 'README.md']
-    return { value: names.map(name => ({ name, kind: 'file' as const, size: 0, isLink: false })) }
+    if (e.path?.endsWith('/cafe/pixels')) {
+      const names = [...Object.keys(gifs).map(name => `${name}.gif`), 'README.md']
+      return { value: names.map(name => ({ name, kind: 'file' as const, size: 0, isLink: false })) }
+    }
+    return { value: [] }
   })
   on('fs.read', (_, e) => {
-    expect(e.as).toBe('bytes')
-    return { value: { base64: gifs[e.path.split('/').at(-1)!.replace('.gif', '')]! } }
+    if (e.as === 'bytes') {
+      return { value: { base64: gifs[e.path.split('/').at(-1)!.replace('.gif', '')]! } }
+    }
+    if (e.path?.endsWith('/config.json')) return { value: '{}' }
+    if (e.path?.endsWith('/prompts/greeting.md')) return { value: 'Greet at $time.' }
+    if (e.path?.endsWith('/prompts/cues.md')) return { value: 'Cues for $lang.' }
+    if (e.path?.endsWith('/maids/noname.md')) return { value: '---\nname: Nameless\n---\nBody.\n' }
+    return { value: '' }
   })
+  on('fs.exists', (_, e) => ({ value: e.path?.endsWith('/maids/noname.md') === true }))
+  on('fs.write', () => ({ value: undefined }))
 }
 
 /** What the session reports: context used, the five-hour limit, the shift so far, the branch. */
@@ -304,12 +323,16 @@ function world(on: On): { clock: MockClock; figures: Figures } {
     },
   }))
   on('session.root', () => ({ value: '/home/maid/Dev/claudecafe' }))
+  on('session.id', () => ({ value: 'test-session' }))
   on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/home/maid' : undefined }))
+  on('http.fetch', () => { throw new Error('offline') })
   on('process.run', (_, e) => {
-    expect(e.argv).toEqual(['git', 'branch', '--show-current'])
-    return { value: figures.branch
-      ? { exitCode: 0, stdout: `${figures.branch}\n`, stderr: '' }
-      : { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }
+    if (e.argv.includes('branch')) {
+      return { value: figures.branch
+        ? { exitCode: 0, stdout: `${figures.branch}\n`, stderr: '' }
+        : { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }
+    }
+    return { value: { exitCode: 0, stdout: 'one commit\n', stderr: '' } }
   })
   return { clock, figures }
 }
@@ -348,7 +371,7 @@ function drawn(image: Face, figures: Figures = shift, expression = 'neutral'): R
       {
         type: 'Box', props: { borderStyle: 'round', flexDirection: 'column', alignItems: 'center' },
         children: [
-          { type: 'Raster', props: { key: 'panel-image', ...image }, raster: { plugin: 'cc-maid' } },
+          { type: 'Raster', props: { key: 'panel-image', ...image }, raster: { plugin: 'cafe' } },
           rule(image),
           { type: 'Box', children: title },
         ],
@@ -388,7 +411,7 @@ function text(content: string): RenderElement {
 
 function pane(): RenderInput<'Pane', 'terminal'> {
   return {
-    surface: 'terminal', component: 'Pane', requestId: 'cc-maid',
+    surface: 'terminal', component: 'Pane', requestId: 'cafe',
     props: {
       title: 'Pixel art', isFocused: true, bodyColumns: 38, placement: 'dock',
       scroll: { offset: 0, bodyRows: 40 }, view: {},

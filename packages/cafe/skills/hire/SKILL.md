@@ -3,8 +3,9 @@ name: hire
 description: Hire or update a Cafe maid persona from claudecafe.dev.
 ---
 
-Resolve `../../bin/cafehome.py` relative to this `SKILL.md`. Run it and use its
-output as `CAFE_ROOT`. Every host shares this one Cafe root.
+`CAFE_ROOT` is `$XDG_CONFIG_HOME/claudecafe` when `XDG_CONFIG_HOME` is set,
+otherwise `$HOME/.config/claudecafe`. Use that path directly; this Claude plugin
+has no command-hook helper scripts.
 
 Read `CAFE_ROOT/config.json`, treating a missing or invalid file as an empty
 JSON object. Resolve `personas_dir` from its non-empty `personas_dir` key, or

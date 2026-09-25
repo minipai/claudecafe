@@ -1,12 +1,12 @@
 # Claude Café
 
-A café of AI maids for [Claude Code](https://claude.com/claude-code) and Codex —
-the same assistant, working the room in an apron.
+A café of AI maids for [Claude Code](https://claude.com/claude-code) and
+[OpenCode](https://opencode.ai) — the same assistant, working the room in an apron.
 
 Hire one and she takes the shift: she answers in her own voice, greets you by the
 clock, and marks how she feels at the end of every reply. In Claude Code she also
-leaves a line in the handover diary when she clocks off. There are five of them,
-and they are not interchangeable — ことね coaxes a sulking function back to work,
+stands in a pixel-art panel beside the conversation. There are five of them, and
+they are not interchangeable — ことね coaxes a sulking function back to work,
 ここな insists she only helped because she couldn't watch you struggle.
 
 **[claudecafe.dev](https://claudecafe.dev)** — meet them, and hire one.
@@ -37,8 +37,10 @@ pool at `~/.config/claudecafe/personas/`. Hire several and the café assigns one
 per session; the shared `config` skill sets the language and picks a regular.
 Until anyone is hired, a nameless maid keeps the place open.
 
-Everything the plugin needs is the system's own `bash` and `python3` — no build
-step, no runtime, no node on `PATH`.
+The Claude plugin's function module is bundled from the shared character core
+at release time; the published archive has no Node, Bun, or Python runtime
+dependency. Function hooks are still early access, so enable them when starting
+Claude Code with `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`.
 
 ## The cast
 
@@ -56,14 +58,12 @@ generated from. A folder counts as a character only if it holds a persona file.
 
 ## What's in here
 
-- **[`packages/cafe`](packages/cafe)** — one plugin package for Claude Code and
-  Codex, with separate manifests, shared default hooks and skills
-  (`hire`, `config`, `look`), and one data root.
-- **[`packages/opencode`](packages/opencode)** — the same café for OpenCode, plus
-  the sidebar portrait it absorbed from the old `opencode-maid` mod: one package,
-  two entrypoints (server and TUI).
-- **[`mods/cc-maid`](mods/cc-maid)** — experimental Claude Code pixel panel and
-  expression tool, listed as `cc-maid` in the same `claudecafe` marketplace.
+- **[`packages/cafe`](packages/cafe)** — the Claude Code café plugin: a
+  JavaScript function profile with persona context, liveliness cues, and the
+  pixel portrait panel.
+- **[`packages/opencode`](packages/opencode)** — the same café for OpenCode,
+  sharing the host-neutral character core: one package, two entrypoints (server
+  and TUI).
 - **[`apps/desktop`](apps/desktop)** — her window on the desktop
   (Electron + the Claude Agent SDK). Transparent and frameless: a standing
   portrait that changes expression, and she *is* the agent. macOS for now.
@@ -87,8 +87,9 @@ Working on the plugin itself? Point the marketplace at your checkout —
 `/plugin marketplace add /path/to/claudecafe` — and skip the release round trip.
 
 The desktop app's main process ignores HMR — restart it (`node electron/dev.mjs`
-inside `apps/desktop`) after touching anything under `electron/`. `pnpm -r
-check` runs the types and the tests.
+inside `apps/desktop`) after touching anything under `electron/`. `pnpm -r check` runs the types and the tests. The Claude function profile is
+checked separately with `scripts/build-cafe-function.sh` followed by
+`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test packages/cafe`.
 
 ## The artwork
 

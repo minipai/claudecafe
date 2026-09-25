@@ -1,10 +1,10 @@
 # claudecafe (monorepo)
 
 A pnpm monorepo for the AI maid ecosystem. The repo root **is also a plugin marketplace
-named `claudecafe`** (`.claude-plugin/marketplace.json`, listing the cafe plugin). Five
+named `claudecafe`** (`.claude-plugin/marketplace.json`, listing the cafe plugin). Six
 packages, everything with an npm package.json namespaced under `@claudecafe/*` (the
-private root stays `claudecafe-monorepo`; `packages/cafe` is pure python — no
-package.json, not a workspace member).
+private root stays `claudecafe-monorepo`; `packages/cafe` is the Claude Code
+function-hook plugin and `packages/character-core` is its shared JS core.
 
 **Each package has its own README. Read the one you are working in** — this file is only
 the things that are expensive to find out the hard way.
@@ -18,30 +18,29 @@ the things that are expensive to find out the hard way.
   **The PNG masters, pencil references and drawing spec live in `art-masters/` at the
   repo root, gitignored** — the art scripts read from there and stop with a plain error
   when it isn't present.
-- **`packages/cafe`** — one plugin package for Claude Code and Codex. They share
-  portable hooks, skills, and one data root at `$XDG_CONFIG_HOME/claudecafe`
-  (default `~/.config/claudecafe`). Both discover `hooks/hooks.json` by convention
-  and neither manifest declares a `hooks` path — a manifest path adds to those
-  defaults, so naming the same file would run every hook twice.
-- **`packages/opencode`** — the café for OpenCode, plus the sidebar portrait it
-  absorbed from the old `opencode-maid` mod. One package, two entrypoints
-  (`exports["./server"]` and `exports["./tui"]`) because OpenCode's loader refuses
-  a module that default-exports both. It shares the café data root, and reads
-  `packages/cafe`'s prompts and nameless maid. Server hooks run inside opencode's
-  own Bun runtime, so the "no JS runtime on PATH" landmine below does not apply.
+- **`packages/cafe`** — the Claude Code plugin. Its `hooks/hooks.json` is a
+  modules-only function profile; `scripts/build-cafe-function.sh` bundles the
+  shared `packages/character-core` contracts and the panel adapter into the
+  checked-in runtime module. It shares the café data root at
+  `$XDG_CONFIG_HOME/claudecafe` (default `~/.config/claudecafe`).
+- **`packages/opencode`** — the café for OpenCode, with the sidebar portrait and
+  character-pack sync sharing `packages/character-core`. One package, two
+  entrypoints (`exports["./server"]` and `exports["./tui"]`) because OpenCode's
+  loader refuses a module that default-exports both. It shares the café data root
+  and reads `packages/cafe`'s prompts and nameless maid. Server hooks run inside
+  OpenCode's own Bun runtime.
 
 ## ⚠️ Three landmines in plugin development
 
-- **Hooks run with no JS runtime on PATH**: node is under nvm, bun under `~/.bun`, and a
-  hook's non-interactive shell has neither → **hooks may only use the system's own
-  bash/python3**. That's why `cafe`'s hooks are self-contained: pure python3 stdlib, no repo
-  paths, no symlinks, no node/bun. cafe also has **no build step** — every shipped file is
-  checked in (the cast isn't bundled; it's hired from the site).
+- **Claude function hooks are engine-loaded**: `packages/cafe/hooks/hooks.json`
+  points at a bundled ESM module and must not shell out to `node`, `bun`, or
+  `python3`. The checked-in `register.generated.js` is produced by
+  `scripts/build-cafe-function.sh`; OpenCode runs its own TypeScript/Bun adapter.
 - **Always bump the version when you change a plugin**: `/plugin update` compares versions
   and won't reinstall an unchanged one. Bump `packages/cafe/.claude-plugin/plugin.json` and
   the matching entry in the root `marketplace.json` together, then
   `/plugin marketplace update claudecafe` → `/plugin update cafe@claudecafe`.
-- **Ask the user before touching live global config (`~/.config/claudecafe/`, `~/.claude/`, or `~/.codex/`).** The plugin is
+- **Ask the user before touching live global config (`~/.config/claudecafe/` or `~/.claude/`).** The plugin is
   installed + enabled from the marketplace — there are no loose hook mirrors or symlinks,
   and none should be laid down by hand again.
 

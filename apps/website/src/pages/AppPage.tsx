@@ -34,8 +34,8 @@ const copy = {
     dlNote:
       'From a terminal on purpose: this build is signed by nobody, and a zip that arrives through a browser is held back by macOS. Fetched this way, she opens on the first double-click.',
     dependsA: 'Depends on ',
-    dependsB: ', signed in, and ',
-    dependsC: '.',
+    dependsB: ', signed in.',
+    dependsC: '',
     copy: 'copy',
     copied: 'copied',
   },
@@ -49,8 +49,8 @@ const copy = {
     dlNote:
       '只給指令是有原因的：這個版本沒有任何簽名，用瀏覽器下載的壓縮檔會被 macOS 擋下來；用這行抓的不會，第一次雙擊就開得起來。',
     dependsA: '需要 ',
-    dependsB: '（要先登入）和 ',
-    dependsC: '。',
+    dependsB: '（要先登入）。',
+    dependsC: '',
     copy: '複製',
     copied: '複製好了',
   },
@@ -125,13 +125,11 @@ export function AppPage({ locale }: { locale: Locale }) {
           </button>
         </div>
         <p class="app-dl-note">{t.dlNote}</p>
-        {/* She brings neither of these: the login is Claude Code's and the
-            café's hooks are python. Named, not explained. */}
+        {/* The login is Claude Code's; the app brings no command runtime. */}
         <p class="app-depends">
           {t.dependsA}
           <code>Claude Code</code>
           {t.dependsB}
-          <code>python3</code>
           {t.dependsC}
         </p>
       </section>

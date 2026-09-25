@@ -4,7 +4,7 @@ import {
   parsePersona,
   personaBody as corePersonaBody,
   resolveMaid as coreResolveMaid,
-} from "@claudecafe/character-core"
+} from "./character-core/index.ts"
 import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
@@ -18,7 +18,7 @@ export { cafeRoot } from "./root.ts"
 /**
  * Claude Café's liveliness layer, ported to OpenCode.
  *
- * The state lives in the same shared root as the Claude Code and Codex plugin
+ * The state lives in the same shared root as the Claude Code plugin
  * (`$XDG_CONFIG_HOME/claudecafe`), so one `config.json`, the downloaded
  * `characters/` packs, and the legacy `personas/` pool serve every host: hire a
  * maid once and every agent has her.

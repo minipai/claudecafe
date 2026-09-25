@@ -32,41 +32,23 @@ function stageClaudeCli() {
  * asking the master to install one. The copy is what the session loads, so the
  * window behaves the same on a machine that has never heard of the café.
  *
- * Skipped: the release zip and the python bytecode cache, which are the
- * plugin's own build leftovers, and the shipping script, which is ours to run.
+ * Skipped: the Claude function-hook profile, the release zip, and the plugin's
+ * own build leftovers. The window supplies the persona and face itself, so the
+ * terminal-only hook must not run a second time in the Agent SDK session.
  */
-const SKIP = new Set(['dist', '__pycache__', 'ship.sh', 'test.py'])
+const SKIP = new Set(['dist', '__pycache__', 'ship.sh', 'test.py', 'test', 'tests', 'character-core', 'pixels'])
 
 function stageCafePlugin() {
   const out = path.join(here, '../dist-electron/cafe-plugin')
   fs.rmSync(out, { recursive: true, force: true })
   fs.cpSync(path.join(repo, 'packages/cafe'), out, {
     recursive: true,
-    filter: (source) => !SKIP.has(path.basename(source)),
+    filter: (source) => {
+      const relative = path.relative(path.join(repo, 'packages/cafe'), source)
+      const underHooks = relative === 'hooks' || relative.startsWith('hooks/')
+      return !underHooks && !SKIP.has(path.basename(source))
+    },
   })
-  dropShiftHook(out)
-}
-
-/**
- * Who she is does not travel through a hook here. The plugin draws a maid at
- * session start and injects her persona from python; the window already knows —
- * from the configured character folder — so it puts her persona in the session's system
- * prompt itself (see maid.ts), which still stands on a Mac with no python3 for
- * the hooks to run on. This copy therefore loses that one hook, or she would be
- * introduced twice on the machines that do have one.
- *
- * Everything else in the plugin stays: the greeting, the per-turn time, the
- * mirror and the diary are what the café is, and they degrade quietly.
- */
-function dropShiftHook(out) {
-  const manifest = JSON.parse(fs.readFileSync(path.join(out, '.claude-plugin/plugin.json'), 'utf8'))
-  const file = path.resolve(out, manifest.hooks ?? 'hooks/hooks.json')
-  const config = JSON.parse(fs.readFileSync(file, 'utf8'))
-  for (const group of config.hooks.SessionStart) {
-    group.hooks = group.hooks.filter((hook) => !hook.command.includes('load-persona'))
-  }
-  fs.writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`)
-  fs.rmSync(path.join(out, 'hooks/load-persona.py'))
 }
 
 /**

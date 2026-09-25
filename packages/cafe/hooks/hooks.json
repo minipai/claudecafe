@@ -1,32 +1,4 @@
 {
-  "description": "Shared Cafe hooks for Claude Code and Codex: persona, greeting, and per-turn time.",
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT}}/hooks/load-persona.py\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT}}/hooks/session-greeting.py\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT}}/hooks/current-time.py\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
+  "description": "Claude Café function hooks: persona, liveliness context, and the pixel maid panel.",
+  "modules": ["./function/register.generated.js"]
 }

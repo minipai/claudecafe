@@ -24,7 +24,7 @@ For a checkout, configure the package's absolute path instead; see
 
 ## Server: the café
 
-Shares the Claude Code / Codex plugin's data root — `$XDG_CONFIG_HOME/claudecafe`,
+Shares the Claude Code plugin's data root — `$XDG_CONFIG_HOME/claudecafe`,
 default `~/.config/claudecafe`. Published OpenCode character packs live in
 `characters/<id>/`; the legacy flat `personas/` directory and its
 `personas_dir` override remain supported for simple persona-only maids.
@@ -109,8 +109,9 @@ changes.
 
 - `server.ts` — the conventional V2 server entrypoint.
 - `tui.ts` — the conventional V2 TUI entrypoint.
-- `@claudecafe/character-core` — host-neutral persona, selection, prompt, and
-  expression contracts shared with the Claude function profile.
+- `@claudecafe/character-core` — canonical host-neutral persona, selection,
+  prompt, and expression contracts; `src/character-core/` is the generated,
+  package-local copy carried by the OpenCode archive.
 - `src/server.ts` — registers the published-pack sync, session context, RPC,
   and the expression tool.
 - `src/characters.ts` — the shared `characters/` catalog, pinned release

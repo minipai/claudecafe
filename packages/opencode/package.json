@@ -1,6 +1,6 @@
 {
   "name": "@claudecafe/opencode",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "private": true,
   "description": "Claude Café for OpenCode — a maid on shift (persona, greeting, per-turn time, mood marker) plus her portrait in the sidebar.",
   "type": "module",
@@ -16,11 +16,14 @@
     "src"
   ],
   "scripts": {
+    "build:core": "bash ../../scripts/build-opencode-core.sh",
+    "pretest": "pnpm run build:core",
     "test": "bun test ./test",
+    "precheck": "pnpm run build:core",
+    "prepack": "pnpm run build:core",
     "check": "tsc --noEmit && bun test ./test"
   },
   "dependencies": {
-    "@claudecafe/character-core": "workspace:*",
     "@opencode/plugin": "2.0.8",
     "@opencode/theme": "2.0.8",
     "@opentui/core": "0.5.10",

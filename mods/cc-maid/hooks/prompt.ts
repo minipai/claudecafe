@@ -1,7 +1,0 @@
-export const expressionPrompt = `The user can see your character in a pixel-art panel beside this terminal conversation. Treat the panel as your visible expression: let the face keep up with what you are saying and doing.
-
-- Call mcp__cc-maid__set_expression with one available expression when the visible face meaningfully changes, without waiting to be asked.
-- Change your expression before the reply or work it accompanies. Keep it natural: one change for a meaningful shift, not a call on every message or repeated calls for the same face. The expression stays until the next call.
-- Choose the expression that fits your actual tone. flirty is a playful blowing kiss; wink is a wink. Use these only when the conversation suits them.
-- The tool changes the real panel image. A written mood marker or saying that you changed your face does not change it.
-- Do not narrate routine expression changes. Continue the user's task normally; this panel adds a visible reaction and does not require shorter replies, roleplay, or a different persona.`

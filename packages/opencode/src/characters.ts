@@ -4,6 +4,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { promisify } from "node:util"
+import { parsePersona } from "./character-core/index.ts"
 import { cafeRoot } from "./root.ts"
 
 const unzip = promisify(execFile)
@@ -64,7 +65,7 @@ export function characterForId(id: string, language = "English"): Character | nu
   const pixels = join(charactersDir(), id, "pixels")
   return {
     id,
-    name: field(frontmatter(read(personaPath)), "name") || id,
+    name: parsePersona(read(personaPath)).name || id,
     personaPath,
     pixelsDir: existsSync(pixels) ? pixels : null,
   }
@@ -73,7 +74,7 @@ export function characterForId(id: string, language = "English"): Character | nu
 export function characterVersion(id: string): string | null {
   const path = personaFileInCharacters(id)
   if (!path) return null
-  return field(frontmatter(read(path)), "version") || null
+  return parsePersona(read(path)).version || null
 }
 
 export function shouldUpdateCharacter(current: string | null, published: string): boolean {
@@ -126,7 +127,7 @@ async function installPublishedCharacter(pack: (typeof PUBLISHED_CHARACTER_PACKS
 
     const extracted = join(staging, pack.id)
     const extractedPersona = personaFileInFolder(staging, pack.id)
-    const extractedVersion = extractedPersona ? field(frontmatter(read(extractedPersona)), "version") : ""
+    const extractedVersion = extractedPersona ? parsePersona(read(extractedPersona)).version : ""
     if (!extractedPersona || extractedVersion !== pack.version) {
       throw new Error(`${pack.id} archive has an unexpected persona version`)
     }
@@ -176,15 +177,6 @@ function read(path: string): string {
   } catch {
     return ""
   }
-}
-
-function frontmatter(text: string): string {
-  return /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)?.[1] ?? ""
-}
-
-function field(head: string, key: string): string {
-  const match = new RegExp(`^${key}:[ \\t]*(.+?)\\s*$`, "m").exec(head)
-  return match?.[1]?.trim().replace(/^(['"])(.*)\1$/, "$2") ?? ""
 }
 
 function versionParts(version: string): number[] | null {

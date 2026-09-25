@@ -111,8 +111,8 @@ function site(locale: Locale) {
       locale === "zh" ? "cafe — Claude Code 的女僕咖啡廳 plugin" : "cafe — a maid café plugin for Claude Code";
     const description =
       locale === "zh"
-        ? "打開終端機，聽見一聲「歡迎回來，ご主人様」。cafe 是 Claude Code plugin：每個 session 由值班女僕迎接你、報時、用心情收尾。"
-        : "Open your terminal to a warm “Welcome back, ご主人様.” A Claude Code plugin that puts a maid on shift every session — greetings, timekeeping and mood sign-offs.";
+        ? "打開終端機，聽見一聲「歡迎回來，ご主人様」。cafe 是 Claude Code plugin：每個 session 由值班女僕迎接你、報時、用心情收尾，旁邊還有會跟著工作變化的像素表情。"
+        : "Open your terminal to a warm “Welcome back, ご主人様.” A Claude Code plugin that puts a maid on shift every session — greetings, timekeeping, mood sign-offs, and a pixel portrait beside the work.";
     return c.html(
       <Layout locale={locale} title={title} description={description} path="/plugin">
         <PluginPage locale={locale} />

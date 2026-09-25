@@ -1,21 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
-# Ship one marketplace plugin to the public shelf at claudecafe.dev/plugins/:
-# run its tests, zip a versioned archive, update its entry in the public
-# marketplace.json (archive source + sha256) and upload both to the R2 bucket
-# the website's Worker serves /plugins/* from.
+# Ship the Claude Code café plugin to the public shelf at claudecafe.dev/plugins/:
+# build the bundled function module, run its tests, zip a versioned archive,
+# update its marketplace entry (archive source + sha256), and upload both to
+# the R2 bucket the website's Worker serves /plugins/* from.
 #
-#   scripts/ship-plugin.sh <cafe|cc-maid>
+#   scripts/ship-plugin.sh cafe
 #
 # Published zips are immutable — same version twice aborts; bump the version
 # (plugin.json + root marketplace.json) instead. Old zips stay up: the shelf
-# doubles as the release archive and instant rollback. Other plugins keep the
-# entries already live, so shipping one never unpublishes another.
+# doubles as the release archive and instant rollback.
 #
 # SHIP_DRY=1 stops after building dist/ (nothing uploaded).
 
-NAME="${1:?usage: scripts/ship-plugin.sh <cafe|cc-maid>}"
+NAME="${1:?usage: scripts/ship-plugin.sh cafe}"
 
 BUCKET="claudecafe-plugins"
 BASE_URL="https://claudecafe.dev/plugins"
@@ -25,17 +24,28 @@ wrangler() { pnpm --silent --dir "$REPO_ROOT/apps/website" exec wrangler "$@"; }
 shelf_get() { wrangler r2 object get "$BUCKET/$1" --remote --pipe; }
 shelf_put() { wrangler r2 object put "$BUCKET/$(basename "$1")" --remote --file "$1" --content-type "$2" >/dev/null; }
 
-# Each plugin stages only what it needs at runtime (no build/test tooling).
+# The Claude archive is self-contained: the function bundle already includes
+# character-core, so no workspace package or generated source path ships.
 case "$NAME" in
     cafe)
         PLUGIN="$REPO_ROOT/packages/cafe"
-        ITEMS=(.claude-plugin .codex-plugin bin hooks skills prompts maids README.md)
-        run_tests() { python3 "$PLUGIN/test.py" 2>&1 | tail -3; }
-        ;;
-    cc-maid)
-        PLUGIN="$REPO_ROOT/mods/cc-maid"
-        ITEMS=(.claude-plugin hooks pixels README.md)
-        run_tests() { CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test "$PLUGIN" 2>&1 | tail -3; }
+        ITEMS=(
+            .claude-plugin
+            hooks/hooks.json
+            hooks/function/register.generated.js
+            hooks/function/faces.js
+            hooks/function/gif.js
+            hooks/function/stats.js
+            skills
+            prompts
+            maids
+            pixels
+            README.md
+        )
+        run_tests() {
+            "$REPO_ROOT/scripts/build-cafe-function.sh" >/dev/null
+            CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test "$PLUGIN" 2>&1 | tail -3
+        }
         ;;
     *)
         echo "✗ unknown plugin: $NAME" >&2
@@ -59,8 +69,9 @@ if [ -z "${SHIP_DRY:-}" ] && shelf_get "$ZIP" >/dev/null 2>&1; then
 fi
 
 rm -rf "$DIST" && mkdir -p "$DIST/stage"
-# -L: a linked folder (cc-maid's pixels/) ships as the files it links to.
+# -L: linked artwork and other source links ship as the files they point to.
 for item in "${ITEMS[@]}"; do
+    mkdir -p "$(dirname "$DIST/stage/$item")"
     cp -RL "$PLUGIN/$item" "$DIST/stage/$item"
 done
 find "$DIST/stage" -type d -name __pycache__ -exec rm -rf {} +

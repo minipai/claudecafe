@@ -150,11 +150,10 @@ const SCENE_BRIEF = `You are being watched through a window, not a terminal — 
  * Everything the session has to be told to be her: who she is, that she is
  * being watched through a window, and what to answer in.
  *
- * Her persona would normally arrive through the plugin's SessionStart hook,
- * which is python — so the window says it itself, in the system prompt, and the
- * hook is dropped from the copy the app carries (see build.mjs). On a Mac with
- * no python3 the café's greeting and mirror go quiet, but the maid is still the
- * maid; without this she would answer as a plain assistant in her own window.
+ * The Claude plugin's function profile is intentionally left out of the copy
+ * the app carries (see build.mjs): the window owns the selected character and
+ * puts that persona into the Agent SDK system prompt itself. Without this she
+ * would answer as a plain assistant in her own window.
  */
 /** The current runtime cast, used when restoring a conversation's maid. */
 let carried: string[] = []

@@ -7,8 +7,10 @@ const copy = {
     h1a: 'cafe — open your terminal,',
     h1b: '“Welcome back, ご主人様.”',
     lede:
-      'Same Claude Code, same workflow — but from today every session has a maid on shift: she greets you at the door, keeps track of the clock, and signs off each reply with her mood. The tool doesn’t change. The one keeping you company does.',
+      'Same Claude Code, same workflow — but from today every session has a maid on shift: she greets you at the door, keeps track of the clock, signs off each reply with her mood, and stands beside the work in a pixel portrait. The one keeping you company does more.',
     installComment: '# paste these two lines into Claude Code to open shop',
+    hookComment: '# function hooks are early access; start Claude with them enabled',
+    hookCommand: 'CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude',
     d1kicker: '01 · Session start',
     d1title: 'She checks the time and the weather, then greets you',
     d1desc:
@@ -60,8 +62,10 @@ const copy = {
     h1a: 'cafe — 打開終端機，',
     h1b: '聽見一聲「歡迎回來，ご主人様」。',
     lede:
-      '打開的還是同一個 Claude Code，工作流程一切照舊——只是從今天起，每個 session 都有一位值班女僕：開場迎接你、記得現在幾點、回應帶著心情收尾。改變的不是工具，是陪你寫程式的人。',
+      '打開的還是同一個 Claude Code，工作流程一切照舊——只是從今天起，每個 session 都有一位值班女僕：開場迎接你、記得現在幾點、回應帶著心情收尾，還會以像素表情站在工作旁邊。改變的不是工具，是陪你寫程式的人。',
     installComment: '# 在 Claude Code 裡貼上這兩行，開店',
+    hookComment: '# function hooks 還在搶先體驗階段；啟動時記得開啟',
+    hookCommand: 'CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude',
     d1kicker: '01 · Session 開場',
     d1title: '她會看時間、看天氣，跟你打招呼',
     d1desc: '每次開新的 Claude Code session，值班女僕會先讀懂當下時段，再說出這句話——不是罐頭問候。',
@@ -121,6 +125,11 @@ function InstallTerminal({ t }: { t: (typeof copy)[Locale] }) {
       </div>
       <div class="term-line prompt">
         <span class="p-sym">›</span> <span class="txt-cmd">/plugin install cafe@claudecafe</span>
+      </div>
+      <div class="term-line txt-sys">&nbsp;</div>
+      <div class="term-line txt-sys">{t.hookComment}</div>
+      <div class="term-line prompt">
+        <span class="p-sym">›</span> <span class="txt-cmd">{t.hookCommand}</span>
       </div>
       <div class="term-line txt-sys">&nbsp;</div>
       <div class="term-line txt-sys">{t.hireComment}</div>

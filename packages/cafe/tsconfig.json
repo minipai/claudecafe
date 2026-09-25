@@ -9,9 +9,8 @@
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "jsx": "react",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "Fragment"
+    "allowJs": true,
+    "checkJs": false
   },
   "include": ["../../.claude/types", "hooks", "tests"]
 }

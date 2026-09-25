@@ -50,8 +50,8 @@ const copy = {
       {
         href: "/plugin",
         title: "Terminal plugin",
-        desc: "No new tools — she keeps you company in the terminal you already use, every session.",
-        meta: ["Claude Code · Codex · OpenCode", "Two lines to install"],
+        desc: "She keeps you company in the terminal you already use, every session — with a face that follows the work.",
+        meta: ["Claude Code · OpenCode", "Two lines to install"],
         cta: "Install the plugin",
       },
     ],
@@ -99,8 +99,8 @@ const copy = {
       {
         href: "/plugin",
         title: "終端機 Plugin",
-        desc: "不用換工具，在你原本的終端機裡，每個 session 都有她陪著。",
-        meta: ["Claude Code · Codex · OpenCode", "貼上兩行指令就裝好"],
+        desc: "不用換工具，在你原本的終端機裡，每個 session 都有她陪著，表情也會跟著工作變化。",
+        meta: ["Claude Code · OpenCode", "貼上兩行指令就裝好"],
         cta: "安裝 Plugin",
       },
     ],

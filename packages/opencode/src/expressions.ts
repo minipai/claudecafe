@@ -3,7 +3,7 @@ import {
   expressionPrompt,
   expressionToolDescription,
   type Expression,
-} from "@claudecafe/character-core"
+} from "./character-core/index.ts"
 import { readdirSync } from "node:fs"
 import { extname } from "node:path"
 import type { Character } from "./characters.ts"
