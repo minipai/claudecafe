@@ -4,7 +4,7 @@ import { marked } from 'marked'
 import { NamePlate } from './NamePlate'
 import { WaitingLine } from './WaitingLine'
 import { InnerVoice } from './InnerVoice'
-import type { Look } from '@/agent'
+import type { Look, Todo } from '@/agent'
 import type { Pace } from './useSpeech'
 import { fill, her, text } from '@/i18n'
 
@@ -31,6 +31,8 @@ type DialogueBoxProps = {
   /** Who is turning the pages — him, or the scene itself. */
   pace: Pace
   onPace: (pace: Pace) => void
+  /** Her task list while she works — it is read in the reply window. */
+  todos: Todo[]
   /** Opens her answer, whole, in a window of its own. */
   onOpenReply: () => void
   /** Pressing her name plate — it opens the persona she is wearing. */
@@ -62,6 +64,7 @@ export function DialogueBox({
   onAdvance,
   pace,
   onPace,
+  todos,
   onOpenReply,
   onOpenPersona,
   footer,
@@ -217,13 +220,18 @@ export function DialogueBox({
                 <span className="block h-0 w-0 animate-[tri-blink_1.1s_ease-in-out_infinite] border-t-[11px] border-r-[7px] border-l-[7px] border-t-primary border-r-transparent border-l-transparent" />
               </button>
             )}
-            {overflowing && (
+            {/* The way to the reply window, and to her task list in it: while
+                she has a list, it says how far along she is. */}
+            {(todos.length > 0 || overflowing) && (
               <button
                 type="button"
                 onClick={onOpenReply}
                 className="rounded px-1.5 py-1 text-xs leading-none text-muted-foreground transition-colors hover:text-foreground"
               >
-                {t.openReply} ↗
+                {todos.length > 0
+                  ? `${t.tasks} ${todos.filter((todo) => todo.status === 'completed').length}/${todos.length}`
+                  : t.openReply}{' '}
+                ↗
               </button>
             )}
             <button

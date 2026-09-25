@@ -17,7 +17,6 @@ import { DemoRow } from './DemoRow'
 import { InputBar } from './InputBar'
 import { PermissionPrompt } from './PermissionPrompt'
 import { ChoiceRow } from './ChoiceRow'
-import { TodoBoard } from './TodoBoard'
 import { WhisperZone } from './WhisperZone'
 import { StatusBar } from './StatusBar'
 import { SessionPlaque } from './SessionPlaque'
@@ -115,6 +114,9 @@ export function GalgameClient({
   const [permissionExpanded, setPermissionExpanded] = useState(false)
   const [choiceRequest, setChoiceRequest] = useState<ChoiceRequest | null>(null)
   const [todos, setTodos] = useState<Todo[]>([])
+  // Her board stays up while anything on it is still to do, across turns the
+  // same as the CLI's, and goes once the last of it is ticked off.
+  const board = todos.some((todo) => todo.status !== 'completed') ? todos : []
   /** How much she has written since the prompt went in — what the waiting line
    * counts up while he waits. Reset when a fresh prompt starts it over. */
   const [outputTokens, setOutputTokens] = useState(0)
@@ -384,10 +386,11 @@ export function GalgameClient({
         isCompacting: compacting,
         isAwaitingAnswer: permissionRequest !== null || choiceRequest !== null,
       },
+      todos: board,
       settings: { locale: locale.choice, speech, backdrop },
       session: sessionAsk,
     })
-  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, speech, backdrop, sessionAsk])
+  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, board, speech, backdrop, sessionAsk])
 
   /** What was clicked in them is done here, the way the scene would have done it. */
   const sideActionRef = useRef<(action: SceneAction) => void>(() => {})
@@ -711,7 +714,6 @@ export function GalgameClient({
     // The master has moved the scene on himself: anything of hers still waiting
     // to be clicked through belongs to the question before this one.
     clearSpeech()
-    setTodos([])
     setOutputTokens(0)
 
     const controller = new AbortController()
@@ -788,10 +790,6 @@ export function GalgameClient({
   return (
     <>
       <Stage>
-        {/* Her board belongs to the work, not to the window: once she is off
-            her feet again it goes, or a half-ticked list from the last thing
-            asked stays pinned over the next conversation. */}
-        <TodoBoard todos={phase === 'idle' ? [] : todos} />
         <SpriteLayer expression={expression} maid={maid} name={her()} backdrop={backdrop} />
 
         {/* The band above the box is where the whispers float; there is nothing
@@ -813,6 +811,7 @@ export function GalgameClient({
               onAdvance={advance}
               pace={pace}
               onPace={setPace}
+              todos={board}
               onOpenReply={() => openSideWindow('reply')}
               onOpenPersona={() => setPersonaOpen(true)}
               utility={

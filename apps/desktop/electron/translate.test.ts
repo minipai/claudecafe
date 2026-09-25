@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { AgentMessage } from '../src/agent/types'
-import { describeTool, Turn } from './translate'
+import { Board, describeTool, Turn } from './translate'
 import { EXPRESSION_TOOL } from './tools'
 
 const HAPPY = '【 開心 ＼(ˆ ᗜ ˆ)／ 】'
@@ -302,6 +302,17 @@ describe('Turn — TaskCreate/TaskUpdate lifecycle', () => {
     const out = turn.read(toolResult('t1', 'Task #3 created successfully'))
     const todos = out.find((m) => m.type === 'todos')
     expect(todos).toEqual({ type: 'todos', todos: [{ content: 'Investigate the bug', status: 'pending' }] })
+  })
+
+  it('ticks off a task opened in an earlier turn — the board is the conversation\'s, not the turn\'s', () => {
+    const board = new Board()
+    const opening = new Turn('plan it', board)
+    opening.read(assistant([toolUseBlock('t1', 'TaskCreate', { subject: 'Investigate the bug' })]))
+    opening.read(toolResult('t1', 'Task #1 created successfully: Investigate the bug'))
+    const later = new Turn('carry on', board)
+    const out = later.read(assistant([toolUseBlock('t2', 'TaskUpdate', { taskId: '1', status: 'completed' })]))
+    const todos = out.find((m) => m.type === 'todos')
+    expect(todos).toEqual({ type: 'todos', todos: [{ content: 'Investigate the bug', status: 'completed' }] })
   })
 
   it('does not list a task before the number comes back', () => {

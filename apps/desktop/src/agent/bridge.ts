@@ -1,4 +1,4 @@
-import type { AgentMessage, Attachment, Look, Question } from './types'
+import type { AgentMessage, Attachment, Look, Question, Todo } from './types'
 import type { ChatMessage } from '@/galgame/types'
 
 /**
@@ -185,6 +185,8 @@ export type SceneShare = {
     isCompacting: boolean
     isAwaitingAnswer: boolean
   }
+  /** Her task list for the work in hand; empty once she is off her feet. */
+  todos: Todo[]
   settings: {
     /** What was picked for the interface, which may be `system`. */
     locale: string

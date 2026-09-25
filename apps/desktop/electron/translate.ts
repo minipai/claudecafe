@@ -7,6 +7,25 @@ import { faceFor, type Expression } from '../src/agent/expressions'
  * itself, without asking the model anything. */
 const LOCAL_COMMAND = '<synthetic>'
 
+/**
+ * Her task list, kept for the whole conversation rather than one turn: a task
+ * she opens in one answer is ticked off in a later one, and the board stays up
+ * until the last of it is done — the same as the CLI's.
+ */
+export class Board {
+  readonly tasks = new Map<string, Todo>()
+  /** Her own checklist, as she last wrote it. Background tasks the SDK reports
+   * separately are pinned under it. */
+  todos: Todo[] = []
+  /** Tasks she has just asked for, by the call that asked — the board can only
+   * list one once the tool answers with the number it gave it. */
+  readonly opening = new Map<string, string>()
+
+  list(): AgentMessage {
+    return { type: 'todos', todos: [...this.todos, ...this.tasks.values()] }
+  }
+}
+
 /** A run's worth of translation state — one turn, from prompt to result. */
 export class Turn {
   /** Set when the CLI answered the turn itself, so the result that follows is
@@ -17,21 +36,18 @@ export class Turn {
    * instead of being said twice — with the face she signed it with, which
    * belongs to that line and not to the one still on screen. */
   private pendingLine: { text: string; expression: Expression | null; marker: string | null } | null = null
-  private tasks = new Map<string, Todo>()
-  /** Her own checklist, as she last wrote it. Background tasks the SDK reports
-   * separately are pinned under it. */
-  private todos: Todo[] = []
-  /** Tasks she has just asked for, by the call that asked — the board can only
-   * list one once the tool answers with the number it gave it. */
-  private opening = new Map<string, string>()
   /** The last line already put on screen, so the result does not repeat it. */
   private spoken: string | null = null
   /** How many tokens she has written this turn, for the line he waits at. */
   private written = 0
 
   /** The prompt this turn was started with — only read to name the slash
-   * command, when the turn turns out to be one. */
-  constructor(private prompt: string = '') {}
+   * command, when the turn turns out to be one. The board is the
+   * conversation's, handed to every turn in it. */
+  constructor(
+    private prompt: string = '',
+    private board: Board = new Board(),
+  ) {}
 
   /** Turns one SDK message into however many the galgame UI understands. */
   read(sdk: SDKMessage): AgentMessage[] {
@@ -55,15 +71,15 @@ export class Turn {
 
     if (sdk.subtype === 'task_started') {
       if (sdk.skip_transcript) return []
-      this.tasks.set(sdk.task_id, { content: sdk.description, status: 'in_progress' })
-      return [this.todoList()]
+      this.board.tasks.set(sdk.task_id, { content: sdk.description, status: 'in_progress' })
+      return [this.board.list()]
     }
     if (sdk.subtype === 'task_updated') {
-      const task = this.tasks.get(sdk.task_id)
+      const task = this.board.tasks.get(sdk.task_id)
       if (!task) return []
       if (sdk.patch.description) task.content = sdk.patch.description
       if (sdk.patch.status) task.status = TASK_STATUS[sdk.patch.status]
-      return [this.todoList()]
+      return [this.board.list()]
     }
     return []
   }
@@ -115,18 +131,18 @@ export class Turn {
         const input = (block.input ?? {}) as Record<string, unknown>
         const label = describeTool(block.name, input)
         if (block.name === 'TaskCreate' && typeof input.subject === 'string') {
-          this.opening.set(block.id, input.subject)
+          this.board.opening.set(block.id, input.subject)
         }
         if (block.name === 'TaskUpdate') {
-          const task = this.tasks.get(String(input.taskId))
+          const task = this.board.tasks.get(String(input.taskId))
           if (task) {
             task.status = TASK_STATUS[String(input.status)] ?? task.status
-            out.push(this.todoList())
+            out.push(this.board.list())
           }
         }
         if (block.name === 'TodoWrite') {
-          this.todos = readTodos(input.todos)
-          out.push(this.todoList())
+          this.board.todos = readTodos(input.todos)
+          out.push(this.board.list())
         }
         // Every call is reported, because the log is where the master goes to
         // find out what she actually did. `silent` only means it has its own
@@ -168,15 +184,15 @@ export class Turn {
         failed: block.is_error === true,
       })
 
-      const subject = this.opening.get(block.tool_use_id)
+      const subject = this.board.opening.get(block.tool_use_id)
       if (!subject) continue
-      this.opening.delete(block.tool_use_id)
+      this.board.opening.delete(block.tool_use_id)
       const numbered = contentText(block.content).match(/Task #(\d+)/)
       if (!numbered) continue
-      this.tasks.set(numbered[1], { content: subject, status: 'pending' })
+      this.board.tasks.set(numbered[1], { content: subject, status: 'pending' })
       opened = true
     }
-    return opened ? [...out, this.todoList()] : out
+    return opened ? [...out, this.board.list()] : out
   }
 
   /**
@@ -221,10 +237,6 @@ export class Turn {
     if (!text) return []
 
     return [{ type: 'result', tier: hasShape(text) ? 'medium' : 'light', line: text, mood, expression, said }]
-  }
-
-  private todoList(): AgentMessage {
-    return { type: 'todos', todos: [...this.todos, ...this.tasks.values()] }
   }
 }
 

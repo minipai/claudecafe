@@ -11,7 +11,7 @@ import {
   type SDKUserMessage,
   type SlashCommand,
 } from '@anthropic-ai/claude-agent-sdk'
-import { Turn } from './translate'
+import { Board, Turn } from './translate'
 import { cafeTools, EXPRESSION_TOOL } from './tools'
 import { watchLook } from './look'
 import { askForLines, knownLines, nameOf as maidName, personaOf, replyLanguage } from './lines'
@@ -188,6 +188,8 @@ export class MaidSession {
    * ownership through its result even if the master submits another prompt
    * while it is speaking. */
   private ambientTurn: Turn | null = null
+  /** Her task list, for as long as the conversation lasts. */
+  private board = new Board()
   /** Asked for, but not yet handed to the SDK. The CLI reads whatever lands in
    * `prompts` at once — that is what makes it stdin, not a queue of its own —
    * so anything typed behind a turn still running has to wait here instead,
@@ -375,7 +377,7 @@ export class MaidSession {
       return
     }
     const inFlight = this.runs.length > 0
-    this.runs.push({ runId, turn: new Turn(prompt) })
+    this.runs.push({ runId, turn: new Turn(prompt, this.board) })
     if (inFlight) this.backlog.push({ runId, prompt, images })
     else this.prompts.push(prompt, images)
   }
@@ -448,6 +450,7 @@ export class MaidSession {
   reset() {
     this.close()
     this.sessionId = null
+    this.board = new Board()
     forgetSession(this.cwd)
     this.emit({ kind: 'backlog', sessionId: null, lines: [] })
     // Starting over is the one moment the shift can change hands, so the few
@@ -631,7 +634,7 @@ export class MaidSession {
         // until its result also stops a prompt submitted midway from stealing
         // the background result as its own.
         if (this.ambientTurn || (!run && (sdk.type === 'assistant' || sdk.type === 'result'))) {
-          this.ambientTurn ??= new Turn()
+          this.ambientTurn ??= new Turn('', this.board)
           for (const message of this.ambientTurn.read(sdk)) {
             this.emit({ kind: 'ambient-message', message })
           }

@@ -31,7 +31,7 @@ export function SideWindowApp({ name }: { name: SideWindow }) {
 
   if (!scene) return <main className="min-h-screen bg-card" />
   if (name === 'log') return <LogWindow log={scene.log} conversation={scene.conversation} />
-  if (name === 'reply') return <ReplyWindow log={scene.log} />
+  if (name === 'reply') return <ReplyWindow log={scene.log} todos={scene.todos} />
   if (name === 'settings') return <SettingsWindow settings={scene.settings} />
   if (name === 'projects') return <ProjectsWindow folder={scene.folder} conversation={scene.conversation} />
   return <SessionWindow session={scene.session} />
