@@ -43,7 +43,7 @@ The installer uses the system `unzip` command.
 | Café RPC | Gives a newly mounted TUI the active character and face for a session and streams later changes. State is per session, so every window keeps its own portrait. |
 
 `config.json` keys and `off_duty` are the same ones
-[`packages/persona-panel`](../persona-panel) documents. A manually added pack uses the standard
+[`packages/persona-panel`](../persona-panel/README.md) documents. A manually added pack uses the standard
 character layout:
 
 ```text

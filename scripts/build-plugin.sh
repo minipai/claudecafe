@@ -15,7 +15,7 @@ PLUGIN="$ROOT/packages/persona-panel"
 DIST="$PLUGIN/dist"
 
 rm -rf "$DIST" && mkdir -p "$DIST/hooks"
-for item in .claude-plugin skills prompts fallback tests README.md; do
+for item in .claude-plugin skills prompts fallback tests README.md LICENSE PRIVACY.md; do
   cp -R "$PLUGIN/$item" "$DIST/$item"
 done
 cp "$PLUGIN/hooks/hooks.json" "$DIST/hooks/hooks.json"
