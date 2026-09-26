@@ -1096,6 +1096,25 @@ describe('MaidSession — how much she asks first', () => {
     expect(optionsOf(0)).toMatchObject({ pathToClaudeCodeExecutable: '/opt/test/claude' })
   })
 
+  it('disables only persona-panel and installs the shared context hook alongside user settings', () => {
+    trackConnections()
+    vi.mocked(personaOf).mockReturnValue('You are Kotone.')
+    const { emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-mood-prompt', emit)
+    session.ask('run-1', 'hello')
+
+    const options = optionsOf(0)
+    expect(options.settingSources).toEqual(['user', 'project', 'local'])
+    expect(options.settings).toEqual({ enabledPlugins: { 'persona-panel@claudecafe': false } })
+    expect(options.plugins).toBeUndefined()
+    expect(options.hooks?.UserPromptSubmit?.[0].hooks).toEqual([expect.any(Function)])
+    const prompt = options.systemPrompt
+    expect(prompt).toMatchObject({ type: 'preset', preset: 'claude_code' })
+    const appended = typeof prompt === 'object' && 'append' in prompt ? prompt.append ?? '' : ''
+    expect(appended).toContain('You are Kotone.')
+    session.close()
+  })
+
   it('explains a missing or outdated Claude Code instead of opening a session', async () => {
     const fakes = trackConnections()
     const { emit, events } = collectEvents()

@@ -12,17 +12,13 @@ directories:
 
 files:
   - dist/**            # the window itself, built by vite
-  - dist-electron/**   # the main process, the preload, and the café plugin
+  - dist-electron/**   # the main process, the preload, and shared prompt text
   - package.json
   # The window runs on the master's own Claude Code (electron/session/claude.ts), so
   # the SDK's platform packages and the executable in them stay behind.
   - '!node_modules/@anthropic-ai/claude-agent-sdk-*{,/**}'
 
-# No asar. Half of what this app ships is read by something that is not this
-# app — the Agent SDK's own executable, the café plugin the session's subprocess
-# opens — and none of that can be read from inside an archive. Packed with the
-# two of them unpacked, the window still came up with nothing behind it; laid
-# out as plain files, which is exactly how the checkout runs, it works.
+# Keep the SDK and prompt resources as plain files, matching the dev build.
 asar: false
 
 mac:

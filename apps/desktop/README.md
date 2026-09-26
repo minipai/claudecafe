@@ -14,6 +14,15 @@ dialogue page: the current page updates immediately, while later pages collect
 their text until you advance to them. Opening a page shows everything received
 so far without replaying a typing animation.
 
+The desktop disables only `persona-panel@claudecafe` through per-session SDK
+settings, leaving other user and project plugins and hooks enabled. It owns
+the selected character and portrait, and calls `@claudecafe/character-core`'s
+shared context function from `UserPromptSubmit` for greeting, mood-marker,
+time, session age, commit count and festival cues. Greeting and mood text come
+from persona-panel's prompt files; the build copies those files, not a stripped
+plugin. The shared `greeting` and `festivals` settings apply here too, including
+the first-turn weather lookup when greeting is enabled.
+
 ## Running it
 
 ```bash

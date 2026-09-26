@@ -1,6 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import {
   query,
   type ModelInfo,
@@ -14,6 +12,7 @@ import {
 import { Board, Turn } from './translate'
 import { cafeTools, EXPRESSION_TOOL } from './tools'
 import { askForLines, knownLines, nameOf as maidName, personaOf, replyLanguage } from '../characters/lines'
+import { contextHook } from '../characters/context'
 import { findClaudeCode } from './claude'
 import { chosenShift, chosenSpeech, rememberShift, rememberWhoServed, whoServed } from '../history/history'
 import { conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings } from '../history/history'
@@ -99,18 +98,6 @@ function newestConversation(cwd: string) {
   return backlog ? { sessionId: newest.sessionId, backlog } : null
 }
 
-/**
- * The café plugin staged next to the bundled main process at build time, so the
- * window behaves the same on a Mac that has never installed it.
- *
- * Its name is what keeps it single. Plugins are keyed by name, and this one is
- * `persona-panel` — the same name the marketplace copy has — so a machine with
- * the plugin installed loads this one and the installed one steps aside (the
- * session lists exactly one `persona-panel`, sourced `persona-panel@inline`, and the SessionStart
- * hooks fire once). Renaming it would load both and greet the master twice.
- */
-export const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'cafe-plugin')
-
 /** What she opens as: the master's standing pick, and the app's own defaults
  * for anything he has never touched. */
 function openingSettings(): SessionSettings {
@@ -138,10 +125,8 @@ const SCENE_BRIEF = `You are being watched through a window, not a terminal — 
  * Everything the session has to be told to be her: who she is, that she is
  * being watched through a window, and what to answer in.
  *
- * The Claude plugin's function profile is intentionally left out of the copy
- * the app carries (see build.mjs): the window owns the selected character and
- * puts that persona into the Agent SDK system prompt itself. Without this she
- * would answer as a plain assistant in her own window.
+ * The window owns the selected character and adds her persona to the system
+ * prompt. The shared context hook supplies greeting, mood and time cues.
  */
 /** The current runtime cast, used when restoring a conversation's maid. */
 let carried: string[] = []
@@ -473,7 +458,10 @@ export class MaidSession {
       // A client working on a real project should honour that project's own
       // settings, memory and plugins — the same files Claude Code reads.
       settingSources: ['user', 'project', 'local'],
-      plugins: [{ type: 'local', path: CAFE_PLUGIN }],
+      // Reuse the plugin's core without letting it select another character.
+      // Other plugins and user/project hooks remain enabled.
+      settings: { enabledPlugins: { 'persona-panel@claudecafe': false } },
+      hooks: { UserPromptSubmit: [{ hooks: [contextHook()] }] },
       // The window is a scene, not a transcript: one spoken line at a time, a
       // face over the name plate, a panel for anything long. She needs to know
       // that, on top of everything Claude Code normally tells her.

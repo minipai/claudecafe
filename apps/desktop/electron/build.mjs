@@ -6,30 +6,15 @@ import { build } from 'esbuild'
 const here = path.dirname(fileURLToPath(import.meta.url))
 const repo = path.resolve(here, '../../..')
 
-/**
- * The café plugin travels with the app. On a terminal the maid is whoever the
- * plugin drew that day; here the app loads her persona from its configured
- * characters folder and carries its own copy of the plugin instead of
- * asking the master to install one. The copy is what the session loads, so the
- * window behaves the same on a machine that has never heard of the café.
- *
- * Skipped: the Claude function-hook profile, the release zip, and the plugin's
- * own build leftovers. The window supplies the persona and face itself, so the
- * terminal-only hook must not run a second time in the Agent SDK session.
- */
-const SKIP = new Set(['dist', '__pycache__', 'ship.sh', 'test.py', 'test', 'tests', 'character-core', 'pixels'])
-
-function stageCafePlugin() {
-  const out = path.join(here, '../dist-electron/cafe-plugin')
-  fs.rmSync(out, { recursive: true, force: true })
-  fs.cpSync(path.join(repo, 'packages/persona-panel'), out, {
-    recursive: true,
-    filter: (source) => {
-      const relative = path.relative(path.join(repo, 'packages/persona-panel'), source)
-      const underHooks = relative === 'hooks' || relative.startsWith('hooks/')
-      return !underHooks && !SKIP.has(path.basename(source))
-    },
-  })
+/** The shared core is bundled; its prompt text is copied from the plugin's
+ * source so desktop and terminal use the same instructions. */
+function stagePrompts() {
+  fs.rmSync(path.join(here, '../dist-electron/cafe-plugin'), { recursive: true, force: true })
+  const out = path.join(here, '../dist-electron/prompts')
+  fs.mkdirSync(out, { recursive: true })
+  for (const name of ['greeting', 'cues']) {
+    fs.copyFileSync(path.join(repo, `packages/persona-panel/prompts/${name}.md`), path.join(out, `${name}.md`))
+  }
 }
 
 /**
@@ -42,7 +27,7 @@ function stageCafePlugin() {
  * build is what Playwright launches, so the suite never dials the real Claude.
  */
 export async function buildElectron({ fakeSdk = false } = {}) {
-  stageCafePlugin()
+  stagePrompts()
   // The main process resolves them next to itself, bundled or not. Two icons:
   // the maid facing the master is the app, and the same maid looking away,
   // thinking, is the checkout — a different pose rather than a mark on the same

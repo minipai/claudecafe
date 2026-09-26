@@ -1,8 +1,8 @@
 import {
   commitAuthorship,
+  readContext,
   expressionPrompt,
   expressionToolDescription,
-  fillPrompt,
   parsePersona,
   personaFiles,
   resolveCharacter,
@@ -13,18 +13,6 @@ import { homePath, statusRows } from './stats.js'
 const TOOL = 'mcp__persona-panel__set_expression'
 const PANE = { id: 'persona-panel', title: 'Pixel art' }
 const BLOCK = 'persona-panel'
-const FESTIVALS = {
-  '01-01': "New Year's Day",
-  '02-14': "Valentine's Day",
-  '03-03': 'Hinamatsuri (Girls’ Day)',
-  '03-14': 'White Day',
-  '07-07': 'Tanabata',
-  '10-31': 'Halloween',
-  '12-24': 'Christmas Eve',
-  '12-25': 'Christmas',
-  '12-31': "New Year's Eve",
-}
-
 export function register(on) {
   let session
   let expression = 'neutral'
@@ -76,8 +64,12 @@ export function register(on) {
     const pieces = []
     if (state.character) pieces.push(`Adopt this persona for the entire session — it overrides the default assistant voice:\n\n${state.character.persona}`)
     if (state.language) pieces.push(`Respond in ${state.language}.`)
-    if (!greeted) pieces.push(await greeting($, state.language))
-    pieces.push(await nowLine($, await $.clock.now(), state.startedAt, state.cwd, await festivals($, state.language)))
+    pieces.push(await readContext(contextHost($), {
+      cwd: state.cwd,
+      language: state.language,
+      startedAt: state.startedAt,
+      greet: !greeted,
+    }))
     if (state.hasPanel) pieces.push(expressionPrompt(TOOL))
     greeted = true
     return { blocks: [...blocks, { name: BLOCK, text: pieces.join('\n\n') }] }
@@ -268,16 +260,20 @@ async function packPersona($, folder, variant) {
   return null
 }
 
-async function greeting($, language) {
-  const root = await dataRoot($)
-  const config = await readConfig($, root)
-  if (config.greeting === false) return ''
-  const now = new Date(await $.clock.now())
-  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} (${now.toLocaleDateString('en-US', { weekday: 'long' })})`
-  const prompt = fillPrompt(await read($, `${$.plugin.root}/prompts/greeting.md`), { time })
-  const cues = fillPrompt(await read($, `${$.plugin.root}/prompts/cues.md`), { lang: language || 'your reply language' })
-  const weather = await weatherLine($)
-  return [prompt, weather && `Weather: ${weather}`, cues].filter(Boolean).join('\n\n')
+function contextHost($) {
+  return {
+    now: () => $.clock.now(),
+    config: async () => readConfig($, await dataRoot($)),
+    readPrompt: (name) => read($, `${$.plugin.root}/prompts/${name}.md`),
+    readFile: (path) => read($, path),
+    home: () => $.env.get('HOME'),
+    weather: () => weatherLine($),
+    commitsToday: async (cwd) => {
+      const git = await $.process.run(['git', '-C', cwd, 'log', '--oneline', '--since=midnight'], { timeoutMs: 3000 })
+        .catch(() => ({ exitCode: 1, stdout: '', stderr: '' }))
+      return git.exitCode === 0 ? git.stdout.split('\n').filter(Boolean).length : 0
+    },
+  }
 }
 
 async function weatherLine($) {
@@ -297,43 +293,6 @@ async function weatherLine($) {
   }
 }
 
-async function nowLine($, now, started, cwd, festival) {
-  const date = new Date(now)
-  const segments = [`Current time: ${formatDate(date)}`]
-  const elapsed = now - started
-  if (elapsed >= 600_000) {
-    const minutes = Math.floor(elapsed / 60_000)
-    const hours = Math.floor(minutes / 60)
-    segments.push(hours ? `session ${hours}h${minutes % 60}m` : `session ${minutes}m`)
-  }
-  if (cwd) {
-    const git = await $.process.run(['git', '-C', cwd, 'log', '--oneline', '--since=midnight'], { timeoutMs: 3000 })
-      .catch(() => ({ exitCode: 1, stdout: '', stderr: '' }))
-    const count = git.exitCode === 0 ? git.stdout.split('\n').filter(Boolean).length : 0
-    if (count) segments.push(`${count} commits today`)
-  }
-  if (festival) segments.push(festival)
-  return segments.join('｜')
-}
-
-function formatDate(date) {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  const pad = (value) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())} (${days[date.getDay()]})`
-}
-
-async function festivals($, language) {
-  const root = await dataRoot($)
-  const config = await readConfig($, root)
-  if (config.festivals === false) return ''
-  let pack = FESTIVALS
-  if (typeof config.festivals === 'string' && config.festivals.trim()) {
-    try { pack = JSON.parse(await read($, expandHome(config.festivals.trim(), await $.env.get('HOME')))) } catch { return '' }
-  }
-  const date = new Date(await $.clock.now())
-  return pack[`${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`] ?? ''
-}
-
 async function read($, path) {
   try { return await $.fs.read(path) } catch { return '' }
 }
@@ -344,12 +303,6 @@ async function list($, path) {
 
 async function exists($, path) {
   try { return await $.fs.exists(path) } catch { return false }
-}
-
-function expandHome(path, home) {
-  if (path === '~') return home ?? path
-  if (path.startsWith('~/') && home) return `${home}/${path.slice(2)}`
-  return path
 }
 
 async function readStats($) {
