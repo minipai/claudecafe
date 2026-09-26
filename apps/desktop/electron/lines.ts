@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { app } from 'electron'
 import { chosenSpeech } from './history'
+import { findClaudeCode } from './claude'
 import { cafeRoot } from './cafehome'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import type { Lines } from '../src/agent/bridge'
@@ -88,10 +89,12 @@ export function knownLines(maid: string, language: string): Lines | null {
  * English and asks again the next time it knows the session works.
  */
 export async function askForLines(maid: string, language: string, persona: string): Promise<Lines | null> {
+  const claude = findClaudeCode()
+  if (!claude.found) return null
   try {
     const stream = query({
       prompt: writingBrief(language, persona),
-      options: { cwd: os.tmpdir(), settingSources: [], allowedTools: [], maxTurns: 1 },
+      options: { cwd: os.tmpdir(), pathToClaudeCodeExecutable: claude.path, settingSources: [], allowedTools: [], maxTurns: 1 },
     })
     let answer = ''
     for await (const message of stream) {

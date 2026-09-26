@@ -143,7 +143,7 @@ export type BacklogLine = {
  * those is in the way — an unread error string in a dialogue box is not telling.
  */
 export type Trouble = {
-  reason: 'sign-in' | 'limit' | 'offline'
+  reason: 'sign-in' | 'limit' | 'offline' | 'no-claude' | 'old-claude'
   /** What actually came back, kept for the master who wants to see it. */
   detail: string
 }

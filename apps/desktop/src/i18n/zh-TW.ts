@@ -207,6 +207,16 @@ export const zhTW: Text = {
       title: '{her}連不上任何東西',
       body: '連線在半路斷掉了。網路回來以後，再跟她說一次話就好。',
     },
+    noClaude: {
+      title: '{her}需要 Claude Code',
+      body: '這個視窗是透過這台 Mac 上的 Claude Code 工作的，但視窗找不到它。在終端機安裝好、登入一次，她就能開始上班了。',
+      retry: '裝好了，讓她進來',
+    },
+    oldClaude: {
+      title: 'Claude Code 需要更新',
+      body: '這個視窗是透過這台 Mac 上的 Claude Code 工作的，但那一版太舊了。在終端機更新一下，她就能開始上班了。',
+      retry: '更新好了，讓她進來',
+    },
     detail: '回傳的內容',
     close: '關閉',
   },

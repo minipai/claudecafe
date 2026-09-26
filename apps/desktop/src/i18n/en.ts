@@ -212,6 +212,16 @@ export const en = {
       title: '{her} cannot reach anything',
       body: 'The connection dropped on the way out. Once the network is back, say something to her again.',
     },
+    noClaude: {
+      title: '{her} needs Claude Code',
+      body: 'This window works through the Claude Code on this Mac, and there is none where it can find one. Install it in Terminal, sign in once, and she can start her shift.',
+      retry: 'Installed — let her in',
+    },
+    oldClaude: {
+      title: 'Claude Code needs an update',
+      body: 'This window works through the Claude Code on this Mac, and that one is older than the window can drive. Update it in Terminal and she can start her shift.',
+      retry: 'Updated — let her in',
+    },
     detail: 'What came back',
     close: 'Close',
   },

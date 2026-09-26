@@ -15,6 +15,7 @@ import { Board, Turn } from './translate'
 import { cafeTools, EXPRESSION_TOOL } from './tools'
 import { watchLook } from './look'
 import { askForLines, knownLines, nameOf as maidName, personaOf, replyLanguage } from './lines'
+import { findClaudeCode } from './claude'
 import { chosenShift, chosenSpeech, rememberShift, rememberWhoServed, whoServed } from './history'
 import { conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings } from './history'
 import { readGit } from './status'
@@ -114,14 +115,6 @@ function newestConversation(cwd: string) {
  * hooks fire once). Renaming it would load both and greet the master twice.
  */
 export const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'cafe-plugin')
-
-/** The SDK's native CLI is staged beside this bundled main process. Keeping
- * the path explicit matters in the packaged app: electron-builder cannot see
- * the optional platform package through pnpm's workspace links. */
-export const CLAUDE_EXECUTABLE = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  process.platform === 'win32' ? 'claude.exe' : 'claude',
-)
 
 /** What she opens as: the master's standing pick, and the app's own defaults
  * for anything he has never touched. */
@@ -495,9 +488,16 @@ export class MaidSession {
     // session too, so the transcript can be signed with her once it has an id.
     const maid = (this.onShift = chosenShift().maid)
     if (!maid) return
+    // His own Claude Code, looked up afresh each time the door is tried, so
+    // installing or updating it and pressing retry is all it takes.
+    const claude = findClaudeCode()
+    if (!claude.found) {
+      this.emit({ kind: 'trouble', trouble: { reason: claude.reason, detail: claude.detail } })
+      return
+    }
     const options: Options = {
       cwd: this.cwd,
-      pathToClaudeCodeExecutable: CLAUDE_EXECUTABLE,
+      pathToClaudeCodeExecutable: claude.path,
       canUseTool: (toolName, input) => this.decide(toolName, input),
       // A client working on a real project should honour that project's own
       // settings, memory and plugins — the same files Claude Code reads.

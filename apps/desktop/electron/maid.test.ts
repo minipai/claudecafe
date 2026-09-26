@@ -45,17 +45,24 @@ vi.mock('./history', () => ({
   rememberSettings: vi.fn(),
 }))
 
+// Looking for Claude Code spawns the real `claude` on this machine; a test
+// decides what the master has installed.
+vi.mock('./claude', () => ({
+  findClaudeCode: vi.fn(() => ({ found: true, path: '/opt/test/claude', version: '9.9.9' })),
+}))
+
 // The status line otherwise spawns a real `git` in whatever folder the test
 // happens to hand it — never what a unit test should be doing either.
 vi.mock('./status', () => ({
   readGit: vi.fn(),
 }))
 
-import { CLAUDE_EXECUTABLE, contextTokens, MaidSession, nameOf, nowCarrying, PromptQueue, readUsage, readWindows, whyStopped } from './maid'
+import { contextTokens, MaidSession, nameOf, nowCarrying, PromptQueue, readUsage, readWindows, whyStopped } from './maid'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { askForLines, knownLines, personaOf, replyLanguage } from './lines'
 import { chosenShift, chosenSpeech, conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings, rememberShift, whoServed } from './history'
 import { readGit } from './status'
+import { findClaudeCode } from './claude'
 
 /** A clean slate for every test, whether or not it cares — a MaidSession test
  * that forgets to configure one of these should get an obviously-wrong
@@ -1035,7 +1042,7 @@ describe('MaidSession — how much she asks first', () => {
   const statuses = (events: BridgeEvent[]) =>
     events.filter((event) => event.kind === 'status') as Extract<BridgeEvent, { kind: 'status' }>[]
 
-  it('points the SDK at the native CLI staged beside the main process', async () => {
+  it("points the SDK at the master's own Claude Code", async () => {
     const fakes = trackConnections()
     const { emit } = collectEvents()
     const session = new MaidSession('/tmp/cafe-maid-test-native-cli', emit)
@@ -1043,7 +1050,19 @@ describe('MaidSession — how much she asks first', () => {
     session.ask('run-1', 'go on then')
     await vi.waitFor(() => expect(fakes).toHaveLength(1))
 
-    expect(optionsOf(0)).toMatchObject({ pathToClaudeCodeExecutable: CLAUDE_EXECUTABLE })
+    expect(optionsOf(0)).toMatchObject({ pathToClaudeCodeExecutable: '/opt/test/claude' })
+  })
+
+  it('explains a missing or outdated Claude Code instead of opening a session', async () => {
+    const fakes = trackConnections()
+    const { emit, events } = collectEvents()
+    vi.mocked(findClaudeCode).mockReturnValueOnce({ found: false, reason: 'old-claude', detail: 'claude 2.0.0; needs 2.1.283' })
+    const session = new MaidSession('/tmp/cafe-maid-test-old-cli', emit)
+
+    session.ask('run-1', 'go on then')
+    await vi.waitFor(() => expect(events.some((event) => event.kind === 'trouble')).toBe(true))
+    expect(fakes).toHaveLength(0)
+    expect(events).toContainEqual({ kind: 'trouble', trouble: { reason: 'old-claude', detail: 'claude 2.0.0; needs 2.1.283' } })
   })
 
   it('leaves the mode alone when nobody has picked one here, and shows what the terminal is set to', async () => {

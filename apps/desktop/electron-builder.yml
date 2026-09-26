@@ -14,8 +14,9 @@ files:
   - dist/**            # the window itself, built by vite
   - dist-electron/**   # the main process, the preload, and the café plugin
   - package.json
-  # The executable is already staged in dist-electron and selected explicitly.
-  - '!node_modules/@anthropic-ai/claude-agent-sdk-darwin-arm64/claude'
+  # The window runs on the master's own Claude Code (electron/claude.ts), so
+  # the SDK's platform packages and the executable in them stay behind.
+  - '!node_modules/@anthropic-ai/claude-agent-sdk-*{,/**}'
 
 # No asar. Half of what this app ships is read by something that is not this
 # app — the Agent SDK's own executable, the café plugin the session's subprocess

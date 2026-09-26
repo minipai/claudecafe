@@ -9,6 +9,20 @@ import type { Trouble } from '@/agent'
  * sentence, so it is the same in every language. */
 const SIGN_IN = 'claude'
 
+/** What fixes a missing or outdated Claude Code, typed in Terminal the same way. */
+const FIX = {
+  'no-claude': 'curl -fsSL https://claude.ai/install.sh | bash',
+  'old-claude': 'claude update',
+} as const
+
+const COPY = {
+  'sign-in': 'signIn',
+  limit: 'limit',
+  offline: 'offline',
+  'no-claude': 'noClaude',
+  'old-claude': 'oldClaude',
+} as const
+
 /**
  * Not a slash command's answer but the same frame: something went wrong that
  * she cannot work around, said in words instead of left as an error string
@@ -19,7 +33,7 @@ export function TroublePanel({ trouble, onClose }: { trouble: Trouble | null; on
   const t = text().trouble
   const [detailShown, setDetailShown] = useState(false)
   const [retrying, setRetrying] = useState(false)
-  const said = trouble ? t[trouble.reason === 'sign-in' ? 'signIn' : trouble.reason] : null
+  const said = trouble ? t[COPY[trouble.reason]] : null
 
   // Whatever the retry found — the door open, or shut for the same reason as
   // before — the answer has arrived, so the button is his again.
@@ -66,6 +80,27 @@ export function TroublePanel({ trouble, onClose }: { trouble: Trouble | null; on
                   }}
                 >
                   {retrying ? t.signIn.checking : t.signIn.retry}
+                </Button>
+              </div>
+            </>
+          )}
+
+          {(trouble?.reason === 'no-claude' || trouble?.reason === 'old-claude') && (
+            <>
+              <pre className="mt-4 rounded-md border border-border bg-muted/60 px-3 py-2 font-mono text-xs text-foreground/80 whitespace-pre-wrap">
+                {FIX[trouble.reason]}
+              </pre>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={retrying}
+                  onClick={() => {
+                    setRetrying(true)
+                    window.cafe?.reconnect()
+                  }}
+                >
+                  {retrying ? t.signIn.checking : t[COPY[trouble.reason]].retry}
                 </Button>
               </div>
             </>
