@@ -26,8 +26,7 @@ For a checkout, configure the package's absolute path instead; see
 
 Shares the Claude Code plugin's data root — `$XDG_CONFIG_HOME/claudecafe`,
 default `~/.config/claudecafe`. Published OpenCode character packs live in
-`characters/<id>/`; the legacy flat `personas/` directory and its
-`personas_dir` override remain supported for simple persona-only maids.
+`characters/<id>/`.
 
 On startup, the server checks the pinned Kotone, Kurumi, and Kokona packs. A
 missing or older local version is downloaded from its GitHub Release, checked
@@ -38,7 +37,7 @@ The installer uses the system `unzip` command.
 
 | V2 extension | What it does |
 |------|--------------|
-| `session.context` hook | Puts a maid on shift: persona, mood-marker cue, expression cue, a fresh `now` line, and the first-turn briefing are appended to the system context. Shift order: `OPENCODE_MAID`/`CLAUDE_MAID` env → this session's own shift file → config `maid` → a draw from `characters/` and the legacy `personas/`. `none` disables the persona while keeping the liveliness cues. |
+| `session.context` hook | Puts a maid on shift: persona, mood-marker cue, expression cue, a fresh `now` line, and the first-turn briefing are appended to the system context. Shift order: `OPENCODE_MAID`/`CLAUDE_MAID` env → this session's own shift file → config `maid` → a draw from `characters/`. `none` disables the persona while keeping the liveliness cues. |
 | Server event stream | Tracks child and deleted sessions so task subagents do not draw a second maid and stale in-memory shifts are released. |
 | Tool transform | Adds `set_expression`; calls validate and persist a GIF-backed face for the active character and session, then publish it in a typed RPC event to the TUI. |
 | Café RPC | Gives a newly mounted TUI the active character and face for a session and streams later changes. State is per session, so every window keeps its own portrait. |

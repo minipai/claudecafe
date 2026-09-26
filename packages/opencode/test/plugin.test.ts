@@ -117,11 +117,10 @@ describe("root and config", () => {
 })
 
 describe("personas", () => {
-  test("frontmatter is stripped and user files win over bundled", () => {
-    write(join(ROOT, "personas", "noname.md"), "---\nname: My Maid\n---\nMine.\n")
+  test("the bundled nameless maid loads with her frontmatter stripped", () => {
     const path = cafe.personaFile("noname")
-    expect(path).toBe(join(ROOT, "personas", "noname.md"))
-    expect(cafe.personaBody(path ?? "").trim()).toBe("Mine.")
+    expect(path).toBe(join(BUNDLED, "maids", "noname.md"))
+    expect(cafe.personaBody(path ?? "").trim()).toBe("The maid with no name.")
   })
 
   test("a local character folder is a persona source", () => {
@@ -135,17 +134,6 @@ describe("personas", () => {
     write(join(charactersDir(), "bilingual", "persona.zh.md"), "---\nname: 中文\n---\n中文內容。\n")
     setConfig({ lang: "zh-TW" })
     expect(cafe.personaFile("bilingual")).toBe(join(charactersDir(), "bilingual", "persona.zh.md"))
-  })
-
-  test("a flat persona still overrides the same-id character pack", () => {
-    writeCharacter("mymaid", "Pack", "Pack body.")
-    write(join(ROOT, "personas", "mymaid.md"), "---\nname: Flat\n---\nFlat body.\n")
-    expect(cafe.personaFile("mymaid")).toBe(join(ROOT, "personas", "mymaid.md"))
-    expect(cafe.characterForMaid("mymaid")?.name).toBe("Flat")
-  })
-  test("a retirement stub does not shadow an explicit pick", () => {
-    write(join(ROOT, "personas", "noname.md"), "---\noff_duty: true\n---\n")
-    expect(cafe.personaFile("noname")).toBe(join(BUNDLED, "maids", "noname.md"))
   })
 
   test("a missing persona resolves to nothing", () => {
@@ -166,36 +154,9 @@ describe("cast pool", () => {
     expect(cafe.castPool()).toEqual(["noname"])
   })
 
-  test("hiring anyone relieves the nameless maid", () => {
-    write(join(ROOT, "personas", "mymaid.md"), "---\nname: M\n---\nbody\n")
-    expect(cafe.castPool()).toEqual(["mymaid"])
-  })
-
-  test("a manually added character folder joins the draw", () => {
+  test("a manually added character folder joins the draw and relieves the nameless maid", () => {
     writeCharacter("newmaid", "New")
     expect(cafe.castPool()).toEqual(["newmaid"])
-  })
-
-  test("everyone off duty brings the nameless maid back", () => {
-    write(join(ROOT, "personas", "mymaid.md"), "---\noff_duty: true\n---\n")
-    expect(cafe.castPool()).toEqual(["noname"])
-  })
-
-  test("a stub retires the nameless maid too", () => {
-    write(join(ROOT, "personas", "noname.md"), "---\noff_duty: true\n---\n")
-    expect(cafe.castPool()).toEqual([])
-  })
-
-  test("uppercase filenames are never in the draw", () => {
-    write(join(ROOT, "personas", "MyMaid.md"), "---\nname: M\n---\nbody\n")
-    expect(cafe.castPool()).toEqual(["noname"])
-  })
-
-  test("builtin_cast false drops the nameless maid", () => {
-    setConfig({ builtin_cast: false })
-    expect(cafe.castPool()).toEqual([])
-    write(join(ROOT, "personas", "mymaid.md"), "---\nname: M\n---\nbody\n")
-    expect(cafe.castPool()).toEqual(["mymaid"])
   })
 })
 
@@ -310,7 +271,7 @@ function systemText(input: ReturnType<typeof context>): string {
 
 describe("system transform", () => {
   test("an explicit maid rides in the system prompt with the cues and the clock", async () => {
-    write(join(ROOT, "personas", "testmaid.md"), "---\nname: T\n---\nTest persona body.\n")
+    writeCharacter("testmaid", "T", "Test persona body.")
     process.env.OPENCODE_MAID = "testmaid"
     const { context: transform } = hooks()
     const output = context("sid")
@@ -334,7 +295,7 @@ describe("system transform", () => {
   })
 
   test("a task subagent is skipped", async () => {
-    write(join(ROOT, "personas", "testmaid.md"), "---\nname: T\n---\nBody.\n")
+    writeCharacter("testmaid", "T", "Body.")
     process.env.OPENCODE_MAID = "testmaid"
     const { context: transform, event } = hooks()
     event({ type: "session.created", data: { sessionID: "child", parentID: "root" } })
@@ -346,7 +307,7 @@ describe("system transform", () => {
 
 describe("session briefing", () => {
   test("the greeting lands once in the session context", async () => {
-    write(join(ROOT, "personas", "testmaid.md"), "---\nname: T\n---\nBody.\n")
+    writeCharacter("testmaid", "T", "Body.")
     process.env.OPENCODE_MAID = "testmaid"
     const { context: transform } = hooks()
     const first = context("sid")
@@ -386,7 +347,7 @@ describe("shift persistence", () => {
 
   test("the fixed pick in config beats the draw and skips the shift file", async () => {
     setConfig({ maid: "kokona" })
-    write(join(ROOT, "personas", "kokona.md"), "---\nname: K\n---\nBody.\n")
+    writeCharacter("kokona", "K", "Body.")
     const { context: transform } = hooks()
     await transform({ sessionID: "sid", system: [] })
     expect(existsSync(shiftFile("sid"))).toBe(false)

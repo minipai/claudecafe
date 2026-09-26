@@ -20,8 +20,7 @@ export { cafeRoot } from "./root.ts"
  *
  * The state lives in the same shared root as the Claude Code plugin
  * (`$XDG_CONFIG_HOME/claudecafe`), so one `config.json`, the downloaded
- * `characters/` packs, and the legacy `personas/` pool serve every host: install a
- * maid once and every agent has her.
+ * `characters/` packs serve every host: install a maid once and every agent has her.
  *
  * What the café does here:
  *
@@ -51,11 +50,6 @@ export function stateDir(sessionID?: string, create = true): string {
   const dir = join(cafeRoot(), "sessions", sessionID || "_global")
   if (create) mkdirSync(dir, { recursive: true })
   return dir
-}
-
-export function personasDir(): string {
-  const configured = String(config().personas_dir ?? "").trim()
-  return expandHome(configured || join(cafeRoot(), "personas"))
 }
 
 /** The checked-in café plugin, which owns the prompts and the nameless fallback maid. */
@@ -108,7 +102,7 @@ function firstEnv(...names: string[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// Personas: a character folder or a flat <id>.md file, frontmatter included.
+// Personas: a character folder, or the bundled nameless maid, frontmatter included.
 // ---------------------------------------------------------------------------
 
 /** The persona instructions: the file minus its YAML frontmatter. */
@@ -116,11 +110,7 @@ export function personaBody(path: string): string {
   return corePersonaBody(read(path))
 }
 
-/** A frontmatter-only stub (a retirement) still lets an explicit pick load her, so it never shadows the bundled maid. */
 export function personaFile(maidID: string): string | null {
-  const flat = join(personasDir(), `${maidID}.md`)
-  if (existsSync(flat) && personaBody(flat).trim()) return flat
-
   const packed = personaFileInCharacters(maidID, lang())
   if (packed && personaBody(packed).trim()) return packed
 
@@ -148,7 +138,7 @@ export function offDuty(body: string): boolean {
   return parsePersona(body).offDuty
 }
 
-/** The ids a draw may pick from; the user's folder comes first, so a same-id file wins. */
+/** The ids a draw may pick from; the first folder with a given id wins. */
 export function drawFrom(dirs: string[], extraIDs: string[] = []): string[] {
   const pool = new Map<string, string>()
   for (const dir of dirs) {
@@ -178,24 +168,15 @@ export function drawFrom(dirs: string[], extraIDs: string[] = []): string[] {
 
 /** The installed characters; while there are none, the bundled nameless maid keeps the place open. */
 export function castPool(): string[] {
-  const available = drawFrom([personasDir()], characterIds())
-  if (available.length || config().builtin_cast === false) return available
-  return drawFrom([personasDir(), maidsDir()], characterIds())
+  const available = drawFrom([], characterIds())
+  return available.length ? available : drawFrom([maidsDir()])
 }
 
 /** Every selectable persona, including an explicit off-duty or nameless maid. */
 export function availableCharacters(): Character[] {
   const ids = new Set(characterIds())
-  for (const dir of [personasDir(), maidsDir()]) {
-    try {
-      for (const file of readdirSync(dir)) {
-        if (!file.endsWith(".md")) continue
-        const id = file.slice(0, -3)
-        if (id === id.toLowerCase()) ids.add(id)
-      }
-    } catch {
-      // A missing flat directory is normal.
-    }
+  for (const file of readdirSync(maidsDir())) {
+    if (file.endsWith(".md")) ids.add(file.slice(0, -3))
   }
   return [...ids]
     .sort()
