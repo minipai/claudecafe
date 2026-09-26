@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
-import { motion, useAnimationControls, useReducedMotion } from 'motion/react'
+import { motion, useAnimationControls, useReducedMotion, type TargetAndTransition } from 'motion/react'
 import type { Backdrop as Chosen, CastMember } from '@/agent'
 import type { Expression } from '../types'
 import { spriteFor } from './cast'
 import { Backdrop } from './Backdrop'
 
-export type Jump = { id: number; kind: 'received' | 'finished' }
+export type Reaction = { id: number; kind: 'received' | 'finished' | 'attention' | 'error' }
 
 /**
  * Where she stands, and she stays there: one framing, hung from the top edge,
@@ -17,7 +17,7 @@ export function SpriteLayer({
   maid,
   name,
   backdrop,
-  jump,
+  reaction,
 }: {
   expression: Expression
   maid: CastMember
@@ -25,27 +25,19 @@ export function SpriteLayer({
    * being told "maid". */
   name: string
   backdrop: Chosen
-  jump: Jump | null
+  reaction: Reaction | null
 }) {
   const animation = useAnimationControls()
   const reducedMotion = useReducedMotion()
 
   useEffect(() => {
-    animation.set({ y: 0 })
-    if (!jump || reducedMotion) return
-    const finished = jump.kind === 'finished'
-    void animation.start({
-      y: finished ? [0, -10, 0, -3, 0] : [0, -6, 0],
-      transition: {
-        duration: finished ? 0.46 : 0.3,
-        times: finished ? [0, 0.3, 0.62, 0.8, 1] : [0, 0.42, 1],
-        ease: 'easeInOut',
-      },
-    })
+    animation.set({ x: 0, y: 0, rotate: 0 })
+    if (!reaction || reducedMotion) return
+    void animation.start(reactions[reaction.kind])
     return () => {
       animation.stop()
     }
-  }, [jump, reducedMotion, animation])
+  }, [reaction, reducedMotion, animation])
 
   return (
     <>
@@ -84,7 +76,7 @@ export function SpriteLayer({
             alt={name}
             draggable={false}
             data-art
-            style={{ filter: 'url(#maid-paper)' }}
+            style={{ filter: 'url(#maid-paper)', transformOrigin: '50% 80%' }}
             onPointerDown={(event) => {
               if (event.button !== 0) return
               window.cafe?.startDrag()
@@ -95,4 +87,23 @@ export function SpriteLayer({
       </div>
     </>
   )
+}
+
+const reactions: Record<Reaction['kind'], TargetAndTransition> = {
+  received: {
+    y: [0, -6, 0],
+    transition: { duration: 0.3, times: [0, 0.42, 1], ease: 'easeInOut' },
+  },
+  finished: {
+    y: [0, -10, 0, -3, 0],
+    transition: { duration: 0.46, times: [0, 0.3, 0.62, 0.8, 1], ease: 'easeInOut' },
+  },
+  attention: {
+    rotate: [0, -1.2, 1.2, -0.7, 0.7, 0],
+    transition: { duration: 0.55, ease: 'easeInOut' },
+  },
+  error: {
+    x: [0, -4, 4, -3, 3, 0],
+    transition: { duration: 0.28, ease: 'easeInOut' },
+  },
 }

@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/feedback/sonner'
 import { Stage } from './scene/Stage'
-import { SpriteLayer, type Jump } from './character/SpriteLayer'
+import { SpriteLayer, type Reaction } from './character/SpriteLayer'
 import { hasArtwork, availableShift } from './character/cast'
 import { ShiftPanel } from './character/ShiftPanel'
 import { KAOMOJI } from '@/agent/expressions'
@@ -86,7 +86,10 @@ export function GalgameClient({
 }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [expression, setExpression] = useState<Expression>('neutral')
-  const [spriteJump, setSpriteJump] = useState<Jump | null>(null)
+  const [reaction, setReaction] = useState<Reaction | null>(null)
+  const reactTo = useCallback((kind: Reaction['kind']) => {
+    setReaction((previous) => ({ id: (previous?.id ?? 0) + 1, kind }))
+  }, [])
   /** The 【…】 she signed her last line with, kept as she wrote it. Empty until
    * she has signed one — the window has nothing of its own to put there. */
   const [mood, setMood] = useState<string | null>(null)
@@ -255,7 +258,8 @@ export function GalgameClient({
   /** What a tool answered, put on the row that recorded the call. */
   const recordResult = useCallback((toolId: string, output: string, failed: boolean) => {
     setChatMessages((current) => recordToolResult(current, toolId, output, failed))
-  }, [])
+    if (failed) reactTo('error')
+  }, [reactTo])
 
   function pushWhisper(text: string, kind: Whisper['kind']) {
     const id = whisperId++
@@ -358,7 +362,10 @@ export function GalgameClient({
       setShift: (next: Shift) => setShift(availableShift(castRef.current, next)),
       setLines,
       setChatMessages,
-      setTrouble,
+      setTrouble: (next) => {
+        setTrouble(next)
+        if (next) reactTo('error')
+      },
       setPhase,
       setConversation,
       setExpression,
@@ -502,6 +509,7 @@ export function GalgameClient({
   function askPermission(request: PermissionRequest | null) {
     permissionRef.current = request
     setPermissionRequest(request)
+    if (request) reactTo('attention')
     if (!request) setPermissionExpanded(false)
   }
 
@@ -552,6 +560,7 @@ export function GalgameClient({
         halt: true,
         onShow: () => {
           setChoiceRequest({ id: choiceRequestId++, question, resolve })
+          reactTo('attention')
           window.cafe?.notify(question.question, true)
         },
         // Nothing picked reads the same as the master having moved past it —
@@ -698,12 +707,8 @@ export function GalgameClient({
   }
 
   // ---- consume the agent stream, drive the choreography off whatever it yields ----
-  function jump(kind: Jump['kind']) {
-    setSpriteJump((previous) => ({ id: (previous?.id ?? 0) + 1, kind }))
-  }
-
   async function run(prompt: string, images: Attachment[] = []) {
-    jump('received')
+    reactTo('received')
     appendChatMessage('user', prompt)
     // The picture itself is hers to look at; the log records that it was handed
     // over, which is what the master will want to remember later.
@@ -739,6 +744,7 @@ export function GalgameClient({
         action: { label: text().scene.retry, onClick: () => run(prompt) },
       })
       appendEvent(text().scene.runFailed, message)
+      reactTo('error')
       setPhase('idle')
       askPermission(null)
     } finally {
@@ -761,7 +767,7 @@ export function GalgameClient({
     const scene = currentScene()
     for await (const msg of query({ prompt, images, abortController: controller, canUseTool, askUser })) {
       choreograph(msg, scene)
-      if (msg.type === 'result' && !controller.signal.aborted) jump('finished')
+      if (msg.type === 'result' && !controller.signal.aborted) reactTo('finished')
     }
   }
 
@@ -791,7 +797,7 @@ export function GalgameClient({
   return (
     <>
       <Stage>
-        <SpriteLayer expression={expression} maid={maid} name={her()} backdrop={backdrop} jump={spriteJump} />
+        <SpriteLayer expression={expression} maid={maid} name={her()} backdrop={backdrop} reaction={reaction} />
 
         {/* The band above the box is where the whispers float; there is nothing
             to click there, so the pointer goes through it too. */}
