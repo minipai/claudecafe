@@ -197,9 +197,9 @@ async function replyLanguage($, config) {
 }
 
 async function loadMaid($, root, config, sessionID) {
-  const personas = expandHome(String(config.personas_dir ?? '').trim() || `${root}/personas`, await $.env.get('HOME'))
   const language = await replyLanguage($, config)
-  const pool = await castPool($, root, personas, config, language)
+  const dirs = castDirs($, root)
+  const pool = await castPool($, dirs, language)
   const shift = await read($, `${root}/sessions/${sessionID}/on-shift`).catch(() => '')
   const maid = resolveMaid({
     env: (await $.env.get('CLAUDE_MAID')) || '',
@@ -211,8 +211,8 @@ async function loadMaid($, root, config, sessionID) {
   if (!shift && !config.maid && !(await $.env.get('CLAUDE_MAID'))) {
     await $.fs.write(`${root}/sessions/${sessionID}/on-shift`, maid)
   }
-  const pack = await packFolder($, castDirs($, root, config), maid)
-  const path = await personaFile($, maid, personas, pack, language)
+  const pack = await packFolder($, dirs, maid)
+  const path = await personaFile($, maid, pack, language)
   if (!path) return null
   const text = await read($, path)
   return {
@@ -223,16 +223,9 @@ async function loadMaid($, root, config, sessionID) {
   }
 }
 
-async function castPool($, root, personas, config, language) {
+async function castPool($, dirs, language) {
   const ids = new Map()
-  for (const [dir, suffix] of [[personas, '.md']]) {
-    for (const entry of await list($, dir)) {
-      if (entry.kind !== 'file' || !entry.name.endsWith(suffix)) continue
-      const id = entry.name.slice(0, -suffix.length)
-      if (id === id.toLowerCase() && !ids.has(id)) ids.set(id, `${dir}/${entry.name}`)
-    }
-  }
-  for (const dir of castDirs($, root, config)) {
+  for (const dir of dirs) {
     for (const entry of await list($, dir)) {
       if (!['directory', 'dir'].includes(entry.kind) || entry.name.startsWith('.') || ids.has(entry.name)) continue
       const path = await packPersona($, `${dir}/${entry.name}`, language)
@@ -244,15 +237,14 @@ async function castPool($, root, personas, config, language) {
     const text = await read($, path)
     if (!parsePersona(text).offDuty) available.push(id)
   }
-  if (available.length || config.builtin_cast === false) return available.sort()
+  if (available.length) return available.sort()
   const bundled = `${$.plugin.root}/maids/noname.md`
   return (await $.fs.exists(bundled)) ? ['noname'] : []
 }
 
-/** The user's character folders first, then the cast bundled with the plugin unless `builtin_cast` is off. */
-function castDirs($, root, config) {
-  const user = `${root}/characters`
-  return config.builtin_cast === false ? [user] : [user, `${$.plugin.root}/characters`]
+/** The user's character folders first, then the cast bundled with the plugin. */
+function castDirs($, root) {
+  return [`${root}/characters`, `${$.plugin.root}/characters`]
 }
 
 async function packFolder($, dirs, id) {
@@ -262,9 +254,7 @@ async function packFolder($, dirs, id) {
   return null
 }
 
-async function personaFile($, id, personas, pack, language) {
-  const flat = `${personas}/${id}.md`
-  if (await exists($, flat)) return flat
+async function personaFile($, id, pack, language) {
   const packed = pack && await packPersona($, pack, language)
   if (packed) return packed
   const bundled = `${$.plugin.root}/maids/${id}.md`

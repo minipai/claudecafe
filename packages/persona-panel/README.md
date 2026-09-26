@@ -13,19 +13,14 @@ kept under:
 $XDG_CONFIG_HOME/claudecafe/           # default ~/.config/claudecafe
   config.json
   characters/<id>/persona.*.md          # optional full character folders
-  personas/<id>.md                     # simple flat persona files
   sessions/<session_id>/
 ```
-
-`characters/<id>/` is the canonical pack format. A flat `personas/<id>.md` file
-still works and wins over a same-id pack.
 
 The built plugin also bundles the cast that has terminal pixels under its own
 `characters/<id>/` (personas and GIFs only, copied from `packages/characters`
 by `scripts/build-plugin.sh`, under that package's license). A user
 pack with the same id wins over the bundled one. The bundled `maids/noname.md`
-keeps the café open when every maid is off duty or `builtin_cast` is `false`
-with no pack installed.
+keeps the café open when every maid is off duty.
 
 ## Claude function profile
 
@@ -83,8 +78,6 @@ without `pixels/` still supplies its persona, but has no portrait to draw.
 {
   "lang": "English",
   "maid": "mymaid",
-  "personas_dir": "~/my-maids",
-  "builtin_cast": false,
   "commit_authorship": "author",
   "greeting": true
 }
@@ -92,8 +85,6 @@ without `pixels/` still supplies its persona, but has no portrait to draw.
 
 - `lang` — reply language; Chinese settings prefer `persona.zh.md`
 - `maid` — fixed maid; `"none"` disables persona injection
-- `personas_dir` — flat persona directory override
-- `builtin_cast` — `false` removes the bundled cast and the nameless fallback
 - `commit_authorship` — `co-author` (default) or `author`
 - `greeting` — `false` silences only the briefing, not housekeeping
 - `festivals` — built-in calendar, a JSON path, or `false`

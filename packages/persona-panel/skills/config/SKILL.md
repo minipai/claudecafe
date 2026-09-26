@@ -1,6 +1,6 @@
 ---
 name: config
-description: View or change Cafe settings, language, maid selection, personas, commit authorship, festivals, or the session-start greeting.
+description: View or change Cafe settings, language, maid selection, commit authorship, festivals, or the session-start greeting.
 ---
 
 `CAFE_ROOT` is `$XDG_CONFIG_HOME/claudecafe` when `XDG_CONFIG_HOME` is set,
@@ -14,9 +14,6 @@ needed, preserve unknown keys, and write valid JSON. Every key is optional:
 - `lang` — reply language, including regional wording preferences (default:
   English).
 - `maid` — fixed maid id for new sessions; `"none"` means nobody on shift.
-- `personas_dir` — user's persona `*.md` folder (default:
-  `CAFE_ROOT/personas`).
-- `builtin_cast` — `false` removes the bundled cast and fallback maid.
 - `commit_authorship` — `"co-author"` (default) adds the maid as a
   `Co-Authored-By` trailer while keeping the user's Git identity; `"author"`
   uses the maid's identity with `git commit --author` and keeps the user as
@@ -25,19 +22,18 @@ needed, preserve unknown keys, and write valid JSON. Every key is optional:
 - `greeting` — `false` disables the session-start briefing.
 
 Individual retirement belongs in a persona's frontmatter as `off_duty: true`,
-not in config. A frontmatter-only `noname.md` stub in `personas_dir` retires the
-bundled fallback maid from the random draw.
+not in config.
 
-The draw pool includes the flat files in `personas_dir`, any manually
-added `characters/<id>/` folders under `CAFE_ROOT`, and the cast bundled in the
-plugin's own `characters/` directory. A persona uses a lowercase
-filename or folder id, YAML frontmatter with `name:`, and a body containing
-persona instructions. The bundled fallback is under the plugin's `maids/`
-directory.
+The draw pool includes any `characters/<id>/` folders under `CAFE_ROOT` and the
+cast bundled in the plugin's own `characters/` directory; a user folder wins over
+a bundled one with the same id. A character uses a lowercase folder id and a
+`persona.*.md` with YAML frontmatter holding `name:` and a body containing
+persona instructions. The bundled fallback, used when every maid is off duty, is
+under the plugin's `maids/` directory.
 
 Environment variables `CLAUDE_MAID` and `CLAUDE_MAID_LANG` remain supported as
 one-run overrides. Config changes affect the next session; do not claim to
 switch the current session's maid.
 
-When asked to show status, read the Cafe's config, personas, and session state.
+When asked to show status, read the Cafe's config, characters, and session state.
 When asked to change settings, apply only the requested change.
