@@ -81,49 +81,6 @@ export type UsageReport = {
   } | null
 }
 
-/** Where the context window has gone, as the session accounts for it. */
-export type ContextReport = {
-  model: string
-  totalTokens: number
-  maxTokens: number
-  percentage: number
-  /** Deferred means loaded on demand — it is counted, but only some of it is
-   * ever in the prompt at once. */
-  categories: { name: string; tokens: number; deferred: boolean }[]
-  memoryFiles: { path: string; tokens: number }[]
-  mcpTools: { name: string; server: string; tokens: number }[]
-}
-
-/** One subagent this folder can call on. */
-export type Subagent = { name: string; description: string; model: string | null }
-
-/** One MCP server, as the session finds it. */
-export type McpServer = {
-  name: string
-  status: 'connected' | 'failed' | 'needs-auth' | 'pending' | 'disabled'
-  /** Where it was configured — project, user, local. */
-  scope: string | null
-  tools: number
-  error: string | null
-}
-
-/** Who she is signed in as and what this window runs on. */
-export type StatusReport = {
-  cwd: string
-  account: {
-    email: string | null
-    organization: string | null
-    plan: string | null
-    /** Which backend the session authenticates against. */
-    provider: string | null
-  }
-  outputStyle: string
-  /** What the session has to work with, counted rather than listed. */
-  commands: number
-  agents: number
-  mcpServers: number
-}
-
 /** One conversation this folder has had, as the transcripts remember it. */
 export type Conversation = { sessionId: string; opening: string; at: number }
 
@@ -166,10 +123,7 @@ export type Lines = {
 }
 
 /** The windows that stand beside her rather than over her. */
-export type SideWindow = 'log' | 'reply' | 'settings' | 'projects' | 'session'
-
-/** The session window's tabs, each one a slash command the CLI also answers. */
-export type SessionTab = 'usage' | 'context' | 'agents' | 'mcp' | 'status'
+export type SideWindow = 'log' | 'reply' | 'settings' | 'projects' | 'usage'
 
 /** Everything the side windows draw, as the scene has it. */
 export type SceneShare = {
@@ -193,9 +147,6 @@ export type SceneShare = {
     speech: { language: string; chosen: string }
     backdrop: Backdrop
   }
-  /** Which tab the session window was last asked to show. `asked` counts the
-   * asking, so asking for the tab already up still brings it back to the top. */
-  session: { tab: SessionTab; asked: number }
 }
 
 /** What a side window asks the scene to do. */
@@ -306,14 +257,6 @@ export type CafeBridge = {
   /** What the plan and this session have been spent on. Null when the session
    * cannot say — an API key has no plan windows to report. */
   usage(): Promise<UsageReport | null>
-  /** What is filling the context window right now. */
-  context(): Promise<ContextReport | null>
-  /** The subagents this folder can call on. */
-  agents(): Promise<Subagent[]>
-  /** Every configured MCP server and whether it answered. */
-  mcpServers(): Promise<McpServer[]>
-  /** Who she is signed in as, and what this window is working on. */
-  status(): Promise<StatusReport | null>
   /** The instructions she is wearing, as markdown. Empty on a machine with no
    * copy of her anywhere. */
   persona(): Promise<string>

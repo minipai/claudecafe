@@ -287,7 +287,7 @@ describe('PromptQueue', () => {
  * innards is exactly how the hold-back bug hid: nothing ever actually drained
  * it, so a queue with two prompts sitting in it looked no different from one
  * with a single prompt sent and a second genuinely held back. */
-function fakeStream(prompt: AsyncIterable<SDKUserMessage>, models: unknown[] = []) {
+function fakeStream(prompt: AsyncIterable<SDKUserMessage>, models: unknown[] = [], commands: unknown[] = []) {
   const queued: SDKMessage[] = []
   let wake: (() => void) | null = null
   let ended = false
@@ -322,10 +322,7 @@ function fakeStream(prompt: AsyncIterable<SDKUserMessage>, models: unknown[] = [
     return: returned,
     initializationResult: vi.fn(async () => ({ account: {}, commands: [], agents: [], output_style: 'default' })),
     supportedModels: vi.fn(async () => models),
-    supportedCommands: vi.fn(async () => []),
-    supportedAgents: vi.fn(async () => []),
-    mcpServerStatus: vi.fn(async () => []),
-    getContextUsage: vi.fn(async () => null),
+    supportedCommands: vi.fn(async () => commands),
     usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET: vi.fn(async () => ({})),
   }
 
@@ -392,10 +389,10 @@ function deferred<T>() {
 /** Wires the mocked `query` to open a fresh fake connection every time
  * `open()`/`reopen()` calls it, each one eagerly draining whatever prompt
  * queue it was handed — same as the real SDK. */
-function trackConnections(models: unknown[] = []) {
+function trackConnections(models: unknown[] = [], commands: unknown[] = []) {
   const fakes: ReturnType<typeof fakeStream>[] = []
   vi.mocked(query).mockImplementation((args) => {
-    const fake = fakeStream(args.prompt as AsyncIterable<SDKUserMessage>, models)
+    const fake = fakeStream(args.prompt as AsyncIterable<SDKUserMessage>, models, commands)
     fakes.push(fake)
     return fake.stream
   })
@@ -1175,4 +1172,26 @@ describe('MaidSession — how much she asks first', () => {
     await vi.waitFor(() => expect(statuses(events).at(-1)?.status.contextTokens).toBeNull())
   })
 
+})
+
+describe('MaidSession — slash commands', () => {
+  const commandsFrom = (events: BridgeEvent[]) =>
+    events.filter((event) => event.kind === 'commands') as Extract<BridgeEvent, { kind: 'commands' }>[]
+
+  it("drops Claude Code's own built-in commands, keeping a skill and a project's own", async () => {
+    const fakes = trackConnections([], [
+      { name: 'usage', description: 'Show the meters.', argumentHint: '', builtin: true },
+      { name: 'compact', description: 'Compact the conversation.', argumentHint: '', builtin: true },
+      { name: 'deploy', description: "The project's own command.", argumentHint: '' },
+      { name: 'my-skill', description: 'A skill.', argumentHint: '' },
+    ])
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-commands', emit)
+
+    session.ask('run-1', 'go on then')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    await vi.waitFor(() => expect(commandsFrom(events)).not.toHaveLength(0))
+
+    expect(commandsFrom(events).at(-1)?.commands.map((command) => command.name)).toEqual(['deploy', 'my-skill'])
+  })
 })

@@ -2,21 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ChevronRight,
   FolderOpen,
-  Gauge,
   MessageSquarePlus,
-  Plug,
   ScrollText,
   Settings,
   Search,
   ShieldCheck,
   Shrink,
-  UserCog,
   UserRoundPlus,
-  Users,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { CATALOGUES, fill, her, text } from '@/i18n'
-import type { SessionSettings, SessionTab } from '@/agent'
+import type { SessionSettings } from '@/agent'
 
 /** One thing the window can do, or one place it can go. */
 type Entry = {
@@ -41,7 +37,6 @@ type Doing = {
   onOpenHistory: () => void
   onOpenProjects: () => void
   onOpenSettings: () => void
-  onOpenSession: (tab: SessionTab) => void
   onCompact: () => void
   /** How much she asks before doing, and how it is changed. Null is handing
    * it back to the master's terminal rather than pinning one here. */
@@ -86,15 +81,6 @@ export function CommandBar({
     setActive(0)
   }, [open])
 
-  const session = (tab: SessionTab, icon: Entry['icon']): Entry => ({
-    key: tab,
-    icon,
-    label: t.bar[tab],
-    find: eng.bar[tab],
-    note: `/${tab}`,
-    run: () => doing.onOpenSession(tab),
-  })
-
   const commands: Entry[] = [
     { key: 'projects', icon: FolderOpen, label: t.bar.projects, find: eng.bar.projects, note: '/resume', run: doing.onOpenProjects },
     { key: 'new', icon: MessageSquarePlus, label: t.bar.newSession, find: eng.bar.newSession, run: doing.onNewSession },
@@ -102,11 +88,6 @@ export function CommandBar({
     { key: 'mode', icon: ShieldCheck, label: t.bar.mode, find: eng.bar.mode, note: t.mode.note[doing.mode], into: 'mode' },
     { key: 'log', icon: ScrollText, label: t.bar.log, find: eng.bar.log, note: '⌘L', run: doing.onOpenHistory },
     { key: 'compact', icon: Shrink, label: t.bar.compact, find: eng.bar.compact, run: doing.onCompact },
-    session('usage', Gauge),
-    session('context', Gauge),
-    session('agents', Users),
-    session('mcp', Plug),
-    session('status', UserCog),
     { key: 'settings', icon: Settings, label: t.bar.settings, find: eng.bar.settings, note: '⌘,', run: doing.onOpenSettings },
   ]
 

@@ -1,7 +1,7 @@
 import { query as mockQuery } from './mock'
 import { query as liveQuery, newSession as endLiveSession } from './live'
 import type { Conversation } from './bridge'
-import { MOCK_AGENTS, MOCK_CAST, MOCK_CONTEXT, MOCK_MCP, MOCK_PERSONA, MOCK_SESSION, MOCK_SESSION_CWD, MOCK_STATUS, mockUsage } from './content.mock'
+import { MOCK_CAST, MOCK_PERSONA, MOCK_SESSION, MOCK_SESSION_CWD, mockUsage } from './content.mock'
 
 /** In the browser there is no bridge, so the canned mock keeps standing in. */
 export const isLive = typeof window !== 'undefined' && Boolean(window.cafe)
@@ -22,10 +22,6 @@ export function newSession() {
  * the same way it answers for the model.
  */
 export const usageReport = isLive ? () => window.cafe!.usage() : async () => mockUsage()
-export const contextReport = isLive ? () => window.cafe!.context() : async () => MOCK_CONTEXT
-export const subagents = isLive ? () => window.cafe!.agents() : async () => MOCK_AGENTS
-export const mcpServers = isLive ? () => window.cafe!.mcpServers() : async () => MOCK_MCP
-export const sessionStatus = isLive ? () => window.cafe!.status() : async () => MOCK_STATUS
 export const maidPersona = isLive ? () => window.cafe!.persona() : async () => MOCK_PERSONA
 export const castList = isLive ? () => window.cafe!.cast() : async () => MOCK_CAST
 export const recentFolders = isLive ? () => window.cafe!.folders() : async () => [MOCK_SESSION_CWD]
@@ -46,20 +42,15 @@ export type {
   CafeBridge,
   CafeCommand,
   CastMember,
-  ContextReport,
   Conversation,
   Lines,
   SceneAction,
   SceneShare,
-  SessionTab,
   SideWindow,
-  McpServer,
   ModelChoice,
   SessionSettings,
   SessionStatus,
   Shift,
-  StatusReport,
-  Subagent,
   Trouble,
   UsageReport,
   UsageWindow,

@@ -26,7 +26,7 @@ export function sideWindowOf(search: string): SideWindow | null {
   return SIDE_WINDOWS.find((each) => each === name) ?? null
 }
 
-const SIDE_WINDOWS: SideWindow[] = ['log', 'reply', 'settings', 'projects', 'session']
+const SIDE_WINDOWS: SideWindow[] = ['log', 'reply', 'settings', 'projects', 'usage']
 
 function liveOpen(name: SideWindow) {
   window.cafe!.openSideWindow(name)

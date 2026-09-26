@@ -47,10 +47,6 @@ function createBridge() {
     signIn: vi.fn(),
     reconnect: vi.fn(),
     usage: vi.fn().mockResolvedValue(null),
-    context: vi.fn().mockResolvedValue(null),
-    agents: vi.fn().mockResolvedValue([]),
-    mcpServers: vi.fn().mockResolvedValue([]),
-    status: vi.fn().mockResolvedValue(null),
     persona: vi.fn().mockResolvedValue('# Personality\n\nYou are ことね, an AI maid.'),
     shift: { maid: 'kotone' },
     maidName: 'ことね',
@@ -240,12 +236,10 @@ describe('GalgameClient', () => {
   it('the window answers its own slash commands by opening the window that has them', async () => {
     const { bridge } = await mountLive()
 
-    await act(async () => submit('/context'))
-    expect(lastShared(bridge).session.tab).toBe('context')
     await act(async () => submit('/keys'))
     await act(async () => submit('/resume'))
 
-    expect(vi.mocked(bridge.openSideWindow).mock.calls).toEqual([['session'], ['settings'], ['projects']])
+    expect(vi.mocked(bridge.openSideWindow).mock.calls).toEqual([['settings'], ['projects']])
     // Answered here, not sent to her as a prompt.
     expect(bridge.start).not.toHaveBeenCalled()
   })

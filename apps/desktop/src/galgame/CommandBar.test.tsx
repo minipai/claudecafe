@@ -24,7 +24,6 @@ function createDoing() {
     onOpenHistory: vi.fn(),
     onOpenSettings: vi.fn(),
     onOpenProjects: vi.fn(),
-    onOpenSession: vi.fn(),
     onCompact: vi.fn(),
     mode: 'default' as const,
     modePicked: false,

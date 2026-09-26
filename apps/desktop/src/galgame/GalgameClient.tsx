@@ -43,7 +43,6 @@ import {
   type Look,
   type PermissionResult,
   type SceneAction,
-  type SessionTab,
   type SideWindow,
   type ModelChoice,
   type Question,
@@ -52,16 +51,6 @@ import {
   type Todo,
   type Trouble,
 } from '@/agent'
-
-/** The slash commands whose figures the session window draws, instead of
- * letting the CLI print a flattened copy of them — each one its own tab. */
-const SESSION_COMMANDS: Record<string, SessionTab> = {
-  '/usage': 'usage',
-  '/context': 'context',
-  '/agents': 'agents',
-  '/mcp': 'mcp',
-  '/status': 'status',
-}
 
 /** The window's own commands, which the CLI does not have: `/keys` is written
  * down in the settings, since a terminal has no keys of its own to explain, and
@@ -127,8 +116,6 @@ export function GalgameClient({
   const [commands, setCommands] = useState<CafeCommand[]>([])
   /** The slash command the window is answering itself, if any. */
   const [personaOpen, setPersonaOpen] = useState(false)
-  /** Which tab the session window was last asked for. */
-  const [sessionAsk, setSessionAsk] = useState<{ tab: SessionTab; asked: number }>({ tab: 'usage', asked: 0 })
   /** Why she cannot work at all, when the session says so. */
   const [trouble, setTrouble] = useState<Trouble | null>(null)
   /** The conversation she is on, as the session last reported it. */
@@ -388,9 +375,8 @@ export function GalgameClient({
       },
       todos: board,
       settings: { locale: locale.choice, speech, backdrop },
-      session: sessionAsk,
     })
-  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, board, speech, backdrop, sessionAsk])
+  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, board, speech, backdrop])
 
   /** What was clicked in them is done here, the way the scene would have done it. */
   const sideActionRef = useRef<(action: SceneAction) => void>(() => {})
@@ -756,12 +742,6 @@ export function GalgameClient({
     }
   }
 
-  /** The session window, on the tab asked for. */
-  function showSession(tab: SessionTab) {
-    setSessionAsk((current) => ({ tab, asked: current.asked + 1 }))
-    openSideWindow('session')
-  }
-
   /**
    * She was sent somewhere else. Whatever she was in the middle of belongs to
    * where the master just left; the scene starts over with what comes back.
@@ -774,14 +754,12 @@ export function GalgameClient({
   }
 
   /**
-   * A slash command the window answers better than the session does. What
-   * these print in a terminal is a flattening of figures the session will hand
-   * over whole, so a window asks for those instead of running a turn.
+   * A slash command the window answers itself rather than sending it in as a
+   * turn: one of its own windows, or the persona panel.
    */
   function handleSubmit(text: string, images: Attachment[] = []) {
     const said = text.trim()
     if (!said && !images.length) return
-    if (said in SESSION_COMMANDS) return showSession(SESSION_COMMANDS[said])
     if (said in WINDOW_COMMANDS) return openSideWindow(WINDOW_COMMANDS[said])
     if (said === '/persona') return setPersonaOpen(true)
     run(said, images)
@@ -892,7 +870,6 @@ export function GalgameClient({
           onOpenSettings: () => openSideWindow('settings'),
           onCompact: compactSession,
           onOpenProjects: () => openSideWindow('projects'),
-          onOpenSession: showSession,
           mode: settings.mode,
           modePicked: settings.modePicked,
           onMode: (mode) => {

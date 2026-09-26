@@ -177,14 +177,3 @@ export function Figure({ label, value }: { label: string; value: string }) {
     </div>
   )
 }
-
-/** Tokens the way the terminal counts them: 27.4k, 1m, 380. */
-export function tokens(count: number) {
-  if (count >= 1_000_000) return `${round(count / 1_000_000)}m`
-  if (count >= 1_000) return `${round(count / 1_000)}k`
-  return String(count)
-}
-
-function round(value: number) {
-  return value >= 100 ? Math.round(value) : Math.round(value * 10) / 10
-}

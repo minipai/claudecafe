@@ -1,14 +1,38 @@
+import { useEffect, useState } from 'react'
 import { PanelBody, Figure, Heading, Meter, useAnswer } from '@/galgame/CommandPanel'
 import { fill, text } from '@/i18n'
 import { usageReport } from '@/agent'
 import type { UsageReport } from '@/agent'
 
 /**
+ * What the plan has been spent on — the figures `/usage` prints in a terminal,
+ * standing beside her in a window of its own instead. Bringing the window
+ * forward is asking again: it fetches once on mount and once more each time it
+ * regains focus, rather than showing whatever it last happened to have — a key
+ * on the view below, bumped on focus, so asking again remounts it.
+ */
+export function UsageWindow() {
+  const [asked, setAsked] = useState(0)
+
+  useEffect(() => {
+    const askAgain = () => setAsked((current) => current + 1)
+    window.addEventListener('focus', askAgain)
+    return () => window.removeEventListener('focus', askAgain)
+  }, [])
+
+  return (
+    <main className="flex h-screen flex-col bg-card text-card-foreground">
+      <UsageView key={asked} />
+    </main>
+  )
+}
+
+/**
  * What the plan has been spent on, drawn from the session's own figures rather
  * than from the text `/usage` prints — the printout is a flattened copy of
  * these, and a window can afford the bars the terminal draws.
  */
-export function UsageTab() {
+function UsageView() {
   const t = text().panel.usage
   const { answer: report, ready } = useAnswer<UsageReport>(true, () => usageReport())
 

@@ -21,6 +21,7 @@ import {
   rememberSpeech,
 } from './history'
 import { castOf, languageSettled, nameOf, personaOf } from './lines'
+import { buildMenu } from './menu'
 import { SideWindows } from './sideWindows'
 import type { Backdrop, SceneAction, SceneShare, Shift, SideWindow } from '../src/agent/bridge'
 import type { Attachment } from '../src/agent/types'
@@ -153,7 +154,7 @@ const SIDE_SIZE: Record<SideWindow, Electron.BrowserWindowConstructorOptions> = 
   reply: { width: 720, height: 760, minWidth: 420, minHeight: 320 },
   settings: { width: 560, height: 680, minWidth: 440, minHeight: 420 },
   projects: { width: 820, height: 560, minWidth: 600, minHeight: 380 },
-  session: { width: 600, height: 640, minWidth: 440, minHeight: 420 },
+  usage: { width: 600, height: 640, minWidth: 440, minHeight: 420 },
 }
 
 /** The scene, or one of its side windows when named. */
@@ -240,6 +241,26 @@ const windowOf = (event: IpcMainEvent) => BrowserWindow.fromWebContents(event.se
 /** The side windows of the scene that sent this, or of the side window that did. */
 const sidesOf = (event: IpcMainEvent) => sides.get(sceneOf(event.sender))
 
+/** Which scene the Window menu should act on: whichever one the master's
+ * attention is on right now, in a side window or in front of her herself, or —
+ * focus being elsewhere entirely, such as between windows — the newest scene
+ * standing, since that is the one he was most recently in. */
+function focusedScene() {
+  const focused = BrowserWindow.getFocusedWindow()
+  if (focused) return sceneOf(focused.webContents)
+  return [...sides.keys()].at(-1) ?? null
+}
+
+/** The application menu, redrawn whenever the language it is worded in
+ * changes: the Window menu reaches every side window of whichever scene has
+ * his attention. */
+function rebuildMenu() {
+  buildMenu(drawnIn(), (name) => {
+    const scene = focusedScene()
+    if (scene) sides.get(scene)?.show(name)
+  })
+}
+
 ipcMain.on('cafe:open-side-window', (event, name: SideWindow) => sidesOf(event)?.show(name))
 ipcMain.on('cafe:share-scene', (event, scene: SceneShare) => sidesOf(event)?.share(scene))
 ipcMain.on('cafe:side-window-ready', (event) => sidesOf(event)?.ready(event.sender))
@@ -258,10 +279,6 @@ ipcMain.on('cafe:refresh', (event, carrying: string[]) => {
 ipcMain.on('cafe:configure', (event, patch) => shiftOf(event)?.configure(patch))
 ipcMain.on('cafe:resume', (event, sessionId: string) => shiftOf(event)?.resume(sessionId))
 ipcMain.handle('cafe:usage', (event) => shiftOf(event)?.usage() ?? null)
-ipcMain.handle('cafe:context', (event) => shiftOf(event)?.context() ?? null)
-ipcMain.handle('cafe:agents', (event) => shiftOf(event)?.agents() ?? [])
-ipcMain.handle('cafe:mcp', (event) => shiftOf(event)?.mcpServers() ?? [])
-ipcMain.handle('cafe:status', (event) => shiftOf(event)?.status() ?? null)
 ipcMain.handle('cafe:folders', () => recentFolders())
 ipcMain.handle('cafe:folder-conversations', (_event, folder: string) => listConversations(folder))
 // Read off disk rather than asked of her: the persona is what the session was
@@ -304,6 +321,7 @@ const SIGN_IN = 'claude'
 ipcMain.on('cafe:set-locale', (event, choice: string) => {
   rememberLocale(choice)
   windowOf(event)?.webContents.send('cafe:event', { kind: 'locale', locale: drawnIn(), choice })
+  rebuildMenu()
 })
 
 /** Another illustration behind her. Nothing reopens:
@@ -454,6 +472,7 @@ void app.whenReady().then(async () => {
   // The checkout says so on its own icon, so the one being worked on and the
   // one being used can sit side by side in the Dock.
   if (!app.isPackaged) app.dock?.setBadge('dev')
+  rebuildMenu()
   const failures = await installCharacters()
   characterInstallError = failures.join('\n')
   for (const failure of failures) console.error('Character could not be installed:', failure)

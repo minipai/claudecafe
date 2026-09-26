@@ -6,7 +6,7 @@ import { LogWindow } from './LogWindow'
 import { ReplyWindow } from './ReplyWindow'
 import { SettingsWindow } from './SettingsWindow'
 import { ProjectsWindow } from './ProjectsWindow'
-import { SessionWindow } from './session/SessionWindow'
+import { UsageWindow } from './UsageWindow'
 
 /**
  * A side window draws nothing until the scene has shared itself: what it would
@@ -34,7 +34,7 @@ export function SideWindowApp({ name }: { name: SideWindow }) {
   if (name === 'reply') return <ReplyWindow log={scene.log} todos={scene.todos} />
   if (name === 'settings') return <SettingsWindow settings={scene.settings} />
   if (name === 'projects') return <ProjectsWindow folder={scene.folder} conversation={scene.conversation} />
-  return <SessionWindow session={scene.session} />
+  return <UsageWindow />
 }
 
 function titleOf(name: SideWindow) {
@@ -43,5 +43,5 @@ function titleOf(name: SideWindow) {
   if (name === 'reply') return t.reply.title
   if (name === 'settings') return t.settings.title
   if (name === 'projects') return t.projects.title
-  return t.session.title
+  return t.bar.usage
 }

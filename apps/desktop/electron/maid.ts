@@ -22,13 +22,9 @@ import { readGit } from './status'
 import type {
   BridgeEvent,
   CafeCommand,
-  ContextReport,
   Lines,
-  McpServer,
   ModelChoice,
   SessionSettings,
-  StatusReport,
-  Subagent,
   Trouble,
   UsageReport,
   UsageWindow,
@@ -704,89 +700,24 @@ export class MaidSession {
     return report ? readUsage(report) : null
   }
 
-  /** Where this conversation's context has gone — the same accounting the
-   * /context command prints, before it is flattened into tables. */
-  async context(): Promise<ContextReport | null> {
-    if (!this.stream) this.open()
-    const report = await this.stream?.getContextUsage().catch(() => null)
-    if (!report) return null
-    return {
-      model: report.model,
-      totalTokens: report.totalTokens,
-      maxTokens: report.maxTokens,
-      percentage: report.percentage,
-      categories: report.categories.map(({ name, tokens, isDeferred }) => ({
-        name,
-        tokens,
-        deferred: isDeferred ?? false,
-      })),
-      memoryFiles: report.memoryFiles.map(({ path: file, tokens }) => ({ path: file, tokens })),
-      mcpTools: report.mcpTools.map(({ name, serverName, tokens }) => ({
-        name,
-        server: serverName,
-        tokens,
-      })),
-    }
-  }
-
-  /** The subagents this folder can call on, as the session resolved them. */
-  async agents(): Promise<Subagent[]> {
-    if (!this.stream) this.open()
-    const agents = (await this.stream?.supportedAgents().catch(() => [])) ?? []
-    return agents.map(({ name, description, model }) => ({
-      name,
-      description,
-      model: model ?? null,
-    }))
-  }
-
-  /** Every configured MCP server and whether it answered — the connection is
-   * the session's, so only the session can say. */
-  async mcpServers(): Promise<McpServer[]> {
-    if (!this.stream) this.open()
-    const servers = (await this.stream?.mcpServerStatus().catch(() => [])) ?? []
-    return servers.map((server) => ({
-      name: server.name,
-      status: server.status,
-      scope: server.scope ?? null,
-      tools: server.tools?.length ?? 0,
-      error: server.error ?? null,
-    }))
-  }
-
-  /** Who the session is signed in as and what it was given to work with. */
-  async status(): Promise<StatusReport | null> {
-    if (!this.stream) this.open()
-    const init = await this.stream?.initializationResult().catch(() => null)
-    if (!init) return null
-    const servers = await this.mcpServers()
-    return {
-      cwd: this.cwd,
-      account: {
-        email: init.account.email ?? null,
-        organization: init.account.organization ?? null,
-        plan: init.account.subscriptionType ?? null,
-        provider: init.account.apiProvider ?? null,
-      },
-      outputStyle: init.output_style,
-      commands: init.commands.length,
-      agents: init.agents.length,
-      mcpServers: servers.filter((server) => server.status === 'connected').length,
-    }
-  }
-
   /** What `/` offers in this folder: the built-ins, plus whatever its settings,
    * skills and plugins add — the same list the terminal would show. */
   private async readCommands(stream: Query) {
     this.tellCommands(await stream.supportedCommands().catch(() => []))
   }
 
+  /** Claude Code's own commands — /usage, /cost, /model and the rest of the
+   * CLI's built-in list — are worded for a terminal and answered nowhere the
+   * window can show; what is worth surfacing here is a skill, or a command a
+   * user, project, plugin or MCP server actually defined. */
   private tellCommands(commands: SlashCommand[]) {
-    this.commands = commands.map(({ name, description, argumentHint }) => ({
-      name,
-      description,
-      argumentHint,
-    }))
+    this.commands = commands
+      .filter((command) => !command.builtin)
+      .map(({ name, description, argumentHint }) => ({
+        name,
+        description,
+        argumentHint,
+      }))
     this.emit({ kind: 'commands', commands: this.commands })
   }
 

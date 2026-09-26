@@ -4,7 +4,7 @@
  * own setting — but because this script is what strangers meet on the web
  * demo, where there is nobody to have set anything. */
 
-import type { CastMember, ContextReport, McpServer, SessionStatus, StatusReport, Subagent, UsageReport } from './bridge'
+import type { CastMember, SessionStatus, UsageReport } from './bridge'
 
 export const SHORT_ANSWER = 'Oh, that one defaults to a 30 second timeout ♪ Nothing to set, Master.'
 
@@ -164,20 +164,6 @@ export const MOCK_SESSION: SessionStatus = {
   contextTokens: 68_400,
 }
 
-export const MOCK_STATUS: StatusReport = {
-  cwd: '~/Dev/claudecafe',
-  account: {
-    email: 'master@claudecafe.dev',
-    organization: 'Claude Café',
-    plan: 'Max (20×)',
-    provider: 'claude.ai',
-  },
-  outputStyle: 'default',
-  commands: 24,
-  agents: 5,
-  mcpServers: 3,
-}
-
 /** Her, as the plate opens her — the real one is read off the master's own copy
  * of the maid he added, which in the browser there is none of. */
 export const MOCK_PERSONA = `# Personality
@@ -209,44 +195,6 @@ would merit praise, put 2–3 short, task-specific ways to praise her directly i
 the final spoken line as 1), 2), and 3), so the user can reply with one number.
 Do not call a tool or open a formal question flow.
 `
-
-export const MOCK_AGENTS: Subagent[] = [
-  { name: 'explore', description: 'Reads its way around a codebase and reports back, without touching anything.', model: null },
-  { name: 'code-reviewer', description: 'Goes over a diff looking for the bug that ships, not for style.', model: 'claude-opus-5' },
-  { name: 'web-researcher', description: 'Reads the docs and the changelogs so the window does not have to.', model: 'claude-sonnet-5' },
-  { name: 'haiku-grunt', description: 'Bulk mechanical work — renames, lint, the same edit in forty files.', model: 'claude-haiku-4-5' },
-  { name: 'plan', description: 'Designs the approach before anything is written.', model: 'claude-opus-5' },
-]
-
-export const MOCK_MCP: McpServer[] = [
-  { name: 'linear', status: 'connected', scope: 'user', tools: 9, error: null },
-  { name: 'chrome-devtools', status: 'connected', scope: 'project', tools: 26, error: null },
-  { name: 'sentry', status: 'needs-auth', scope: 'user', tools: 0, error: 'Sign in to Sentry to use this server.' },
-]
-
-export const MOCK_CONTEXT: ContextReport = {
-  model: 'claude-opus-5',
-  totalTokens: 68_400,
-  maxTokens: 200_000,
-  percentage: 34,
-  categories: [
-    { name: 'System prompt', tokens: 3_100, deferred: false },
-    { name: 'Tool definitions', tokens: 12_800, deferred: false },
-    { name: 'Memory files', tokens: 6_200, deferred: false },
-    { name: 'Conversation', tokens: 41_500, deferred: false },
-    { name: 'Skills', tokens: 4_800, deferred: true },
-  ],
-  memoryFiles: [
-    { path: '~/.claude/CLAUDE.md', tokens: 1_900 },
-    { path: 'CLAUDE.md', tokens: 3_400 },
-    { path: 'apps/desktop/CLAUDE.md', tokens: 900 },
-  ],
-  mcpTools: [
-    { name: 'create_issue', server: 'linear', tokens: 400 },
-    { name: 'take_screenshot', server: 'chrome-devtools', tokens: 1_100 },
-    { name: 'list_issues', server: 'sentry', tokens: 700 },
-  ],
-}
 
 /** The reset times are the one thing that cannot be canned — a window that says
  * it refilled two hours ago is a window nobody believes. */
