@@ -23,14 +23,25 @@ export function SpriteLayer({
 }) {
   return (
     <>
+      <svg width="0" height="0" aria-hidden="true" className="absolute">
+        <defs>
+          <filter id="maid-paper" x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">
+            {/* Expand a smoothed alpha contour rather than a square dilation
+                kernel, which makes hair and ribbon corners look jagged. */}
+            <feGaussianBlur in="SourceAlpha" stdDeviation="4" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 40 -0.5" result="outline" />
+            <feFlood floodColor="white" />
+            <feComposite in2="outline" operator="in" result="paper" />
+            <feMerge>
+              <feMergeNode in="paper" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#281c29" floodOpacity="0.38" />
+          </filter>
+        </defs>
+      </svg>
       <Backdrop chosen={backdrop} />
-      {/* The window ends where it ends, and with nothing painted behind her
-          that edge used to cut her off mid-skirt. This fades her out above it,
-          so she runs off the bottom of the scene instead of being sliced by it
-          — and the fade finishes clear of the edge, because the last of it
-          lingering there reads as a smudge under the dialogue box rather than
-          as her. */}
-      <div className="pointer-events-none fixed inset-0 z-[2] [mask-image:linear-gradient(to_bottom,#000_calc(100%-190px),transparent_calc(100%-42px))]">
+      <div className="pointer-events-none fixed inset-0 z-[2]">
         {/* `z-[2]` to stand in front of the backdrop. Shifting this box half
             its own width to centre it makes it a layer of its own, so what is
             set on her inside it counts for nothing out here — without this the
@@ -46,6 +57,7 @@ export function SpriteLayer({
             alt={name}
             draggable={false}
             data-art
+            style={{ filter: 'url(#maid-paper)' }}
             onPointerDown={(event) => {
               if (event.button !== 0) return
               window.cafe?.startDrag()
