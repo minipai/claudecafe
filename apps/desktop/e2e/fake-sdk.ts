@@ -56,7 +56,7 @@ function controlChannel() {
   }
 }
 
-/** electron/lines.ts's askForLines path: a single string prompt, answered
+/** electron/characters/lines.ts's askForLines path: a single string prompt, answered
  * with prose that has no JSON object in it — readAnswer finds nothing to
  * parse, and the window keeps its built-in English lines. */
 function linesQuery(): Query {
@@ -343,7 +343,7 @@ function toolResult(id: string, text: string, sessionId: string): SDKMessage {
  * `output_tokens` alone left the window's context figure at zero — the real
  * usage block also carries what the turn read in, live and off the cache,
  * which is what MaidSession actually sums for that figure (see
- * `contextTokens` in electron/maid.ts). 800 + 500 + 200 is picked to land on
+ * `contextTokens` in electron/session/maid.ts). 800 + 500 + 200 is picked to land on
  * a round 1.5k once StatusBar compacts it, so a spec can assert the exact text.
  */
 function result(text: string, sessionId: string): SDKMessage {

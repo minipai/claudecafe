@@ -84,7 +84,7 @@ SHIP_DRY=1 scripts/ship-characters.sh kotone kurumi kokona
 
 The script requires `gh`, `python3`, `zip`, and `shasum` (or `sha256sum`). It
 prints the asset URL and SHA-256 after publishing; copy those values into
-`apps/desktop/electron/characters.ts` before shipping a desktop build.
+`apps/desktop/electron/characters/characters.ts` before shipping a desktop build.
 
 ## Persona interaction eval
 

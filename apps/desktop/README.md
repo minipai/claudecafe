@@ -29,6 +29,28 @@ The dev build and a packaged build keep separate state (`ClaudeCafe (dev)`
 versus `ClaudeCafe` under Application Support), so you can run one while using
 the other.
 
+## Code layout
+
+Keep implementation and its tests together, grouped by responsibility. Aim for
+no more than seven files directly inside each source or test directory.
+
+- `electron/` — app entry points, windows, IPC and dev/build launchers.
+  `session/` owns the SDK connection and event translation, `history/` owns
+  persisted conversations and status, and `characters/` owns the cast and lines.
+- `src/galgame/` — the main scene, with dialogue, input, character and panel
+  components grouped beneath it.
+- `src/agent/` — renderer contracts; `transport/` connects to Electron and
+  `demo/` supplies the browser preview.
+- `src/windows/` — side-window entry points, with `conversation/`, `settings/`
+  and `projects/` holding their views and tests.
+- `e2e/` — shared Electron fixtures, plus `session/`, `dialogue/` and `actions/`
+  scenarios.
+- `config/` — Vite, Vitest, Playwright and packaging configuration. Use the
+  package scripts so each tool loads its config from this directory.
+
+Checks: `pnpm check`, `pnpm build`, and `pnpm test:e2e`. To limit Vitest workers,
+use `pnpm test --maxWorkers=2`.
+
 ## Her artwork
 
 The app discovers maids at runtime from `$XDG_CONFIG_HOME/claudecafe/characters`

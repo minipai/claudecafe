@@ -1,7 +1,7 @@
-import { query as mockQuery } from './mock'
-import { query as liveQuery, newSession as endLiveSession } from './live'
+import { query as mockQuery } from './demo/mock'
+import { query as liveQuery, newSession as endLiveSession } from './transport/live'
 import type { Conversation } from './bridge'
-import { MOCK_CAST, MOCK_PERSONA, MOCK_SESSION, MOCK_SESSION_CWD, mockUsage } from './content.mock'
+import { MOCK_CAST, MOCK_PERSONA, MOCK_SESSION, MOCK_SESSION_CWD, mockUsage } from './demo/content.mock'
 
 /** In the browser there is no bridge, so the canned mock keeps standing in. */
 export const isLive = typeof window !== 'undefined' && Boolean(window.cafe)

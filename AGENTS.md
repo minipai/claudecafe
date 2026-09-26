@@ -72,7 +72,7 @@ or status line reads it.
   per maid. It does not bundle a fixed cast or offer outfit selection.
 - **Language split**: the interface is English, but what she says follows the user's
   language — the lines the window feeds her are generated once at startup per the café
-  config's `lang` into `lines.json` under userData (`electron/lines.ts`).
+  config's `lang` into `lines.json` under userData (`electron/characters/lines.ts`).
 - Releasing: `scripts/ship.sh` → bump the version in `apps/website/src/pages/AppPage.tsx`
   by hand → ship the site.
 - What's still missing before handing it to a stranger is tracked in `notes/`, not in git.

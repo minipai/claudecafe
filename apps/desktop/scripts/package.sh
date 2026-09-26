@@ -23,7 +23,7 @@ if pgrep -f "$APP/Contents/MacOS" >/dev/null; then
 fi
 
 pnpm build
-electron-builder --mac --dir
+electron-builder --config config/electron-builder.yml --mac --dir
 codesign --force --deep --sign - "$APP"
 # Proof rather than hope: an unsigned bundle opens nowhere, so a package step
 # that cannot say the signature is good has not finished.

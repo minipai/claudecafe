@@ -7,7 +7,7 @@ describe('test harness', () => {
   })
 
   it('stubs electron for main-process modules', async () => {
-    const { chosenLocale } = await import('../electron/history')
+    const { chosenLocale } = await import('../electron/history/history')
     expect(chosenLocale()).toBe('system')
   })
 })

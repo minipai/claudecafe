@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Lines } from '@/agent'
 import { speakThis, text } from '@/i18n'
 import { applyWindowEvent, type WindowScene } from './windowEvents'
-import { createChatMessage } from './chatlog'
-import { ENGLISH_LINES, lines as spokenLines, speakThese } from './content'
+import { createChatMessage } from './scene/chatlog'
+import { ENGLISH_LINES, lines as spokenLines, speakThese } from './scene/content'
 
 afterEach(() => {
   // Both are module-level singletons the handler writes through — left as

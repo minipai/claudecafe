@@ -1,8 +1,8 @@
 import type { AgentMessage, Todo } from '@/agent'
 import { EXPRESSIONS } from '@/agent/expressions'
 import { text } from '@/i18n'
-import { shorten, signed } from './chatlog'
-import type { Hooks } from './useSpeech'
+import { shorten, signed } from './scene/chatlog'
+import type { Hooks } from './dialogue/useSpeech'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
 
 /**

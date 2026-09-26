@@ -12,7 +12,7 @@ const folder = process.argv[2]
 
 await buildElectron()
 
-const server = await createServer()
+const server = await createServer({ configFile: 'config/vite.config.ts' })
 await server.listen()
 const url = server.resolvedUrls?.local?.[0]
 if (!url) throw new Error('Vite did not report a local URL')

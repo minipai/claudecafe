@@ -4,8 +4,8 @@ import { homedir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, protocol, screen, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
-import { MaidSession, nowCarrying } from './maid'
-import { characterImage, charactersDir, installCharacters } from './characters'
+import { MaidSession, nowCarrying } from './session/maid'
+import { characterImage, charactersDir, installCharacters } from './characters/characters'
 import {
   chosenBackdrop,
   chosenLocale,
@@ -19,8 +19,8 @@ import {
   rememberLocale,
   rememberShift,
   rememberSpeech,
-} from './history'
-import { castOf, languageSettled, nameOf, personaOf } from './lines'
+} from './history/history'
+import { castOf, languageSettled, nameOf, personaOf } from './characters/lines'
 import { buildMenu } from './menu'
 import { SideWindows } from './sideWindows'
 import type { Backdrop, SceneAction, SceneShare, Shift, SideWindow } from '../src/agent/bridge'

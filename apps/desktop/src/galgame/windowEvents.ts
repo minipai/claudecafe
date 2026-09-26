@@ -2,8 +2,8 @@ import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { faceFor } from '@/agent/expressions'
 import { nowServing, speakThis } from '@/i18n'
 import type { Backdrop, BacklogLine, BridgeEvent, CafeCommand, Lines, ModelChoice, SessionSettings, Shift, Trouble } from '@/agent'
-import { createChatMessage } from './chatlog'
-import { speakThese } from './content'
+import { createChatMessage } from './scene/chatlog'
+import { speakThese } from './scene/content'
 import type { ChatMessage, Expression, Phase } from './types'
 
 /**

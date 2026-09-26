@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PanelBody, Figure, Heading, Meter, useAnswer } from '@/galgame/CommandPanel'
+import { PanelBody, Figure, Heading, Meter, useAnswer } from '@/galgame/panels/CommandPanel'
 import { fill, text } from '@/i18n'
 import { usageReport } from '@/agent'
 import type { UsageReport } from '@/agent'
