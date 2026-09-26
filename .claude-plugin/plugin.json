@@ -1,0 +1,9 @@
+{
+  "name": "persona-panel",
+  "displayName": "Persona Panel",
+  "version": "0.9.0",
+  "description": "Gives a Claude Code session a character persona, with a time-aware liveliness layer and a pixel portrait panel; bundles three characters from claudecafe.dev.",
+  "author": {
+    "name": "minipai"
+  }
+}

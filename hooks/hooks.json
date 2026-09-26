@@ -1,0 +1,4 @@
+{
+  "description": "persona-panel function hooks: persona, liveliness context, and the pixel portrait panel.",
+  "modules": ["./function/register.js"]
+}
