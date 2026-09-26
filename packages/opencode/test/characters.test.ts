@@ -53,7 +53,7 @@ test("version comparison updates only older published packs", () => {
 })
 
 test("a complete published pack does not trigger a download", async () => {
-  for (const id of ["kotone", "kurumi", "kokona"]) writePersona(id, "1.1.1")
+  for (const id of ["kotone", "kurumi", "kokona"]) writePersona(id, "1.2.0")
   let calls = 0
   globalThis.fetch = (() => {
     calls++

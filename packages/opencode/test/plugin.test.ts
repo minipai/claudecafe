@@ -30,7 +30,7 @@ function setConfig(data: unknown): void {
   write(join(ROOT, "config.json"), JSON.stringify(data))
 }
 
-function writeCharacter(id: string, name: string, body = "Character body.", version = "1.1.1"): void {
+function writeCharacter(id: string, name: string, body = "Character body.", version = "1.2.0"): void {
   write(
     join(charactersDir(), id, "persona.md"),
     `---\nid: claudecafe/${id}\nname: ${name}\nversion: ${version}\n---\n${body}\n`,
@@ -54,7 +54,7 @@ beforeEach(() => {
   process.env.XDG_CONFIG_HOME = SANDBOX
   // Keep the published packs out of the draw and make their sync a no-op.
   for (const id of ["kotone", "kurumi", "kokona"]) {
-    write(join(charactersDir(), id, "persona.md"), `---\nid: claudecafe/${id}\nname: ${id}\nversion: 1.1.1\noff_duty: true\n---\nbody\n`)
+    write(join(charactersDir(), id, "persona.md"), `---\nid: claudecafe/${id}\nname: ${id}\nversion: 1.2.0\noff_duty: true\n---\nbody\n`)
   }
   process.env.CAFE_PLUGIN_ROOT = BUNDLED
   // Offline: a failed weather fetch must degrade to silence.
