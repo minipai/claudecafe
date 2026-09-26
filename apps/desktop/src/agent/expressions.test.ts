@@ -53,7 +53,7 @@ describe('faceFor', () => {
  */
 describe('the plugin\'s copy of the table', () => {
   const cues = readFileSync(
-    fileURLToPath(new URL('../../../../packages/cafe/prompts/cues.md', import.meta.url)),
+    fileURLToPath(new URL('../../../../packages/persona-panel/prompts/cues.md', import.meta.url)),
     'utf8',
   )
 

@@ -41,10 +41,10 @@ const SKIP = new Set(['dist', '__pycache__', 'ship.sh', 'test.py', 'test', 'test
 function stageCafePlugin() {
   const out = path.join(here, '../dist-electron/cafe-plugin')
   fs.rmSync(out, { recursive: true, force: true })
-  fs.cpSync(path.join(repo, 'packages/cafe'), out, {
+  fs.cpSync(path.join(repo, 'packages/persona-panel'), out, {
     recursive: true,
     filter: (source) => {
-      const relative = path.relative(path.join(repo, 'packages/cafe'), source)
+      const relative = path.relative(path.join(repo, 'packages/persona-panel'), source)
       const underHooks = relative === 'hooks' || relative.startsWith('hooks/')
       return !underHooks && !SKIP.has(path.basename(source))
     },

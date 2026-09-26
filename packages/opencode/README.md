@@ -5,7 +5,7 @@ greeting, per-turn time, mood marker) **and** her portrait in the sidebar — on
 package, two faces. Character packs are kept in the shared café data root and
 can be extended by dropping another folder into `characters/`.
 
-`mods/opencode-maid` and the OpenCode port of `packages/cafe` used to be separate
+`mods/opencode-maid` and the OpenCode port of `packages/persona-panel` used to be separate
 spikes. They are now one thing: the same café, with the panel attached.
 
 ## One package, two entrypoints
@@ -44,7 +44,7 @@ The installer uses the system `unzip` command.
 | Café RPC | Gives a newly mounted TUI the active character and face for a session and streams later changes. State is per session, so every window keeps its own portrait. |
 
 `config.json` keys and `off_duty` are the same ones
-[`packages/cafe`](../cafe) documents. A manually added pack uses the standard
+[`packages/persona-panel`](../persona-panel) documents. A manually added pack uses the standard
 character layout:
 
 ```text
@@ -129,7 +129,7 @@ changes.
 
 `pnpm --filter @claudecafe/opencode check` runs the typecheck and the tests.
 
-The prompts and the nameless fallback maid are read from `../cafe`
+The prompts and the nameless fallback maid are read from `../persona-panel`
 (`CAFE_PLUGIN_ROOT` overrides the location), so the kaomoji table and the prose
 stay in one place. A packaged distribution would bundle those two folders beside
 the plugin.

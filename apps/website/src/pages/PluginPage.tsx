@@ -34,7 +34,7 @@ const copy = {
     d4title: 'Curious what she’s up to back there?',
     d4desc1: 'Look up from the code, type ',
     d4desc2: ', and there she is — the tea gone cold, the file she’s wrestling with.',
-    d4cmd: '/cafe:look',
+    d4cmd: '/persona-panel:look',
     d4scene: 'Afternoon light falls slanting across the keyboard as Kurumi hops from one config file to the next, fingertips skipping over the editor. The tea at the corner of the desk stopped steaming a while ago, a sticky note covered in marks pinned under the cup. The fan hums low; she tucks a loose strand of hair back behind her ear without taking her eyes off the screen.',
     fkicker: 'And more',
     ftitle: 'Other corners of the café',
@@ -48,7 +48,7 @@ const copy = {
         dd: 'Published maids sync into the shared character library; manually added folders are discovered too.',
       },
       {
-        dt: '/cafe:config',
+        dt: '/persona-panel:config',
         dd: null, // rendered inline (contains code)
       },
     ],
@@ -85,7 +85,7 @@ const copy = {
     d4title: '她在那邊忙什麼呢？',
     d4desc1: '工作到一半抬頭打一句 ',
     d4desc2: '，就看見她此刻的樣子——涼掉的茶、和手邊正在纏鬥的那個檔案。',
-    d4cmd: '/cafe:look',
+    d4cmd: '/persona-panel:look',
     d4scene: '午後的光斜斜落在鍵盤上，くるみ把要改的設定檔一個一個切過去，指尖在編輯器上輕快跳躍。桌角那杯紅茶早就不冒煙了，杯底壓著一張寫滿記號的便條。風扇低低地轉著，她順手把滑下來的一縷髮絲別回耳後，眼睛始終沒離開螢幕。',
     fkicker: '還有這些',
     ftitle: '咖啡廳的其他角落',
@@ -95,7 +95,7 @@ const copy = {
         dd: '情人節、女僕日、七夕、萬聖⋯內建店曆，也能換成自己的節日包。',
       },
       { dt: '角色包自動同步', dd: '已發布的女僕會自動進共享角色庫；手動加入的資料夾也會被發現。' },
-      { dt: '/cafe:config', dd: null },
+      { dt: '/persona-panel:config', dd: null },
     ],
     ikicker: '開店',
     ititle: '兩步，今天就開店',
@@ -122,7 +122,7 @@ function InstallTerminal({ t }: { t: (typeof copy)[Locale] }) {
         <span class="p-sym">›</span> <span class="txt-cmd">/plugin marketplace add https://claudecafe.dev/plugins/marketplace.json</span>
       </div>
       <div class="term-line prompt">
-        <span class="p-sym">›</span> <span class="txt-cmd">/plugin install cafe@claudecafe</span>
+        <span class="p-sym">›</span> <span class="txt-cmd">/plugin install persona-panel@claudecafe</span>
       </div>
       <div class="term-line txt-sys">&nbsp;</div>
       <div class="term-line txt-sys">{t.hookComment}</div>

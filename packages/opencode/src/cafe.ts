@@ -62,7 +62,7 @@ export function personasDir(): string {
 export function cafePluginRoot(): string {
   const override = (process.env.CAFE_PLUGIN_ROOT ?? "").trim()
   if (override) return expandHome(override)
-  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "cafe")
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "persona-panel")
 }
 
 function maidsDir(): string {

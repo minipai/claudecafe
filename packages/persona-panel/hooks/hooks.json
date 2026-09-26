@@ -1,4 +1,4 @@
 {
   "description": "Claude Café function hooks: persona, liveliness context, and the pixel maid panel.",
-  "modules": ["./function/register.generated.js"]
+  "modules": ["./function/register.js"]
 }

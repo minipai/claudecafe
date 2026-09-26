@@ -3,7 +3,7 @@
 A pnpm monorepo for the AI maid ecosystem. The repo root **is also a plugin marketplace
 named `claudecafe`** (`.claude-plugin/marketplace.json`, listing the cafe plugin). Six
 packages, everything with an npm package.json namespaced under `@claudecafe/*` (the
-private root stays `claudecafe-monorepo`; `packages/cafe` is the Claude Code
+private root stays `claudecafe-monorepo`; `packages/persona-panel` is the Claude Code
 function-hook plugin and `packages/character-core` is its shared JS core.
 
 **Each package has its own README. Read the one you are working in** — this file is only
@@ -18,28 +18,31 @@ the things that are expensive to find out the hard way.
   **The PNG masters, pencil references and drawing spec live in `art-masters/` at the
   repo root, gitignored** — the art scripts read from there and stop with a plain error
   when it isn't present.
-- **`packages/cafe`** — the Claude Code plugin. Its `hooks/hooks.json` is a
-  modules-only function profile; `scripts/build-cafe-function.sh` bundles the
-  shared `packages/character-core` contracts and the panel adapter into the
-  checked-in runtime module. It shares the café data root at
+- **`packages/persona-panel`** — the Claude Code plugin. Its `hooks/hooks.json` is a
+  modules-only function profile; `scripts/build-plugin.sh` builds the loadable
+  plugin into `packages/persona-panel/dist`, bundling the shared
+  `packages/character-core` contracts into its `register.js`. It shares the café data root at
   `$XDG_CONFIG_HOME/claudecafe` (default `~/.config/claudecafe`).
 - **`packages/opencode`** — the café for OpenCode, with the sidebar portrait and
   character-pack sync sharing `packages/character-core`. One package, two
   entrypoints (`exports["./server"]` and `exports["./tui"]`) because OpenCode's
   loader refuses a module that default-exports both. It shares the café data root
-  and reads `packages/cafe`'s prompts and nameless maid. Server hooks run inside
+  and reads `packages/persona-panel`'s prompts and nameless maid. Server hooks run inside
   OpenCode's own Bun runtime.
 
 ## ⚠️ Three landmines in plugin development
 
-- **Claude function hooks are engine-loaded**: `packages/cafe/hooks/hooks.json`
+- **Claude function hooks are engine-loaded**: `packages/persona-panel/hooks/hooks.json`
   points at a bundled ESM module and must not shell out to `node`, `bun`, or
-  `python3`. The checked-in `register.generated.js` is produced by
-  `scripts/build-cafe-function.sh`; OpenCode runs its own TypeScript/Bun adapter.
+  `python3`. A hooks module imports only its own files by relative path, so
+  `packages/persona-panel` itself does not load: Claude loads the built
+  `packages/persona-panel/dist` (`scripts/build-plugin.sh`, `--watch` while
+  developing). Shipping commits that build to the `release/persona-panel` branch,
+  which the Claude plugin directory tracks. OpenCode runs its own TypeScript/Bun adapter.
 - **Always bump the version when you change a plugin**: `/plugin update` compares versions
-  and won't reinstall an unchanged one. Bump `packages/cafe/.claude-plugin/plugin.json` and
+  and won't reinstall an unchanged one. Bump `packages/persona-panel/.claude-plugin/plugin.json` and
   the matching entry in the root `marketplace.json` together, then
-  `/plugin marketplace update claudecafe` → `/plugin update cafe@claudecafe`.
+  `/plugin marketplace update claudecafe` → `/plugin update persona-panel@claudecafe`.
 - **Ask the user before touching live global config (`~/.config/claudecafe/` or `~/.claude/`).** The plugin is
   installed + enabled from the marketplace — there are no loose hook mirrors or symlinks,
   and none should be laid down by hand again.

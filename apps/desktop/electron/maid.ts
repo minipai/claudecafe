@@ -108,9 +108,9 @@ function newestConversation(cwd: string) {
  * window behaves the same on a Mac that has never installed it.
  *
  * Its name is what keeps it single. Plugins are keyed by name, and this one is
- * `cafe` — the same name the marketplace copy has — so a machine with the
- * plugin installed loads this one and the installed one steps aside (the
- * session lists exactly one `cafe`, sourced `cafe@inline`, and the SessionStart
+ * `persona-panel` — the same name the marketplace copy has — so a machine with
+ * the plugin installed loads this one and the installed one steps aside (the
+ * session lists exactly one `persona-panel`, sourced `persona-panel@inline`, and the SessionStart
  * hooks fire once). Renaming it would load both and greet the master twice.
  */
 export const CAFE_PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'cafe-plugin')

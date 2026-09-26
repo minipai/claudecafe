@@ -16,7 +16,7 @@ const expressions: Record<string, Face> = {
   angry: face([0x2580, 0xff0000, 0x0a0a0a], [0x2580, 0xff0000, DEFAULT]),
 }
 
-const tool = 'mcp__cafe__set_expression'
+const tool = 'mcp__persona-panel__set_expression'
 const panelImage = expressions.neutral!
 const placed = { isPlaced: true } as const
 const submission = { text: 'hello', wait: false, origin: { kind: 'composer' } } as const
@@ -80,7 +80,7 @@ describe('Cafe image pane', () => {
       expect(withCafe.blocks[0]).toEqual(prompt.blocks[0])
       expect(withCafe.blocks[1]?.name).toBe('cafe')
       expect(withCafe.blocks[1]?.text).toContain('Adopt this persona')
-      expect(withCafe.blocks[1]?.text).not.toContain('mcp__cafe__set_expression')
+      expect(withCafe.blocks[1]?.text).not.toContain(tool)
       await clock.advance(3000)
       expect(await $.ui.render(pane())).toEqual(existing)
     })
@@ -133,6 +133,25 @@ describe('Cafe image pane', () => {
     expect(context.blocks[0]?.text).toContain('Kurumi body.')
     expect(context.blocks[0]?.text).toContain(tool)
     expect(await $.ui.render(pane())).toEqual(drawn(panelImage))
+  })
+
+  test('draws from the cast bundled with the plugin when the user has none of her own', async ($, on) => {
+    on('fs.list', (_, e) => {
+      if (e.path?.endsWith('/dist/characters')) return { value: [{ name: 'kotone', kind: 'directory' as const, size: 0, isLink: false }] }
+      return { value: [] }
+    })
+    on('fs.read', (_, e) => ({ value: e.path?.endsWith('/dist/characters/kotone/persona.en.md') ? '---\nname: ことね\n---\nKotone body.\n' : '' }))
+    on('fs.exists', (_, e) => ({ value: ['/dist/characters/kotone', '/dist/characters/kotone/persona.en.md'].some(path => e.path?.endsWith(path)) }))
+    on('fs.write', () => ({ value: undefined }))
+    on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/maid' : undefined }))
+    on('session.id', () => ({ value: 'test-session' }))
+    on('session.cwd', () => ({ value: '' }))
+    on('session.surfaces', () => ({ value: ['desktop'] }))
+    on('http.fetch', () => { throw new Error('offline') })
+    mock.clock(on)
+    on('prompt.context', (_, e) => e)
+    const context = await $.prompt.context({ blocks: [] })
+    expect(context.blocks[0]?.text).toContain('Kotone body.')
   })
 
   test('adds stable portrait instructions while preserving other context and replacing its own block', async ($, on) => {
@@ -314,7 +333,7 @@ function pixels(on: On): void {
     return { value: '' }
   })
   on('fs.exists', (_, e) => ({
-    value: e.path?.endsWith('/characters/kurumi/persona.en.md') === true,
+    value: ['/claudecafe/characters/kurumi', '/characters/kurumi/persona.en.md'].some(path => e.path?.endsWith(path)),
   }))
   on('fs.write', () => ({ value: undefined }))
 }
@@ -336,9 +355,9 @@ function world(on: On): { clock: MockClock; figures: Figures } {
       ...(figures.usd === undefined ? {} : { cost: { usd: figures.usd } }),
     },
   }))
-  on('session.root', () => ({ value: '/home/maid/Dev/claudecafe' }))
+  on('session.root', () => ({ value: '/Users/maid/Dev/claudecafe' }))
   on('session.id', () => ({ value: 'test-session' }))
-  on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/home/maid' : undefined }))
+  on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/maid' : undefined }))
   on('http.fetch', () => { throw new Error('offline') })
   on('process.run', (_, e) => {
     if (e.argv.includes('branch')) {
@@ -385,7 +404,7 @@ function drawn(image: Face, figures: Figures = shift, expression = 'neutral'): R
       {
         type: 'Box', props: { borderStyle: 'round', flexDirection: 'column', alignItems: 'center' },
         children: [
-          { type: 'Raster', props: { key: 'panel-image', ...image }, raster: { plugin: 'cafe' } },
+          { type: 'Raster', props: { key: 'panel-image', ...image }, raster: { plugin: 'persona-panel' } },
           rule(image),
           { type: 'Box', children: title },
         ],

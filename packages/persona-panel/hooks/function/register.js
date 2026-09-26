@@ -5,11 +5,11 @@ import {
   fillPrompt,
   parsePersona,
   resolveMaid,
-} from '../../character-core/src/index.ts'
+} from '../../../character-core/src/index.ts'
 import { faceFromGif } from './faces.js'
 import { homePath, statusRows } from './stats.js'
 
-const TOOL = 'mcp__cafe__set_expression'
+const TOOL = 'mcp__persona-panel__set_expression'
 const PANE = { id: 'cafe', title: 'Pixel art' }
 const FESTIVALS = {
   '01-01': "New Year's Day",
@@ -126,7 +126,7 @@ async function openSession($, cwd, isTerminal) {
   const root = await cafeRoot($)
   const config = await readConfig($, root)
   const maid = await loadMaid($, root, config, await $.session.id())
-  const faces = isTerminal && maid ? await loadFaces($, `${root}/characters/${maid.id}/pixels`) : {}
+  const faces = isTerminal && maid?.pack ? await loadFaces($, `${maid.pack}/pixels`) : {}
   const cafe = {
     cwd,
     hasPanel: Object.keys(faces).length > 0,
@@ -211,13 +211,15 @@ async function loadMaid($, root, config, sessionID) {
   if (!shift && !config.maid && !(await $.env.get('CLAUDE_MAID'))) {
     await $.fs.write(`${root}/sessions/${sessionID}/on-shift`, maid)
   }
-  const path = await personaFile($, maid, personas, root, language)
+  const pack = await packFolder($, castDirs($, root, config), maid)
+  const path = await personaFile($, maid, personas, pack, language)
   if (!path) return null
   const text = await read($, path)
   return {
     id: maid,
     name: parsePersona(text).name || maid,
     persona: commitAuthorship(text, String(config.commit_authorship ?? 'co-author')).trim(),
+    pack,
   }
 }
 
@@ -230,10 +232,12 @@ async function castPool($, root, personas, config, language) {
       if (id === id.toLowerCase() && !ids.has(id)) ids.set(id, `${dir}/${entry.name}`)
     }
   }
-  for (const entry of await list($, `${root}/characters`)) {
-    if (!['directory', 'dir'].includes(entry.kind) || entry.name.startsWith('.') || ids.has(entry.name)) continue
-    const path = await packPersona($, `${root}/characters/${entry.name}`, language)
-    if (path) ids.set(entry.name, path)
+  for (const dir of castDirs($, root, config)) {
+    for (const entry of await list($, dir)) {
+      if (!['directory', 'dir'].includes(entry.kind) || entry.name.startsWith('.') || ids.has(entry.name)) continue
+      const path = await packPersona($, `${dir}/${entry.name}`, language)
+      if (path) ids.set(entry.name, path)
+    }
   }
   const available = []
   for (const [id, path] of ids) {
@@ -245,10 +249,23 @@ async function castPool($, root, personas, config, language) {
   return (await $.fs.exists(bundled)) ? ['noname'] : []
 }
 
-async function personaFile($, id, personas, root, language) {
+/** The user's character folders first, then the cast bundled with the plugin unless `builtin_cast` is off. */
+function castDirs($, root, config) {
+  const user = `${root}/characters`
+  return config.builtin_cast === false ? [user] : [user, `${$.plugin.root}/characters`]
+}
+
+async function packFolder($, dirs, id) {
+  for (const dir of dirs) {
+    if (await exists($, `${dir}/${id}`)) return `${dir}/${id}`
+  }
+  return null
+}
+
+async function personaFile($, id, personas, pack, language) {
   const flat = `${personas}/${id}.md`
   if (await exists($, flat)) return flat
-  const packed = await packPersona($, `${root}/characters/${id}`, language)
+  const packed = pack && await packPersona($, pack, language)
   if (packed) return packed
   const bundled = `${$.plugin.root}/maids/${id}.md`
   return (await exists($, bundled)) ? bundled : null

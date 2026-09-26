@@ -16,7 +16,7 @@ needed, preserve unknown keys, and write valid JSON. Every key is optional:
 - `maid` — fixed maid id for new sessions; `"none"` means nobody on shift.
 - `personas_dir` — user's persona `*.md` folder (default:
   `CAFE_ROOT/personas`).
-- `builtin_cast` — `false` removes the bundled fallback maid.
+- `builtin_cast` — `false` removes the bundled cast and fallback maid.
 - `commit_authorship` — `"co-author"` (default) adds the maid as a
   `Co-Authored-By` trailer while keeping the user's Git identity; `"author"`
   uses the maid's identity with `git commit --author` and keeps the user as
@@ -28,8 +28,9 @@ Individual retirement belongs in a persona's frontmatter as `off_duty: true`,
 not in config. A frontmatter-only `noname.md` stub in `personas_dir` retires the
 bundled fallback maid from the random draw.
 
-The draw pool includes the flat files in `personas_dir` and any manually
-added `characters/<id>/` folders under `CAFE_ROOT`. A persona uses a lowercase
+The draw pool includes the flat files in `personas_dir`, any manually
+added `characters/<id>/` folders under `CAFE_ROOT`, and the cast bundled in the
+plugin's own `characters/` directory. A persona uses a lowercase
 filename or folder id, YAML frontmatter with `name:`, and a body containing
 persona instructions. The bundled fallback is under the plugin's `maids/`
 directory.

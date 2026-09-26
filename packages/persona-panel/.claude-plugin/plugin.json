@@ -1,0 +1,9 @@
+{
+  "name": "persona-panel",
+  "displayName": "Persona Panel",
+  "version": "0.9.0",
+  "description": "Puts a character persona on shift in Claude Code, with a time-aware liveliness layer and a pixel portrait panel; ships with the Claude Café cast.",
+  "author": {
+    "name": "minipai"
+  }
+}

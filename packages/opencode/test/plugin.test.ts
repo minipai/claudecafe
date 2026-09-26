@@ -73,7 +73,7 @@ afterEach(() => {
 // Point the prompt reader at the café's real files for the hook tests, which
 // assert on prompt prose the plugin must actually ship.
 function realPrompts(): void {
-  process.env.CAFE_PLUGIN_ROOT = join(import.meta.dir, "..", "..", "cafe")
+  process.env.CAFE_PLUGIN_ROOT = join(import.meta.dir, "..", "..", "persona-panel")
 }
 
 describe("root and config", () => {

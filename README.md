@@ -24,7 +24,7 @@ they are not interchangeable — ことね coaxes a sulking function back to wor
 
 ```
 /plugin marketplace add https://claudecafe.dev/plugins/marketplace.json
-/plugin install cafe@claudecafe
+/plugin install persona-panel@claudecafe
 ```
 
 The host keeps the published character packs under
@@ -54,7 +54,7 @@ generated from. A folder counts as a character only if it holds a persona file.
 
 ## What's in here
 
-- **[`packages/cafe`](packages/cafe)** — the Claude Code café plugin: a
+- **[`packages/persona-panel`](packages/persona-panel)** — the Claude Code café plugin: a
   JavaScript function profile with persona context, liveliness cues, and the
   pixel portrait panel.
 - **[`packages/opencode`](packages/opencode)** — the same café for OpenCode,
@@ -79,13 +79,14 @@ pnpm dev:web                              # the site, on :5050
 pnpm --filter @claudecafe/desktop dev # the window's renderer
 ```
 
-Working on the plugin itself? Point the marketplace at your checkout —
+Working on the plugin itself? Build it with `scripts/build-plugin.sh`, then point
+the marketplace at your checkout —
 `/plugin marketplace add /path/to/claudecafe` — and skip the release round trip.
 
 The desktop app's main process ignores HMR — restart it (`node electron/dev.mjs`
 inside `apps/desktop`) after touching anything under `electron/`. `pnpm -r check` runs the types and the tests. The Claude function profile is
-checked separately with `scripts/build-cafe-function.sh` followed by
-`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test packages/cafe`.
+checked separately with `scripts/build-plugin.sh` followed by
+`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test packages/persona-panel/dist`.
 
 ## The artwork
 
