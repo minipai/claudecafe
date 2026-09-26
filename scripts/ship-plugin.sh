@@ -119,7 +119,7 @@ if git -C "$REPO_ROOT" fetch -q origin "$RELEASE" 2>/dev/null; then
 fi
 TREE=$(GIT_INDEX_FILE="$WORK/release.index" git -C "$REPO_ROOT" --work-tree="$DIST" add -A . \
     && GIT_INDEX_FILE="$WORK/release.index" git -C "$REPO_ROOT" write-tree)
-COMMIT=$(git -C "$REPO_ROOT" commit-tree "$TREE" "${PARENT[@]}" -m "$NAME $VERSION")
+COMMIT=$(git -C "$REPO_ROOT" commit-tree "$TREE" ${PARENT[@]+"${PARENT[@]}"} -m "$NAME $VERSION")
 git -C "$REPO_ROOT" push -q origin "$COMMIT:refs/heads/$RELEASE"
 
 echo "=== shipped: $BASE_URL/marketplace.json → $ZIP, $RELEASE @ ${COMMIT:0:7} ==="
