@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/feedback/sonner'
 import { Stage } from './scene/Stage'
-import { SpriteLayer } from './character/SpriteLayer'
+import { SpriteLayer, type Jump } from './character/SpriteLayer'
 import { hasArtwork, availableShift } from './character/cast'
 import { ShiftPanel } from './character/ShiftPanel'
 import { KAOMOJI } from '@/agent/expressions'
@@ -86,6 +86,7 @@ export function GalgameClient({
 }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [expression, setExpression] = useState<Expression>('neutral')
+  const [spriteJump, setSpriteJump] = useState<Jump | null>(null)
   /** The 【…】 she signed her last line with, kept as she wrote it. Empty until
    * she has signed one — the window has nothing of its own to put there. */
   const [mood, setMood] = useState<string | null>(null)
@@ -697,7 +698,12 @@ export function GalgameClient({
   }
 
   // ---- consume the agent stream, drive the choreography off whatever it yields ----
+  function jump(kind: Jump['kind']) {
+    setSpriteJump((previous) => ({ id: (previous?.id ?? 0) + 1, kind }))
+  }
+
   async function run(prompt: string, images: Attachment[] = []) {
+    jump('received')
     appendChatMessage('user', prompt)
     // The picture itself is hers to look at; the log records that it was handed
     // over, which is what the master will want to remember later.
@@ -755,6 +761,7 @@ export function GalgameClient({
     const scene = currentScene()
     for await (const msg of query({ prompt, images, abortController: controller, canUseTool, askUser })) {
       choreograph(msg, scene)
+      if (msg.type === 'result' && !controller.signal.aborted) jump('finished')
     }
   }
 
@@ -784,7 +791,7 @@ export function GalgameClient({
   return (
     <>
       <Stage>
-        <SpriteLayer expression={expression} maid={maid} name={her()} backdrop={backdrop} />
+        <SpriteLayer expression={expression} maid={maid} name={her()} backdrop={backdrop} jump={spriteJump} />
 
         {/* The band above the box is where the whispers float; there is nothing
             to click there, so the pointer goes through it too. */}

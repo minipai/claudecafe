@@ -1,7 +1,11 @@
+import { useEffect } from 'react'
+import { motion, useAnimationControls, useReducedMotion } from 'motion/react'
 import type { Backdrop as Chosen, CastMember } from '@/agent'
 import type { Expression } from '../types'
 import { spriteFor } from './cast'
 import { Backdrop } from './Backdrop'
+
+export type Jump = { id: number; kind: 'received' | 'finished' }
 
 /**
  * Where she stands, and she stays there: one framing, hung from the top edge,
@@ -13,6 +17,7 @@ export function SpriteLayer({
   maid,
   name,
   backdrop,
+  jump,
 }: {
   expression: Expression
   maid: CastMember
@@ -20,7 +25,28 @@ export function SpriteLayer({
    * being told "maid". */
   name: string
   backdrop: Chosen
+  jump: Jump | null
 }) {
+  const animation = useAnimationControls()
+  const reducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    animation.set({ y: 0 })
+    if (!jump || reducedMotion) return
+    const finished = jump.kind === 'finished'
+    void animation.start({
+      y: finished ? [0, -10, 0, -3, 0] : [0, -6, 0],
+      transition: {
+        duration: finished ? 0.46 : 0.3,
+        times: finished ? [0, 0.3, 0.62, 0.8, 1] : [0, 0.42, 1],
+        ease: 'easeInOut',
+      },
+    })
+    return () => {
+      animation.stop()
+    }
+  }, [jump, reducedMotion, animation])
+
   return (
     <>
       <svg width="0" height="0" aria-hidden="true" className="absolute">
@@ -51,7 +77,8 @@ export function SpriteLayer({
             you can click straight through is a ghost. Only where she is drawn:
             the alpha under the pointer decides (see useClickThrough), which is
             also what makes her a handle you can only grab by the sleeve. */}
-          <img
+          <motion.img
+            animate={animation}
             src={spriteFor(maid, expression)}
             crossOrigin="anonymous"
             alt={name}
