@@ -1,4 +1,4 @@
-import type { AgentMessage, Attachment, Look, Question, Todo } from './types'
+import type { AgentMessage, Attachment, Question, Todo } from './types'
 import type { ChatMessage } from '@/galgame/types'
 
 /**
@@ -180,9 +180,6 @@ export type BridgeEvent =
   | { kind: 'locale'; locale: string; choice: string }
   /** Another room behind her, or another shape cut out of the one that is up. */
   | { kind: 'backdrop'; backdrop: Backdrop }
-  /** A fresh look from the café plugin — shot in the background, so it lands
-   * whenever it lands rather than inside a run. */
-  | { kind: 'look'; look: Look }
   /** The conversation as the transcript has it — sent on refresh, which is how
    * the backlog survives a reload. */
   | { kind: 'backlog'; sessionId: string | null; lines: BacklogLine[] }

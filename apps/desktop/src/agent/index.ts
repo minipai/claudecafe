@@ -33,8 +33,7 @@ export const folderConversations = isLive
  * arrives as an event instead. */
 export const openingStatus = isLive ? null : MOCK_SESSION
 
-export { INITIAL_LOOK } from './content.mock'
-export type { AgentMessage, Attachment, Look, PermissionResult, QueryOptions, Question, Tier, Todo } from './types'
+export type { AgentMessage, Attachment, PermissionResult, QueryOptions, Question, Tier, Todo } from './types'
 export type {
   Backdrop,
   BacklogLine,

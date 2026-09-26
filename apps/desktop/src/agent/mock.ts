@@ -14,13 +14,9 @@ import {
   HEAVY_DONE_LINE,
   HEAVY_INTRO,
   HEAVY_WHISPERS,
-  LOOK_BY_TIER,
-  LOOK_HEAVY_WORKING,
   MEDIUM_ANSWER,
   MEDIUM_INTRO,
   OFF_SCRIPT,
-  PEEK_LINE,
-  PEEK_LOOK,
   PLAN_APPROVED_LINE,
   PLAN_INTRO,
   PLAN_MD,
@@ -60,17 +56,13 @@ function isPlanned(prompt: string) {
   return prompt.includes('Show me the plan first')
 }
 
-/** The three demos that are about her rather than about the work. */
+/** The demos that are about her rather than about the work. */
 function isAbout(prompt: string) {
   return prompt.includes('What can you do')
 }
 
 function isFaceParade(prompt: string) {
   return prompt.includes('Show me all your faces')
-}
-
-function isPeek(prompt: string) {
-  return prompt.includes('What are you up to')
 }
 
 /** The mock hands over the whole list at once; `done` is how many steps are finished. */
@@ -123,7 +115,6 @@ export async function* query({
     if (signal?.aborted) return
     yield setExpression('proud')
     yield { type: 'result', tier: 'medium', line: ABOUT_ANSWER }
-    yield { type: 'look', look: LOOK_BY_TIER.medium }
     return
   }
 
@@ -143,17 +134,6 @@ export async function* query({
     return
   }
 
-  // The peek is invisible until she has been caught at something, so being
-  // asked is reason enough to shoot one.
-  if (isPeek(prompt)) {
-    await sleep(600, signal)
-    if (signal?.aborted) return
-    yield setExpression('flirty')
-    yield { type: 'look', look: PEEK_LOOK }
-    yield { type: 'result', tier: 'light', line: PEEK_LINE }
-    return
-  }
-
   // Anything else: there is no model out here to answer it, and a made-up
   // answer would be the worse first impression. She says so herself.
   if (!tier) {
@@ -169,7 +149,6 @@ export async function* query({
     if (signal?.aborted) return
     yield setExpression('happy')
     yield { type: 'result', tier, line: SHORT_ANSWER }
-    yield { type: 'look', look: LOOK_BY_TIER.light }
     return
   }
 
@@ -180,7 +159,6 @@ export async function* query({
     if (signal?.aborted) return
     yield setExpression('happy')
     yield { type: 'result', tier, line: MEDIUM_ANSWER }
-    yield { type: 'look', look: LOOK_BY_TIER.medium }
     return
   }
 
@@ -257,15 +235,10 @@ export async function* query({
 
     yield { type: 'tool_use', id: `mock-${mockCall++}`, name: whisper.name, label: whisper.label }
     yield { type: 'todos', todos: todosAt(index + 1) }
-    // A look reshot mid-run — the real adapter shoots one after each piece of work.
-    if (whisper === HEAVY_WHISPERS[1]) {
-      yield { type: 'look', look: LOOK_HEAVY_WORKING }
-    }
   }
 
   if (stoppedEarly) {
     yield { type: 'result', tier, line: stoppedEarly }
-    yield { type: 'look', look: LOOK_HEAVY_WORKING }
     return
   }
 
@@ -274,5 +247,4 @@ export async function* query({
   yield { type: 'todos', todos: todosAt(TODO_STEPS.length) }
   yield setExpression('happy')
   yield { type: 'result', tier, line: HEAVY_DONE_LINE }
-  yield { type: 'look', look: LOOK_BY_TIER.heavy }
 }

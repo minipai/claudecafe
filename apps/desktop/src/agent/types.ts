@@ -10,11 +10,6 @@ export type Tier = 'light' | 'medium' | 'heavy'
  * them into the whole list the UI renders. */
 export type Todo = { content: string; status: 'pending' | 'in_progress' | 'completed' }
 
-/** A "look snapshot" — mirrors the cafe plugin's look.txt: a model-generated
- * third-person scene + one line of dialogue, regenerated when a piece of work
- * finishes. Stays on screen until the next one replaces it. */
-export type Look = { scene: string; dialogue: string }
-
 export type AgentMessage =
   | { type: 'system'; subtype: 'init' | 'compact_boundary' } // compact_boundary fires after the history is summarised
   // label = 地の文 narration line; silent = already has its own place on screen
@@ -25,7 +20,6 @@ export type AgentMessage =
   // expression = the face she signed this line with; it goes on when the line does
   // mood = the 【…】 marker itself, shown as she wrote it
   | { type: 'text_delta'; text: string; expression?: Expression; mood?: string }
-  | { type: 'look'; look: Look }
   // The CLI answering a slash command itself — /usage, /context, /model. Not
   // her voice: label is the command that was typed, body what it printed.
   | { type: 'command_output'; label: string; body: string }

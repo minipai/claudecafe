@@ -3,8 +3,7 @@ import { motion } from 'motion/react'
 import { marked } from 'marked'
 import { NamePlate } from './NamePlate'
 import { WaitingLine } from './WaitingLine'
-import { InnerVoice } from './InnerVoice'
-import type { Look, Todo } from '@/agent'
+import type { Todo } from '@/agent'
 import type { Pace } from './useSpeech'
 import { fill, her, text } from '@/i18n'
 
@@ -39,8 +38,6 @@ type DialogueBoxProps = {
   onOpenPersona: () => void
   footer: ReactNode
   utility: ReactNode
-  unreadLook: Look | null
-  onLookRead: () => void
 }
 
 /**
@@ -69,8 +66,6 @@ export function DialogueBox({
   onOpenPersona,
   footer,
   utility,
-  unreadLook,
-  onLookRead,
 }: DialogueBoxProps) {
   const t = text().scene
   const said = useRef<HTMLDivElement>(null)
@@ -122,7 +117,6 @@ export function DialogueBox({
             {standIn}
           </span>
         )}
-        {unreadLook && <InnerVoice look={unreadLook} onRead={onLookRead} />}
       </div>
       <div className="absolute -top-4 right-4 z-10">{utility}</div>
 

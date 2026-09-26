@@ -32,7 +32,6 @@ import { lines as currentLines } from './content'
 import { fill, her, nowServing, text } from '@/i18n'
 import { listenToSideWindows, openSideWindow, shareScene } from '@/agent/windows'
 import {
-  INITIAL_LOOK,
   isLive,
   newSession,
   query,
@@ -40,7 +39,6 @@ import {
   type Attachment,
   type AgentMessage,
   type CafeCommand,
-  type Look,
   type PermissionResult,
   type SceneAction,
   type SideWindow,
@@ -95,10 +93,6 @@ export function GalgameClient({
   const [standIn, setStandIn] = useState<string | null>(null)
   const [laidOut, setLaidOut] = useState<string | null>(null)
   const [whispers, setWhispers] = useState<Whisper[]>([])
-  // A real look is shot by the plugin once there is work to shoot; until then
-  // there is nothing to peek at. The mock opens with a canned one.
-  const [look, setLook] = useState<Look | null>(isLive ? null : INITIAL_LOOK)
-  const [lookUnread, setLookUnread] = useState(true)
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequest | null>(null)
   const [permissionExpanded, setPermissionExpanded] = useState(false)
   const [choiceRequest, setChoiceRequest] = useState<ChoiceRequest | null>(null)
@@ -288,8 +282,6 @@ export function GalgameClient({
       setPhase,
       setTodos,
       setOutputTokens,
-      setLook,
-      setLookUnread,
       setLaidOut,
       notify: (body) => window.cafe?.notify(body, false),
     }
@@ -320,14 +312,11 @@ export function GalgameClient({
   }, [])
 
   /**
-   * What belongs to the window rather than to a run: the look (shot in the
-   * background, minutes after the turn that prompted it), the settings, and the
+   * What belongs to the window rather than to a run: the settings and the
    * backlog — which comes from the transcript, so a reload gets it back.
    */
   useEffect(() => {
     const windowScene: WindowScene = {
-      setLook,
-      setLookUnread,
       setSettings,
       setModels,
       setFolder,
@@ -641,8 +630,6 @@ export function GalgameClient({
       const opening = linesRef.current.greeting
       setChatMessages([createChatMessage('assistant', opening)])
       setExpression('neutral')
-      setLook(isLive ? null : INITIAL_LOOK)
-      setLookUnread(true)
       setChoiceRequest(null)
       cut(opening)
       setChangingSession(false)
@@ -804,8 +791,6 @@ export function GalgameClient({
                   }}
                 />
               }
-              unreadLook={lookUnread ? look : null}
-              onLookRead={() => setLookUnread(false)}
               footer={
                 <>
                   {choiceRequest ? (

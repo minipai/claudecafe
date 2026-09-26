@@ -1,19 +1,16 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { faceFor } from '@/agent/expressions'
 import { nowServing, speakThis } from '@/i18n'
-import type { Backdrop, BacklogLine, BridgeEvent, CafeCommand, Lines, Look, ModelChoice, SessionSettings, Shift, Trouble } from '@/agent'
+import type { Backdrop, BacklogLine, BridgeEvent, CafeCommand, Lines, ModelChoice, SessionSettings, Shift, Trouble } from '@/agent'
 import { createChatMessage } from './chatlog'
 import { speakThese } from './content'
 import type { ChatMessage, Expression, Phase } from './types'
 
 /**
- * What belongs to the window rather than to a run: the look (shot in the
- * background, minutes after the turn that prompted it), the settings, and the
+ * What belongs to the window rather than to a run: the settings and the
  * backlog — which comes from the transcript, so a reload gets it back.
  */
 export type WindowScene = {
-  setLook: (look: Look) => void
-  setLookUnread: (unread: boolean) => void
   setSettings: (settings: SessionSettings) => void
   setModels: (models: ModelChoice[]) => void
   setFolder: (cwd: string) => void
@@ -51,10 +48,7 @@ export type WindowScene = {
 /** A bridge event that is not scoped to a run — routed to whatever the window
  * keeps of its own, rather than to the choreography of the turn in flight. */
 export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
-  if (event.kind === 'look') {
-    scene.setLook(event.look)
-    scene.setLookUnread(true)
-  } else if (event.kind === 'settings') {
+  if (event.kind === 'settings') {
     scene.setSettings(event.settings)
     scene.setModels(event.models)
   } else if (event.kind === 'folder') {

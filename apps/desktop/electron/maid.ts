@@ -13,7 +13,6 @@ import {
 } from '@anthropic-ai/claude-agent-sdk'
 import { Board, Turn } from './translate'
 import { cafeTools, EXPRESSION_TOOL } from './tools'
-import { watchLook } from './look'
 import { askForLines, knownLines, nameOf as maidName, personaOf, replyLanguage } from './lines'
 import { findClaudeCode } from './claude'
 import { chosenShift, chosenSpeech, rememberShift, rememberWhoServed, whoServed } from './history'
@@ -191,8 +190,6 @@ export class MaidSession {
   private deadRuns = 0
   private waiting = new Map<string, (value: unknown) => void>()
   private lastContext: number | null = null
-  private lookSessionId: string | null = null
-  private stopWatchingLook: (() => void) | null = null
   /** The conversation this window is on — the previous one until the SDK says
    * otherwise, so a reload picks up where the master left off. */
   private sessionId: string | null = null
@@ -461,9 +458,6 @@ export class MaidSession {
     // abandoned along with it, so the next one gets a queue nobody else is
     // still listening to.
     this.prompts = new PromptQueue()
-    this.stopWatchingLook?.()
-    this.stopWatchingLook = null
-    this.lookSessionId = null
     void stream?.return(undefined).catch(() => {})
   }
 
@@ -592,7 +586,6 @@ export class MaidSession {
           this.emit({ kind: 'conversation', sessionId: sdk.session_id })
           // Sign the transcript with her, so going back to it brings her back.
           if (this.onShift) rememberWhoServed(sdk.session_id, this.onShift)
-          this.followLook(sdk.session_id)
           // With no pick of its own, the window shows what the session came up
           // as — the only place his terminal's setting is ever said out loud.
           if (!this.settings.modePicked && sdk.permissionMode !== this.settings.mode) {
@@ -719,15 +712,6 @@ export class MaidSession {
         argumentHint,
       }))
     this.emit({ kind: 'commands', commands: this.commands })
-  }
-
-  /** The plugin files its looks under the session id, so the window can only
-   * start watching once the SDK has told it which session this is. */
-  private followLook(sessionId: string) {
-    if (sessionId === this.lookSessionId) return
-    this.stopWatchingLook?.()
-    this.lookSessionId = sessionId
-    this.stopWatchingLook = watchLook(sessionId, (look) => this.emit({ kind: 'look', look }))
   }
 
   private async decide(toolName: string, input: Record<string, unknown>): Promise<PermissionResult> {

@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Look } from '@/agent'
 import { choreograph, type Scene } from './choreography'
 
 function createScene(): Scene {
@@ -17,8 +16,6 @@ function createScene(): Scene {
     setPhase: vi.fn(),
     setTodos: vi.fn(),
     setOutputTokens: vi.fn(),
-    setLook: vi.fn(),
-    setLookUnread: vi.fn(),
     setLaidOut: vi.fn(),
     notify: vi.fn(),
   }
@@ -56,14 +53,6 @@ describe('choreograph', () => {
     // `wear`'s own job is clearing the mood when the marker is undefined —
     // the choreography's part is passing it through rather than the last one.
     expect(scene.wear).toHaveBeenCalledWith(undefined, undefined)
-  })
-
-  it('look: shoots a fresh look and marks it unread', () => {
-    const scene = createScene()
-    const look: Look = { scene: 'she is typing', dialogue: 'almost there~' }
-    choreograph({ type: 'look', look }, scene)
-    expect(scene.setLook).toHaveBeenCalledWith(look)
-    expect(scene.setLookUnread).toHaveBeenCalledWith(true)
   })
 
   it('command_output: puts the paper on the record and ends the turn at phase done, without touching her face', () => {

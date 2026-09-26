@@ -188,7 +188,6 @@ export const en = {
     stop: 'Stop',
     close: 'Close',
     removeImage: 'Remove image',
-    innerVoice: 'Inner monologue',
     tasks: 'TASKS',
     history: 'Conversation history (⌘L)',
     openHistory: 'Open conversation history',

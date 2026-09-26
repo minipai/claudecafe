@@ -11,8 +11,8 @@ import type { BacklogLine, Backdrop, KeptSettings, Shift } from '../src/agent/br
  * Which conversation this window is on, and what was said in it.
  *
  * The window remembers its own session id rather than picking the newest
- * transcript in the folder: the café plugin shoots the maid's look by running
- * a throwaway session in the same folder, and those land in the same place.
+ * transcript in the folder: background sessions can also leave transcripts
+ * there, without belonging to the conversation the master picked.
  * The transcript itself is Claude Code's, under ~/.claude/projects/<folder>/ —
  * which is why the backlog survives a reload: it was never in the window.
  */
@@ -54,7 +54,7 @@ export function conversationBacklog(cwd: string, sessionId: string): BacklogLine
 
 /**
  * The conversations held in this folder, newest first. Claude Code keeps one
- * transcript per session, and the café plugin's own background runs land in the
+ * transcript per session, and background runs land in the
  * same place — those never contain anything the master said, which is exactly
  * how they are told apart here.
  */

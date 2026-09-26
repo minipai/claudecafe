@@ -25,8 +25,6 @@ const LINES: Lines = {
 
 function createScene(overrides: Partial<WindowScene> = {}): WindowScene {
   return {
-    setLook: vi.fn(),
-    setLookUnread: vi.fn(),
     setSettings: vi.fn(),
     setModels: vi.fn(),
     setFolder: vi.fn(),
@@ -52,13 +50,6 @@ function createScene(overrides: Partial<WindowScene> = {}): WindowScene {
 }
 
 describe('applyWindowEvent', () => {
-  it('look: shoots a fresh look and marks it unread', () => {
-    const scene = createScene()
-    applyWindowEvent({ kind: 'look', look: { scene: 'she looks up', dialogue: 'oh!' } }, scene)
-    expect(scene.setLook).toHaveBeenCalledWith({ scene: 'she looks up', dialogue: 'oh!' })
-    expect(scene.setLookUnread).toHaveBeenCalledWith(true)
-  })
-
   it('settings: takes the session settings and what models are on offer together', () => {
     const scene = createScene()
     const settings = { model: null, effort: 'high' as const, mode: 'default' as const, modePicked: false }

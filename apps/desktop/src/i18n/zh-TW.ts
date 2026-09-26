@@ -183,7 +183,6 @@ export const zhTW: Text = {
     stop: '停下',
     close: '關閉',
     removeImage: '移除圖片',
-    innerVoice: '她心裡的話',
     tasks: '工作項目',
     history: '對話紀錄（⌘L）',
     openHistory: '打開對話紀錄',

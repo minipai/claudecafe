@@ -18,7 +18,6 @@ type DemoRowProps = {
 const TASKS: DemoTask[] = [
   { label: 'What can you do?', title: 'She answers for herself — the short path, no tools' },
   { label: 'Show me all your faces', title: 'The face is hers to pick, turn by turn' },
-  { label: 'What are you up to?', title: 'A peek at what she is doing between errands' },
 ]
 
 export function DemoRow({ onSelect }: DemoRowProps) {

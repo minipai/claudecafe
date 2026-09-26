@@ -1,4 +1,4 @@
-import type { AgentMessage, Look, Todo } from '@/agent'
+import type { AgentMessage, Todo } from '@/agent'
 import { EXPRESSIONS } from '@/agent/expressions'
 import { text } from '@/i18n'
 import { shorten, signed } from './chatlog'
@@ -24,8 +24,6 @@ export type Scene = {
   setPhase: (phase: Phase) => void
   setTodos: (todos: Todo[]) => void
   setOutputTokens: (tokens: number) => void
-  setLook: (look: Look) => void
-  setLookUnread: (unread: boolean) => void
   setLaidOut: (line: string | null) => void
   notify: (body: string) => void
 }
@@ -48,10 +46,6 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
       // marker off, to put it on her face instead.
       scene.appendChatMessage('assistant', signed(msg.text, msg.mood))
       scene.say(msg.text, { onShow: () => scene.wear(msg.expression, msg.mood) })
-      break
-    case 'look':
-      scene.setLook(msg.look)
-      scene.setLookUnread(true)
       break
     case 'command_output':
       // The café's own paperwork, handed over on the spot: it is not

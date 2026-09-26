@@ -43,15 +43,6 @@ export const FACE_PARADE = [
 
 export const FACE_PARADE_CLOSE = 'Thirteen in all, and I do not pick them for show — whichever one fits what I am doing is the one you get ♪'
 
-/** "What are you up to?" — the peek, which is otherwise invisible until she has
- * something to be caught doing. */
-export const PEEK_LINE = 'Right now? Take a peek yourself — the little circle beside my name ♪'
-
-export const PEEK_LOOK = {
-  scene: 'Polishing the same clean cup for the third time, one eye on the door, waiting for something to be asked of her.',
-  dialogue: 'Order anything at all, Master — I am ready ♪',
-}
-
 export const HEAVY_INTRO = 'Leave it to me! I will go and look right away ～'
 
 export const HEAVY_DONE_LINE = 'Found it and fixed it — the sign-in pool was far too small ♪'
@@ -243,33 +234,6 @@ export const OFF_SCRIPT = [
   'Mm… I would love to answer that properly, but out here I can only say what I was taught ～ take me home and I can go and actually look.',
   'That one needs the real me, Goshujin-sama ♪ Out here I am only a rehearsal — those buttons above are my whole repertoire.',
 ]
-
-/** Canned look snapshots — in the real adapter these come out of a model fed
- * with the actual session state (like the plugin's look-update.py). */
-export const INITIAL_LOOK = {
-  scene: 'ことね retied her apron strings and stood up straight behind the counter, eyes bright, waiting for an order.',
-  dialogue: 'Please be good to me today as well, Master ♪',
-}
-
-export const LOOK_HEAVY_WORKING = {
-  scene: 'Leaning in towards the screen, watching that column of type errors still glowing red, fingers going and stopping and going again.',
-  dialogue: 'Eh… but I fixed it… why is it still red…',
-}
-
-export const LOOK_BY_TIER = {
-  light: {
-    scene: 'Question answered, ことね twirls her pen and leans over, wearing an unmistakable "anything else? anything else?".',
-    dialogue: 'A little one like that, I answer in a heartbeat ♪',
-  },
-  medium: {
-    scene: 'She left the explained code up on the screen, finger still resting on the line, reluctant to move it away.',
-    dialogue: 'That was a decent explanation, was it not? Ehehe.',
-  },
-  heavy: {
-    scene: 'ことね stares at a test run that is finally all green, and gives one small fist-pump under the desk.',
-    dialogue: 'Caught it! It was the connection pool all along!',
-  },
-} as const
 
 /**
  * The two maids the window is drawn with, for a browser with no café behind it.

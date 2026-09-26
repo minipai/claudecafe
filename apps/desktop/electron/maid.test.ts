@@ -22,10 +22,6 @@ vi.mock('./lines', () => ({
   replyLanguage: vi.fn(),
 }))
 
-vi.mock('./look', () => ({
-  watchLook: vi.fn(() => () => {}),
-}))
-
 // She would otherwise write to and read from the master's real notes under
 // ~/.claude — the conversation this window is on, its folder history, what
 // language it speaks. A unit test gets none of that; every conversation is
