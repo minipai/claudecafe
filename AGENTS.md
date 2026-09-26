@@ -37,7 +37,7 @@ the things that are expensive to find out the hard way.
   `python3`. A hooks module imports only its own files by relative path, so
   `packages/persona-panel` itself does not load: Claude loads the built
   `packages/persona-panel/dist` (`scripts/build-plugin.sh`, `--watch` while
-  developing). Shipping commits that build to the `release/persona-panel` branch,
+  developing). Shipping commits that build to the `release/persona-panel` branch (under `persona-panel/`),
   which the Claude plugin directory tracks. OpenCode runs its own TypeScript/Bun adapter.
 - **Always bump the version when you change a plugin**: `/plugin update` compares versions
   and won't reinstall an unchanged one. Bump `packages/persona-panel/.claude-plugin/plugin.json` and

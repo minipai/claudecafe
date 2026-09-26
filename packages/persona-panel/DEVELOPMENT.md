@@ -53,7 +53,8 @@ scripts/build-plugin.sh --watch
 ```
 
 `scripts/ship-plugin.sh persona-panel` builds and tests the plugin, then ships it as the
-archive and commits it to the `release/persona-panel` branch; the Claude plugin
+archive and commits it to the `release/persona-panel` branch under a
+`persona-panel/` folder; the Claude plugin
 directory tracks that branch, since it reads a branch as-is and runs no build.
 
 The function-hook runtime has no Node or DOM and is loaded by Claude itself;

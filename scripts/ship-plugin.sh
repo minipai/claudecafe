@@ -12,9 +12,10 @@ set -euo pipefail
 # (plugin.json + root marketplace.json) instead. Old zips stay up: the shelf
 # doubles as the release archive and instant rollback.
 #
-# The built plugin is also committed to its release branch, which the
-# Claude plugin directory tracks: the directory reads a branch as-is and runs
-# no build, so the bundled cast only exists there and in the zip.
+# The built plugin is also committed to its release branch, under a folder
+# named after it, which the Claude plugin directory tracks: the directory reads
+# a branch as-is and runs no build, so the bundled cast only exists there and
+# in the zip.
 #
 # SHIP_DRY=1 stops after building dist/ (nothing uploaded or pushed).
 
@@ -112,12 +113,16 @@ LIVE_SHA=$(shelf_get "$ZIP" | shasum -a 256 | cut -d' ' -f1)
 shelf_get marketplace.json | python3 -m json.tool >/dev/null
 
 # One commit per shipped version on top of the branch's last one, built from
-# the built plugin alone so the working tree and main stay untouched.
+# the built plugin alone so the working tree and main stay untouched. The
+# plugin sits in a folder named after it, the path the directory listing
+# tracks, so no two plugins ever claim the same repository folder.
 PARENT=()
 if git -C "$REPO_ROOT" fetch -q origin "$RELEASE" 2>/dev/null; then
     PARENT=(-p "$(git -C "$REPO_ROOT" rev-parse FETCH_HEAD)")
 fi
-TREE=$(GIT_INDEX_FILE="$WORK/release.index" git -C "$REPO_ROOT" --work-tree="$DIST" add -A . \
+BUILT=$(GIT_INDEX_FILE="$WORK/built.index" git -C "$REPO_ROOT" --work-tree="$DIST" add -A . \
+    && GIT_INDEX_FILE="$WORK/built.index" git -C "$REPO_ROOT" write-tree)
+TREE=$(GIT_INDEX_FILE="$WORK/release.index" git -C "$REPO_ROOT" read-tree --prefix="$NAME/" "$BUILT" \
     && GIT_INDEX_FILE="$WORK/release.index" git -C "$REPO_ROOT" write-tree)
 COMMIT=$(git -C "$REPO_ROOT" commit-tree "$TREE" ${PARENT[@]+"${PARENT[@]}"} -m "$NAME $VERSION")
 git -C "$REPO_ROOT" push -q origin "$COMMIT:refs/heads/$RELEASE"
