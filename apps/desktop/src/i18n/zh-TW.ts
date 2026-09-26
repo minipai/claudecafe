@@ -104,12 +104,10 @@ export const zhTW: Text = {
       session: '這段工作階段',
       cost: '花費',
       codeChanged: '改動的程式碼',
-      limits: '方案上限',
       week: '最近 7 天 · {requests} 次請求 · {sessions} 段工作階段',
       weekNote: '從這台機器的逐字稿統計，各項比例會重疊。',
     },
     keys: {
-      description: '這個視窗所有的鍵盤快速鍵。',
       scene: '在場景上',
       panels: '開啟面板',
       composer: '跟她打字的時候',

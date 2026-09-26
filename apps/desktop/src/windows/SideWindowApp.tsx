@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { nowServing, speakThis, text } from '@/i18n'
 import { watchScene } from '@/agent/windows'
 import type { SceneShare, SideWindow } from '@/agent'
@@ -14,6 +14,7 @@ import { UsageWindow } from './UsageWindow'
  */
 export function SideWindowApp({ name }: { name: SideWindow }) {
   const [scene, setScene] = useState<SceneShare | null>(null)
+  const view = views[name]
 
   useEffect(
     () =>
@@ -26,22 +27,32 @@ export function SideWindowApp({ name }: { name: SideWindow }) {
   )
 
   useEffect(() => {
-    if (scene) document.title = titleOf(name)
-  }, [name, scene])
+    if (scene) document.title = view.title()
+  }, [view, scene])
 
   if (!scene) return <main className="min-h-screen bg-card" />
-  if (name === 'log') return <LogWindow log={scene.log} conversation={scene.conversation} />
-  if (name === 'reply') return <ReplyWindow log={scene.log} todos={scene.todos} />
-  if (name === 'settings') return <SettingsWindow settings={scene.settings} />
-  if (name === 'projects') return <ProjectsWindow folder={scene.folder} conversation={scene.conversation} />
-  return <UsageWindow />
+  return view.render(scene)
 }
 
-function titleOf(name: SideWindow) {
-  const t = text()
-  if (name === 'log') return t.bar.log
-  if (name === 'reply') return t.reply.title
-  if (name === 'settings') return t.settings.title
-  if (name === 'projects') return t.projects.title
-  return t.bar.usage
+const views: Record<SideWindow, { title: () => string; render: (scene: SceneShare) => ReactNode }> = {
+  log: {
+    title: () => text().bar.log,
+    render: (scene) => <LogWindow log={scene.log} conversation={scene.conversation} />,
+  },
+  reply: {
+    title: () => text().reply.title,
+    render: (scene) => <ReplyWindow log={scene.log} todos={scene.todos} />,
+  },
+  settings: {
+    title: () => text().settings.title,
+    render: (scene) => <SettingsWindow settings={scene.settings} />,
+  },
+  projects: {
+    title: () => text().projects.title,
+    render: (scene) => <ProjectsWindow folder={scene.folder} conversation={scene.conversation} />,
+  },
+  usage: {
+    title: () => text().bar.usage,
+    render: () => <UsageWindow />,
+  },
 }

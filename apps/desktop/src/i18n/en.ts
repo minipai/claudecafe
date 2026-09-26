@@ -109,12 +109,10 @@ export const en = {
       session: 'This session',
       cost: 'Cost',
       codeChanged: 'Code changed',
-      limits: 'Plan limits',
       week: 'Last 7 days · {requests} requests · {sessions} sessions',
       weekNote: "Counted from this machine's transcripts, and the shares overlap.",
     },
     keys: {
-      description: 'Every keyboard shortcut this window has.',
       scene: 'On the scene',
       panels: 'Panels',
       composer: 'While typing to her',

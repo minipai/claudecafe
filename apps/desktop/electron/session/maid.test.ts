@@ -1240,4 +1240,53 @@ describe('MaidSession — slash commands', () => {
 
     expect(commandsFrom(events).at(-1)?.commands.map((command) => command.name)).toEqual(['deploy', 'my-skill'])
   })
+
+  it('ignores model and command lists that finish after reconnect replaced their stream', async () => {
+    vi.mocked(keptSettings).mockReturnValue({ model: 'claude-opus-5', effort: null, mode: null })
+    const fakes: ReturnType<typeof fakeStream>[] = []
+    const oldModels = deferred<unknown[]>()
+    const oldCommands = deferred<unknown[]>()
+    const currentModels = deferred<unknown[]>()
+    const currentCommands = deferred<unknown[]>()
+    vi.mocked(query).mockImplementation((args) => {
+      const fake = fakeStream(args.prompt as AsyncIterable<SDKUserMessage>)
+      const index = fakes.length
+      if (index === 0) {
+        fake.stream.supportedModels = vi.fn(() => oldModels.promise) as typeof fake.stream.supportedModels
+        fake.stream.supportedCommands = vi.fn(() => oldCommands.promise) as typeof fake.stream.supportedCommands
+      } else {
+        fake.stream.supportedModels = vi.fn(() => currentModels.promise) as typeof fake.stream.supportedModels
+        fake.stream.supportedCommands = vi.fn(() => currentCommands.promise) as typeof fake.stream.supportedCommands
+      }
+      fakes.push(fake)
+      return fake.stream
+    })
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-stale-lookups', emit)
+
+    session.ask('run-1', 'first')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+
+    // Replace the connection while its metadata calls are still outstanding.
+    session.configure({ effort: 'low' })
+    session.ask('run-2', 'again')
+    await vi.waitFor(() => expect(fakes).toHaveLength(2))
+    currentModels.resolve([{ value: 'claude-opus-5', displayName: 'Opus 5' }])
+    currentCommands.resolve([{ name: 'current', description: 'Current command', argumentHint: '' }])
+    await vi.waitFor(() => {
+      expect(events).toContainEqual(expect.objectContaining({ kind: 'commands', commands: [expect.objectContaining({ name: 'current' })] }))
+      expect(events).toContainEqual(expect.objectContaining({ kind: 'settings', models: [expect.objectContaining({ value: 'claude-opus-5' })] }))
+    })
+    const before = events.length
+
+    // Complete the two outstanding old reads after the current stream has
+    // reported its own values.
+    oldModels.resolve([{ value: 'claude-retired-4', displayName: 'Retired' }])
+    oldCommands.resolve([{ name: 'stale', description: 'Old command', argumentHint: '' }])
+    await Promise.all([oldModels.promise, oldCommands.promise])
+
+    expect(events.slice(before).filter((event) => event.kind === 'settings' || event.kind === 'commands')).toEqual([])
+    expect(rememberSettings).not.toHaveBeenCalledWith(expect.objectContaining({ model: null }))
+    session.close()
+  })
 })

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/feedback/sonner'
@@ -99,7 +99,10 @@ export function GalgameClient({
   const [todos, setTodos] = useState<Todo[]>([])
   // Her board stays up while anything on it is still to do, across turns the
   // same as the CLI's, and goes once the last of it is ticked off.
-  const board = todos.some((todo) => todo.status !== 'completed') ? todos : []
+  const board = useMemo(
+    () => todos.some((todo) => todo.status !== 'completed') ? todos : [],
+    [todos],
+  )
   /** How much she has written since the prompt went in — what the waiting line
    * counts up while he waits. Reset when a fresh prompt starts it over. */
   const [outputTokens, setOutputTokens] = useState(0)

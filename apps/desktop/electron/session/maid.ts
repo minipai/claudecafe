@@ -251,7 +251,7 @@ export class MaidSession {
    * for again in the new one. */
   speakIn() {
     this.lines = null
-    this.reopen()
+    this.close()
     void this.tellLines()
     this.emit({ kind: 'speech', language: replyLanguage(), chosen: chosenSpeech() })
   }
@@ -307,25 +307,8 @@ export class MaidSession {
     // Handing the mode back to the terminal cannot be said down the control
     // channel — there is no "unset" — so the session is opened again with
     // nothing said about it, the same way effort is picked up.
-    if (patch.modePicked === false) this.reopen()
-    if (patch.effort !== undefined) this.reopen()
+    if (patch.modePicked === false || patch.effort !== undefined) this.close()
     this.emit({ kind: 'settings', settings: this.settings, models: this.models })
-  }
-
-  /** Drop the connection but keep the conversation: the next prompt reopens it
-   * on the same session id, with whatever the settings now say. Whatever was
-   * running or queued on the connection going away cannot finish on it — the
-   * same closing-out `close()` does for a run, minus the parts of `close()`
-   * that end the conversation itself. */
-  private reopen() {
-    const stream = this.stream
-    this.stream = null
-    this.closeRuns()
-    // The reader on the connection going away must not end up catching a
-    // line typed for the one about to replace it — so it gets a queue of its
-    // own, not the one `closeRuns()` merely emptied.
-    this.prompts = new PromptQueue()
-    void stream?.return(undefined).catch(() => {})
   }
 
   /** Nothing still open here is going to answer for itself, so this says so
@@ -338,8 +321,8 @@ export class MaidSession {
    * The prompt queue is only emptied of what has not been read yet here, not
    * replaced — the reader on the far end of it may still be the live
    * connection's own, and a line typed right after this must still reach it.
-   * `reopen()` and `close()`, which are abandoning that reader along with the
-   * connection itself, swap in a fresh queue of their own once this returns. */
+   * `close()`, which abandons that reader along with the connection itself,
+   * swaps in a fresh queue once this returns. */
   private closeRuns(error?: string) {
     for (const run of this.runs) this.emit({ kind: 'done', runId: run.runId, error })
     this.runs = []
@@ -448,15 +431,13 @@ export class MaidSession {
     void this.reportStatus(null)
   }
 
-  /** The window went away. Everything in flight stops, but the conversation is
-   * remembered — closing a window is not the same as ending a conversation. */
+  /** Close the connection and stop everything in flight, keeping the
+   * conversation. The next prompt can reopen it with the current settings. */
   close() {
     const stream = this.stream
     this.stream = null
     this.closeRuns()
-    // Same reasoning as `reopen()`: the reader on this connection is being
-    // abandoned along with it, so the next one gets a queue nobody else is
-    // still listening to.
+    // The old reader must not consume prompts meant for the next connection.
     this.prompts = new PromptQueue()
     void stream?.return(undefined).catch(() => {})
   }
@@ -553,14 +534,14 @@ export class MaidSession {
   /** Try the way in again — he has just gone and signed in somewhere else. The
    * conversation is kept; only the connection is thrown away and made afresh. */
   reconnect() {
-    this.reopen()
+    this.close()
     this.open()
   }
 
   private async pump(stream: Query) {
     try {
       for await (const sdk of stream) {
-        // `reopen()`/`close()` tell the old connection to end with
+        // `close()` tells the old connection to end with
         // `stream.return()`, but a `next()` already in flight when that
         // happens still resolves once more — with a message from a
         // connection that, as far as this session is concerned, is already
@@ -659,7 +640,7 @@ export class MaidSession {
       const reason = whyStopped(message)
       if (reason) this.emit({ kind: 'trouble', trouble: { reason, detail: message } })
       this.closeRuns(reason ? undefined : message)
-      // Same reasoning as `reopen()`/`close()`: this connection is dead, so
+      // Same reasoning as `close()`: this connection is dead, so
       // the next one gets a queue nobody else is still listening to.
       this.prompts = new PromptQueue()
     }
@@ -669,6 +650,7 @@ export class MaidSession {
    * only the open session can say. */
   private async readModels(stream: Query) {
     const models = await stream.supportedModels().catch(() => [])
+    if (this.stream !== stream) return
     this.models = models.map((model) => ({
       value: model.value,
       label: nameOf(model, models),
@@ -705,7 +687,9 @@ export class MaidSession {
   /** What `/` offers in this folder: the built-ins, plus whatever its settings,
    * skills and plugins add — the same list the terminal would show. */
   private async readCommands(stream: Query) {
-    this.tellCommands(await stream.supportedCommands().catch(() => []))
+    const commands = await stream.supportedCommands().catch(() => [])
+    if (this.stream !== stream) return
+    this.tellCommands(commands)
   }
 
   /** Claude Code's own commands — /usage, /cost, /model and the rest of the

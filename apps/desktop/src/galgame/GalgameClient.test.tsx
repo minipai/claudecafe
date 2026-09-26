@@ -113,6 +113,30 @@ function submit(said: string) {
 }
 
 describe('GalgameClient', () => {
+  it('shares transcript and task changes without broadcasting local token updates', async () => {
+    const { bridge, emit } = await mountLive()
+    await act(async () => submit('work'))
+    const runId = lastRunId(bridge)
+    const shared = vi.mocked(bridge.shareScene)
+    shared.mockClear()
+
+    await act(async () => emit({ kind: 'message', runId, message: { type: 'progress', outputTokens: 12 } }))
+    expect(shared).not.toHaveBeenCalled()
+
+    const task = { content: 'Read the files', status: 'in_progress' as const }
+    await act(async () => emit({ kind: 'ambient-message', message: { type: 'todos', todos: [task] } }))
+    expect(lastShared(bridge).todos).toEqual([task])
+    await act(async () => emit({ kind: 'ambient-message', message: { type: 'todos', todos: [{ ...task, status: 'completed' }] } }))
+    expect(lastShared(bridge).todos).toEqual([])
+    shared.mockClear()
+
+    await act(async () => emit({ kind: 'message', runId, message: { type: 'progress', outputTokens: 24 } }))
+    expect(shared).not.toHaveBeenCalled()
+
+    await act(async () => emit({ kind: 'message', runId, message: { type: 'text_stream', id: 'reply-1', text: 'Found it', done: false } }))
+    expect(logged(bridge)).toContain('Found it')
+  })
+
   it('Bug 1 — clearSpeech answers a permission ask still queued behind an unread line, instead of leaving it hanging', async () => {
     const { bridge, emit } = await mountLive()
 
