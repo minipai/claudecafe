@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "pnpm --filter @claudecafe/website dev",
     "dev:web": "pnpm --filter @claudecafe/website dev",
+    "dev:viewer": "pnpm --filter @claudecafe/character-viewer dev",
     "ship": "pnpm --filter @claudecafe/website ship",
     "check": "pnpm -r check"
   },

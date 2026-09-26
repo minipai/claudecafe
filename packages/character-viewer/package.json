@@ -1,0 +1,14 @@
+{
+  "name": "@claudecafe/character-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "character-viewer — a dev server over the Claude Café cast, for looking at personas and artwork and catching what a consumer would trip on.",
+  "scripts": {
+    "dev": "node server.mjs",
+    "check": "for f in server.mjs lib/*.mjs public/app.js; do node --check \"$f\"; done"
+  },
+  "keywords": [],
+  "author": "minipai",
+  "license": "MIT"
+}
