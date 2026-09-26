@@ -13,6 +13,9 @@ importers:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.3.228
         version: 0.3.228(@anthropic-ai/sdk@0.116.0(zod@4.4.3))(@modelcontextprotocol/sdk@1.30.0(zod@4.4.3))(zod@4.4.3)
+      '@claudecafe/character-core':
+        specifier: workspace:*
+        version: link:../../packages/character-core
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@7.3.6(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.22.4)(yaml@2.9.1))
@@ -144,6 +147,8 @@ importers:
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
+
+  packages/character-viewer: {}
 
   packages/characters: {}
 

@@ -53,6 +53,16 @@ describe('runtime characters', () => {
     expect(cast[0]).not.toHaveProperty('outfits')
   })
 
+  it('reads the persona variant the café config names, falling back to persona.md', () => {
+    const folder = addMaid('bilingual', 'Bilingual')
+    fs.writeFileSync(path.join(folder, 'persona.zh.md'), '---\nname: "Bilingual"\n---\n中文人格')
+    expect(personaOf('bilingual')).toBe('Persona for Bilingual')
+    fs.writeFileSync(path.join(root, '..', 'config.json'), JSON.stringify({ variant: 'zh' }))
+    expect(personaOf('bilingual')).toBe('中文人格')
+    fs.writeFileSync(path.join(root, '..', 'config.json'), JSON.stringify({ variant: 'ja' }))
+    expect(personaOf('bilingual')).toBe('Persona for Bilingual')
+  })
+
   it('keeps Kotone as the initial shift when the other published maids are installed', () => {
     addMaid('kokona', 'Kokona')
     addMaid('kotone', 'Kotone')

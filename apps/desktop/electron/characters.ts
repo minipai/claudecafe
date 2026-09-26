@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { promisify } from 'node:util'
+import { personaFiles } from '@claudecafe/character-core'
 import { cafeRoot } from './cafehome'
 import type { CastMember } from '../src/agent/bridge'
 
@@ -112,16 +113,25 @@ export function characterImage(url: string): string | null {
   }
 }
 
+/** The café config's persona variant picks persona.<variant>.md over persona.md, as in the terminal. */
 function readPersona(folder: string) {
-  for (const file of ['persona.zh.md', 'persona.md']) {
+  for (const file of personaFiles(personaVariant())) {
     try {
       const content = fs.readFileSync(path.join(folder, file), 'utf8')
       if (content.trim()) return content
     } catch {
-      // A character may provide only one language.
+      // A character need not ship the configured variant.
     }
   }
   return ''
+}
+
+function personaVariant() {
+  try {
+    return String(JSON.parse(fs.readFileSync(path.join(cafeRoot(), 'config.json'), 'utf8')).variant ?? '').trim()
+  } catch {
+    return '' // no café config
+  }
 }
 
 function entries(directory: string) {
