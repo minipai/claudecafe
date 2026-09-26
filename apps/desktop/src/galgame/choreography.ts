@@ -64,9 +64,9 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
       scene.setPhase('done')
       break
     case 'todos':
-      // The board is part of the scene: it ticks over where it happened,
-      // not while the master is still reading two lines back.
-      scene.act(() => scene.setTodos(msg.todos))
+      // Task state follows real time. Replaying an older snapshot after a
+      // completion notification would put finished work back on the board.
+      scene.setTodos(msg.todos)
       break
     case 'thinking':
       scene.act(() => scene.pushWhisper(msg.text, 'thought'))

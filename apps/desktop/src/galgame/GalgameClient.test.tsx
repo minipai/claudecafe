@@ -416,6 +416,30 @@ describe('GalgameClient', () => {
     expect(logged(bridge)).toContain('the foreground question')
   })
 
+  it('updates ambient task snapshots during a prompt and unread page, keeping the terminal board state after flush', async () => {
+    const { bridge, emit } = await mountLive()
+    const task = { content: 'Finish the task', status: 'in_progress' as const }
+
+    await act(async () => submit('the foreground question'))
+    const runId = lastRunId(bridge)
+    await act(async () => emit({ kind: 'message', runId, message: { type: 'text_delta', text: 'An unread page.' } }))
+    await act(async () => emit({ kind: 'ambient-message', message: { type: 'todos', todos: [task] } }))
+
+    expect(lastShared(bridge).todos).toEqual([task])
+
+    const completed = { ...task, status: 'completed' as const }
+    await act(async () => emit({ kind: 'ambient-message', message: { type: 'todos', todos: [completed] } }))
+
+    expect(lastShared(bridge).todos).toEqual([])
+
+    // A queued ambient scene still flushes when the foreground run ends, but
+    // the terminal task snapshot must already have taken effect immediately.
+    await act(async () => emit({ kind: 'ambient-message', message: { type: 'result', tier: 'light', line: 'Background work finished.' } }))
+    await act(async () => emit({ kind: 'done', runId }))
+    await vi.waitFor(() => expect(logged(bridge)).toContain('Background work finished.'))
+    expect(lastShared(bridge).todos).toEqual([])
+  })
+
   it('starts a new conversation with the maid already on shift without opening the picker', async () => {
     const { bridge } = await mountLive({ shift: { maid: 'kurumi' } })
 

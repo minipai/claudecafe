@@ -76,11 +76,11 @@ describe('choreograph', () => {
     expect(scene.wear).not.toHaveBeenCalled()
   })
 
-  it('todos: replaces the board as an act, not a click-through beat', () => {
+  it('todos: replaces the board immediately without queueing a stale snapshot', () => {
     const scene = createScene()
     const todos = [{ content: 'do the thing', status: 'pending' as const }]
     choreograph({ type: 'todos', todos }, scene)
-    expect(scene.act).toHaveBeenCalled()
+    expect(scene.act).not.toHaveBeenCalled()
     expect(scene.setTodos).toHaveBeenCalledWith(todos)
   })
 

@@ -25,6 +25,31 @@ export class Board {
   list(): AgentMessage {
     return { type: 'todos', todos: [...this.todos, ...this.tasks.values()] }
   }
+
+  /** SDK task lifetimes belong to the session, and can outlast a reply. */
+  read(sdk: Extract<SDKMessage, { type: 'system' }>): AgentMessage | null {
+    if (sdk.subtype === 'task_started') {
+      if (sdk.skip_transcript) return null
+      this.tasks.set(sdk.task_id, { content: sdk.description, status: 'in_progress' })
+      return this.list()
+    }
+    if (sdk.subtype === 'task_updated') {
+      const task = this.tasks.get(sdk.task_id)
+      if (!task) return null
+      if (sdk.patch.description) task.content = sdk.patch.description
+      if (sdk.patch.status) task.status = TASK_STATUS[sdk.patch.status]
+      return this.list()
+    }
+    if (sdk.subtype === 'task_notification') {
+      const task = this.tasks.get(sdk.task_id)
+      if (!task) return null
+      // This board tracks outstanding work. Completed, failed and stopped
+      // tasks are all terminal; the SDK's result carries their outcome.
+      task.status = 'completed'
+      return this.list()
+    }
+    return null
+  }
 }
 
 /** A run's worth of translation state — one turn, from prompt to result. */
@@ -113,19 +138,8 @@ export class Turn {
     if (sdk.subtype === 'init') return [{ type: 'system', subtype: 'init' }]
     if (sdk.subtype === 'compact_boundary') return [{ type: 'system', subtype: 'compact_boundary' }]
 
-    if (sdk.subtype === 'task_started') {
-      if (sdk.skip_transcript) return []
-      this.board.tasks.set(sdk.task_id, { content: sdk.description, status: 'in_progress' })
-      return [this.board.list()]
-    }
-    if (sdk.subtype === 'task_updated') {
-      const task = this.board.tasks.get(sdk.task_id)
-      if (!task) return []
-      if (sdk.patch.description) task.content = sdk.patch.description
-      if (sdk.patch.status) task.status = TASK_STATUS[sdk.patch.status]
-      return [this.board.list()]
-    }
-    return []
+    const update = this.board.read(sdk)
+    return update ? [update] : []
   }
 
   /**

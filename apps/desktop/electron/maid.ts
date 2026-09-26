@@ -569,6 +569,14 @@ export class MaidSession {
         // this is. The captured `stream` local is what makes the check mean
         // anything — `this.stream` may already be pointed elsewhere.
         if (this.stream !== stream) return
+        // Task completion can arrive between turns or after an interrupt.
+        // Update the session's board before routing (or discarding) run output;
+        // a task event must not start an unsolicited assistant turn either.
+        if (sdk.type === 'system' && (sdk.subtype === 'task_started' || sdk.subtype === 'task_updated' || sdk.subtype === 'task_notification')) {
+          const update = this.board.read(sdk)
+          if (update) this.emit({ kind: 'ambient-message', message: update })
+          continue
+        }
         // A skill discovered while she works changes what `/` offers; the
         // session pushes the whole list again rather than a delta.
         if (sdk.type === 'system' && sdk.subtype === 'commands_changed') {

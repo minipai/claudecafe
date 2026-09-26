@@ -508,6 +508,56 @@ describe('MaidSession — prompts are held back until nothing is in flight (bug 
 })
 
 describe('MaidSession — background continuations', () => {
+  it.each(['task_updated', 'task_notification'])('applies %s after the launching run ends without creating a new turn', async (subtype) => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-task-completion', emit)
+    session.ask('run-1', 'start background work')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    fakes[0].push({ type: 'system', subtype: 'task_started', task_id: 'task-1', description: 'sleep 1', uuid: '00000000-0000-0000-0000-000000000001', session_id: 's' })
+    await vi.waitFor(() => expect(events).toContainEqual({
+      kind: 'ambient-message', message: { type: 'todos', todos: [{ content: 'sleep 1', status: 'in_progress' }] },
+    }))
+    fakes[0].push(resultMessage('started'))
+    await vi.waitFor(() => expect(events).toContainEqual({ kind: 'done', runId: 'run-1' }))
+
+    const before = events.length
+    fakes[0].push({
+      type: 'system', subtype, task_id: 'task-1', uuid: '00000000-0000-0000-0000-000000000002', session_id: 's',
+      ...(subtype === 'task_updated' ? { patch: { status: 'completed' } } : { status: 'completed', output_file: '/output', summary: 'Finished' }),
+    } as SDKMessage)
+    await vi.waitFor(() => expect(events.slice(before)).toContainEqual({
+      kind: 'ambient-message', message: { type: 'todos', todos: [{ content: 'sleep 1', status: 'completed' }] },
+    }))
+
+    session.ask('run-2', 'next question')
+    fakes[0].push(resultMessage('next answer'))
+    await vi.waitFor(() => expect(events).toContainEqual({ kind: 'done', runId: 'run-2' }))
+    session.close()
+  })
+
+  it('applies task completion while swallowing output from an interrupted run', async () => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-stopped-task', emit)
+    session.ask('run-1', 'work')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    fakes[0].push({ type: 'system', subtype: 'task_started', task_id: 'task-1', description: 'sleep 1', uuid: '00000000-0000-0000-0000-000000000001', session_id: 's' })
+    await vi.waitFor(() => expect(events.some((event) => event.kind === 'ambient-message')).toBe(true))
+    session.interrupt()
+
+    const before = events.length
+    fakes[0].push({ type: 'system', subtype: 'task_notification', task_id: 'task-1', status: 'stopped', output_file: '/output', summary: 'Stopped', uuid: '00000000-0000-0000-0000-000000000002', session_id: 's' })
+    await vi.waitFor(() => expect(events.slice(before)).toContainEqual({
+      kind: 'ambient-message', message: { type: 'todos', todos: [{ content: 'sleep 1', status: 'completed' }] },
+    }))
+    fakes[0].push(resultMessage('interrupted'))
+    session.ask('run-2', 'try again')
+    fakes[0].push(resultMessage('new answer'))
+    await vi.waitFor(() => expect(events).toContainEqual({ kind: 'done', runId: 'run-2' }))
+    session.close()
+  })
+
   it('delivers a background turn directly when it reports after its launching run ended', async () => {
     const fakes = trackConnections()
     const { events, emit } = collectEvents()

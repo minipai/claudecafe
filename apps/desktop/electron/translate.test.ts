@@ -445,6 +445,21 @@ describe('Turn — TaskCreate/TaskUpdate lifecycle', () => {
     expect(out).toEqual([])
   })
 
+  it.each(['completed', 'failed', 'stopped'])('task_notification closes a known task when its status is %s', (status) => {
+    const turn = new Turn('hi')
+    turn.read(system({ subtype: 'task_started', task_id: '7', description: 'Background command' }))
+    const out = turn.read(system({ subtype: 'task_notification', task_id: '7', status, output_file: '/output', summary: 'Finished' }))
+    expect(out).toEqual([{ type: 'todos', todos: [{ content: 'Background command', status: 'completed' }] }])
+  })
+
+  it('does not create tasks from notifications for unknown or hidden tasks', () => {
+    const turn = new Turn('hi')
+    turn.read(system({ subtype: 'task_started', task_id: 'hidden', description: 'Housekeeping', skip_transcript: true }))
+    for (const task_id of ['unknown', 'hidden']) {
+      expect(turn.read(system({ subtype: 'task_notification', task_id, status: 'completed', output_file: '/output', summary: 'Finished' }))).toEqual([])
+    }
+  })
+
   it('TaskUpdate tool_use updates a known task and reports it', () => {
     const turn = new Turn('hi')
     turn.read(system({ subtype: 'task_started', task_id: '7', description: 'Background sweep', skip_transcript: false }))

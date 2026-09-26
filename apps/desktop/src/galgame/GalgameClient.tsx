@@ -307,6 +307,13 @@ export function GalgameClient({
   }
 
   function playAmbient(message: AgentMessage) {
+    // Task snapshots describe the board as it is now, not a beat in the
+    // background scene. Keep them current even while dialogue or a run holds
+    // that scene, and don't let stale snapshots wait around to be replayed.
+    if (message.type === 'todos') {
+      setTodos(message.todos)
+      return
+    }
     if (running.current > 0) {
       ambientMessages.current.push(message)
       return
