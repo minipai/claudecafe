@@ -27,5 +27,5 @@ test('stopping her mid-work frees the input for the next prompt', async ({ cafe:
   // The interrupt-then-new-prompt path, through the real IPC and MaidSession.
   await page.getByPlaceholder('Say something to ことね…').fill('hello')
   await clickCafe(page.getByRole('button', { name: 'Send' }))
-  await expect(page.getByText('Echo: hello', { exact: true })).toBeVisible()
+  await expect(page.getByText('Echo: hello 【 開心 ＼(ˆ ᗜ ˆ)／ 】', { exact: true })).toBeVisible()
 })

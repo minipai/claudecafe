@@ -151,6 +151,7 @@ const SIDE_SIZE: Record<SideWindow, Electron.BrowserWindowConstructorOptions> = 
   settings: { width: 560, height: 680, minWidth: 440, minHeight: 420 },
   projects: { width: 820, height: 560, minWidth: 600, minHeight: 380 },
   usage: { width: 600, height: 640, minWidth: 440, minHeight: 420 },
+  models: { width: 760, height: 560, minWidth: 580, minHeight: 420 },
 }
 
 /** The scene, or one of its side windows when named. */

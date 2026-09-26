@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { ArrowUp, Square } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -13,11 +13,14 @@ type InputBarProps = {
   commands: CafeCommand[]
   onSubmit: (text: string, images: Attachment[]) => void
   onStop: () => void
+  footer?: ReactNode
+  actions?: ReactNode
 }
 
 /** Typing never stops: a prompt sent while she is working queues behind the
  * one she is on, and the stop button is there to cut her off instead. */
-export function InputBar({ isBusy, commands, onSubmit, onStop }: InputBarProps) {
+export function InputBar({ isBusy, commands, onSubmit, onStop, footer, actions }: InputBarProps) {
+  const formId = useId()
   const t = ui().scene
   const [text, setText] = useState('')
   /** Pictures handed over for this prompt, waiting above the input. */
@@ -61,7 +64,7 @@ export function InputBar({ isBusy, commands, onSubmit, onStop }: InputBarProps) 
   return (
     <div
       // The anchor the command menu floats up from.
-      className="relative"
+      className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1.5 rounded-[24px] border border-border bg-card/96 p-2.5 shadow-[0_4px_16px_#33202512]"
       // A picture dropped on the scene is handed to her; a file is named to her.
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
@@ -71,16 +74,17 @@ export function InputBar({ isBusy, commands, onSubmit, onStop }: InputBarProps) 
       }}
     >
       {pending.length > 0 && (
-        <Attachments
+        <div className="col-span-2"><Attachments
           pending={pending}
           onRemove={(id) => setPending((current) => current.filter((image) => image.id !== id))}
-        />
+        /></div>
       )}
       {matches.length > 0 && (
         <CommandMenu matches={matches} active={matches.indexOf(highlighted)} onPick={pick} />
       )}
       <form
-        className="flex items-end gap-2"
+        id={formId}
+        className="col-span-2 min-w-0"
         onSubmit={(e) => {
           e.preventDefault()
           // A picture on its own is worth sending; she will ask what about it.
@@ -137,18 +141,24 @@ export function InputBar({ isBusy, commands, onSubmit, onStop }: InputBarProps) 
             }
           }}
           placeholder={fill(t.say, { her: her() })}
-          className="min-h-8 resize-none border-none bg-transparent shadow-none focus-visible:ring-0"
+          className="min-h-16 resize-none border-none bg-transparent px-2.5 pt-3 pb-2 text-base leading-[1.45] shadow-none focus-visible:ring-0 md:text-base"
         />
-        {isBusy ? (
-          <Button type="button" size="icon-sm" aria-label={t.stop} onClick={onStop}>
-            <Square fill="currentColor" className="size-2.5" />
-          </Button>
-        ) : (
-          <Button type="submit" size="icon-sm" disabled={!text.trim() && !pending.length} aria-label={t.send}>
-            <ArrowUp />
-          </Button>
-        )}
       </form>
+      <div className="min-w-0 px-1 pb-1">{footer}</div>
+      <div className="flex items-center gap-1">
+        {actions}
+        {isBusy ? (
+          <form onSubmit={(event) => { event.preventDefault(); onStop() }}>
+            <Button type="submit" size="icon" className="size-9 rounded-full" aria-label={t.stop}>
+              <Square fill="currentColor" className="size-2.5" />
+            </Button>
+          </form>
+          ) : (
+            <Button type="submit" form={formId} size="icon" className="size-9 rounded-full" disabled={!text.trim() && !pending.length} aria-label={t.send}>
+              <ArrowUp />
+            </Button>
+          )}
+      </div>
     </div>
   )
 }

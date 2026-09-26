@@ -4,14 +4,12 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/feedback/sonner'
 import { Stage } from './scene/Stage'
 import { SpriteLayer, type Reaction } from './character/SpriteLayer'
-import { hasArtwork, availableShift } from './character/cast'
+import { availableShift } from './character/cast'
 import { ShiftPanel } from './character/ShiftPanel'
-import { KAOMOJI } from '@/agent/expressions'
 import { DialogueBox } from './dialogue/DialogueBox'
 import { PlanView } from './permissions/PlanView'
 import { WelcomePanel } from './panels/WelcomePanel'
 import { PersonaPanel } from './panels/PersonaPanel'
-import { CommandBar } from './input/CommandBar'
 import { TroublePanel } from './panels/TroublePanel'
 import { DemoRow } from './input/DemoRow'
 import { InputBar } from './input/InputBar'
@@ -19,7 +17,7 @@ import { PermissionPrompt } from './permissions/PermissionPrompt'
 import { ChoiceRow } from './permissions/ChoiceRow'
 import { WhisperZone } from './dialogue/WhisperZone'
 import { StatusBar } from './panels/StatusBar'
-import { SessionPlaque } from './panels/SessionPlaque'
+import { PermissionMode, SessionPlaque } from './panels/SessionPlaque'
 import { useSpeech, type Hooks } from './dialogue/useSpeech'
 import { alwaysCovers, readPermission, standingFor, type PermissionAsk } from './permissions/permission'
 import { toast } from 'sonner'
@@ -90,11 +88,6 @@ export function GalgameClient({
   const reactTo = useCallback((kind: Reaction['kind']) => {
     setReaction((previous) => ({ id: (previous?.id ?? 0) + 1, kind }))
   }, [])
-  /** The 【…】 she signed her last line with, kept as she wrote it. Empty until
-   * she has signed one — the window has nothing of its own to put there. */
-  const [mood, setMood] = useState<string | null>(null)
-  /** The kaomoji standing in for a face she has no artwork for. */
-  const [standIn, setStandIn] = useState<string | null>(null)
   const [laidOut, setLaidOut] = useState<string | null>(null)
   const [whispers, setWhispers] = useState<Whisper[]>([])
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequest | null>(null)
@@ -124,7 +117,6 @@ export function GalgameClient({
   /** The folder she is on. It changes under the window when she is sent
    * elsewhere, so it is state rather than something read once at startup. */
   const [folder, setFolder] = useState(workingDirectory ?? '')
-  const [switching, setSwitching] = useState(false)
   /** The interface's language, which is not hers: what was picked (maybe
    * `system`) and the code it is drawn in, kept so switching it redraws
    * everything under this component — and the side windows with it. */
@@ -264,14 +256,9 @@ export function GalgameClient({
 
   /** The face that came with a line goes on as the line does, not when it was
    * written — she may have said three things since. */
-  /** The face she signed a line with, put on when that line reaches the box —
-   * the marker as she wrote it, and the artwork it names. A line with no
-   * marker of its own is not left wearing the last one that had one — the
-   * corner clears with it, even though the face can stay. */
-  function wear(expr?: Expression, marker?: string) {
-    setMood(marker ?? null)
-    // A line with no marker of its own changes no face, and leaves whatever is
-    // standing in for the current one where it is.
+  /** The face she signed a line with, put on when that line reaches the box. */
+  function wear(expr?: Expression) {
+    // A line with no face of its own leaves the current face where it is.
     if (expr) showFace(expr)
   }
 
@@ -281,7 +268,6 @@ export function GalgameClient({
    * or she signed a line with it. */
   function showFace(expr: Expression) {
     setExpression(expr)
-    setStandIn(hasArtwork(maid, expr) ? null : KAOMOJI[expr])
   }
 
   /** The same scene both prompted and unsolicited turns play through. Kept in
@@ -393,13 +379,16 @@ export function GalgameClient({
       },
       todos: board,
       settings: { locale: locale.choice, speech },
+      model: { settings, models },
     })
-  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, board, speech])
+  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, board, speech, settings, models])
 
   /** What was clicked in them is done here, the way the scene would have done it. */
   const sideActionRef = useRef<(action: SceneAction) => void>(() => {})
   sideActionRef.current = (action) => {
     if (action.kind === 'compact') void compactSession()
+    else if (action.kind === 'model') updateSettings({ model: action.model === 'default' ? null : action.model })
+    else if (action.kind === 'effort') updateSettings({ effort: action.effort })
     else if (action.kind === 'new-session') startNewSession()
     else if (action.kind === 'return') window.focus()
     else if (action.kind === 'locale') window.cafe?.setLocale(action.choice)
@@ -417,10 +406,12 @@ export function GalgameClient({
   }
   useEffect(() => listenToSideWindows((action) => sideActionRef.current(action)), [])
 
-  /** ⌘⇧P is the command palette, the key editors already use for it. ⌘L is
-   * the log, which is otherwise a button on the plate and a row inside the
-   * palette — the one window opened often enough to be worth a key of its own.
-   * ⌘, is the settings, where every Mac app keeps them. */
+  function updateSettings(patch: Partial<SessionSettings>) {
+    setSettings((current) => ({ ...current, ...patch }))
+    window.cafe?.configure(patch)
+  }
+
+  /** ⌘L opens the log; ⌘, opens settings. */
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return
@@ -428,11 +419,7 @@ export function GalgameClient({
       // the master can neither see nor close — and it would take the next esc
       // meant for the plan.
       if (permissionExpanded || trouble) return
-      // Shift turns the key into a capital, and not on every layout the same way.
-      if (event.shiftKey && event.key.toLowerCase() === 'p') {
-        event.preventDefault()
-        setSwitching(true)
-      } else if (event.key === 'l') {
+      if (!event.shiftKey && event.key === 'l') {
         event.preventDefault()
         openSideWindow('log')
       } else if (event.key === ',') {
@@ -457,7 +444,7 @@ export function GalgameClient({
       // Mid-composition Esc is the IME dropping what was being spelled out.
       if (event.isComposing) return
       if (phase !== 'working') return
-      if (permissionExpanded || switching || personaOpen || trouble) return
+      if (permissionExpanded || personaOpen || trouble) return
       if (permissionRequest || choiceRequest) return
       event.preventDefault()
       stop()
@@ -465,7 +452,7 @@ export function GalgameClient({
     window.addEventListener('keydown', interrupt)
     return () => window.removeEventListener('keydown', interrupt)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, permissionExpanded, switching, personaOpen, trouble, permissionRequest, choiceRequest])
+  }, [phase, permissionExpanded, personaOpen, trouble, permissionRequest, choiceRequest])
 
   /**
    * Space turns the page, the way a galgame does — and it is taken in the
@@ -483,14 +470,14 @@ export function GalgameClient({
       if (queued === 0 || !isDone) return
       // Except while something else holds the scene — a folded-out permission,
       // a panel — where there is no box to turn.
-      if (permissionExpanded || switching || personaOpen) return
+       if (permissionExpanded || personaOpen) return
       event.preventDefault()
       event.stopPropagation()
       advance()
     }
     window.addEventListener('keydown', turn, true)
     return () => window.removeEventListener('keydown', turn, true)
-  }, [queued, isDone, advance, permissionExpanded, switching, personaOpen])
+  }, [queued, isDone, advance, permissionExpanded, personaOpen])
 
 
   function askPermission(request: PermissionRequest | null) {
@@ -574,15 +561,12 @@ export function GalgameClient({
 
   /**
    * What is cleared whenever the scene starts over somewhere it was not — a
-   * new session, a folder she was sent to, a conversation resumed. The mood
-   * her last line was signed with belonged to whatever she was saying before;
-   * a standing "always allow" belonged to what she was doing before,
+    * new session, a folder she was sent to, a conversation resumed. A standing
+    * "always allow" belonged to what she was doing before,
    * which is exactly why it does not follow her anywhere else.
    */
   function resetScene() {
     setLaidOut(null)
-    setMood(null)
-    setStandIn(null)
     ambientMessages.current = []
     alwaysAllowRef.current = new Set()
   }
@@ -788,7 +772,7 @@ export function GalgameClient({
 
         {/* The band above the box is where the whispers float; there is nothing
             to click there, so the pointer goes through it too. */}
-        <div data-ghost className="absolute bottom-10 left-1/2 z-[6] w-[min(760px,92vw)] -translate-x-1/2">
+        <div data-ghost className="absolute bottom-10 left-1/2 z-[6] w-[min(800px,92vw)] -translate-x-1/2">
           <WhisperZone whispers={whispers} />
           {!permissionExpanded && (
             <DialogueBox
@@ -798,8 +782,6 @@ export function GalgameClient({
               streamed={streamed}
               isPast={past}
               isLoading={phase === 'working'}
-              mood={mood}
-              standIn={standIn}
               waiting={lines.waiting}
               outputTokens={outputTokens}
               queued={queued}
@@ -808,18 +790,20 @@ export function GalgameClient({
               onPace={setPace}
               todos={board}
               onOpenReply={() => openSideWindow('reply')}
-              onOpenPersona={() => setPersonaOpen(true)}
-              utility={
-                <SessionPlaque
-                  onOpenHistory={() => openSideWindow('log')}
-                  onSwitch={() => setSwitching(true)}
-                  settings={settings}
-                  models={models}
-                  onChange={(patch) => {
-                    setSettings((current) => ({ ...current, ...patch }))
-                    window.cafe?.configure(patch)
-                  }}
-                />
+              onOpenPersona={chooseNewMaid}
+              utility={<SessionPlaque settings={settings} models={models} />}
+              controls={
+                <div className="flex items-center gap-1">
+                  <form onSubmit={(event) => { event.preventDefault(); openSideWindow('log') }}>
+                    <button type="submit" className="h-7 cursor-pointer border-0 bg-transparent px-2 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" aria-label={text().scene.openHistory} title={text().scene.history}>{text().scene.logAction}</button>
+                  </form>
+                  <form onSubmit={(event) => { event.preventDefault(); void compactSession() }}>
+                    <button type="submit" className="h-7 cursor-pointer border-0 bg-transparent px-2 text-xs text-muted-foreground transition-colors enabled:hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-50" disabled={phase === 'working' || compacting}>{compacting ? text().log.compacting : text().log.compact}</button>
+                  </form>
+                  <form onSubmit={(event) => { event.preventDefault(); startNewSession() }}>
+                    <button type="submit" className="h-7 cursor-pointer border-0 bg-transparent px-2 text-xs text-muted-foreground transition-colors enabled:hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-50" disabled={phase === 'working' || changingSession}>{text().scene.newAction}</button>
+                  </form>
+                </div>
               }
               footer={
                 <>
@@ -842,19 +826,21 @@ export function GalgameClient({
                     // on the other end there is nothing for them to stand in for.
                     <DemoRow onSelect={run} />
                   )}
+                  <div className="relative z-10 mx-3 -mt-3 translate-y-[18px]">
                   <InputBar
-                    isBusy={phase === 'working'}
-                    commands={commands}
-                    onSubmit={handleSubmit}
-                    onStop={stop}
+                        isBusy={phase === 'working'}
+                        commands={commands}
+                        onSubmit={handleSubmit}
+                        onStop={stop}
+                        footer={<StatusBar folder={folder} />}
+                        actions={<PermissionMode settings={settings} onChange={updateSettings} />}
                   />
+                  </div>
                 </>
               }
             />
           )}
         </div>
-
-        <StatusBar folder={folder} />
       </Stage>
 
       {/* Clicking off a folded-out plan closes it. Nothing is painted here: the
@@ -875,29 +861,6 @@ export function GalgameClient({
         onStart={handOverShift}
         onCancel={() => setPickingShift(false)}
       />
-      <CommandBar
-        open={switching}
-        folder={folder}
-        doing={{
-          onNewSession: startNewSession,
-          onChooseMaid: chooseNewMaid,
-          onOpenHistory: () => openSideWindow('log'),
-          onOpenSettings: () => openSideWindow('settings'),
-          onCompact: compactSession,
-          onOpenProjects: () => openSideWindow('projects'),
-          mode: settings.mode,
-          modePicked: settings.modePicked,
-          onMode: (mode) => {
-            // Null hands it back to his terminal: the window stops having an
-            // opinion, and what the session reports next is what it shows.
-            const patch = mode === null ? { modePicked: false } : { mode }
-            setSettings((current) => ({ ...current, ...patch }))
-            window.cafe?.configure(patch)
-          },
-        }}
-        onClose={() => setSwitching(false)}
-      />
-
       <AnimatePresence>
         {permissionExpanded && permissionRequest?.ask.expand && (
           <PlanView

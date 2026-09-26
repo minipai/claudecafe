@@ -18,5 +18,5 @@ test('a dropped connection is explained, and a fresh prompt reconnects', async (
 
   await page.getByPlaceholder('Say something to ことね…').fill('hello again')
   await clickCafe(page.getByRole('button', { name: 'Send' }))
-  await expect(page.getByText('Echo: hello again', { exact: true })).toBeVisible()
+  await expect(page.getByText('Echo: hello again 【 開心 ＼(ˆ ᗜ ˆ)／ 】', { exact: true })).toBeVisible()
 })

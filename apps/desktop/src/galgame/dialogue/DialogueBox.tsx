@@ -16,11 +16,6 @@ type DialogueBoxProps = {
   /** An answer with shape to it — markdown, laid out in place of the typed line. */
   laidOut: string | null
   isLoading: boolean
-  /** The 【…】 she signed the line in the box with, as she wrote it. */
-  mood: string | null
-  /** The kaomoji standing in for the face she is wearing, when that face has
-   * no artwork behind it. Absent whenever the artwork says it itself. */
-  standIn: string | null
   /** Her own words for the wait, cycled through while she works. */
   waiting: string[]
   /** How much she has written this turn, as the session counts it. */
@@ -35,15 +30,16 @@ type DialogueBoxProps = {
   todos: Todo[]
   /** Opens her answer, whole, in a window of its own. */
   onOpenReply: () => void
-  /** Pressing her name plate — it opens the persona she is wearing. */
+  /** Pressing her name plate opens the maid picker for the next conversation. */
   onOpenPersona: () => void
   footer: ReactNode
+  controls: ReactNode
   utility: ReactNode
 }
 
 /**
  * The galgame dialogue panel — one frame holding the spoken line on top and
- * the demo/input footer below a divider. Short-tier replies just type into
+   * the composer below the action row. Short-tier replies just type into
  * it in place, and it grows/shrinks in place for the medium tier. It shares
  * a layoutId with PlanView so Motion morphs it into the panel a folded-out
  * plan is read in instead of it being a separate transition.
@@ -55,8 +51,6 @@ export function DialogueBox({
   isPast,
   laidOut,
   isLoading,
-  mood,
-  standIn,
   waiting,
   outputTokens,
   queued,
@@ -67,6 +61,7 @@ export function DialogueBox({
   onOpenReply,
   onOpenPersona,
   footer,
+  controls,
   utility,
 }: DialogueBoxProps) {
   const t = text().scene
@@ -104,27 +99,14 @@ export function DialogueBox({
       layout
       layoutId="dialogue-frame"
       transition={{ type: 'spring', duration: 0.45, bounce: 0.2 }}
-      className="relative w-full rounded-xl border border-border bg-card shadow-md"
+      className="dialogue-card relative w-full rounded-[24px] border border-border bg-card/96 shadow-[0_16px_42px_#33202528] backdrop-blur-[18px]"
     >
-      <div className="absolute -top-4 left-6 z-10 flex items-center gap-2.5">
+      <div className="absolute -top-4 left-6 right-4 z-10 flex items-center">
         <NamePlate name={her()} onOpen={onOpenPersona} />
-        {/* A face she has no artwork for leaves her standing neutral, so the
-            kaomoji says it here instead — next to her name, which is as close
-            to her face as the box gets. It goes as soon as she wears a face
-            that is drawn. The marker in the corner below is not the same
-            thing and does not cover for it: that is how she signed the line,
-            and it is behind the waiting line for as long as she is working. */}
-        {standIn && (
-          <span className="rounded-lg border border-border bg-card px-2 py-1 text-sm whitespace-nowrap text-foreground shadow-md">
-            {standIn}
-          </span>
-        )}
+        <div className="-ml-3 min-w-0">{utility}</div>
       </div>
-      <div className="absolute -top-4 right-4 z-10">{utility}</div>
 
-      {/* The bottom padding leaves room for the corner controls, so they sit in
-          the margin rather than against what she just said. */}
-      <motion.div layout className="relative overflow-hidden px-6.5 pt-7 pb-9">
+      <motion.div layout className="relative overflow-hidden px-6 pt-7 pb-3">
           {/* She is standing behind this, and the box grows from the bottom
               edge up. Left to grow, an answer she wrote out in full instead of
               handing over covers her to the top of the window — so it stops
@@ -157,7 +139,7 @@ export function DialogueBox({
             // to what was just asked.
             <div
               // Keep room for two lines so short replies have a steady frame.
-              className={`min-h-[3.6em] text-lg leading-[1.8] transition-colors duration-500 ${
+              className={`min-h-[3.44em] text-[17px] leading-[1.72] transition-colors duration-500 ${
                 isPast ? 'text-foreground/35' : 'text-foreground'
               }`}
             >
@@ -181,30 +163,34 @@ export function DialogueBox({
           )}
           </div>
 
-          {/* The corner opposite the page-turning, and one thing at a time in
-              it: while she works, that she is still at it; when she stops, the
-              mood she signed off with, written out the way she writes it. Both
-              belong to the line rather than over it, so they sit in the margin
-              the box already leaves. */}
-          <div className="absolute bottom-3 left-6.5">
-            {isLoading ? (
+          {isLoading && (
+            <div className="mt-2">
               <WaitingLine words={waiting} outputTokens={outputTokens} />
-            ) : (
-              mood && <span className="text-sm whitespace-nowrap text-foreground">{mood}</span>
-            )}
-          </div>
+            </div>
+          )}
+      </motion.div>
 
-          {/* Who turns the page, in the corner she turns it from: AUTO hands
-              the turning over, and the triangle is the master doing it himself
-              — the only thing to press, since her line is dialogue and not a
-              button. */}
-          <div className="absolute right-6 bottom-3 flex items-center gap-1.5">
+      <motion.div layout className="flex items-center justify-between gap-2 px-6 pb-2">
+        <div className="flex items-center gap-1.5">
             {/* A blinking triangle is a thing the master has to have been
                 taught, so it says the rest in words: how many she still has
                 waiting, and the key that brings the next one. It grows out of
                 AUTO's left rather than holding a slot of its own, so nothing
                 beside it moves when it leaves and the corner is empty rather
                 than blank. */}
+            <button
+              type="button"
+              aria-pressed={pace === 'auto'}
+              title={t.autoPace}
+              onClick={() => onPace(pace === 'auto' ? 'manual' : 'auto')}
+              className={`rounded px-1.5 py-1 font-mono text-[10px] leading-none tracking-[0.14em] uppercase transition-colors ${
+                pace === 'auto'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground/50 hover:text-foreground'
+              }`}
+            >
+              auto
+            </button>
             {queued > 0 && !isTyping && (
               <button
                 type="button"
@@ -235,24 +221,11 @@ export function DialogueBox({
                 ↗
               </button>
             )}
-            <button
-              type="button"
-              aria-pressed={pace === 'auto'}
-              title={t.autoPace}
-              onClick={() => onPace(pace === 'auto' ? 'manual' : 'auto')}
-              className={`rounded px-1.5 py-1 font-mono text-[10px] leading-none tracking-[0.14em] uppercase transition-colors ${
-                pace === 'auto'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground/50 hover:text-foreground'
-              }`}
-            >
-              auto
-            </button>
-          </div>
-
+        </div>
+        {controls}
       </motion.div>
 
-      <motion.div layout className="flex flex-col gap-2 border-t border-border px-4 pt-3 pb-3">
+      <motion.div layout className="flex flex-col">
         {footer}
       </motion.div>
     </motion.div>

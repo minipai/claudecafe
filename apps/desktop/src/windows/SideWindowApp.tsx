@@ -7,6 +7,7 @@ import { ReplyWindow } from './conversation/ReplyWindow'
 import { SettingsWindow } from './settings/SettingsWindow'
 import { ProjectsWindow } from './projects/ProjectsWindow'
 import { UsageWindow } from './UsageWindow'
+import { ModelsWindow } from './models/ModelsWindow'
 
 /**
  * A side window draws nothing until the scene has shared itself: what it would
@@ -54,5 +55,9 @@ const views: Record<SideWindow, { title: () => string; render: (scene: SceneShar
   usage: {
     title: () => text().bar.usage,
     render: () => <UsageWindow />,
+  },
+  models: {
+    title: () => text().scene.model,
+    render: (scene) => <ModelsWindow settings={scene.model.settings} models={scene.model.models} />,
   },
 }

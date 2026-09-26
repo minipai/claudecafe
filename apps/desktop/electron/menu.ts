@@ -9,6 +9,7 @@ const WINDOWS: { name: SideWindow; accelerator?: string }[] = [
   { name: 'reply' },
   { name: 'projects' },
   { name: 'usage' },
+  { name: 'models' },
   { name: 'settings', accelerator: 'CmdOrCtrl+,' },
 ]
 
@@ -22,6 +23,7 @@ const LABELS: Record<'en' | 'zh-TW', Record<SideWindow, string>> = {
     projects: 'Projects',
     usage: 'Plan usage',
     settings: 'Settings',
+    models: 'Models',
   },
   'zh-TW': {
     log: '對話紀錄',
@@ -29,6 +31,7 @@ const LABELS: Record<'en' | 'zh-TW', Record<SideWindow, string>> = {
     projects: '專案',
     usage: '方案用量',
     settings: '設定',
+    models: '模型',
   },
 }
 

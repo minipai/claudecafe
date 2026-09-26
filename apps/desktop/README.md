@@ -13,6 +13,18 @@ The character stands directly on the transparent desktop with a smooth white
 paper border and shadow. Brief reactions mark prompts, completed replies,
 questions and errors; reduced-motion preferences disable these animations.
 
+The dialogue and inset composer use OpenChan's maroon-and-cream design. The
+name opens the maid picker; the adjoining model/effort control opens a separate
+selection window. A permission-mode pill beside Send/Stop cycles through manual,
+accept-edits, plan and auto modes when clicked.
+Log, Compact
+and New sit above the composer, and the project path opens projects. Settings
+remain available with ⌘,. There is no ⌘⇧P palette; slash-command completion
+and the scene's floating information bubbles remain.
+
+Mood markers stay in the reply text. They can still select her expression, but
+are not pulled into a separate caption beside the page controls.
+
 Live replies appear as the Agent SDK streams their text. Each text block is a
 dialogue page: the current page updates immediately, while later pages collect
 their text until you advance to them. Opening a page shows everything received
@@ -54,8 +66,8 @@ no more than seven files directly inside each source or test directory.
   components grouped beneath it.
 - `src/agent/` — renderer contracts; `transport/` connects to Electron and
   `demo/` supplies the browser preview.
-- `src/windows/` — side-window entry points, with `conversation/`, `settings/`
-  and `projects/` holding their views and tests.
+- `src/windows/` — side-window entry points, with `conversation/`, `settings/`,
+  `projects/` and `models/` holding their views and tests.
 - `e2e/` — shared Electron fixtures, plus `session/`, `dialogue/` and `actions/`
   scenarios.
 - `config/` — Vite, Vitest, Playwright and packaging configuration. Use the

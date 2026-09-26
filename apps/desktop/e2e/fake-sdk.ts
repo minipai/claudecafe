@@ -47,7 +47,10 @@ function controlChannel() {
     setPermissionMode: async () => undefined,
     setModel: async () => undefined,
     initializationResult: async () => initResult(),
-    supportedModels: async () => [],
+    supportedModels: async () => [
+      { value: 'sonnet', displayName: 'Sonnet', description: 'Fast and capable', supportedEffortLevels: ['low', 'medium', 'high'] },
+      { value: 'opus', displayName: 'Opus', description: 'For demanding work', supportedEffortLevels: ['low', 'medium', 'high', 'max'] },
+    ],
     supportedCommands: async () => [],
     supportedAgents: async () => [],
     mcpServerStatus: async () => [],
@@ -143,7 +146,7 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
    * order it arrived — the SDK's own internal queue, standing in for the CLI
    * process actually doing the work. */
   async function turns() {
-    push({ type: 'system', subtype: 'init', session_id: sessionId, uuid: randomUUID() } as unknown as SDKMessage)
+    push({ type: 'system', subtype: 'init', session_id: sessionId, uuid: randomUUID(), model: options?.model ?? 'sonnet', permissionMode: options?.permissionMode ?? 'default' } as unknown as SDKMessage)
     for (;;) {
       if (pending.length === 0) {
         await new Promise<void>((resolve) => (promptWake = resolve))

@@ -23,11 +23,7 @@ export type Cafe = {
  * window's own userData does not, hence `CAFE_USERDATA` (see main.ts).
  */
 async function openCafe(maid = 'kotone'): Promise<Cafe> {
-  // Literally /tmp rather than os.tmpdir(): on macOS the latter resolves to
-  // the long-form /var/folders/.../T path, and CommandBar's folder row
-  // (label, the full path as a note, and a chevron all in one flex line —
-  // see CommandBar.tsx) has no room left for the label once that note is
-  // that long. /tmp is macOS's own symlink to the same place, just short.
+  // Short scratch paths keep project labels readable in the test window.
   const home = await mkdtemp(path.join('/tmp', 'cafe-e2e-home-'))
   const userData = await mkdtemp(path.join('/tmp', 'cafe-e2e-userdata-'))
   const project = await mkdtemp(path.join('/tmp', 'cafe-e2e-project-'))

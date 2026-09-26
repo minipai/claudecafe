@@ -1,129 +1,67 @@
-import { ChevronDown, History, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fill, text } from '@/i18n'
-import { ButtonGroup } from '@/components/ui/button-group'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { openSideWindow } from '@/agent/windows'
 
 import type { ModelChoice, SessionSettings } from '@/agent'
 
-/** Every level the SDK takes; a model that supports fewer narrows this. */
-const EFFORTS: SessionSettings['effort'][] = ['low', 'medium', 'high', 'xhigh', 'max']
-
-function VisibleSetting({
-  label,
-  value,
-  items,
-  onPick,
-}: {
-  label: string
-  value: string
-  items: { value: string; label: string }[]
-  onPick: (item: string) => void
-}) {
-  const shown = items.find((item) => item.value === value)?.label ?? value
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 px-2 text-xs text-muted-foreground"
-          aria-label={fill(text().scene.switchSetting, { what: label, value })}
-          title={`${label}: ${shown}`}
-        >
-          {shown}
-          <ChevronDown className="size-3 opacity-55" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="top" sideOffset={8} className="min-w-32">
-        <DropdownMenuLabel>{label}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup value={value} onValueChange={onPick}>
-          {items.map((item) => (
-            <DropdownMenuRadioItem key={item.value} value={item.value}>
-              {item.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-/**
- * Dialogue-frame utility pill: backlog beside a compact session-settings menu.
- * Every choice in here is one the session actually takes — the models are the
- * ones the account can run, and picking one changes the session on the spot.
- */
 export function SessionPlaque({
-  onOpenHistory,
-  onSwitch,
   settings,
   models,
-  onChange,
 }: {
-  onOpenHistory: () => void
-  /** The command bar: where she is sent somewhere, started over, or asked to
-   * show her books. */
-  onSwitch: () => void
   settings: SessionSettings
   models: ModelChoice[]
-  onChange: (patch: Partial<SessionSettings>) => void
 }) {
   const t = text().scene
   const current = models.find((model) => model.value === (settings.model ?? 'default'))
-  const efforts = current?.efforts.length ? current.efforts : EFFORTS
 
   return (
-    <ButtonGroup className="h-8">
+    <form onSubmit={(event) => { event.preventDefault(); openSideWindow('models') }}>
       <Button
+        type="submit"
+        variant="secondary"
+        size="sm"
+        className="h-[38px] max-w-48 truncate rounded-r-full rounded-l-none border border-border bg-card/95 pr-3 pl-5 text-xs text-foreground shadow-sm"
+        aria-label={`${t.model}: ${current?.label ?? t.model}; ${t.effort}: ${settings.effort}`}
+        title={`${current?.label ?? t.model} · ${settings.effort}`}
+      >
+        <span className="truncate">{current?.label ?? t.model} · {settings.effort}</span>
+      </Button>
+    </form>
+  )
+}
+
+export function PermissionMode({
+  settings,
+  onChange,
+}: {
+  settings: SessionSettings
+  onChange: (patch: Partial<SessionSettings>) => void
+}) {
+  const modes = ['default', 'acceptEdits', 'plan', 'auto'] as const
+  const labels: Record<SessionSettings['mode'], string> = {
+    default: 'manual mode',
+    acceptEdits: 'accept edits',
+    plan: 'plan mode',
+    auto: 'auto mode',
+    bypassPermissions: 'bypass permissions',
+    dontAsk: "don't ask",
+  }
+  const currentIndex = modes.indexOf(settings.mode as (typeof modes)[number])
+  const next = modes[currentIndex < 0 ? 0 : (currentIndex + 1) % modes.length]
+  const label = text().bar.mode
+
+  return (
+    <form onSubmit={(event) => { event.preventDefault(); onChange({ mode: next, modePicked: true }) }}>
+      <Button
+        type="submit"
         variant="outline"
         size="sm"
-        className="h-8 px-2.5 font-mono text-[11px] tracking-[0.08em] text-muted-foreground"
-        aria-label={t.openHistory}
-        title={t.history}
-        onClick={onOpenHistory}
+        className="h-9 rounded-full px-3 text-xs"
+        aria-label={fill(text().scene.switchSetting, { what: label, value: labels[settings.mode] })}
+        title={`${label}: ${labels[settings.mode]}; click to switch to ${labels[next]}`}
       >
-        <History className="size-3.5" />
-        LOG
+        {labels[settings.mode]}
       </Button>
-
-      <VisibleSetting
-        label={t.model}
-        value={settings.model ?? 'default'}
-        items={models.map((model) => ({ value: model.value, label: model.label }))}
-        onPick={(value) => onChange({ model: value === 'default' ? null : value })}
-      />
-      <VisibleSetting
-        label={t.effort}
-        value={settings.effort}
-        items={efforts.map((level) => ({ value: level as string, label: level as string }))}
-        onPick={(value) => onChange({ effort: value as SessionSettings['effort'] })}
-      />
-
-      {/* Everything else she can be asked to do is in the command bar, so the
-          plaque points at it rather than keeping a second copy of the list.
-          Named like LOG beside it: a chord of symbols this small is unreadable,
-          so the key is left to the hover and the shortcut list. */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-8 px-2.5 font-mono text-[11px] tracking-[0.08em] text-muted-foreground"
-        aria-label={t.openCommandBar}
-        title={t.commandBar}
-        onClick={onSwitch}
-      >
-        <Menu className="size-3.5" />
-        MENU
-      </Button>
-    </ButtonGroup>
+    </form>
   )
 }

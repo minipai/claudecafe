@@ -241,6 +241,52 @@ describe('GalgameClient', () => {
     expect(bridge.setSpeech).toHaveBeenCalledWith('日本語')
   })
 
+  it('applies model and effort actions from the models window to the session and shared scene', async () => {
+    const { bridge, emit } = await mountLive()
+
+    await act(async () => screen.getByRole('button', { name: /Model.*Effort/ }).click())
+    expect(bridge.openSideWindow).toHaveBeenCalledWith('models')
+
+    await act(async () => emit({ kind: 'side-window', action: { kind: 'model', model: 'default' } }))
+    await act(async () => emit({ kind: 'side-window', action: { kind: 'effort', effort: 'medium' } }))
+
+    expect(bridge.configure).toHaveBeenNthCalledWith(1, { model: null })
+    expect(bridge.configure).toHaveBeenNthCalledWith(2, { effort: 'medium' })
+    expect(lastShared(bridge).model.settings).toMatchObject({ model: null, effort: 'medium' })
+  })
+
+  it('cycles permission modes from the inherited mode and patches the session setting', async () => {
+    const { bridge, emit } = await mountLive()
+    await act(async () => emit({
+      kind: 'settings',
+      settings: { model: null, effort: 'high', mode: 'bypassPermissions', modePicked: false },
+      models: [],
+    }))
+
+    const mode = screen.getByRole('button', { name: /Switch Permission mode/ })
+    expect(mode).toHaveTextContent('bypass permissions')
+    expect(mode.title).toContain('click to switch to manual mode')
+    await act(async () => mode.click())
+
+    expect(bridge.configure).toHaveBeenCalledWith({ mode: 'default', modePicked: true })
+    expect(screen.getByRole('button', { name: /Switch Permission mode/ })).toHaveTextContent('manual mode')
+    await act(async () => screen.getByRole('button', { name: /Switch Permission mode/ }).click())
+    expect(bridge.configure).toHaveBeenLastCalledWith({ mode: 'acceptEdits', modePicked: true })
+    for (const next of ['plan', 'auto', 'default']) {
+      await act(async () => screen.getByRole('button', { name: /Switch Permission mode/ }).click())
+      expect(bridge.configure).toHaveBeenLastCalledWith({ mode: next, modePicked: true })
+    }
+  })
+
+  it('opens project selection from the project and branch control', async () => {
+    const { bridge, emit } = await mountLive()
+    await act(async () => emit({ kind: 'status', status: { branch: 'main', added: 0, removed: 0, contextTokens: 2400 } }))
+
+    await act(async () => screen.getByRole('button', { name: 'Projects' }).click())
+
+    expect(bridge.openSideWindow).toHaveBeenCalledWith('projects')
+  })
+
   it('opening a conversation in another folder sends her there first, then back into it', async () => {
     const { bridge, emit } = await mountLive()
 
@@ -277,13 +323,13 @@ describe('GalgameClient', () => {
     expect(bridge.start).not.toHaveBeenCalled()
   })
 
-  it('her name plate opens the persona she is wearing', async () => {
+  it('her name plate opens the maid picker', async () => {
     const { bridge } = await mountLive()
 
-    await act(async () => screen.getByLabelText('Who ことね is').click())
+    await act(async () => screen.getByRole('button', { name: 'ことね' }).click())
 
-    await vi.waitFor(() => expect(screen.getByText('You are ことね, an AI maid.')).toBeInTheDocument())
-    expect(bridge.persona).toHaveBeenCalled()
+    await vi.waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+    expect(bridge.persona).not.toHaveBeenCalled()
   })
 
 
@@ -463,8 +509,7 @@ describe('GalgameClient', () => {
   it('starts a new conversation with the maid already on shift without opening the picker', async () => {
     const { bridge } = await mountLive({ shift: { maid: 'kurumi' } })
 
-    await act(async () => screen.getByLabelText('Open the command bar').click())
-    await act(async () => screen.getByText('Start a new conversation').closest('button')!.click())
+    await act(async () => screen.getByRole('button', { name: 'New' }).click())
 
     expect(bridge.newSession).toHaveBeenCalledOnce()
     expect(bridge.setShift).not.toHaveBeenCalled()
@@ -480,8 +525,7 @@ describe('GalgameClient', () => {
     await act(async () => emit({ kind: 'lines', lines: linesIn(KURUMI) }))
 
     // Choosing a maid asks who is taking over; the master picks ことね.
-    await act(async () => screen.getByLabelText('Open the command bar').click())
-    await act(async () => screen.getByText('Choose a maid for a new conversation').closest('button')!.click())
+    await act(async () => screen.getByRole('button', { name: 'くるみ' }).click())
     await act(async () => screen.getByRole('radio', { name: 'ことね' }).click())
     await act(async () => screen.getByRole('button', { name: 'Start her shift' }).click())
 

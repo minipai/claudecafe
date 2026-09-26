@@ -46,27 +46,25 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    /* Her bow: the one bit of colour she wears, sampled off the artwork. It is
-       what the name plate, the buttons and the meters are drawn in, so the
-       window is her palette rather than a default grey one. */
-    --primary: oklch(0.413 0.105 19);
+    /* OpenChan's wine accents and warm paper surfaces. */
+    --background: #fffdfb;
+    --foreground: #211a1b;
+    --card: #fffcf9;
+    --card-foreground: #211a1b;
+    --popover: #fffcf9;
+    --popover-foreground: #211a1b;
+    --primary: #73333a;
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.94 0.025 45);
+    --secondary-foreground: oklch(0.29 0.04 20);
+    --muted: oklch(0.95 0.018 60);
+    --muted-foreground: #766b6c;
+    --accent: oklch(0.94 0.025 45);
+    --accent-foreground: oklch(0.29 0.04 20);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: rgba(92, 58, 58, 0.18);
+    --input: rgba(92, 58, 58, 0.18);
+    --ring: #73333a;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -146,6 +144,15 @@
   line-height: 1.7;
   color: var(--foreground);
 }
+.dialogue-card .report-md {
+  font-size: 17px;
+  line-height: 1.72;
+}
+
+.dialogue-card .report-md > :last-child {
+  margin-bottom: 0;
+}
+
 .report-md h1 {
   font-size: 2.25rem;
   font-weight: 700;
@@ -246,4 +253,3 @@
 /* The window has no frame and no strip to grab: it is moved by dragging the
    artwork — ことね or the print behind her — which the main process does by
    following the cursor. */
-

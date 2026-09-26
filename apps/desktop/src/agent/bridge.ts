@@ -120,7 +120,7 @@ export type Lines = {
 }
 
 /** The windows that stand beside her rather than over her. */
-export type SideWindow = 'log' | 'reply' | 'settings' | 'projects' | 'usage'
+export type SideWindow = 'log' | 'reply' | 'settings' | 'projects' | 'usage' | 'models'
 
 /** Everything the side windows draw, as the scene has it. */
 export type SceneShare = {
@@ -143,6 +143,7 @@ export type SceneShare = {
     locale: string
     speech: { language: string; chosen: string }
   }
+  model: { settings: SessionSettings; models: ModelChoice[] }
 }
 
 /** What a side window asks the scene to do. */
@@ -159,6 +160,8 @@ export type SceneAction =
   | { kind: 'browse' }
   /** Go back to a conversation, in whichever folder it was had. */
   | { kind: 'conversation'; folder: string; sessionId: string }
+  | { kind: 'model'; model: string }
+  | { kind: 'effort'; effort: SessionSettings['effort'] }
 
 export type BridgeEvent =
   | { kind: 'status'; status: SessionStatus }
