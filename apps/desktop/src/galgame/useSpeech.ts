@@ -13,6 +13,8 @@ import { useTypewriter } from './useTypewriter'
 type Beat =
   | {
       kind: 'line'
+      streamId?: string
+      done?: boolean
       text: string
       halt?: boolean
       onShow?: () => void
@@ -51,7 +53,7 @@ const AUTO_MAX_MS = 4200
  * whatever was still queued and frees the box.
  */
 export function useSpeech() {
-  const { line, isDone, typeLine } = useTypewriter()
+  const { line, isDone, typeLine, showStream } = useTypewriter()
   const queue = useRef<Beat[]>([])
   /** Whether the box is taken. Empty until the first line, and freed whenever
    * the master moves the scene on himself. */
@@ -63,9 +65,12 @@ export function useSpeech() {
    * moved on from. The line stays — an empty box reads as her having left —
    * but it is no longer an answer to what was just asked. */
   const [past, setPast] = useState(false)
+  const [streamed, setStreamed] = useState(false)
   const [pace, setPaceState] = useState<Pace>('manual')
   /** The same thing, readable from inside a beat that is playing right now. */
   const paceRef = useRef<Pace>('manual')
+  const discardedStreams = useRef(new Set<string>())
+  const activeStream = useRef<string | null>(null)
 
   const setPace = useCallback((next: Pace) => {
     paceRef.current = next
@@ -98,9 +103,12 @@ export function useSpeech() {
       // line he has to answer himself, so it is typed out like any other.
       if (beat.halt && paceRef.current !== 'manual') setPace('manual')
       beat.onShow?.()
-      typeLine(beat.text, beat.onDone)
+      activeStream.current = beat.streamId ?? null
+      setStreamed(!!beat.streamId)
+      if (beat.streamId) showStream(beat.text, beat.done ?? false)
+      else typeLine(beat.text, beat.onDone)
     },
-    [setPace, typeLine],
+    [setPace, typeLine, showStream],
   )
 
   const push = useCallback(
@@ -120,6 +128,25 @@ export function useSpeech() {
     [push, show],
   )
 
+  const stream = useCallback((id: string, text: string, done: boolean, hooks: Hooks = {}) => {
+    if (discardedStreams.current.has(id)) return
+    const existing = queue.current.find((beat) => beat.kind === 'line' && beat.streamId === id)
+    if (existing?.kind === 'line') {
+      existing.text = text
+      existing.done = done
+      existing.onShow = hooks.onShow ?? existing.onShow
+      return
+    }
+    if (activeStream.current === id) {
+      showStream(text, done)
+      hooks.onShow?.()
+      return
+    }
+    const beat: Extract<Beat, { kind: 'line' }> = { kind: 'line', streamId: id, text, done, ...hooks }
+    if (taken.current) push(beat)
+    else show(beat)
+  }, [push, show, showStream])
+
   /**
    * Something that happens beside the line rather than in it — a face she puts
    * on, a whisper of what she is doing. It belongs where it arrived, which is
@@ -136,6 +163,11 @@ export function useSpeech() {
 
   const cut = useCallback(
     (text: string, hooks: Hooks = {}) => {
+      for (const beat of queue.current) {
+        if (beat.kind === 'line' && beat.streamId) discardedStreams.current.add(beat.streamId)
+      }
+      if (activeStream.current) discardedStreams.current.add(activeStream.current)
+      activeStream.current = null
       queue.current = []
       setQueued(0)
       show({ kind: 'line', text, ...hooks })
@@ -148,7 +180,12 @@ export function useSpeech() {
     // waiting — but a line with an `onDrop` is not just words: it is a
     // question with someone still waiting on the other end of it, and
     // dropping it silently leaves that wait forever unanswered.
-    for (const beat of queue.current) if (beat.kind === 'line') beat.onDrop?.()
+    for (const beat of queue.current) if (beat.kind === 'line') {
+      if (beat.streamId) discardedStreams.current.add(beat.streamId)
+      beat.onDrop?.()
+    }
+    if (activeStream.current) discardedStreams.current.add(activeStream.current)
+    activeStream.current = null
     queue.current = []
     taken.current = false
     setQueued(0)
@@ -157,6 +194,8 @@ export function useSpeech() {
 
   /** On to the next line, playing whatever happened in between on the way. */
   const advance = useCallback(() => {
+    if (activeStream.current) discardedStreams.current.add(activeStream.current)
+    activeStream.current = null
     for (;;) {
       const next = queue.current.shift()
       setQueued(count())
@@ -187,5 +226,5 @@ export function useSpeech() {
     return () => window.clearTimeout(timer)
   }, [pace, isDone, queued, line, advance])
 
-  return { line, isDone, past, say, act, cut, clear, advance, queued, pace, setPace }
+  return { line, isDone, past, streamed, say, stream, act, cut, clear, advance, queued, pace, setPace }
 }

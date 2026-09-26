@@ -9,6 +9,11 @@ touches anything, and reports back in her own voice.
 Electron for the window (`electron/`, the main process), Vite + React for what's
 inside it (`src/`).
 
+Live replies appear as the Agent SDK streams their text. Each text block is a
+dialogue page: the current page updates immediately, while later pages collect
+their text until you advance to them. Opening a page shows everything received
+so far without replaying a typing animation.
+
 ## Running it
 
 ```bash

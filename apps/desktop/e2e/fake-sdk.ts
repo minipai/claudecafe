@@ -159,7 +159,40 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
     if (said.includes('ask a question')) return askQuestion()
     if (said.includes('go offline')) return goOffline()
     if (said.includes('slow')) return workSlowly()
+    if (said.includes('stream regression')) return streamAnswer(sessionId)
     return echo(said)
+  }
+
+  /** A real-shaped partial stream, held at a process event so the e2e can
+   * inspect the window between the first delta and the final SDK messages. */
+  async function streamAnswer(sessionId: string) {
+    if (!options?.includePartialMessages) throw new Error('Partial messages were not enabled')
+    const uuid = () => randomUUID()
+    const messageId = `msg_${uuid()}`
+    const event = (value: object) => push({ type: 'stream_event', event: value, session_id: sessionId, uuid: uuid(), parent_tool_use_id: null } as unknown as SDKMessage)
+    event({ type: 'message_start', message: { id: messageId, type: 'message', role: 'assistant', model: 'fake-model', content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 0 } } })
+    const canonical = (content: object[]) => push({
+      type: 'assistant', session_id: sessionId, uuid: uuid(), parent_tool_use_id: null,
+      message: { id: messageId, model: 'fake-model', content, usage: { output_tokens: 8 } },
+    } as unknown as SDKMessage)
+    // The real CLI emits one canonical assistant block at a time, before its
+    // stream stop. Thinking makes the text's stream index differ from content[0].
+    event({ type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '' } })
+    canonical([{ type: 'thinking', thinking: 'Preparing the streamed reply', signature: '' }])
+    event({ type: 'content_block_stop', index: 0 })
+    event({ type: 'content_block_start', index: 1, content_block: { type: 'text', text: '' } })
+    event({ type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: 'First streamed block' } })
+    await waitForStreamRelease()
+    event({ type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: ' complete' } })
+    canonical([{ type: 'text', text: 'First streamed block complete' }])
+    event({ type: 'content_block_stop', index: 1 })
+    event({ type: 'content_block_start', index: 2, content_block: { type: 'text', text: '' } })
+    event({ type: 'content_block_delta', index: 2, delta: { type: 'text_delta', text: 'Second streamed block' } })
+    canonical([{ type: 'text', text: 'Second streamed block' }])
+    event({ type: 'content_block_stop', index: 2 })
+    event({ type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 8 } })
+    event({ type: 'message_stop' })
+    push(result('First streamed block complete\n\nSecond streamed block', sessionId))
   }
 
   async function askPermission() {
@@ -258,6 +291,10 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
       return { value: undefined, done: true as const }
     },
   } as unknown as Query
+}
+
+function waitForStreamRelease(): Promise<void> {
+  return new Promise((resolve) => process.once('e2e:stream:continue', resolve))
 }
 
 /** The text half of a prompt — a plain string, or the text block behind the

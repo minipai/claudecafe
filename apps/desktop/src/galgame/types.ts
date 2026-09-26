@@ -15,6 +15,7 @@ export type Whisper = {
  * ran, permissions granted or refused, interruptions. */
 export type ChatMessage = {
   id: number
+  streamId?: string
   role: 'user' | 'assistant' | 'event' | 'boundary'
   content: string
   detail?: string

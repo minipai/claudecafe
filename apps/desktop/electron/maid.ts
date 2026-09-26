@@ -497,6 +497,7 @@ export class MaidSession {
       // face over the name plate, a panel for anything long. She needs to know
       // that, on top of everything Claude Code normally tells her.
       systemPrompt: { type: 'preset', preset: 'claude_code', append: shiftBrief(maid) },
+      includePartialMessages: true,
       mcpServers: { cafe: cafeTools },
       resume: this.sessionId ?? undefined,
       // Nothing is said about the mode unless the master has picked one in this

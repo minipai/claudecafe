@@ -26,6 +26,61 @@ describe('useSpeech', () => {
     expect(result.current.isDone).toBe(true)
   })
 
+  it('renders cumulative stream snapshots immediately, updates queued snapshots in place, and completes without typing', () => {
+    const { result } = renderHook(() => useSpeech())
+    act(() => result.current.stream('one', 'live', false))
+    expect(result.current.line).toBe('live')
+    expect(result.current.isDone).toBe(false)
+    act(() => result.current.stream('two', 'front', false))
+    act(() => result.current.stream('two', 'front page', true))
+    expect(result.current.queued).toBe(1)
+    act(() => result.current.advance())
+    expect(result.current.line).toBe('front page')
+    expect(result.current.isDone).toBe(true)
+  })
+
+  it('applies the latest active stream hooks but keeps queued stream hooks dormant until shown', () => {
+    const firstMood = vi.fn()
+    const finalMood = vi.fn()
+    const queuedMood = vi.fn()
+    const { result } = renderHook(() => useSpeech())
+
+    act(() => result.current.stream('active', 'part', false, { onShow: firstMood }))
+    act(() => result.current.stream('active', 'complete', true, { onShow: finalMood }))
+    expect(finalMood).toHaveBeenCalledOnce()
+
+    act(() => result.current.stream('queued', 'queued part', false, { onShow: queuedMood }))
+    act(() => result.current.stream('queued', 'queued complete', true, { onShow: queuedMood }))
+    expect(queuedMood).not.toHaveBeenCalled()
+
+    act(() => result.current.advance())
+    expect(queuedMood).toHaveBeenCalledOnce()
+    expect(result.current.line).toBe('queued complete')
+  })
+
+  it('does not requeue a stream snapshot that arrives after advancing past that stream', () => {
+    const { result } = renderHook(() => useSpeech())
+    act(() => result.current.stream('read', 'already read', true))
+    act(() => result.current.stream('next', 'next line', true))
+    act(() => result.current.advance())
+
+    act(() => result.current.stream('read', 'late canonical snapshot', true))
+
+    expect(result.current.line).toBe('next line')
+    expect(result.current.queued).toBe(0)
+  })
+
+  it('discards late snapshots after clear while still dropping queued permission hooks', () => {
+    const onDrop = vi.fn()
+    const { result } = renderHook(() => useSpeech())
+    act(() => result.current.stream('live', 'partial', false))
+    act(() => result.current.say('permission', { onDrop }))
+    act(() => result.current.clear())
+    act(() => result.current.stream('live', 'resurrected', true))
+    expect(result.current.line).toBe('partial')
+    expect(onDrop).toHaveBeenCalledOnce()
+  })
+
   it('queues a second line behind the one already showing, and reveals it on advance', () => {
     const onShow2 = vi.fn()
     const { result } = renderHook(() => useSpeech())

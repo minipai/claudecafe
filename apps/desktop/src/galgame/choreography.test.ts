@@ -4,9 +4,11 @@ import { choreograph, type Scene } from './choreography'
 function createScene(): Scene {
   return {
     appendChatMessage: vi.fn(),
+    upsertStreamMessage: vi.fn(),
     appendEvent: vi.fn(),
     recordResult: vi.fn(),
     say: vi.fn(),
+    stream: vi.fn(),
     // Acts play immediately in these tests — the queueing itself belongs to
     // useSpeech, not to the choreography that decides an act should happen.
     act: vi.fn((play: () => void) => play()),
@@ -53,6 +55,16 @@ describe('choreograph', () => {
     // `wear`'s own job is clearing the mood when the marker is undefined —
     // the choreography's part is passing it through rather than the last one.
     expect(scene.wear).toHaveBeenCalledWith(undefined, undefined)
+  })
+
+  it('text_stream: updates a single log row and streams snapshots without typing them again', () => {
+    const scene = createScene()
+    choreograph({ type: 'text_stream', id: 'block-1', text: '**hel', done: false, mood: '【 嬉しい 】' }, scene)
+    choreograph({ type: 'text_stream', id: 'block-1', text: '**hello**', done: true, expression: 'happy' }, scene)
+    expect(scene.upsertStreamMessage).toHaveBeenNthCalledWith(1, 'block-1', '**hel 【 嬉しい 】')
+    expect(scene.upsertStreamMessage).toHaveBeenNthCalledWith(2, 'block-1', '**hello**')
+    expect(scene.stream).toHaveBeenNthCalledWith(2, 'block-1', '**hello**', true, expect.any(Object))
+    expect(scene.say).not.toHaveBeenCalled()
   })
 
   it('command_output: puts the paper on the record and ends the turn at phase done, without touching her face', () => {

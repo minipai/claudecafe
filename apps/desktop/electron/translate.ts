@@ -1,4 +1,5 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
+import { randomUUID } from 'node:crypto'
 import type { AgentMessage, Todo } from '../src/agent/types'
 import { EXPRESSION_TOOL } from './tools'
 import { faceFor, type Expression } from '../src/agent/expressions'
@@ -35,11 +36,13 @@ export class Turn {
   /** The last spoken text block, held back so it can become the result line
    * instead of being said twice — with the face she signed it with, which
    * belongs to that line and not to the one still on screen. */
-  private pendingLine: { text: string; expression: Expression | null; marker: string | null } | null = null
+  private pendingLine: { text: string; expression: Expression | null; marker: string | null; streamId?: string } | null = null
   /** The last line already put on screen, so the result does not repeat it. */
   private spoken: string | null = null
   /** How many tokens she has written this turn, for the line he waits at. */
   private written = 0
+  private streamBlocks = new Map<number, { id: string; text: string; canonical: boolean }>()
+  private streamMessageModel: string | null = null
 
   /** The prompt this turn was started with — only read to name the slash
    * command, when the turn turns out to be one. The board is the
@@ -60,9 +63,50 @@ export class Turn {
         return this.readToolResults(sdk)
       case 'result':
         return this.readResult(sdk)
+      case 'stream_event':
+        return this.readStreamEvent(sdk)
       default:
         return []
     }
+  }
+
+  private readStreamEvent(sdk: Extract<SDKMessage, { type: 'stream_event' }>): AgentMessage[] {
+    const event = sdk.event
+    if (event.type === 'message_start') {
+      this.streamBlocks.clear()
+      this.streamMessageModel = event.message.model
+      return []
+    }
+    if (this.streamMessageModel === LOCAL_COMMAND) return []
+    if (event.type === 'content_block_start' && event.content_block.type === 'text') {
+      const block = { id: randomUUID(), text: event.content_block.text, canonical: false }
+      this.streamBlocks.set(event.index, block)
+      return this.streamSnapshot(block, false)
+    }
+    const block = 'index' in event ? this.streamBlocks.get(event.index) : undefined
+    if (!block) return []
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') block.text += event.delta.text
+    else if (event.type !== 'content_block_stop') return []
+    const complete = event.type === 'content_block_stop'
+    return this.streamSnapshot(block, complete)
+  }
+
+  private streamSnapshot(block: { id: string; text: string }, done: boolean): AgentMessage[] {
+    const moodMatch = block.text.match(/【[^【】]*】\s*$/)
+    const incompleteMarker = block.text.match(/【[^【】]*$/)
+    const visibleRaw = moodMatch ? block.text.slice(0, moodMatch.index) : incompleteMarker ? block.text.slice(0, incompleteMarker.index) : block.text
+    const { text, expression } = readMood(visibleRaw)
+    if (!text && moodMatch && this.pendingLine?.streamId) {
+      const parsed = readMood(block.text)
+      const previous = { ...this.pendingLine, expression: parsed.expression, marker: parsed.marker }
+      this.pendingLine = previous
+      return [{ type: 'text_stream', id: previous.streamId!, text: previous.text, done: true, expression: parsed.expression ?? undefined, mood: parsed.marker ?? undefined }]
+    }
+    if (!text) return []
+    const marker = moodMatch?.[0] ?? null
+    const face = moodMatch ? faceFor(marker!) : expression
+    this.pendingLine = { text, expression: face, marker, streamId: block.id }
+    return [{ type: 'text_stream', id: block.id, text, done, expression: face ?? undefined, mood: marker ?? undefined }]
   }
 
   private readSystem(sdk: Extract<SDKMessage, { type: 'system' }>): AgentMessage[] {
@@ -101,7 +145,11 @@ export class Turn {
   }
 
   private readAssistant(sdk: Extract<SDKMessage, { type: 'assistant' }>): AgentMessage[] {
-    if (sdk.message.model === LOCAL_COMMAND) return this.readPrinted(sdk)
+    if (sdk.message.model === LOCAL_COMMAND) {
+      this.streamBlocks.clear()
+      this.streamMessageModel = null
+      return this.readPrinted(sdk)
+    }
     const out: AgentMessage[] = []
 
     // Each message reports what it cost on its own, so the figure the master
@@ -112,11 +160,27 @@ export class Turn {
     for (const block of sdk.message.content) {
       if (block.type === 'text') {
         const { text, expression, marker } = readMood(block.text)
+        // Claude Code emits an assistant message for each completed block:
+        // its content[0] can belong to stream index 1, after a thinking block.
+        // Consume streamed text blocks in order, keeping their SDK indices for
+        // the content_block_stop events that arrive after these messages.
+        const streamed = [...this.streamBlocks.values()].find((part) => !part.canonical)
+        if (streamed) {
+          streamed.canonical = true
+          streamed.text = block.text
+        }
+        if (streamed && text) {
+          this.flush(out)
+          out.push({ type: 'text_stream', id: streamed.id, text, done: true, expression: expression ?? undefined, mood: marker ?? undefined })
+          this.pendingLine = { text, expression, marker, streamId: streamed.id }
+          continue
+        }
         // She sometimes signs off in a block of its own — the marker belongs
         // to the line before it, not to nothing at all. Signed where it stands,
         // the line still goes out complete and in one piece.
         if (!text && marker && this.pendingLine) {
           this.pendingLine = { ...this.pendingLine, expression, marker }
+          if (this.pendingLine.streamId) out.push({ type: 'text_stream', id: this.pendingLine.streamId, text: this.pendingLine.text, done: true, expression: expression ?? undefined, mood: marker })
           continue
         }
         this.flush(out)
@@ -206,7 +270,7 @@ export class Turn {
     // The marker goes with the line it was written on, not with the end of the
     // turn: she signs every block she writes, and the one on screen is the one
     // whose mood is being worn.
-    out.push({ type: 'text_delta', text, expression: expression ?? undefined, mood: marker ?? undefined })
+    if (!this.pendingLine.streamId) out.push({ type: 'text_delta', text, expression: expression ?? undefined, mood: marker ?? undefined })
     this.spoken = text
     this.pendingLine = null
   }
@@ -227,7 +291,7 @@ export class Turn {
     const expression = ending?.expression ?? held?.expression ?? undefined
     // Her last word was already said on the way to a tool call; the result is
     // the same text coming back round, so the scene must not say it twice.
-    const said = !held && text === this.spoken
+    const said = Boolean(held?.streamId) || (!held && text === this.spoken)
     this.pendingLine = null
     this.spoken = null
     // Only the ending line's own marker signs the result — an earlier line's

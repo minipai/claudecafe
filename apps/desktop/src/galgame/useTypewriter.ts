@@ -34,5 +34,12 @@ export function useTypewriter() {
     }, TYPE_SPEED_MS)
   }, [])
 
-  return { line, isDone, typeLine }
+  const showStream = useCallback((text: string, done: boolean) => {
+    if (timerRef.current !== null) window.clearInterval(timerRef.current)
+    timerRef.current = null
+    setLine(text)
+    setIsDone(done)
+  }, [])
+
+  return { line, isDone, typeLine, showStream }
 }

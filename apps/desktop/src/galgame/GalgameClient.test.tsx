@@ -195,6 +195,19 @@ describe('GalgameClient', () => {
     expect(log.messages.map((message) => message.content)).toContain('hello')
   })
 
+  it('shows streamed snapshots immediately, keeps one log row, and leaves the final markdown rendered', async () => {
+    const { bridge, emit } = await mountLive()
+    await act(async () => submit('explain this'))
+    const runId = lastRunId(bridge)
+    await act(async () => emit({ kind: 'message', runId, message: { type: 'text_stream', id: 'block-1', text: '**A', done: false } }))
+    expect(logged(bridge).filter((content) => content.startsWith('**A'))).toHaveLength(1)
+    await act(async () => emit({ kind: 'message', runId, message: { type: 'text_stream', id: 'block-1', text: '**Answer**\n\nsecond paragraph', done: true } }))
+    const rows = logged(bridge).filter((content) => content.startsWith('**Answer**'))
+    expect(rows).toHaveLength(1)
+    await vi.waitFor(() => expect(document.querySelector('.report-md strong')).toHaveTextContent('Answer'))
+    expect(document.querySelectorAll('.report-md p')).toHaveLength(2)
+  })
+
   it('does what the side windows ask, the way the scene would do it itself', async () => {
     const { bridge, emit } = await mountLive()
 

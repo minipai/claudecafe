@@ -51,6 +51,91 @@ function textDeltas(messages: AgentMessage[]) {
 }
 
 describe('Turn — text blocks', () => {
+  it('completes text after thinking when the SDK reindexes each canonical block to zero', () => {
+    const turn = new Turn('tell a story')
+    const stream = (event: unknown) => turn.read({ type: 'stream_event', event, parent_tool_use_id: null, uuid: 'u', session_id: 's' } as unknown as SDKMessage)
+    stream({ type: 'message_start', message: { model: 'claude-sonnet' } })
+    stream({ type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '' } })
+    turn.read(assistant([thinkingBlock('Plan the story')]))
+    stream({ type: 'content_block_stop', index: 0 })
+
+    const first = stream({ type: 'content_block_start', index: 1, content_block: { type: 'text', text: 'First page' } })[0]
+    if (first?.type !== 'text_stream') throw new Error('expected streamed text')
+    const firstComplete = turn.read(assistant([textBlock('First page')]))
+    expect(firstComplete).toContainEqual(expect.objectContaining({ type: 'text_stream', id: first.id, text: 'First page', done: true }))
+    expect(textDeltas(firstComplete)).toEqual([])
+    expect(stream({ type: 'content_block_stop', index: 1 })).toContainEqual(expect.objectContaining({ id: first.id, done: true }))
+
+    const second = stream({ type: 'content_block_start', index: 2, content_block: { type: 'text', text: 'Second page' } })[0]
+    if (second?.type !== 'text_stream') throw new Error('expected streamed text')
+    const secondComplete = turn.read(assistant([textBlock(`Second page ${HAPPY}`)]))
+    expect(secondComplete).toContainEqual(expect.objectContaining({ type: 'text_stream', id: second.id, text: 'Second page', done: true, mood: HAPPY }))
+    expect(textDeltas(secondComplete)).toEqual([])
+    expect(stream({ type: 'content_block_stop', index: 2 })).toContainEqual(expect.objectContaining({ id: second.id, done: true, mood: HAPPY }))
+    expect(turn.read(result('Second page'))).toMatchObject([{ type: 'result', line: 'Second page', said: true }])
+  })
+
+  it('streams cumulative snapshots before the completed assistant and marks the result already said', () => {
+    const turn = new Turn('hi')
+    const stream = (event: unknown) => turn.read({ type: 'stream_event', event, parent_tool_use_id: null, uuid: 'u', session_id: 's' } as unknown as SDKMessage)
+    stream({ type: 'message_start', message: { model: 'claude-sonnet' } })
+    const started = stream({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'Hi' } })[0]
+    expect(started).toMatchObject({ type: 'text_stream', text: 'Hi', done: false })
+    const id = started && started.type === 'text_stream' ? started.id : ''
+    expect(stream({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: ' there' } })[0]).toMatchObject({ type: 'text_stream', id, text: 'Hi there' })
+    stream({ type: 'content_block_stop', index: 0 })
+    const canonical = turn.read(assistant([textBlock('Hello there')]))
+    expect(canonical.filter((message) => message.type === 'text_delta')).toEqual([])
+    expect(turn.read(result('Hello there'))).toMatchObject([{ type: 'result', line: 'Hello there', said: true }])
+  })
+
+  it('holds an unfinished mood marker out of snapshots and supplies it when complete', () => {
+    const turn = new Turn('hi')
+    const stream = (event: unknown) => turn.read({ type: 'stream_event', event, parent_tool_use_id: null, uuid: 'u', session_id: 's' } as unknown as SDKMessage)
+    stream({ type: 'message_start', message: { model: 'claude-sonnet' } })
+    stream({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } })
+    stream({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: `Hi ${HAPPY.slice(0, 4)}` } })
+    expect(stream({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: HAPPY.slice(4) } })[0]).toMatchObject({ text: 'Hi', mood: HAPPY, expression: 'happy' })
+  })
+
+  it('reconciles canonical corrections under the same id and never emits a duplicate when tools follow', () => {
+    const turn = new Turn('hi')
+    const stream = (event: unknown) => turn.read({ type: 'stream_event', event, parent_tool_use_id: null, uuid: 'u', session_id: 's' } as unknown as SDKMessage)
+    stream({ type: 'message_start', message: { model: 'claude-sonnet' } })
+    const initial = stream({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'Draf' } })[0]
+    const id = initial && initial.type === 'text_stream' ? initial.id : ''
+    stream({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 't' } })
+    const canonical = turn.read(assistant([textBlock('Draft corrected'), toolUseBlock('read', 'Read')]))
+    expect(canonical).toContainEqual(expect.objectContaining({ type: 'text_stream', id, text: 'Draft corrected', done: true }))
+    expect(canonical.filter((message) => message.type === 'text_delta')).toEqual([])
+    expect(canonical.at(-1)).toMatchObject({ type: 'tool_use', id: 'read' })
+  })
+
+  it('keeps text block identities distinct across messages and turns, applies marker-only blocks to the prior id, and ignores synthetic partials', () => {
+    const turn = new Turn('/context')
+    const stream = (event: unknown) => turn.read({ type: 'stream_event', event, parent_tool_use_id: null, uuid: 'u', session_id: 's' } as unknown as SDKMessage)
+    stream({ type: 'message_start', message: { model: 'claude-sonnet' } })
+    const first = stream({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'Same' } })[0]
+    stream({ type: 'message_start', message: { model: 'claude-sonnet' } })
+    const second = stream({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'Same' } })[0]
+    expect(first).toMatchObject({ type: 'text_stream', text: 'Same' })
+    expect(second).toMatchObject({ type: 'text_stream', text: 'Same' })
+    if (first?.type !== 'text_stream' || second?.type !== 'text_stream') throw new Error('expected streamed blocks')
+    expect(second.id).not.toBe(first.id)
+    const nextTurn = new Turn('again')
+    const next = nextTurn.read({ type: 'stream_event', event: { type: 'message_start', message: { model: 'claude-sonnet' } }, parent_tool_use_id: null, uuid: 'v', session_id: 's' } as unknown as SDKMessage)
+    expect(next).toEqual([])
+    const nextBlock = nextTurn.read({ type: 'stream_event', event: { type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'Same' } }, parent_tool_use_id: null, uuid: 'v', session_id: 's' } as unknown as SDKMessage)[0]
+    expect(nextBlock).toMatchObject({ type: 'text_stream', text: 'Same' })
+    if (nextBlock?.type !== 'text_stream') throw new Error('expected streamed block')
+    expect(nextBlock.id).not.toBe(first.id)
+    stream({ type: 'content_block_start', index: 1, content_block: { type: 'text', text: HAPPY } })
+    const signed = stream({ type: 'content_block_stop', index: 1 })
+    expect(signed).toContainEqual(expect.objectContaining({ type: 'text_stream', id: second.id, text: 'Same', mood: HAPPY }))
+    stream({ type: 'message_start', message: { model: '<synthetic>' } })
+    expect(stream({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'printed' } })).toEqual([])
+  })
+
   it('holds a text block as pendingLine and only speaks it once the next block flushes it', () => {
     const turn = new Turn('hi')
     const out = turn.read(assistant([textBlock('Hello'), textBlock('World')]))

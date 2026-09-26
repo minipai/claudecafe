@@ -23,7 +23,7 @@ import { SessionPlaque } from './SessionPlaque'
 import { useSpeech, type Hooks } from './useSpeech'
 import { alwaysCovers, readPermission, standingFor, type PermissionAsk } from './permission'
 import { toast } from 'sonner'
-import { createChatMessage, createPreviewHistory, recordToolResult } from './chatlog'
+import { createChatMessage, createPreviewHistory, recordToolResult, upsertStreamMessage } from './chatlog'
 import { choreograph, type Scene } from './choreography'
 import { applyWindowEvent, type WindowScene } from './windowEvents'
 import type { Backdrop as Chosen, CastMember, Shift } from '@/agent'
@@ -183,7 +183,9 @@ export function GalgameClient({
     line,
     isDone,
     past,
+    streamed,
     say: queueLine,
+    stream: streamLine,
     act,
     cut: cutIn,
     clear: clearSpeech,
@@ -210,6 +212,17 @@ export function GalgameClient({
     })
   }
 
+  function stream(id: string, content: string, done: boolean, hooks?: Hooks) {
+    lastLineRef.current = content
+    streamLine(id, content, done, {
+      ...hooks,
+      onShow: () => {
+        setLaidOut(null)
+        hooks?.onShow?.()
+      },
+    })
+  }
+
   /** Straight into the box — a question, an interruption, a new session. */
   function cut(text: string) {
     lastLineRef.current = text
@@ -219,6 +232,10 @@ export function GalgameClient({
 
   const appendChatMessage = useCallback((role: ChatMessage['role'], content: string) => {
     setChatMessages((current) => [...current, createChatMessage(role, content)])
+  }, [])
+
+  const updateStreamMessage = useCallback((id: string, content: string) => {
+    setChatMessages((current) => upsertStreamMessage(current, id, content))
   }, [])
 
   /** Things that happened between the spoken lines — tools, permissions,
@@ -272,9 +289,11 @@ export function GalgameClient({
   function currentScene(): Scene {
     return {
       appendChatMessage,
+      upsertStreamMessage: updateStreamMessage,
       appendEvent,
       recordResult,
       say,
+      stream,
       act,
       wear,
       showFace,
@@ -766,6 +785,7 @@ export function GalgameClient({
               line={line}
               laidOut={laidOut}
               isTyping={!isDone}
+              streamed={streamed}
               isPast={past}
               isLoading={phase === 'working'}
               mood={mood}

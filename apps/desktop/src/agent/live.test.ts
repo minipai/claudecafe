@@ -59,6 +59,27 @@ describe('Inbox', () => {
 })
 
 describe('query', () => {
+  it('yields partial text before the block or run finishes', async () => {
+    const { bridge, emit, listenerCount } = createBridge()
+    ;(globalThis as { window?: unknown }).window = { cafe: bridge }
+
+    const iter = query({ prompt: 'hi' })
+    const first = iter.next()
+    const runId = vi.mocked(bridge.start).mock.calls[0][0] as string
+    const partial = { type: 'text_stream' as const, id: 'reply-1', text: 'Hel', done: false }
+    emit({ kind: 'message', runId, message: partial })
+    expect(await first).toEqual({ value: partial, done: false })
+
+    const next = iter.next()
+    const completed = { ...partial, text: 'Hello!', done: true }
+    emit({ kind: 'message', runId, message: completed })
+    expect(await next).toEqual({ value: completed, done: false })
+
+    emit({ kind: 'done', runId })
+    expect(await iter.next()).toEqual({ value: undefined, done: true })
+    expect(listenerCount()).toBe(0)
+  })
+
   it('ignores messages for other run ids and yields its own in order', async () => {
     const { bridge, emit } = createBridge()
     ;(globalThis as { window?: unknown }).window = { cafe: bridge }

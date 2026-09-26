@@ -10,6 +10,7 @@ import { fill, her, text } from '@/i18n'
 type DialogueBoxProps = {
   line: string
   isTyping: boolean
+  streamed: boolean
   /** Whether the line in the box was said before the question just asked. */
   isPast: boolean
   /** An answer with shape to it — markdown, laid out in place of the typed line. */
@@ -50,6 +51,7 @@ type DialogueBoxProps = {
 export function DialogueBox({
   line,
   isTyping,
+  streamed,
   isPast,
   laidOut,
   isLoading,
@@ -166,7 +168,14 @@ export function DialogueBox({
                   lists belong to a laid-out answer above. Without this the box
                   read markdown when she laid something out and printed the
                   asterisks when she spoke, which flipped mid-conversation. */}
-              <span dangerouslySetInnerHTML={{ __html: marked.parseInline(line, { async: false }) }} />
+              <div
+                className={streamed ? 'report-md' : undefined}
+                dangerouslySetInnerHTML={{
+                  __html: streamed
+                    ? marked.parse(line, { async: false, breaks: true })
+                    : marked.parseInline(line, { async: false }),
+                }}
+              />
               {isTyping && (
                 <span className="ml-0.5 inline-block h-[1em] w-0.5 -translate-y-0.5 animate-[caret-blink_1s_step-end_infinite] bg-foreground align-middle" />
               )}

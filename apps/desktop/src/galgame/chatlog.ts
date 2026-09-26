@@ -64,3 +64,12 @@ export function recordToolResult(
   withResult[at] = { ...messages[at], output, failed }
   return withResult
 }
+
+/** Keep one live assistant row per streamed text block as its snapshot grows. */
+export function upsertStreamMessage(messages: ChatMessage[], streamId: string, content: string): ChatMessage[] {
+  const index = messages.findIndex((message) => message.streamId === streamId)
+  if (index < 0) return [...messages, { ...createChatMessage('assistant', content), streamId }]
+  const next = [...messages]
+  next[index] = { ...next[index], content }
+  return next
+}

@@ -12,9 +12,11 @@ import type { ChatMessage, Expression, Phase, Whisper } from './types'
  */
 export type Scene = {
   appendChatMessage: (role: ChatMessage['role'], content: string) => void
+  upsertStreamMessage: (id: string, content: string) => void
   appendEvent: (content: string, detail?: string, toolId?: string, output?: string) => void
   recordResult: (toolId: string, output: string, failed: boolean) => void
   say: (text: string, hooks?: Hooks) => void
+  stream: (id: string, text: string, done: boolean, hooks?: Hooks) => void
   act: (play: () => void) => void
   wear: (expr?: Expression, marker?: string) => void
   /** The bare face, with no marker to sign it — a tool changing her expression
@@ -46,6 +48,10 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
       // marker off, to put it on her face instead.
       scene.appendChatMessage('assistant', signed(msg.text, msg.mood))
       scene.say(msg.text, { onShow: () => scene.wear(msg.expression, msg.mood) })
+      break
+    case 'text_stream':
+      scene.upsertStreamMessage(msg.id, signed(msg.text, msg.mood))
+      scene.stream(msg.id, msg.text, msg.done, { onShow: () => scene.wear(msg.expression, msg.mood) })
       break
     case 'command_output':
       // The café's own paperwork, handed over on the spot: it is not

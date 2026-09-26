@@ -20,6 +20,7 @@ export type AgentMessage =
   // expression = the face she signed this line with; it goes on when the line does
   // mood = the 【…】 marker itself, shown as she wrote it
   | { type: 'text_delta'; text: string; expression?: Expression; mood?: string }
+  | { type: 'text_stream'; id: string; text: string; done: boolean; expression?: Expression; mood?: string }
   // The CLI answering a slash command itself — /usage, /context, /model. Not
   // her voice: label is the command that was typed, body what it printed.
   | { type: 'command_output'; label: string; body: string }
