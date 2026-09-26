@@ -37,7 +37,6 @@ function createBridge() {
     askLanguage: vi.fn().mockResolvedValue(false),
     setLocale: vi.fn(),
     setSpeech: vi.fn(),
-    setBackdrop: vi.fn(),
     start: vi.fn(),
     answer: vi.fn(),
     interrupt: vi.fn(),
@@ -237,12 +236,9 @@ describe('GalgameClient', () => {
 
     await act(async () => emit({ kind: 'side-window', action: { kind: 'locale', choice: 'zh-TW' } }))
     await act(async () => emit({ kind: 'side-window', action: { kind: 'speech', language: '日本語' } }))
-    await act(async () => emit({ kind: 'side-window', action: { kind: 'backdrop', backdrop: 'ukiyo-e' } }))
 
     expect(bridge.setLocale).toHaveBeenCalledWith('zh-TW')
     expect(bridge.setSpeech).toHaveBeenCalledWith('日本語')
-    expect(bridge.setBackdrop).toHaveBeenCalledWith('ukiyo-e')
-    expect(lastShared(bridge).settings.backdrop).toBe('ukiyo-e')
   })
 
   it('opening a conversation in another folder sends her there first, then back into it', async () => {

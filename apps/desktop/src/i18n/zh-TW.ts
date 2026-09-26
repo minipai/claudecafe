@@ -19,7 +19,6 @@ export const zhTW: Text = {
     keys: '鍵盤快速鍵',
     locale: '介面語言',
     speech: '她說話的語言',
-    backdrop: '她身後的背景',
     followCafe: '跟著咖啡廳的設定',
     speakHint: '打上要她說的語言，或是一整句要求',
     here: '目前',
@@ -47,12 +46,6 @@ export const zhTW: Text = {
   settings: {
     title: '設定',
     speak: '就用這個',
-  },
-  backdrop: {
-    none: '無',
-    'art-nouveau': '新藝術',
-    'ukiyo-e': '浮世繪',
-    'shojo-manga': '少女漫畫',
   },
   mode: {
     follow: '跟著終端機的設定',

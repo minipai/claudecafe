@@ -1,10 +1,9 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import type { Backdrop, BridgeEvent, CafeBridge, SceneShare } from '../src/agent/bridge'
+import type { BridgeEvent, CafeBridge, SceneShare } from '../src/agent/bridge'
 
 const folderArg = process.argv.find((arg) => arg.startsWith('--cafe-cwd=')) ?? ''
 const localeArg = process.argv.find((arg) => arg.startsWith('--cafe-locale=')) ?? ''
 const choiceArg = process.argv.find((arg) => arg.startsWith('--cafe-locale-choice=')) ?? ''
-const backdropArg = process.argv.find((arg) => arg.startsWith('--cafe-backdrop=')) ?? ''
 const shiftArg = process.argv.find((arg) => arg.startsWith('--cafe-shift=')) ?? ''
 const charactersArg = process.argv.find((arg) => arg.startsWith('--cafe-characters-dir=')) ?? ''
 const characterErrorArg = process.argv.find((arg) => arg.startsWith('--cafe-character-error=')) ?? ''
@@ -16,8 +15,6 @@ const bridge: CafeBridge = {
   localeChoice: choiceArg.slice('--cafe-locale-choice='.length),
   setLocale: (choice) => ipcRenderer.send('cafe:set-locale', choice),
   setSpeech: (language) => ipcRenderer.send('cafe:set-speech', language),
-  backdrop: (backdropArg.slice('--cafe-backdrop='.length) || 'art-nouveau') as Backdrop,
-  setBackdrop: (chosen) => ipcRenderer.send('cafe:set-backdrop', chosen),
   shift: {
     maid: shiftArg.slice('--cafe-shift='.length),
   },

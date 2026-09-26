@@ -24,7 +24,6 @@ export const en = {
     keys: 'Keyboard shortcuts',
     locale: 'Interface language',
     speech: 'What she speaks',
-    backdrop: 'What is behind her',
     followCafe: 'Follow the café setting',
     speakHint: 'Type what she should speak — a language, or a sentence about it',
     here: 'here',
@@ -52,12 +51,6 @@ export const en = {
   settings: {
     title: 'Settings',
     speak: 'Use this',
-  },
-  backdrop: {
-    none: 'None',
-    'art-nouveau': 'Art Nouveau',
-    'ukiyo-e': 'Ukiyo-e',
-    'shojo-manga': 'Shojo manga',
   },
   mode: {
     follow: 'However the terminal is set',

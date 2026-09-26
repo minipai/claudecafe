@@ -33,9 +33,6 @@ export type SessionSettings = {
   modePicked: boolean
 }
 
-/** Which transparent illustration stands behind her. */
-export type Backdrop = 'none' | 'art-nouveau' | 'ukiyo-e' | 'shojo-manga'
-
 /** The folder name of the maid serving this window. */
 export type Shift = { maid: string }
 
@@ -145,7 +142,6 @@ export type SceneShare = {
     /** What was picked for the interface, which may be `system`. */
     locale: string
     speech: { language: string; chosen: string }
-    backdrop: Backdrop
   }
 }
 
@@ -157,7 +153,6 @@ export type SceneAction =
   | { kind: 'return' }
   | { kind: 'locale'; choice: string }
   | { kind: 'speech'; language: string }
-  | { kind: 'backdrop'; backdrop: Backdrop }
   /** Send her to a folder, on whatever was last said there. */
   | { kind: 'folder'; folder: string }
   /** Ask for a folder that is not in the list, and go there. */
@@ -178,8 +173,6 @@ export type BridgeEvent =
   /** The interface's language changed — the code to draw it in, and what was
    * picked (which may be `system`). */
   | { kind: 'locale'; locale: string; choice: string }
-  /** Another room behind her, or another shape cut out of the one that is up. */
-  | { kind: 'backdrop'; backdrop: Backdrop }
   /** The conversation as the transcript has it — sent on refresh, which is how
    * the backlog survives a reload. */
   | { kind: 'backlog'; sessionId: string | null; lines: BacklogLine[] }
@@ -218,10 +211,6 @@ export type CafeBridge = {
   setLocale(choice: string): void
   /** Have her reply in this — free text, empty to follow the café's setting. */
   setSpeech(language: string): void
-  /** What she is standing in front of, as it was last left. */
-  backdrop: Backdrop
-  /** Put another room behind her, or cut the one that is up to another shape. */
-  setBackdrop(chosen: Backdrop): void
   /** Who is on shift here, as it was last left. */
   shift: Shift
   /** What to call her, as her persona file does. Handed over with the window

@@ -5,7 +5,7 @@ import { app } from 'electron'
 import { cafeRoot } from '../characters/cafehome'
 import { castOf } from '../characters/characters'
 import { describeTool, hasShape } from '../session/translate'
-import type { BacklogLine, Backdrop, KeptSettings, Shift } from '../../src/agent/bridge'
+import type { BacklogLine, KeptSettings, Shift } from '../../src/agent/bridge'
 
 /**
  * Which conversation this window is on, and what was said in it.
@@ -220,22 +220,6 @@ export function chosenSpeech(): string {
   }
 }
 
-/** The illustration behind her, saved between launches. */
-export function rememberBackdrop(chosen: Backdrop) {
-  fs.writeFileSync(backdropFile(), JSON.stringify(chosen, null, 2))
-}
-
-export function chosenBackdrop(): Backdrop {
-  try {
-    const kept: unknown = JSON.parse(fs.readFileSync(backdropFile(), 'utf8'))
-    if (kept === 'none' || kept === 'art-nouveau' || kept === 'ukiyo-e' || kept === 'shojo-manga') return kept
-    if (typeof kept === 'object' && kept !== null && 'scene' in kept && kept.scene === 'none') return 'none'
-  } catch {
-    // An unset preference uses the original illustration.
-  }
-  return 'art-nouveau'
-}
-
 /**
  * Who is on shift in this window.
  *
@@ -358,8 +342,6 @@ const localeFile = () => path.join(app.getPath('userData'), 'locale.json')
 const speechFile = () => path.join(app.getPath('userData'), 'speech.json')
 
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json')
-
-const backdropFile = () => path.join(app.getPath('userData'), 'backdrop.json')
 
 const shiftFile = () => path.join(app.getPath('userData'), 'shift.json')
 

@@ -9,6 +9,10 @@ touches anything, and reports back in her own voice.
 Electron for the window (`electron/`, the main process), Vite + React for what's
 inside it (`src/`).
 
+The character stands directly on the transparent desktop with a smooth white
+paper border and shadow. Brief reactions mark prompts, completed replies,
+questions and errors; reduced-motion preferences disable these animations.
+
 Live replies appear as the Agent SDK streams their text. Each text block is a
 dialogue page: the current page updates immediately, while later pages collect
 their text until you advance to them. Opening a page shows everything received

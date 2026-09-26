@@ -3,18 +3,17 @@ import { Button } from '@/components/ui/button'
 import { LOCALES, SPOKEN, text } from '@/i18n'
 import { sendToScene } from '@/agent/windows'
 import type { SceneAction, SceneShare } from '@/agent'
-import { BackdropPicker } from './BackdropPicker'
 import { Keys } from './Keys'
 
 /**
  * What the café looks and sounds like, in a window of its own: the language the
- * window is drawn in, the one she speaks, and the room behind her — and, at
+ * window is drawn in and the one she speaks — and, at
  * the bottom, the keys it all answers to. Each choice is sent to the scene,
  * which keeps it — this window only shows what the scene says is chosen now.
  */
 export function SettingsWindow({ settings }: { settings: SceneShare['settings'] }) {
   const t = text()
-  const { locale, speech, backdrop } = settings
+  const { locale, speech } = settings
   /** Her language written out, when none of the usual ones will do. */
   const [typed, setTyped] = useState('')
 
@@ -67,10 +66,6 @@ export function SettingsWindow({ settings }: { settings: SceneShare['settings'] 
               {t.settings.speak}
             </Button>
           </form>
-        </Section>
-
-        <Section title={t.bar.backdrop}>
-          <BackdropPicker chosen={backdrop} onChoose={(chosen) => sendToScene({ kind: 'backdrop', backdrop: chosen })} />
         </Section>
 
         <section className="border-t border-border pt-5">

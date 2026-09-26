@@ -35,7 +35,6 @@ export const openingStatus = isLive ? null : MOCK_SESSION
 
 export type { AgentMessage, Attachment, PermissionResult, QueryOptions, Question, Tier, Todo } from './types'
 export type {
-  Backdrop,
   BacklogLine,
   BridgeEvent,
   CafeBridge,

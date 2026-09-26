@@ -26,7 +26,7 @@ import { toast } from 'sonner'
 import { createChatMessage, createPreviewHistory, recordToolResult, upsertStreamMessage } from './scene/chatlog'
 import { choreograph, type Scene } from './choreography'
 import { applyWindowEvent, type WindowScene } from './windowEvents'
-import type { Backdrop as Chosen, CastMember, Shift } from '@/agent'
+import type { CastMember, Shift } from '@/agent'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
 import { lines as currentLines } from './scene/content'
 import { fill, her, nowServing, text } from '@/i18n'
@@ -134,14 +134,7 @@ export function GalgameClient({
   }))
   /** What she is speaking, as the session reports it — a sentence, not a code. */
   const [speech, setSpeech] = useState({ language: '', chosen: '' })
-  /** Which room is behind her and how its picture is cut off. Read off the
-   * bridge rather than defaulted here, so the first frame is already right. */
-  const [backdrop, setBackdrop] = useState<Chosen>(
-    () => window.cafe?.backdrop ?? 'art-nouveau',
-  )
-  /** Who is standing there. Off the bridge for the same
-   * reason as the room behind her: the first frame has to have the right maid
-   * in it. */
+  /** Read from the bridge so the first frame has the right maid. */
   const [shift, setShift] = useState<Shift>(() => availableShift(cast, window.cafe?.shift ?? { maid: cast[0].id }))
   const maid = cast.find((maid) => maid.id === shift.maid) ?? cast[0]
   nowServing(maid.name)
@@ -357,7 +350,6 @@ export function GalgameClient({
       setCommands,
       setSpeech,
       setLocale,
-      setBackdrop,
       // A removed maid is replaced by the first available character.
       setShift: (next: Shift) => setShift(availableShift(castRef.current, next)),
       setLines,
@@ -400,9 +392,9 @@ export function GalgameClient({
         isAwaitingAnswer: permissionRequest !== null || choiceRequest !== null,
       },
       todos: board,
-      settings: { locale: locale.choice, speech, backdrop },
+      settings: { locale: locale.choice, speech },
     })
-  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, board, speech, backdrop])
+  }, [locale, maid.name, folder, conversation, chatMessages, phase, compacting, permissionRequest, choiceRequest, board, speech])
 
   /** What was clicked in them is done here, the way the scene would have done it. */
   const sideActionRef = useRef<(action: SceneAction) => void>(() => {})
@@ -412,12 +404,7 @@ export function GalgameClient({
     else if (action.kind === 'return') window.focus()
     else if (action.kind === 'locale') window.cafe?.setLocale(action.choice)
     else if (action.kind === 'speech') window.cafe?.setSpeech(action.language)
-    else if (action.kind === 'backdrop') {
-      // Shown at once and kept by the main process; the event it sends back
-      // lands on a window already drawing it.
-      setBackdrop(action.backdrop)
-      window.cafe?.setBackdrop(action.backdrop)
-    } else if (action.kind === 'folder') {
+    else if (action.kind === 'folder') {
       window.cafe?.switchFolder(action.folder)
       leaveScene()
     } else if (action.kind === 'browse') {
@@ -797,7 +784,7 @@ export function GalgameClient({
   return (
     <>
       <Stage>
-        <SpriteLayer expression={expression} maid={maid} name={her()} backdrop={backdrop} reaction={reaction} />
+        <SpriteLayer expression={expression} maid={maid} name={her()} reaction={reaction} />
 
         {/* The band above the box is where the whispers float; there is nothing
             to click there, so the pointer goes through it too. */}

@@ -7,13 +7,11 @@ import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notificati
 import { MaidSession, nowCarrying } from './session/maid'
 import { characterImage, charactersDir, installCharacters } from './characters/characters'
 import {
-  chosenBackdrop,
   chosenLocale,
   chosenShift,
   lastBounds,
   listConversations,
   recentFolders,
-  rememberBackdrop,
   rememberBounds,
   rememberFolder,
   rememberLocale,
@@ -23,7 +21,7 @@ import {
 import { castOf, languageSettled, nameOf, personaOf } from './characters/lines'
 import { buildMenu } from './menu'
 import { SideWindows } from './sideWindows'
-import type { Backdrop, SceneAction, SceneShare, Shift, SideWindow } from '../src/agent/bridge'
+import type { SceneAction, SceneShare, Shift, SideWindow } from '../src/agent/bridge'
 import type { Attachment } from '../src/agent/types'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -64,7 +62,6 @@ function readFolderArg() {
 }
 
 function openWindow(cwd: string) {
-  const backdrop = chosenBackdrop()
   const shift = chosenShift()
   const window = new BrowserWindow({
     width: 960,
@@ -88,7 +85,6 @@ function openWindow(cwd: string) {
         `--cafe-cwd=${cwd}`,
         `--cafe-locale=${drawnIn()}`,
         `--cafe-locale-choice=${chosenLocale()}`,
-        `--cafe-backdrop=${backdrop}`,
         `--cafe-shift=${shift.maid}`,
         `--cafe-characters-dir=${charactersDir()}`,
         `--cafe-character-error=${encodeURIComponent(characterInstallError)}`,
@@ -322,13 +318,6 @@ ipcMain.on('cafe:set-locale', (event, choice: string) => {
   rememberLocale(choice)
   windowOf(event)?.webContents.send('cafe:event', { kind: 'locale', locale: drawnIn(), choice })
   rebuildMenu()
-})
-
-/** Another illustration behind her. Nothing reopens:
- * the window redraws, and the choice is kept for the next start. */
-ipcMain.on('cafe:set-backdrop', (event, chosen: Backdrop) => {
-  rememberBackdrop(chosen)
-  windowOf(event)?.webContents.send('cafe:event', { kind: 'backdrop', backdrop: chosen })
 })
 
 /**
