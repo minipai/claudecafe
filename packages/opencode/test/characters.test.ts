@@ -7,6 +7,7 @@ import {
   characterIds,
   characterVersion,
   charactersDir,
+  PUBLISHED_CHARACTER_PACKS,
   shouldUpdateCharacter,
   syncPublishedCharacters,
 } from "../src/characters.ts"
@@ -53,7 +54,7 @@ test("version comparison updates only older published packs", () => {
 })
 
 test("a complete published pack does not trigger a download", async () => {
-  for (const id of ["kotone", "kurumi", "kokona"]) writePersona(id, "1.2.0")
+  for (const pack of PUBLISHED_CHARACTER_PACKS) writePersona(pack.id, pack.version)
   let calls = 0
   globalThis.fetch = (() => {
     calls++

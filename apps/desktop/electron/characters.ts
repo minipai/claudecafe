@@ -9,13 +9,13 @@ import type { CastMember } from '../src/agent/bridge'
 const characterPacks = [
   {
     id: 'kotone',
-    url: 'https://github.com/minipai/claudecafe/releases/download/kotone-characters-v1.2.0/ClaudeCafe-Kotone-characters-v1.2.0.zip',
-    sha256: 'c10fda859cce717ffd443aa8d2a84a2018619fcd1d30ecb9d1911b8e4ed26c17',
+    url: 'https://github.com/minipai/claudecafe/releases/download/kotone-characters-v1.2.1/ClaudeCafe-Kotone-characters-v1.2.1.zip',
+    sha256: 'ed832f09fb47467828c19052ce1f99c6b908d6d7408ce39b873e076850e9ee5a',
   },
   {
     id: 'kurumi',
-    url: 'https://github.com/minipai/claudecafe/releases/download/kurumi-characters-v1.2.0/ClaudeCafe-Kurumi-characters-v1.2.0.zip',
-    sha256: '32797945c451b8c488e9af8ccfd4b09edc8d97c922ac10d64544388aaffbb861',
+    url: 'https://github.com/minipai/claudecafe/releases/download/kurumi-characters-v1.2.1/ClaudeCafe-Kurumi-characters-v1.2.1.zip',
+    sha256: '8ea8016e94d24ca5b0851f1b9e2b2d72fbdaee275b4bbfa1eaa49f7044b4db68',
   },
   {
     id: 'kokona',

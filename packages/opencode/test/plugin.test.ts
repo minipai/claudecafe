@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync,
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import * as cafe from "../src/cafe.ts"
-import { charactersDir, characterForId, characterVersion, shouldUpdateCharacter } from "../src/characters.ts"
+import { charactersDir, characterForId, PUBLISHED_CHARACTER_PACKS, characterVersion, shouldUpdateCharacter } from "../src/characters.ts"
 import plugin from "../src/server.ts"
 
 /**
@@ -53,8 +53,8 @@ beforeEach(() => {
   write(join(BUNDLED, "fallback", "noname.md"), "---\nname: ？？？\n---\nThe maid with no name.\n")
   process.env.XDG_CONFIG_HOME = SANDBOX
   // Keep the published packs out of the draw and make their sync a no-op.
-  for (const id of ["kotone", "kurumi", "kokona"]) {
-    write(join(charactersDir(), id, "persona.md"), `---\nid: claudecafe/${id}\nname: ${id}\nversion: 1.2.0\noff_duty: true\n---\nbody\n`)
+  for (const { id, version } of PUBLISHED_CHARACTER_PACKS) {
+    write(join(charactersDir(), id, "persona.md"), `---\nid: claudecafe/${id}\nname: ${id}\nversion: ${version}\noff_duty: true\n---\nbody\n`)
   }
   process.env.CAFE_PLUGIN_ROOT = BUNDLED
   // Offline: a failed weather fetch must degrade to silence.
