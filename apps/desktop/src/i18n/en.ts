@@ -103,7 +103,7 @@ export const en = {
     usage: {
       description: 'Plan limits and what this session has cost.',
       missing: 'This session has no plan limits to report — an API key is billed per request.',
-      percentUsed: '{percent}% used',
+      percentRemaining: '{percent}% remaining',
       resets: 'Resets {when}',
       noWindows: 'No plan windows reported.',
       session: 'This session',

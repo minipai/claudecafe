@@ -98,7 +98,7 @@ export const zhTW: Text = {
     usage: {
       description: '方案的上限，以及這段工作階段花了多少。',
       missing: '這個工作階段沒有方案上限可以回報——用 API key 是按次計費的。',
-      percentUsed: '用了 {percent}%',
+      percentRemaining: '剩餘 {percent}%',
       resets: '{when} 重置',
       noWindows: '沒有回報任何方案區間。',
       session: '這段工作階段',

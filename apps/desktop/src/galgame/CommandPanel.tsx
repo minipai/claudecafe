@@ -134,8 +134,7 @@ export function Heading({ children }: { children: ReactNode }) {
   return <h2 className="mb-2 text-xs font-medium text-muted-foreground">{children}</h2>
 }
 
-/** A bar for a share of something with a ceiling — a plan window, the context
- * window. It turns when the ceiling is close enough to matter. */
+/** Remaining allowance, highlighted when ten percent or less is left. */
 export function Meter({
   label,
   percent,
@@ -158,7 +157,7 @@ export function Meter({
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-muted">
         <div
-          className={`h-full rounded-full ${filled >= 90 ? 'bg-destructive' : 'bg-primary'}`}
+          className={`h-full rounded-full ${filled <= 10 ? 'bg-destructive' : 'bg-primary'}`}
           // A share too small to draw still gets a mark, or the row reads as zero.
           style={{ width: `${filled > 0 ? Math.max(filled, 0.6) : 0}%` }}
         />

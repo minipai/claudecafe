@@ -49,8 +49,8 @@ function UsageView() {
               <Meter
                 key={window.label}
                 label={window.label}
-                percent={window.percent ?? 0}
-                note={fill(t.percentUsed, { percent: window.percent ?? 0 })}
+                percent={100 - (window.percent ?? 0)}
+                note={fill(t.percentRemaining, { percent: 100 - (window.percent ?? 0) })}
                 caption={window.resetsAt ? fill(t.resets, { when: formatReset(window.resetsAt) }) : undefined}
               />
             ))}
