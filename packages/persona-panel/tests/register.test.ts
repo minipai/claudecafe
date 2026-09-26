@@ -24,7 +24,7 @@ const clear = {
   command: 'clear', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 120 },
 } as const
 
-describe('Cafe image pane', () => {
+describe('Portrait pane', () => {
   test('opens the image after the interactive terminal session starts', async ($, on) => {
     world(on)
     const events: string[] = []
@@ -49,7 +49,7 @@ describe('Cafe image pane', () => {
     })
     on('ui.open', (_, e) => {
       events.push('open')
-      expect(e).toEqual({ id: 'cafe', title: 'Pixel art' })
+      expect(e).toEqual({ id: 'persona-panel', title: 'Pixel art' })
       return { value: placed }
     })
     expect(await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true }))
@@ -76,11 +76,11 @@ describe('Cafe image pane', () => {
       expect(opens).toBe(0)
       expect(registrations).toBe(0)
       const prompt = { blocks: [{ name: 'persona', text: 'Existing persona' }] }
-      const withCafe = await $.prompt.context(prompt)
-      expect(withCafe.blocks[0]).toEqual(prompt.blocks[0])
-      expect(withCafe.blocks[1]?.name).toBe('cafe')
-      expect(withCafe.blocks[1]?.text).toContain('Adopt this persona')
-      expect(withCafe.blocks[1]?.text).not.toContain(tool)
+      const withPanel = await $.prompt.context(prompt)
+      expect(withPanel.blocks[0]).toEqual(prompt.blocks[0])
+      expect(withPanel.blocks[1]?.name).toBe('persona-panel')
+      expect(withPanel.blocks[1]?.text).toContain('Adopt this persona')
+      expect(withPanel.blocks[1]?.text).not.toContain(tool)
       await clock.advance(3000)
       expect(await $.ui.render(pane())).toEqual(existing)
     })
@@ -96,8 +96,8 @@ describe('Cafe image pane', () => {
       on('session.start', (_, e) => ({ cwd: e.cwd }))
       on('tool.register', () => ({ value: { tool } }))
       on('ui.invalidate', () => ({ value: undefined }))
-      on('ui.open', (_, e) => { opens++; expect(e).toEqual({ id: 'cafe', title: 'Pixel art' }); return { value: placed } })
-      on('ui.panes', () => ({ value: [{ id: 'cafe', title: 'Pixel art', isShown: true, isFocused: false, isPlaced }] }))
+      on('ui.open', (_, e) => { opens++; expect(e).toEqual({ id: 'persona-panel', title: 'Pixel art' }); return { value: placed } })
+      on('ui.panes', () => ({ value: [{ id: 'persona-panel', title: 'Pixel art', isShown: true, isFocused: false, isPlaced }] }))
       on('prompt.submit', (_, e) => ({ text: e.text }))
       await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
       expect(opens).toBe(1)
@@ -140,10 +140,10 @@ describe('Cafe image pane', () => {
       if (e.path?.endsWith('/dist/characters')) return { value: [{ name: 'kotone', kind: 'directory' as const, size: 0, isLink: false }] }
       return { value: [] }
     })
-    on('fs.read', (_, e) => ({ value: e.path?.endsWith('/dist/characters/kotone/persona.en.md') ? '---\nname: ことね\n---\nKotone body.\n' : '' }))
-    on('fs.exists', (_, e) => ({ value: ['/dist/characters/kotone', '/dist/characters/kotone/persona.en.md'].some(path => e.path?.endsWith(path)) }))
+    on('fs.read', (_, e) => ({ value: e.path?.endsWith('/dist/characters/kotone/persona.md') ? '---\nname: ことね\n---\nKotone body.\n' : '' }))
+    on('fs.exists', (_, e) => ({ value: ['/dist/characters/kotone', '/dist/characters/kotone/persona.md'].some(path => e.path?.endsWith(path)) }))
     on('fs.write', () => ({ value: undefined }))
-    on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/maid' : undefined }))
+    on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
     on('session.id', () => ({ value: 'test-session' }))
     on('session.cwd', () => ({ value: '' }))
     on('session.surfaces', () => ({ value: ['desktop'] }))
@@ -154,6 +154,38 @@ describe('Cafe image pane', () => {
     expect(context.blocks[0]?.text).toContain('Kotone body.')
   })
 
+  for (const [config, persona, reply] of [
+    [{}, 'Default body.', null],
+    [{ variant: 'zh', lang: 'Traditional Chinese' }, '中文內容。', 'Respond in Traditional Chinese.'],
+    [{ variant: 'ja' }, 'Default body.', null],
+  ] as const) {
+    test(`reads the persona for variant ${JSON.stringify(config)} apart from the reply language`, async ($, on) => {
+      const files: Record<string, string> = {
+        '/claudecafe/config.json': JSON.stringify(config),
+        '/characters/kotone/persona.md': '---\nname: ことね\n---\nDefault body.\n',
+        '/characters/kotone/persona.zh.md': '---\nname: ことね\n---\n中文內容。\n',
+      }
+      const file = (path = '') => Object.entries(files).find(([suffix]) => path.endsWith(suffix))?.[1]
+      on('fs.list', (_, e) => ({
+        value: e.path?.endsWith('/claudecafe/characters') ? [{ name: 'kotone', kind: 'directory' as const, size: 0, isLink: false }] : [],
+      }))
+      on('fs.read', (_, e) => ({ value: file(e.path) ?? '' }))
+      on('fs.exists', (_, e) => ({ value: e.path?.endsWith('/claudecafe/characters/kotone') || file(e.path) !== undefined }))
+      on('fs.write', () => ({ value: undefined }))
+      on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
+      on('session.id', () => ({ value: 'test-session' }))
+      on('session.cwd', () => ({ value: '' }))
+      on('session.surfaces', () => ({ value: ['desktop'] }))
+      on('http.fetch', () => { throw new Error('offline') })
+      mock.clock(on)
+      on('prompt.context', (_, e) => e)
+      const text = (await $.prompt.context({ blocks: [] })).blocks[0]?.text ?? ''
+      expect(text).toContain(persona)
+      if (reply) expect(text).toContain(reply)
+      else expect(text).not.toContain('Respond in')
+    })
+  }
+
   test('adds stable portrait instructions while preserving other context and replacing its own block', async ($, on) => {
     on('ui.invalidate', () => ({ value: undefined }))
     on('prompt.context', (_, e) => ({
@@ -162,24 +194,24 @@ describe('Cafe image pane', () => {
     await start($, on)
     const input = { blocks: [
       { name: 'persona', text: 'Existing persona' },
-      { name: 'cafe', text: 'Outdated portrait instructions' },
+      { name: 'persona-panel', text: 'Outdated portrait instructions' },
     ] }
     const context = await $.prompt.context(input)
     expect(context.blocks).toHaveLength(3)
     expect(context.blocks[0]).toEqual(input.blocks[0])
     expect(context.blocks[1]).toEqual({ name: 'other-plugin', text: 'Other plugin context' })
-    expect(context.blocks[2]?.name).toBe('cafe')
+    expect(context.blocks[2]?.name).toBe('persona-panel')
     expect(context.blocks[2]?.text).toContain('Current time:')
     expect(context.blocks[2]?.text).toContain(tool)
     expect(context.blocks[2]?.text).not.toBe('Outdated portrait instructions')
     await $.tool.call({ tool, face: 'happy' })
     const afterHappy = await $.prompt.context(input)
     expect(afterHappy.blocks.slice(0, 2)).toEqual(context.blocks.slice(0, 2))
-    expect(afterHappy.blocks[2]?.name).toBe('cafe')
+    expect(afterHappy.blocks[2]?.name).toBe('persona-panel')
     await $.tool.call({ tool, face: 'angry' })
     const afterAngry = await $.prompt.context(input)
     expect(afterAngry.blocks.slice(0, 2)).toEqual(context.blocks.slice(0, 2))
-    expect(afterAngry.blocks[2]?.name).toBe('cafe')
+    expect(afterAngry.blocks[2]?.name).toBe('persona-panel')
   })
 
   test('draws the status above the framed GIF and her name, with plugin raster provenance', async ($, on) => {
@@ -225,11 +257,11 @@ describe('Cafe image pane', () => {
       expect(await $.tool.call({ tool, expression })).toEqual({ result: `Face: ${expression}` })
       if (expression !== previous) changes++
       expect(invalidations).toEqual(Array(changes).fill('ui.render'))
-      expect(await $.ui.render(pane())).toEqual(drawn(image, shift, expression))
+      expect(await $.ui.render(pane())).toEqual(drawn(image, figuresAtStart, expression))
       await $.tool.call({ tool, expression })
       await clock.advance(9000)
       expect(invalidations).toHaveLength(changes)
-      expect(await $.ui.render(pane())).toEqual(drawn(image, shift, expression))
+      expect(await $.ui.render(pane())).toEqual(drawn(image, figuresAtStart, expression))
       previous = expression
     }
   })
@@ -244,7 +276,7 @@ describe('Cafe image pane', () => {
       expect(invalidations).toBe(1)
       expect(await $.tool.call({ tool, face: expression })).toEqual({ deny: `Unknown face: ${String(expression)}` })
       expect(invalidations).toBe(1)
-      expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, shift, 'happy'))
+      expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, figuresAtStart, 'happy'))
     })
   }
 
@@ -260,21 +292,21 @@ describe('Cafe image pane', () => {
     on('ui.invalidate', () => ({ value: undefined }))
     await start($, on)
     await $.tool.call({ tool, face: 'happy' })
-    expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, shift, 'happy'))
+    expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, figuresAtStart, 'happy'))
   })
 
-  test('refreshes the status when a turn ends and as the shift clock moves on', async ($, on) => {
+  test('refreshes the status when a turn ends and as the session clock moves on', async ($, on) => {
     on('ui.invalidate', () => ({ value: undefined }))
     on('turn.complete', (_, e) => ({ text: e.answer }))
     const { clock, figures } = await start($, on)
     Object.assign(figures, { percent: 81, quota: undefined, usd: undefined, branch: '' })
     await $.turn.complete({ reason: 'answer', answer: 'Done.', durationMs: 10, isAborted: false, turnId: 't1' })
-    const later: Figures = { ...figures, shiftMinutes: 7 * 60 + 7 }
+    const later: Figures = { ...figures, sessionMinutes: 7 * 60 + 7 }
     expect(await $.ui.render(pane())).toEqual(drawn(panelImage, later))
 
-    figures.shiftMinutes = 8 * 60
+    figures.sessionMinutes = 8 * 60
     await clock.advance(60_000)
-    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, { ...later, shiftMinutes: 8 * 60 }))
+    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, { ...later, sessionMinutes: 8 * 60 }))
   })
 
   test('leaves the status alone when a subagent turn ends', async ($, on) => {
@@ -310,7 +342,7 @@ describe('Cafe image pane', () => {
   })
 })
 
-/** Answers the cast directory: one maid, くるみ, with her own GIFs and a stray file beside them. */
+/** Answers the characters directory: one character, くるみ, with her own GIFs and a stray file beside them. */
 function pixels(on: On): void {
   on('fs.list', (_, e) => {
     if (e.path?.endsWith('/claudecafe/characters')) {
@@ -329,35 +361,35 @@ function pixels(on: On): void {
     if (e.path?.endsWith('/config.json')) return { value: '{}' }
     if (e.path?.endsWith('/prompts/greeting.md')) return { value: 'Greet at $time.' }
     if (e.path?.endsWith('/prompts/cues.md')) return { value: 'Cues for $lang.' }
-    if (e.path?.endsWith('/characters/kurumi/persona.en.md')) return { value: '---\nname: くるみ\n---\nKurumi body.\n' }
+    if (e.path?.endsWith('/characters/kurumi/persona.md')) return { value: '---\nname: くるみ\n---\nKurumi body.\n' }
     return { value: '' }
   })
   on('fs.exists', (_, e) => ({
-    value: ['/claudecafe/characters/kurumi', '/characters/kurumi/persona.en.md'].some(path => e.path?.endsWith(path)),
+    value: ['/claudecafe/characters/kurumi', '/characters/kurumi/persona.md'].some(path => e.path?.endsWith(path)),
   }))
   on('fs.write', () => ({ value: undefined }))
 }
 
-/** What the session reports: context used, the five-hour limit, the shift so far, the branch. */
-type Figures = { percent: number; quota?: number; usd?: number; shiftMinutes: number; branch: string }
-const shift: Figures = { percent: 22, quota: 31, usd: 2.41, shiftMinutes: 7 * 60 + 7, branch: 'main' }
+/** What the session reports: context used, the five-hour limit, the session so far, the branch. */
+type Figures = { percent: number; quota?: number; usd?: number; sessionMinutes: number; branch: string }
+const figuresAtStart: Figures = { percent: 22, quota: 31, usd: 2.41, sessionMinutes: 7 * 60 + 7, branch: 'main' }
 
 /** The world beneath the plugin: the cast directory, the session's figures and a mocked clock. */
 function world(on: On): { clock: MockClock; figures: Figures } {
   const clock = mock.clock(on)
-  const figures = { ...shift }
+  const figures = { ...figuresAtStart }
   pixels(on)
   on('session.usage', () => ({
     value: {
-      startedAt: clock.now() - figures.shiftMinutes * 60_000,
+      startedAt: clock.now() - figures.sessionMinutes * 60_000,
       context: { window: 200_000, percent: figures.percent },
       rateLimits: figures.quota === undefined ? [] : [{ kind: 'five_hour', percentUsed: figures.quota }],
       ...(figures.usd === undefined ? {} : { cost: { usd: figures.usd } }),
     },
   }))
-  on('session.root', () => ({ value: '/Users/maid/Dev/claudecafe' }))
+  on('session.root', () => ({ value: '/Users/tester/Dev/claudecafe' }))
   on('session.id', () => ({ value: 'test-session' }))
-  on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/maid' : undefined }))
+  on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
   on('http.fetch', () => { throw new Error('offline') })
   on('process.run', (_, e) => {
     if (e.argv.includes('branch')) {
@@ -385,7 +417,7 @@ function face(...cells: number[][]): Face {
 }
 
 /** The panel: the status block on top, then the portrait framed with her name and expression beneath it. */
-function drawn(image: Face, figures: Figures = shift, expression = 'neutral'): RenderElement {
+function drawn(image: Face, figures: Figures = figuresAtStart, expression = 'neutral'): RenderElement {
   const title: RenderElement[] = [
     { type: 'Text', props: { bold: true }, children: ['くるみ'] },
     { type: 'Text', props: { dimColor: true }, children: [` · ${expression}`] },
@@ -413,17 +445,17 @@ function drawn(image: Face, figures: Figures = shift, expression = 'neutral'): R
   }
 }
 
-function status({ percent, quota, usd, shiftMinutes, branch }: Figures): RenderElement[][] {
+function status({ percent, quota, usd, sessionMinutes, branch }: Figures): RenderElement[][] {
   const left = 100 - percent
   const quotaLeft = quota === undefined ? undefined : 100 - quota
-  const hours = Math.floor(shiftMinutes / 60)
-  const time = `${hours}h${String(shiftMinutes % 60).padStart(2, '0')}m`
+  const hours = Math.floor(sessionMinutes / 60)
+  const time = `${hours}h${String(sessionMinutes % 60).padStart(2, '0')}m`
   return [
     [{ type: 'Text', props: { bold: true, wrap: 'truncate-start' }, children: ['~/Dev/claudecafe'] }],
     ...(branch ? [[text(`⎇ ${branch}`)]] : []),
     [text('HP '), ...bar(left, gauge(left, 'green')), text(`  context left ${left}%`)],
     [text('MP '), ...bar(quotaLeft ?? 0, gauge(quotaLeft ?? 0, 'cyan')), text(`  5h left ${quotaLeft === undefined ? '—' : `${quotaLeft}%`}`)],
-    [text(`⏱ on shift ${time}${usd === undefined ? '' : `    $${usd.toFixed(2)}`}`)],
+    [text(`⏱ session ${time}${usd === undefined ? '' : `    $${usd.toFixed(2)}`}`)],
   ]
 }
 
@@ -449,7 +481,7 @@ function text(content: string): RenderElement {
 
 function pane(): RenderInput<'Pane', 'terminal'> {
   return {
-    surface: 'terminal', component: 'Pane', requestId: 'cafe',
+    surface: 'terminal', component: 'Pane', requestId: 'persona-panel',
     props: {
       title: 'Pixel art', isFocused: true, bodyColumns: 38, placement: 'dock',
       scroll: { offset: 0, bodyRows: 40 }, view: {},

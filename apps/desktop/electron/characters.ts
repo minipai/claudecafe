@@ -113,7 +113,7 @@ export function characterImage(url: string): string | null {
 }
 
 function readPersona(folder: string) {
-  for (const file of ['persona.zh.md', 'persona.en.md', 'persona.md']) {
+  for (const file of ['persona.zh.md', 'persona.md']) {
     try {
       const content = fs.readFileSync(path.join(folder, file), 'utf8')
       if (content.trim()) return content

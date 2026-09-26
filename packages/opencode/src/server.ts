@@ -15,7 +15,7 @@ export default Plugin.define({
     const expressionInput = z.object({
       face: z.string().describe("The GIF face to show; it must belong to the active character's installed pixels"),
     })
-    let notifyExpression: ((event: { sessionID: string; maid: string | null; face: string }) => Promise<void>) | undefined
+    let notifyExpression: ((event: { sessionID: string; character: string | null; face: string }) => Promise<void>) | undefined
     const rpc = await context.rpc.register(cafeRpc, {
       expression: async ({ sessionID }) => {
         const character = await cafe.character(sessionID)
@@ -55,7 +55,7 @@ export default Plugin.define({
           if (!faces.includes(expression.face)) {
             throw new Error(`Face is not available for ${character?.name ?? "the active character"}`)
           }
-          const value: Expression = { maid: character?.id ?? null, face: expression.face }
+          const value: Expression = { character: character?.id ?? null, face: expression.face }
           await context.storage.set(expressionKey(tool.sessionID), value)
           await rpc.events.emit("expression", { sessionID: tool.sessionID, ...value })
           return { content: `Face: ${value.face}` }
@@ -74,14 +74,14 @@ function expressionKey(sessionID: string): string {
 
 function expressionState(
   value: unknown,
-  maid: string | null,
+  character: string | null,
   faces: readonly string[],
 ): Expression {
-  const parsed = z.object({ maid: z.string().nullable().optional(), face: z.string() }).safeParse(value)
-  if (parsed.success && (parsed.data.maid === undefined || parsed.data.maid === maid) && faces.includes(parsed.data.face)) {
-    return { maid, face: parsed.data.face }
+  const parsed = z.object({ character: z.string().nullable().optional(), face: z.string() }).safeParse(value)
+  if (parsed.success && (parsed.data.character === undefined || parsed.data.character === character) && faces.includes(parsed.data.face)) {
+    return { character, face: parsed.data.face }
   }
-  return { maid, face: defaultFace(faces) }
+  return { character, face: defaultFace(faces) }
 }
 
 async function consumeEvents(

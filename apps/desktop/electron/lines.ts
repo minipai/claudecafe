@@ -42,11 +42,7 @@ const ENGLISH: Lines = {
 export function replyLanguage() {
   // What the window was told, if anything: the settings window sets this, and it is the only
   // language setting that belongs to the app rather than to the café.
-  const told = chosenSpeech().trim()
-  if (told) return told
-  const said = process.env.CLAUDE_MAID_LANG?.trim()
-  if (said) return said
-  return cafeLanguage() || 'English'
+  return chosenSpeech().trim() || cafeLanguage() || 'English'
 }
 
 /** The café's own setting, which is the master's terminal maid's language too.
@@ -68,7 +64,7 @@ function cafeLanguage() {
  * that is changed. The window asks him instead, once.
  */
 export function languageSettled() {
-  return Boolean(chosenSpeech().trim() || process.env.CLAUDE_MAID_LANG?.trim() || cafeLanguage())
+  return Boolean(chosenSpeech().trim() || cafeLanguage())
 }
 
 /** Her lines in this language, if the window already has them. English needs no

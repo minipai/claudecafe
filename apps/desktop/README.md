@@ -35,7 +35,7 @@ them into `characters/`. Existing character files are left alone. If any
 download fails, the others still install; the app opens and shows the error,
 then retries the missing one when reopened.
 
-Each maid subfolder contains a `persona.zh.md` or `persona.en.md` and
+Each maid subfolder contains a `persona.md` (optionally a `persona.zh.md`) and
 `portraits/neutral.webp`. An optional `avatar.webp` supplies the picker thumbnail.
 Other `portraits/<expression>.webp` files supply expressions; missing expressions
 use neutral. The persona and artwork come from

@@ -5,13 +5,19 @@ import {
   expressionToolDescription,
   fillPrompt,
   parsePersona,
-  resolveMaid,
+  personaFiles,
+  resolveCharacter,
 } from "../src/index.ts"
 
 describe("persona contracts", () => {
   test("parses frontmatter and strips the body", () => {
     const persona = parsePersona("---\nid: claudecafe/kotone\nname: ことね\nversion: 1.1.1\noff_duty: yes\n---\nBody.\n")
     expect(persona).toEqual({ id: "claudecafe/kotone", name: "ことね", version: "1.1.1", offDuty: true, body: "Body.\n" })
+  })
+
+  test("a variant is tried before the default persona", () => {
+    expect(personaFiles()).toEqual(["persona.md"])
+    expect(personaFiles("zh")).toEqual(["persona.zh.md", "persona.md"])
   })
 
   test("authorship is derived from frontmatter", () => {
@@ -23,12 +29,12 @@ describe("persona contracts", () => {
 
 describe("selection contracts", () => {
   test("explicit selection wins over every fallback", () => {
-    expect(resolveMaid({ selected: "kurumi", env: "kokona", shift: "kotone", config: "kokona", pool: ["a"] })).toBe("kurumi")
+    expect(resolveCharacter({ selected: "kurumi", session: "kotone", config: "kokona", pool: ["a"] })).toBe("kurumi")
   })
 
-  test("none disables the maid and random selection is bounded", () => {
-    expect(resolveMaid({ selected: "none", pool: ["kotone"] })).toBeNull()
-    expect(resolveMaid({ pool: ["kotone", "kurumi"], random: () => 0.99 })).toBe("kurumi")
+  test("none disables the character and random selection is bounded", () => {
+    expect(resolveCharacter({ selected: "none", pool: ["kotone"] })).toBeNull()
+    expect(resolveCharacter({ pool: ["kotone", "kurumi"], random: () => 0.99 })).toBe("kurumi")
   })
 })
 

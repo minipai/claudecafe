@@ -27,7 +27,7 @@ afterEach(() => {
 function addMaid(id: string, name: string) {
   const folder = path.join(root, id)
   fs.mkdirSync(path.join(folder, 'portraits'), { recursive: true })
-  fs.writeFileSync(path.join(folder, 'persona.en.md'), `---\nname: "${name}"\n---\nPersona for ${name}`)
+  fs.writeFileSync(path.join(folder, 'persona.md'), `---\nname: "${name}"\n---\nPersona for ${name}`)
   fs.writeFileSync(path.join(folder, 'portraits/neutral.webp'), 'image')
   return folder
 }
@@ -82,7 +82,7 @@ describe('runtime characters', () => {
     const folder = addMaid('maid', 'Maid')
     fs.symlinkSync(path.join(app.getPath('userData'), 'shift.json'), path.join(folder, 'portraits/escape.webp'))
     expect(characterImage('cafe-character://cast/maid/portraits/escape.webp')).toBeNull()
-    expect(characterImage('cafe-character://cast/maid/persona.en.md')).toBeNull()
+    expect(characterImage('cafe-character://cast/maid/persona.md')).toBeNull()
     expect(characterImage('cafe-character://cast/maid/portraits/%2e%2e%2fshift.json')).toBeNull()
     expect(personaOf('../maid')).toBe('')
   })

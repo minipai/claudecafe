@@ -27,7 +27,7 @@ pnpm dev    # http://localhost:5050
 
 English at the root, Chinese under `/zh/`. `href()` in `src/i18n.ts` builds every
 URL, so a page never hardcodes its locale. Content follows the same rule:
-`persona.en.md` beside `persona.zh.md`, falling
+the default `persona.md` (English) beside `persona.zh.md`, falling
 back to the Chinese original when a translation is missing.
 
 ## Deploying

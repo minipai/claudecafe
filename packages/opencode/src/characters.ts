@@ -4,7 +4,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { promisify } from "node:util"
-import { parsePersona } from "./character-core/index.ts"
+import { parsePersona, personaFiles } from "./character-core/index.ts"
 import { cafeRoot } from "./root.ts"
 
 const unzip = promisify(execFile)
@@ -37,15 +37,12 @@ export type Character = {
   pixelsDir: string | null
 }
 
-const PERSONA_FILES = ["persona.en.md", "persona.zh.md", "persona.md"] as const
-const CHINESE_PERSONA_FILES = ["persona.zh.md", "persona.en.md", "persona.md"] as const
-
 export function charactersDir(): string {
   return join(cafeRoot(), "characters")
 }
 
-export function personaFileInCharacters(id: string, language = "English"): string | null {
-  return personaFileInFolder(charactersDir(), id, language)
+export function personaFileInCharacters(id: string, variant = ""): string | null {
+  return personaFileInFolder(charactersDir(), id, variant)
 }
 
 export function characterIds(): string[] {
@@ -59,8 +56,8 @@ export function characterIds(): string[] {
   }
 }
 
-export function characterForId(id: string, language = "English"): Character | null {
-  const personaPath = personaFileInCharacters(id, language)
+export function characterForId(id: string, variant = ""): Character | null {
+  const personaPath = personaFileInCharacters(id, variant)
   if (!personaPath) return null
   const pixels = join(charactersDir(), id, "pixels")
   return {
@@ -153,18 +150,13 @@ async function replaceDirectory(source: string, target: string): Promise<void> {
   }
 }
 
-function personaFileInFolder(root: string, id: string, language = "English"): string | null {
+function personaFileInFolder(root: string, id: string, variant = ""): string | null {
   if (!validId(id)) return null
-  const files = prefersChinese(language) ? CHINESE_PERSONA_FILES : PERSONA_FILES
-  for (const file of files) {
+  for (const file of personaFiles(variant)) {
     const path = join(root, id, file)
     if (existsSync(path)) return path
   }
   return null
-}
-
-function prefersChinese(language: string): boolean {
-  return /^(zh\b|中文|chinese|繁體|简体)/i.test(language.trim())
 }
 
 function validId(id: string): boolean {

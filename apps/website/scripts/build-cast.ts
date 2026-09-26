@@ -33,7 +33,8 @@ function readCast(locale: Locale): Maid[] {
     .sort()
 
   return folders.flatMap((slug) => {
-    const file = join(castDir, slug, `persona.${locale}.md`)
+    // English is the default persona.md; other locales are persona.<locale>.md variants.
+    const file = join(castDir, slug, locale === 'en' ? 'persona.md' : `persona.${locale}.md`)
     return existsSync(file) ? [parseMaid(slug, readFileSync(file, 'utf-8'))] : []
   })
 }

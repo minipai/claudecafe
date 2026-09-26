@@ -161,7 +161,7 @@ function parseOptions(args) {
 }
 
 function readPersona(maid, language, variant, baseline) {
-  const relative = `packages/characters/${maid}/persona.${language}.md`
+  const relative = `packages/characters/${maid}/${language === 'en' ? 'persona.md' : `persona.${language}.md`}`
   const source = variant === 'baseline'
     ? execFileSync('git', ['show', `${baseline}:${relative}`], { cwd: ROOT, encoding: 'utf8' })
     : fs.readFileSync(path.join(ROOT, relative), 'utf8')

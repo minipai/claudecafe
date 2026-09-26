@@ -84,7 +84,7 @@ or status line reads it.
   `src/cast.json` (gitignored) before bundling; `wrangler dev` reruns it when the cast changes.
   `public/` is served as static assets in front of the Worker.
 - **i18n**: English at the root, Chinese under `/zh/`; `href()` in `src/i18n.ts` builds every
-  URL. English content is a translation file beside the Chinese one (`persona.en.md`),
+  URL. English content is the default `persona.md` beside the Chinese `persona.zh.md`,
   falling back to the Chinese version when missing.
 - The site no longer serves a blog. The posts are kept in `packages/blog/`
   (writing style guide: `packages/blog/CLAUDE.md`).

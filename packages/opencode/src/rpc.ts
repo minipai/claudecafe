@@ -1,7 +1,7 @@
 import { Rpc } from "@opencode/plugin"
 import { z } from "zod"
 
-const expression = z.object({ maid: z.string().nullable(), face: z.string() })
+const expression = z.object({ character: z.string().nullable(), face: z.string() })
 
 export const cafeRpc = Rpc.define({
   id: "claudecafe",

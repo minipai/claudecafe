@@ -257,13 +257,12 @@ export function PluginPage({ locale }: { locale: Locale }) {
               {zh ? (
                 <>
                   語言、值班、抽班池，用一句話調整——設定住在 <code>~/.config/claudecafe/config.json</code>，
-                  下個 session 生效；想立刻換人，用 <code>CLAUDE_MAID=kokona claude</code> 開新視窗。
+                  下個 session 生效。
                 </>
               ) : (
                 <>
                   Language, who's on shift, the rotation — adjust in one sentence. Settings live in{' '}
-                  <code>~/.config/claudecafe/config.json</code> and take effect next session; to swap right now,
-                  open a new window with <code>CLAUDE_MAID=kokona claude</code>.
+                  <code>~/.config/claudecafe/config.json</code> and take effect next session.
                 </>
               )}
             </dd>

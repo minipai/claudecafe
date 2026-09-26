@@ -37,7 +37,7 @@ The installer uses the system `unzip` command.
 
 | V2 extension | What it does |
 |------|--------------|
-| `session.context` hook | Puts a maid on shift: persona, mood-marker cue, expression cue, a fresh `now` line, and the first-turn briefing are appended to the system context. Shift order: `OPENCODE_MAID`/`CLAUDE_MAID` env → this session's own shift file → config `maid` → a draw from `characters/`. `none` disables the persona while keeping the liveliness cues. |
+| `session.context` hook | Puts a maid on shift: persona, mood-marker cue, expression cue, a fresh `now` line, and the first-turn briefing are appended to the system context. Shift order: `/maid` pick → this session's own shift file → config `character` → a draw from `characters/`. `none` disables the persona while keeping the liveliness cues. |
 | Server event stream | Tracks child and deleted sessions so task subagents do not draw a second maid and stale in-memory shifts are released. |
 | Tool transform | Adds `set_expression`; calls validate and persist a GIF-backed face for the active character and session, then publish it in a typed RPC event to the TUI. |
 | Café RPC | Gives a newly mounted TUI the active character and face for a session and streams later changes. State is per session, so every window keeps its own portrait. |
@@ -48,15 +48,16 @@ character layout:
 
 ```text
 $XDG_CONFIG_HOME/claudecafe/characters/<id>/
-  persona.en.md       # or persona.zh.md / persona.md
+  persona.md          # plus optional variants such as persona.zh.md
   pixels/*.gif        # 36×48 faces; neutral.gif is the fallback
 ```
 
-OpenCode picks `persona.zh.md` for Chinese language settings and
-`persona.en.md` otherwise, with the other language as a fallback. The pack's
+OpenCode reads `persona.md`, or `persona.<variant>.md` when config `variant`
+names one the pack has; the
+reply language is config `lang`, set on its own. The pack's
 frontmatter `name` is shown in the sidebar. `/maid` writes an explicit choice
-for the current session, so it takes precedence over the environment for that
-session. To add a maid, create another lowercase `<id>/` folder; it joins the
+for the current session, so it takes precedence over config `character` for
+that session. To add a maid, create another lowercase `<id>/` folder; it joins the
 draw without being overwritten. Restart or reload OpenCode after adding a pack
 so the sidebar rediscovers its faces.
 

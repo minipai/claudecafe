@@ -5,8 +5,8 @@ the runtime artwork shipped with it:
 
 ```
 kurumi/
-  persona.zh.md        YAML metadata + the Chinese persona body
-  persona.en.md        the same character written naturally in English
+  persona.md           YAML metadata + the default (English) persona body
+  persona.zh.md        the same character written naturally in Chinese, a variant
   avatar.webp          stable square identity image
   portraits/           default visual variant, for graphical clients
     neutral.webp       runtime portrait; filename = expression ID
@@ -58,7 +58,7 @@ actual persona.
 
 Character packs are published independently from the desktop app and plugin.
 The release tag is `<maid-id>-characters-v<version>`, where `<version>` comes
-from every `persona.*.md` frontmatter in the character folder. The uploaded asset
+from every `persona*.md` frontmatter in the character folder. The uploaded asset
 is `ClaudeCafe-<Name>-characters-v<version>.zip`, with the maid folder as the
 archive's top-level directory. The script derives `<Name>` by capitalizing the
 first letter of the maid ID, matching the existing `Kotone`, `Kokona`, and

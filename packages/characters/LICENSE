@@ -3,7 +3,7 @@ The cast — persona files and artwork
 
 Copyright (c) 2026 Art Pai. All rights reserved, except as granted below.
 
-The maids of Claude Café — their names, their persona files (`*/persona.*.md`)
+The maids of Claude Café — their names, their persona files (`*/persona*.md`)
 and their artwork (`*/avatar.webp`, `*/portraits/`, `*/pixels/`, `*/variants/`) — are the identity of this
 project rather than part of its source code, and the MIT license at the
 repository root does not cover them.

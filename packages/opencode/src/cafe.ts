@@ -3,7 +3,7 @@ import {
   fillPrompt,
   parsePersona,
   personaBody as corePersonaBody,
-  resolveMaid as coreResolveMaid,
+  resolveCharacter,
 } from "./character-core/index.ts"
 import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs"
@@ -34,7 +34,6 @@ export { cafeRoot } from "./root.ts"
  * status line to show them in.
  */
 
-export const DEFAULT_LANG = "English"
 const STALE_DAYS = 7
 
 // ---------------------------------------------------------------------------
@@ -60,7 +59,7 @@ export function cafePluginRoot(): string {
 }
 
 function maidsDir(): string {
-  return join(cafePluginRoot(), "maids")
+  return join(cafePluginRoot(), "fallback")
 }
 
 function promptsDir(): string {
@@ -88,17 +87,14 @@ export function config(): Record<string, unknown> {
   }
 }
 
-/** The reply language: one free-form sentence dropped verbatim into the prompts. */
+/** The reply language, optional: one free-form sentence dropped verbatim into the prompts. */
 export function lang(): string {
-  return firstEnv("OPENCODE_MAID_LANG", "CLAUDE_MAID_LANG") || String(config().lang ?? "").trim() || DEFAULT_LANG
+  return String(config().lang ?? "").trim()
 }
 
-function firstEnv(...names: string[]): string {
-  for (const name of names) {
-    const value = (process.env[name] ?? "").trim()
-    if (value) return value
-  }
-  return ""
+/** The persona variant, optional: a short code picking `persona.<variant>.md` over `persona.md`. */
+export function variant(): string {
+  return String(config().variant ?? "").trim()
 }
 
 // ---------------------------------------------------------------------------
@@ -111,7 +107,7 @@ export function personaBody(path: string): string {
 }
 
 export function personaFile(maidID: string): string | null {
-  const packed = personaFileInCharacters(maidID, lang())
+  const packed = personaFileInCharacters(maidID, variant())
   if (packed && personaBody(packed).trim()) return packed
 
   const bundled = join(maidsDir(), `${maidID}.md`)
@@ -122,7 +118,7 @@ export function personaFile(maidID: string): string | null {
 export function characterForMaid(maidID: string): Character | null {
   const personaPath = personaFile(maidID)
   if (!personaPath) return null
-  const packed = characterForId(maidID, lang())
+  const packed = characterForId(maidID, variant())
   if (packed?.personaPath === personaPath) return packed
   const name = /^name:[ \t]*(.+)$/m.exec(read(personaPath))?.[1]?.trim().replace(/^(['"])(.*)\1$/, "$2")
   return {
@@ -157,7 +153,7 @@ export function drawFrom(dirs: string[], extraIDs: string[] = []): string[] {
   }
   for (const id of extraIDs) {
     if (pool.has(id)) continue
-    const path = personaFileInCharacters(id, lang())
+    const path = personaFileInCharacters(id, variant())
     if (path) pool.set(id, path)
   }
   return [...pool.entries()]
@@ -254,21 +250,18 @@ type Shift = {
 }
 
 /**
- * Shift order: this session's explicit picker choice > OPENCODE_MAID/CLAUDE_MAID
- * env (a one-shot override) > the persisted draw > config "maid" > a draw from
- * the pool. "none" means nobody on shift: no persona, but the liveliness still
+ * Shift order: this session's explicit picker choice > the persisted draw >
+ * config "character" > a draw from the pool. "none" means nobody on shift: no persona, but the liveliness still
  * runs.
  */
 function resolveMaid(sessionID?: string): string | null {
   const selected = sessionID ? read(join(stateDir(sessionID, false), "selected-maid")).trim() : ""
-  const env = firstEnv("OPENCODE_MAID", "CLAUDE_MAID")
   const shift = sessionID ? read(join(stateDir(sessionID, false), "on-shift")).trim() : ""
-  const configured = String(config().maid ?? "").trim()
-  const requested = selected || env || shift || configured
-  const maid = coreResolveMaid({
+  const configured = String(config().character ?? "").trim()
+  const requested = selected || shift || configured
+  const maid = resolveCharacter({
     selected,
-    env,
-    shift,
+    session: shift,
     config: configured,
     pool: requested ? [] : castPool(),
   })
@@ -393,8 +386,8 @@ function nowLine(shift: Shift, directory: string): string {
 // OpenCode wiring
 // ---------------------------------------------------------------------------
 
-function personaBlock(persona: string, language: string): string {
-  return `Adopt this persona for the entire session — it overrides the default assistant voice:\n\n${persona}\n\nRespond in ${language}.`
+function personaBlock(persona: string): string {
+  return `Adopt this persona for the entire session — it overrides the default assistant voice:\n\n${persona}`
 }
 
 export interface CafeContext {
@@ -485,8 +478,9 @@ export function createCafe(directory: string) {
       if (subSessions.has(sessionID)) return
       const shift = await startShift(sessionID)
       const blocks: string[] = []
-      if (shift.persona) blocks.push(personaBlock(shift.persona, lang()))
-      const cues = prompt("cues", { lang: lang() })
+      if (shift.persona) blocks.push(personaBlock(shift.persona))
+      if (lang()) blocks.push(`Respond in ${lang()}.`)
+      const cues = prompt("cues", { lang: lang() || "your reply language" })
       if (cues) blocks.push(cues)
       blocks.push(expressionPrompt())
       blocks.push(nowLine(shift, directory))

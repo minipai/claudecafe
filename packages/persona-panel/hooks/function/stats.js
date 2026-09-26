@@ -6,7 +6,7 @@ export function statusRows(stats) {
     ...(stats.branch ? [[{ text: `⎇ ${stats.branch}` }]] : []),
     [{ text: 'HP ' }, ...bar(stats.contextLeft, gaugeColor(stats.contextLeft, 'green')), { text: `  context left ${stats.contextLeft}%` }],
     [{ text: 'MP ' }, ...bar(quotaLeft ?? 0, gaugeColor(quotaLeft ?? 0, 'cyan')), { text: `  5h left ${quotaLeft === undefined ? '—' : `${quotaLeft}%`}` }],
-    [{ text: `⏱ on shift ${duration(stats.shiftMs)}${cost}` }],
+    [{ text: `⏱ session ${duration(stats.sessionMs)}${cost}` }],
   ]
 }
 

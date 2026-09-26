@@ -129,7 +129,7 @@ export async function waitForLine(page: Page, text: string) {
 export async function writeMaid(directory: string, id: string, name: string) {
   const maid = path.join(directory, id)
   await mkdir(path.join(maid, 'portraits'), { recursive: true })
-  await writeFile(path.join(maid, 'persona.en.md'), `---\nname: ${name}\n---\nYou are ${name}, the test maid.\n`)
+  await writeFile(path.join(maid, 'persona.md'), `---\nname: ${name}\n---\nYou are ${name}, the test maid.\n`)
   const image = Buffer.from('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA', 'base64')
   await writeFile(path.join(maid, 'avatar.webp'), image)
   await writeFile(path.join(maid, 'portraits', 'neutral.webp'), image)

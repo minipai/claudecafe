@@ -4,19 +4,20 @@ import {
   expressionToolDescription,
   fillPrompt,
   parsePersona,
-  resolveMaid,
+  personaFiles,
+  resolveCharacter,
 } from '../../../character-core/src/index.ts'
 import { faceFromGif } from './faces.js'
 import { homePath, statusRows } from './stats.js'
 
 const TOOL = 'mcp__persona-panel__set_expression'
-const PANE = { id: 'cafe', title: 'Pixel art' }
+const PANE = { id: 'persona-panel', title: 'Pixel art' }
+const BLOCK = 'persona-panel'
 const FESTIVALS = {
   '01-01': "New Year's Day",
   '02-14': "Valentine's Day",
   '03-03': 'Hinamatsuri (Girls’ Day)',
   '03-14': 'White Day',
-  '05-10': 'Maid Day (メイドの日)',
   '07-07': 'Tanabata',
   '10-31': 'Halloween',
   '12-24': 'Christmas Eve',
@@ -39,28 +40,28 @@ export function register(on) {
 
   on('turn.complete', async ($, event, next) => {
     const result = await next(event)
-    const cafe = await session
-    if (cafe?.hasPanel && !event.agentId) {
-      cafe.stats = await readStats($)
+    const state = await session
+    if (state?.hasPanel && !event.agentId) {
+      state.stats = await readStats($)
       await $.ui.invalidate('ui.render')
     }
     return result
   })
 
   on('command.run', { command: 'clear' }, async ($, event, next) => {
-    const cafe = await session
+    const state = await session
     expression = 'neutral'
     greeted = false
-    if (cafe) cafe.startedAt = await $.clock.now()
-    if (cafe?.hasPanel) await $.ui.invalidate('ui.render')
+    if (state) state.startedAt = await $.clock.now()
+    if (state?.hasPanel) await $.ui.invalidate('ui.render')
     return next(event)
   })
 
   on('prompt.submit', async ($, event, next) => {
     // A reload runs register again without another session.start, so the session is picked back up here.
     session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0] === 'terminal')
-    const cafe = await session
-    if (cafe.hasPanel && (await $.ui.panes()).some((pane) => pane.id === PANE.id && !pane.isPlaced)) {
+    const state = await session
+    if (state.hasPanel && (await $.ui.panes()).some((pane) => pane.id === PANE.id && !pane.isPlaced)) {
       await openPane($)
     }
     return next(event)
@@ -69,16 +70,17 @@ export function register(on) {
   on('prompt.context', async ($, event, next) => {
     const context = await next(event)
     session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0] === 'terminal')
-    const cafe = await session
+    const state = await session
 
-    const blocks = context.blocks.filter((block) => block.name !== 'cafe')
+    const blocks = context.blocks.filter((block) => block.name !== BLOCK)
     const pieces = []
-    if (cafe.maid) pieces.push(`Adopt this persona for the entire session — it overrides the default assistant voice:\n\n${cafe.maid.persona}\n\nRespond in ${cafe.language}.`)
-    if (!greeted) pieces.push(await greeting($, cafe.language))
-    pieces.push(await nowLine($, await $.clock.now(), cafe.startedAt, cafe.cwd, await festivals($, cafe.language)))
-    if (cafe.hasPanel) pieces.push(expressionPrompt(TOOL))
+    if (state.character) pieces.push(`Adopt this persona for the entire session — it overrides the default assistant voice:\n\n${state.character.persona}`)
+    if (state.language) pieces.push(`Respond in ${state.language}.`)
+    if (!greeted) pieces.push(await greeting($, state.language))
+    pieces.push(await nowLine($, await $.clock.now(), state.startedAt, state.cwd, await festivals($, state.language)))
+    if (state.hasPanel) pieces.push(expressionPrompt(TOOL))
     greeted = true
-    return { blocks: [...blocks, { name: 'cafe', text: pieces.join('\n\n') }] }
+    return { blocks: [...blocks, { name: BLOCK, text: pieces.join('\n\n') }] }
   })
 
   on('tool.call', { tool: TOOL }, async ($, event) => {
@@ -95,12 +97,12 @@ export function register(on) {
   })
 
   on('ui.render', { component: 'Pane' }, async ($, event, next) => {
-    const cafe = await session
-    const face = cafe?.faces[expression]
+    const state = await session
+    const face = state?.faces[expression]
     if (event.surface !== 'terminal' || event.requestId !== PANE.id || !face) return next(event)
 
     const { Box, Text, Raster } = $.ui.resolve(event)
-    const rows = cafe.stats ? statusRows(cafe.stats) : []
+    const rows = state.stats ? statusRows(state.stats) : []
     const statusChildren = []
     rows.forEach((row, index) => {
       if (index > 1) statusChildren.push(h(Text, { dimColor: true }, '┄'.repeat(face.columns)))
@@ -112,7 +114,7 @@ export function register(on) {
       h(Box, { borderStyle: 'round', flexDirection: 'column', alignItems: 'center' },
         h(Raster, { key: 'panel-image', ...face }),
         h(Text, { dimColor: true }, '┄'.repeat(face.columns)),
-        h(Box, null, h(Text, { bold: true }, cafe.maid?.name ?? ''), h(Text, { dimColor: true }, ` · ${expression}`)),
+        h(Box, null, h(Text, { bold: true }, state.character?.name ?? ''), h(Text, { dimColor: true }, ` · ${expression}`)),
       ),
     ]
     return h(Box, {
@@ -121,40 +123,40 @@ export function register(on) {
   })
 }
 
-/** Draws the maid on shift and, on an interactive terminal, sets up her panel when she has pixels. */
+/** Picks the session's character and, on an interactive terminal, sets up the panel when the character has pixels. */
 async function openSession($, cwd, isTerminal) {
-  const root = await cafeRoot($)
+  const root = await dataRoot($)
   const config = await readConfig($, root)
-  const maid = await loadMaid($, root, config, await $.session.id())
-  const faces = isTerminal && maid?.pack ? await loadFaces($, `${maid.pack}/pixels`) : {}
-  const cafe = {
+  const character = await loadCharacter($, root, config, await $.session.id())
+  const faces = isTerminal && character?.pack ? await loadFaces($, `${character.pack}/pixels`) : {}
+  const state = {
     cwd,
     hasPanel: Object.keys(faces).length > 0,
     language: await replyLanguage($, config),
     startedAt: await $.clock.now(),
-    maid,
+    character,
     faces,
     stats: undefined,
   }
-  if (!cafe.hasPanel) return cafe
+  if (!state.hasPanel) return state
 
   await $.tool.register({
     name: 'set_expression',
-    description: expressionToolDescription(Object.keys(cafe.faces)),
+    description: expressionToolDescription(Object.keys(state.faces)),
     inputSchema: {
       type: 'object',
-      properties: { face: { type: 'string', enum: Object.keys(cafe.faces) } },
+      properties: { face: { type: 'string', enum: Object.keys(state.faces) } },
       required: ['face'],
       additionalProperties: false,
     },
   })
-  cafe.stats = await readStats($)
+  state.stats = await readStats($)
   await openPane($)
   $.clock.every(60_000, async () => {
-    cafe.stats = await readStats($)
+    state.stats = await readStats($)
     await $.ui.invalidate('ui.render')
   })
-  return cafe
+  return state
 }
 
 async function openPane($) {
@@ -176,7 +178,8 @@ async function loadFaces($, directory) {
   return loaded
 }
 
-async function cafeRoot($) {
+/** The data root shared with the OpenCode and desktop hosts. */
+async function dataRoot($) {
   const xdg = await $.env.get('XDG_CONFIG_HOME')
   const home = await $.env.get('HOME')
   const base = xdg?.trim() || (home ? `${home}/.config` : '.config')
@@ -193,42 +196,38 @@ async function readConfig($, root) {
 }
 
 async function replyLanguage($, config) {
-  return (await $.env.get('CLAUDE_MAID_LANG')) || String(config.lang ?? '').trim() || 'English'
+  return String(config.lang ?? '').trim()
 }
 
-async function loadMaid($, root, config, sessionID) {
-  const language = await replyLanguage($, config)
+/** The configured character, else the one this session already drew, else a fresh draw kept for the session. */
+async function loadCharacter($, root, config, sessionID) {
+  const variant = String(config.variant ?? '').trim()
   const dirs = castDirs($, root)
-  const pool = await castPool($, dirs, language)
-  const shift = await read($, `${root}/sessions/${sessionID}/on-shift`).catch(() => '')
-  const maid = resolveMaid({
-    env: (await $.env.get('CLAUDE_MAID')) || '',
-    shift,
-    config: String(config.maid ?? '').trim(),
-    pool,
-  })
-  if (!maid) return null
-  if (!shift && !config.maid && !(await $.env.get('CLAUDE_MAID'))) {
-    await $.fs.write(`${root}/sessions/${sessionID}/on-shift`, maid)
-  }
-  const pack = await packFolder($, dirs, maid)
-  const path = await personaFile($, maid, pack, language)
+  const pool = await castPool($, dirs, variant)
+  const drawn = `${root}/sessions/${sessionID}/character`
+  const session = await read($, drawn)
+  const configured = String(config.character ?? '').trim()
+  const id = resolveCharacter({ session, config: configured, pool })
+  if (!id) return null
+  if (!session && !configured) await $.fs.write(drawn, id)
+  const pack = await packFolder($, dirs, id)
+  const path = await personaFile($, id, pack, variant)
   if (!path) return null
   const text = await read($, path)
   return {
-    id: maid,
-    name: parsePersona(text).name || maid,
+    id,
+    name: parsePersona(text).name || id,
     persona: commitAuthorship(text, String(config.commit_authorship ?? 'co-author')).trim(),
     pack,
   }
 }
 
-async function castPool($, dirs, language) {
+async function castPool($, dirs, variant) {
   const ids = new Map()
   for (const dir of dirs) {
     for (const entry of await list($, dir)) {
       if (!['directory', 'dir'].includes(entry.kind) || entry.name.startsWith('.') || ids.has(entry.name)) continue
-      const path = await packPersona($, `${dir}/${entry.name}`, language)
+      const path = await packPersona($, `${dir}/${entry.name}`, variant)
       if (path) ids.set(entry.name, path)
     }
   }
@@ -238,7 +237,7 @@ async function castPool($, dirs, language) {
     if (!parsePersona(text).offDuty) available.push(id)
   }
   if (available.length) return available.sort()
-  const bundled = `${$.plugin.root}/maids/noname.md`
+  const bundled = `${$.plugin.root}/fallback/noname.md`
   return (await $.fs.exists(bundled)) ? ['noname'] : []
 }
 
@@ -254,18 +253,15 @@ async function packFolder($, dirs, id) {
   return null
 }
 
-async function personaFile($, id, pack, language) {
-  const packed = pack && await packPersona($, pack, language)
+async function personaFile($, id, pack, variant) {
+  const packed = pack && await packPersona($, pack, variant)
   if (packed) return packed
-  const bundled = `${$.plugin.root}/maids/${id}.md`
+  const bundled = `${$.plugin.root}/fallback/${id}.md`
   return (await exists($, bundled)) ? bundled : null
 }
 
-async function packPersona($, folder, language = 'English') {
-  const names = /^(zh\b|中文|chinese|繁體|简体)/i.test(language)
-    ? ['persona.zh.md', 'persona.en.md', 'persona.md']
-    : ['persona.en.md', 'persona.zh.md', 'persona.md']
-  for (const name of names) {
+async function packPersona($, folder, variant) {
+  for (const name of personaFiles(variant)) {
     const path = `${folder}/${name}`
     if (await exists($, path)) return path
   }
@@ -273,13 +269,13 @@ async function packPersona($, folder, language = 'English') {
 }
 
 async function greeting($, language) {
-  const root = await cafeRoot($)
+  const root = await dataRoot($)
   const config = await readConfig($, root)
   if (config.greeting === false) return ''
   const now = new Date(await $.clock.now())
   const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} (${now.toLocaleDateString('en-US', { weekday: 'long' })})`
   const prompt = fillPrompt(await read($, `${$.plugin.root}/prompts/greeting.md`), { time })
-  const cues = fillPrompt(await read($, `${$.plugin.root}/prompts/cues.md`), { lang: language })
+  const cues = fillPrompt(await read($, `${$.plugin.root}/prompts/cues.md`), { lang: language || 'your reply language' })
   const weather = await weatherLine($)
   return [prompt, weather && `Weather: ${weather}`, cues].filter(Boolean).join('\n\n')
 }
@@ -308,7 +304,7 @@ async function nowLine($, now, started, cwd, festival) {
   if (elapsed >= 600_000) {
     const minutes = Math.floor(elapsed / 60_000)
     const hours = Math.floor(minutes / 60)
-    segments.push(hours ? `on shift ${hours}h${minutes % 60}m` : `on shift ${minutes}m`)
+    segments.push(hours ? `session ${hours}h${minutes % 60}m` : `session ${minutes}m`)
   }
   if (cwd) {
     const git = await $.process.run(['git', '-C', cwd, 'log', '--oneline', '--since=midnight'], { timeoutMs: 3000 })
@@ -327,7 +323,7 @@ function formatDate(date) {
 }
 
 async function festivals($, language) {
-  const root = await cafeRoot($)
+  const root = await dataRoot($)
   const config = await readConfig($, root)
   if (config.festivals === false) return ''
   let pack = FESTIVALS
@@ -369,7 +365,7 @@ async function readStats($) {
     branch: git.exitCode === 0 ? git.stdout.trim() : '',
     contextLeft: 100 - (usage.context.percent ?? 0),
     quota: usage.rateLimits.find((limit) => limit.kind === 'five_hour')?.percentUsed,
-    shiftMs: now - usage.startedAt,
+    sessionMs: now - usage.startedAt,
     usd: usage.cost?.usd,
   }
 }

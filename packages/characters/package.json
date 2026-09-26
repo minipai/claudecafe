@@ -9,7 +9,7 @@
   },
   "license": "SEE LICENSE IN LICENSE",
   "files": [
-    "*/persona.*.md",
+    "*/persona*.md",
     "*/avatar.webp",
     "*/portraits/*.webp",
     "*/pixels/*.gif",

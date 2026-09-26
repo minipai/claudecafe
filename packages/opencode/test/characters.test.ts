@@ -19,7 +19,7 @@ function writePersona(id: string, version: string): void {
   const folder = join(charactersDir(), id)
   mkdirSync(folder, { recursive: true })
   writeFileSync(
-    join(folder, "persona.en.md"),
+    join(folder, "persona.md"),
     `---\nid: claudecafe/${id}\nname: ${id}\nversion: ${version}\n---\nBody.\n`,
     "utf8",
   )

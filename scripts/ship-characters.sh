@@ -83,10 +83,12 @@ personas = sorted(folder.glob("persona*.md"))
 if not personas:
     raise SystemExit(f"no persona*.md in {folder}")
 
-allowed = {"persona.md", "persona.en.md", "persona.zh.md"}
+if not (folder / "persona.md").is_file():
+    raise SystemExit(f"no default persona.md in {folder}")
+
 versions = set()
 for path in personas:
-    if path.name not in allowed:
+    if not re.fullmatch(r"persona(\.[a-z]{2,3}(-[A-Za-z0-9]+)?)?\.md", path.name):
         raise SystemExit(f"unsupported persona file: {path.name}")
 
     text = path.read_text(encoding="utf-8")

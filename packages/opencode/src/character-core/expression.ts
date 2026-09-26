@@ -1,5 +1,5 @@
 export type Expression = {
-  maid: string | null
+  character: string | null
   face: string
 }
 
@@ -10,7 +10,7 @@ export function defaultFace(faces: readonly string[]): string {
 export function expressionToolDescription(faces: readonly string[]): string {
   const available = faces.length ? `Available faces: ${faces.join(", ")}. ` : "No GIF faces are installed for this character. "
   return (
-    "Change the visible portrait in the Café panel. "
+    "Change the visible portrait in the character panel. "
     + "Choose one available face when your visible expression meaningfully changes, or when the user asks; do not call on every reply or repeat the current state. "
     + available
     + "The panel shows only the face; it has no mood field. The selection stays until changed."

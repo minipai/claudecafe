@@ -34,8 +34,8 @@ function faceBundle(maid: string | null): FaceBundle | null {
   return faceBundles.get(maid) ?? null
 }
 
-function storedExpression(value: unknown): { maid?: unknown; face?: unknown } {
-  return typeof value === "object" && value !== null ? (value as { maid?: unknown; face?: unknown }) : {}
+function storedExpression(value: unknown): { character?: unknown; face?: unknown } {
+  return typeof value === "object" && value !== null ? (value as { character?: unknown; face?: unknown }) : {}
 }
 
 function MaidCard(props: {
@@ -46,7 +46,7 @@ function MaidCard(props: {
 }) {
   const [frameIndex, setFrameIndex] = createSignal(0)
   const character = createMemo(() => {
-    const maid = props.expression().maid
+    const maid = props.expression().character
     return maid ? characterForMaid(maid) : null
   })
   const bundle = createMemo(() => faceBundle(character()?.id ?? null))
@@ -161,7 +161,7 @@ function MaidCommands(props: {
           options.unshift({ title: "No maid", value: "none" })
           const value = await api.ui.dialog.select({
             title: "Choose maid",
-            current: current.maid ?? undefined,
+            current: current.character ?? undefined,
             options,
           })
           if (value) await selectMaid(sessionID, value)
@@ -177,13 +177,13 @@ function MaidCommands(props: {
           const sessionID = currentSession(api)
           if (!sessionID) return
           const current = expression(sessionID)
-          const bundle = faceBundle(current.maid)
+          const bundle = faceBundle(current.character)
           const value = await api.ui.dialog.select({
             title: "Maid face",
             current: current.face,
             options: (bundle?.names ?? []).map((item) => ({ title: item, value: item })),
           })
-          if (value) await setExpression(sessionID, { maid: current.maid, face: value })
+          if (value) await setExpression(sessionID, { character: current.character, face: value })
         },
       },
     ],
@@ -204,14 +204,14 @@ export default Plugin.define({
     const [looks, setLooks] = api.storage.store<Record<string, unknown>>("expressions", { initial: {} })
     const expression = (sessionID: string): Expression => {
       const look = storedExpression(looks[sessionID])
-      const maid = typeof look.maid === "string" ? look.maid : null
-      const bundle = faceBundle(maid)
+      const character = typeof look.character === "string" ? look.character : null
+      const bundle = faceBundle(character)
       const face = typeof look.face === "string" && bundle?.faces[look.face] ? look.face : bundle?.fallback ?? "neutral"
-      return { maid, face }
+      return { character, face }
     }
     const setExpression: SetExpression = async (sessionID, value) => {
       await setLooks((draft) => {
-        draft[sessionID] = { maid: value.maid, face: value.face }
+        draft[sessionID] = { character: value.character, face: value.face }
       })
       api.renderer.requestRender()
     }

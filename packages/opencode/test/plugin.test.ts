@@ -32,7 +32,7 @@ function setConfig(data: unknown): void {
 
 function writeCharacter(id: string, name: string, body = "Character body.", version = "1.1.1"): void {
   write(
-    join(charactersDir(), id, "persona.en.md"),
+    join(charactersDir(), id, "persona.md"),
     `---\nid: claudecafe/${id}\nname: ${name}\nversion: ${version}\n---\n${body}\n`,
   )
 }
@@ -50,16 +50,13 @@ beforeEach(() => {
   rmSync(SANDBOX, { recursive: true, force: true })
   mkdirSync(SANDBOX, { recursive: true })
   // A fake café plugin root keeps the bundled nameless maid under the sandbox.
-  write(join(BUNDLED, "maids", "noname.md"), "---\nname: ？？？\n---\nThe maid with no name.\n")
+  write(join(BUNDLED, "fallback", "noname.md"), "---\nname: ？？？\n---\nThe maid with no name.\n")
   process.env.XDG_CONFIG_HOME = SANDBOX
   // Keep the published packs out of the draw and make their sync a no-op.
   for (const id of ["kotone", "kurumi", "kokona"]) {
-    write(join(charactersDir(), id, "persona.en.md"), `---\nid: claudecafe/${id}\nname: ${id}\nversion: 1.1.1\noff_duty: true\n---\nbody\n`)
+    write(join(charactersDir(), id, "persona.md"), `---\nid: claudecafe/${id}\nname: ${id}\nversion: 1.1.1\noff_duty: true\n---\nbody\n`)
   }
   process.env.CAFE_PLUGIN_ROOT = BUNDLED
-  for (const name of ["OPENCODE_MAID", "CLAUDE_MAID", "OPENCODE_MAID_LANG", "CLAUDE_MAID_LANG"]) {
-    delete process.env[name]
-  }
   // Offline: a failed weather fetch must degrade to silence.
   globalThis.fetch = (() => {
     throw new Error("offline")
@@ -105,35 +102,35 @@ describe("root and config", () => {
     expect(cafe.config()).toEqual({})
   })
 
-  test("lang priority env > config > default", () => {
-    expect(cafe.lang()).toBe(cafe.DEFAULT_LANG)
+  test("lang comes from config and is unset by default", () => {
+    expect(cafe.lang()).toBe("")
     setConfig({ lang: "日本語" })
     expect(cafe.lang()).toBe("日本語")
-    process.env.CLAUDE_MAID_LANG = "Deutsch"
-    expect(cafe.lang()).toBe("Deutsch")
-    process.env.OPENCODE_MAID_LANG = "Français"
-    expect(cafe.lang()).toBe("Français")
   })
 })
 
 describe("personas", () => {
   test("the bundled nameless maid loads with her frontmatter stripped", () => {
     const path = cafe.personaFile("noname")
-    expect(path).toBe(join(BUNDLED, "maids", "noname.md"))
+    expect(path).toBe(join(BUNDLED, "fallback", "noname.md"))
     expect(cafe.personaBody(path ?? "").trim()).toBe("The maid with no name.")
   })
 
   test("a local character folder is a persona source", () => {
     writeCharacter("mymaid", "My Pack", "Pack body.")
-    expect(cafe.personaFile("mymaid")).toBe(join(charactersDir(), "mymaid", "persona.en.md"))
+    expect(cafe.personaFile("mymaid")).toBe(join(charactersDir(), "mymaid", "persona.md"))
     expect(cafe.characterForMaid("mymaid")?.name).toBe("My Pack")
   })
 
-  test("Chinese language prefers the Chinese persona when both exist", () => {
+  test("the variant picks its persona file, apart from the reply language", () => {
     writeCharacter("bilingual", "English", "English body.")
     write(join(charactersDir(), "bilingual", "persona.zh.md"), "---\nname: 中文\n---\n中文內容。\n")
-    setConfig({ lang: "zh-TW" })
+    setConfig({ lang: "Traditional Chinese" })
+    expect(cafe.personaFile("bilingual")).toBe(join(charactersDir(), "bilingual", "persona.md"))
+    setConfig({ variant: "zh" })
     expect(cafe.personaFile("bilingual")).toBe(join(charactersDir(), "bilingual", "persona.zh.md"))
+    setConfig({ variant: "ja" })
+    expect(cafe.personaFile("bilingual")).toBe(join(charactersDir(), "bilingual", "persona.md"))
   })
 
   test("a missing persona resolves to nothing", () => {
@@ -173,7 +170,7 @@ Maid instructions.
   test("co-author is the default and excludes --author", () => {
     const body = cafe.commitAuthorship(PERSONA)
     expect(body).toContain("`Co-Authored-By: ここな <kokona@claudecafe.dev>`")
-    expect(body).toContain("Do not use `--author` for the maid.")
+    expect(body).toContain("Do not use `--author` for the character.")
     expect(body).toContain("Do not print the trailer in ordinary replies")
     expect(body).not.toContain("id: claudecafe/kokona")
   })
@@ -272,20 +269,28 @@ function systemText(input: ReturnType<typeof context>): string {
 describe("system transform", () => {
   test("an explicit maid rides in the system prompt with the cues and the clock", async () => {
     writeCharacter("testmaid", "T", "Test persona body.")
-    process.env.OPENCODE_MAID = "testmaid"
+    setConfig({ character: "testmaid" })
     const { context: transform } = hooks()
     const output = context("sid")
     await transform(output)
     const injected = systemText(output)
     expect(injected).toContain("Test persona body.")
-    expect(injected).toContain("Respond in English.")
+    expect(injected).not.toContain("Respond in")
     expect(injected).toContain("Mood marker")
     expect(injected).toContain("set_expression")
     expect(injected).toContain("Current time: ")
   })
 
+  test("a reply language asks for replies in it, with or without a maid", async () => {
+    setConfig({ character: "none", lang: "Traditional Chinese" })
+    const { context: transform } = hooks()
+    const output = context("sid")
+    await transform(output)
+    expect(systemText(output)).toContain("Respond in Traditional Chinese.")
+  })
+
   test("nobody on shift drops the persona but keeps the liveliness", async () => {
-    setConfig({ maid: "none" })
+    setConfig({ character: "none" })
     const { context: transform } = hooks()
     const output = context("sid")
     await transform(output)
@@ -296,7 +301,7 @@ describe("system transform", () => {
 
   test("a task subagent is skipped", async () => {
     writeCharacter("testmaid", "T", "Body.")
-    process.env.OPENCODE_MAID = "testmaid"
+    setConfig({ character: "testmaid" })
     const { context: transform, event } = hooks()
     event({ type: "session.created", data: { sessionID: "child", parentID: "root" } })
     const output = context("child")
@@ -308,7 +313,7 @@ describe("system transform", () => {
 describe("session briefing", () => {
   test("the greeting lands once in the session context", async () => {
     writeCharacter("testmaid", "T", "Body.")
-    process.env.OPENCODE_MAID = "testmaid"
+    setConfig({ character: "testmaid" })
     const { context: transform } = hooks()
     const first = context("sid")
     await transform(first)
@@ -319,7 +324,7 @@ describe("session briefing", () => {
   })
 
   test("greeting false silences the briefing but still starts the shift clock", async () => {
-    setConfig({ greeting: false, maid: "none" })
+    setConfig({ greeting: false, character: "none" })
     const { context: transform } = hooks()
     const output = context("sid")
     await transform(output)
@@ -328,7 +333,7 @@ describe("session briefing", () => {
   })
 
   test("the existing system context is preserved", async () => {
-    setConfig({ maid: "none" })
+    setConfig({ character: "none" })
     const { context: transform } = hooks()
     const output = context("sid")
     await transform(output)
@@ -346,17 +351,17 @@ describe("shift persistence", () => {
   })
 
   test("the fixed pick in config beats the draw and skips the shift file", async () => {
-    setConfig({ maid: "kokona" })
+    setConfig({ character: "kokona" })
     writeCharacter("kokona", "K", "Body.")
     const { context: transform } = hooks()
     await transform({ sessionID: "sid", system: [] })
     expect(existsSync(shiftFile("sid"))).toBe(false)
   })
 
-  test("the picker choice overrides the environment for that session", async () => {
+  test("the picker choice overrides the config for that session", async () => {
     writeCharacter("alpha", "Alpha", "Alpha body.")
     writeCharacter("beta", "Beta", "Beta body.")
-    process.env.OPENCODE_MAID = "beta"
+    setConfig({ character: "beta" })
     const first = hooks()
     const selected = await first.selectMaid("sid", "alpha")
     expect(selected?.id).toBe("alpha")
@@ -377,7 +382,7 @@ describe("expression tool", () => {
   test("stores the active character's GIF face per session", async () => {
     seedExpressionPack("testmaid", "Test Maid", ["neutral", "happy", "focused"])
     seedExpressionPack("othermaid", "Other Maid", ["neutral"])
-    process.env.OPENCODE_MAID = "testmaid"
+    setConfig({ character: "testmaid" })
     let definition: {
       execute: (
         input: { face: string },
@@ -388,10 +393,10 @@ describe("expression tool", () => {
     const writes: unknown[] = []
     const emitted: unknown[] = []
     let currentExpression:
-      | ((input: { sessionID: string }) => Promise<{ maid: string | null; face: string }>)
+      | ((input: { sessionID: string }) => Promise<{ character: string | null; face: string }>)
       | undefined
     let selectMaid:
-      | ((input: { sessionID: string; maid: string }) => Promise<{ maid: string | null; face: string }>)
+      | ((input: { sessionID: string; maid: string }) => Promise<{ character: string | null; face: string }>)
       | undefined
     const cleanup = await plugin.setup({
       location: { directory: SANDBOX },
@@ -400,8 +405,8 @@ describe("expression tool", () => {
         register: async (
           _definition: unknown,
           handlers: {
-            expression: (input: { sessionID: string }) => Promise<{ maid: string | null; face: string }>
-            selectMaid: (input: { sessionID: string; maid: string }) => Promise<{ maid: string | null; face: string }>
+            expression: (input: { sessionID: string }) => Promise<{ character: string | null; face: string }>
+            selectMaid: (input: { sessionID: string; maid: string }) => Promise<{ character: string | null; face: string }>
           },
         ) => {
           currentExpression = handlers.expression
@@ -429,22 +434,22 @@ describe("expression tool", () => {
     } as never)
 
     expect(definition).toBeDefined()
-    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ maid: "testmaid", face: "neutral" })
+    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ character: "testmaid", face: "neutral" })
 
     const result = await definition?.execute({ face: "happy" }, { sessionID: "one" })
     expect(result?.content).toBe("Face: happy")
-    expect(writes).toEqual([{ key: "expression:one", value: { maid: "testmaid", face: "happy" } }])
+    expect(writes).toEqual([{ key: "expression:one", value: { character: "testmaid", face: "happy" } }])
     expect(emitted).toEqual([
-      ["expression", { sessionID: "one", maid: "testmaid", face: "happy" }],
+      ["expression", { sessionID: "one", character: "testmaid", face: "happy" }],
     ])
 
     await definition?.execute({ face: "focused" }, { sessionID: "two" })
-    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ maid: "testmaid", face: "happy" })
-    expect(await currentExpression?.({ sessionID: "two" })).toEqual({ maid: "testmaid", face: "focused" })
+    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ character: "testmaid", face: "happy" })
+    expect(await currentExpression?.({ sessionID: "two" })).toEqual({ character: "testmaid", face: "focused" })
 
-    expect(await selectMaid?.({ sessionID: "one", maid: "othermaid" })).toEqual({ maid: "othermaid", face: "neutral" })
-    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ maid: "othermaid", face: "neutral" })
-    expect(emitted.at(-1)).toEqual(["expression", { sessionID: "one", maid: "othermaid", face: "neutral" }])
+    expect(await selectMaid?.({ sessionID: "one", maid: "othermaid" })).toEqual({ character: "othermaid", face: "neutral" })
+    expect(await currentExpression?.({ sessionID: "one" })).toEqual({ character: "othermaid", face: "neutral" })
+    expect(emitted.at(-1)).toEqual(["expression", { sessionID: "one", character: "othermaid", face: "neutral" }])
     await expect(definition?.execute({ face: "missing" }, { sessionID: "one" })).rejects.toThrow("not available")
     await cleanup?.()
   })

@@ -102,21 +102,17 @@ describe('knownLines', () => {
 
 describe('replyLanguage', () => {
   let home: string
-  const originalEnv = process.env.CLAUDE_MAID_LANG
   const originalXdg = process.env.XDG_CONFIG_HOME
 
   beforeEach(() => {
     home = fs.mkdtempSync(path.join(os.tmpdir(), 'cafe-home-'))
     vi.spyOn(os, 'homedir').mockReturnValue(home)
-    delete process.env.CLAUDE_MAID_LANG
     delete process.env.XDG_CONFIG_HOME
     fs.rmSync(path.join(app.getPath('userData'), 'speech.json'), { force: true })
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
-    if (originalEnv === undefined) delete process.env.CLAUDE_MAID_LANG
-    else process.env.CLAUDE_MAID_LANG = originalEnv
     if (originalXdg === undefined) delete process.env.XDG_CONFIG_HOME
     else process.env.XDG_CONFIG_HOME = originalXdg
   })
@@ -135,15 +131,8 @@ describe('replyLanguage', () => {
     expect(replyLanguage()).toBe('Cantonese')
   })
 
-  it('prefers the CLAUDE_MAID_LANG environment override over the café config', () => {
+  it('prefers what the window itself was told over the café config', () => {
     writeConfig('Cantonese')
-    process.env.CLAUDE_MAID_LANG = 'Korean'
-    expect(replyLanguage()).toBe('Korean')
-  })
-
-  it('prefers what the window itself was told over the environment and the café config', () => {
-    writeConfig('Cantonese')
-    process.env.CLAUDE_MAID_LANG = 'Korean'
     rememberSpeech('French')
     expect(replyLanguage()).toBe('French')
   })
