@@ -108,11 +108,11 @@ function site(locale: Locale) {
 
   page.get("/plugin", (c) => {
     const title =
-      locale === "zh" ? "cafe — Claude Code 的女僕咖啡廳 plugin" : "cafe — a maid café plugin for Claude Code";
+      locale === "zh" ? "Persona Panel — 給 Claude Code 的角色面板" : "Persona Panel — a character panel for Claude Code";
     const description =
       locale === "zh"
-        ? "打開終端機，聽見一聲「歡迎回來，ご主人様」。cafe 是 Claude Code plugin：每個 session 由值班女僕迎接你、報時、用心情收尾，旁邊還有會跟著工作變化的像素表情。"
-        : "Open your terminal to a warm “Welcome back, ご主人様.” A Claude Code plugin that puts a maid on shift every session — greetings, timekeeping, mood sign-offs, and a pixel portrait beside the work.";
+        ? "讓 Claude Code 有了自己的樣子。Persona Panel 為 Claude Code 請來一位角色：用她的語氣說話、記得現在幾點，表情在旁邊的面板上跟著工作變。內附 claudecafe 的三位女僕，也能放進你自己的角色。"
+        : "Claude Code, with a character of its own. Persona Panel brings a character into Claude Code: she speaks in her own voice, keeps track of the time, and her face in the side panel changes as the work goes. Three claudecafe maids come bundled — or bring your own.";
     return c.html(
       <Layout locale={locale} title={title} description={description} path="/plugin">
         <PluginPage locale={locale} />
