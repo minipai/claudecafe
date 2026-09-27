@@ -9,8 +9,138 @@ function expressionPrompt(toolName = "set_expression") {
 - Call ${toolName} with one available face when the visible expression meaningfully changes, without waiting to be asked.
 - Change the face before the reply or work it accompanies. Keep it natural: one change for a meaningful shift, not a call on every message or a repeat of the current state. It stays until the next call.
 - Choose a face whose filename best fits the visible performance. Use intimate or strongly suggestive faces only when the conversation suits them.
-- The tool changes the real panel image. A written mood marker is independent of the panel and does not change the face.
+- The tool changes the real panel image.
 - Do not narrate routine expression changes. Continue the user's task normally; this panel adds a visible reaction and does not require shorter replies, roleplay, or a different persona.`;
+}
+var KAOMOJI = {
+  neutral: "( • ᴗ • )",
+  happy: "＼(ˆ ᗜ ˆ)／",
+  curious: "(づ •. •)?",
+  thinking: "( ╭ರ_•́ )",
+  focused: "(๑•̀ ᴗ•́)૭✧",
+  confused: "( ⊙.⊙ )?",
+  proud: "ᕙ( •̀ ᗜ •́)ᕗ",
+  smug: "( ｀▽´ )",
+  excited: "٩(ˊᗜˋ*)و",
+  flirty: "( ˘ ³˘)♡",
+  smitten: "(,,ᴗ ᴗ,,)♡",
+  wink: "☆ ( ＞◡❛)",
+  embarrassed: "( ˶>﹏<˶ᵕ)",
+  pouty: "( •̀ ε •́ )",
+  worried: "(´･ω･｀)",
+  annoyed: "(￢_￢)",
+  sad: "(｡•́︿•̀｡)",
+  surprised: "Σ( °口° )",
+  angry: "( ＃•̀_•́ )",
+  afraid: "( ;ﾟдﾟ )",
+  skeptical: "(￢‸￢)…",
+  frustrated: "(,,>﹏<,,)",
+  awkward: "( ^_^; )",
+  sorry: "m( _ _ )m",
+  speechless: "(・_・;)",
+  relieved: "( ˘ᗜ˘ )⁼³",
+  laughing: "ꉂ(ˊᗜˋ*)",
+  crying: "(╥﹏╥)",
+  sleepy: "(－ω－) zzZ",
+  pleading: "(｡•́人•̀｡)",
+  facepalm: "(－‸ლ)",
+  waving: "( ･ω･)ﾉ"
+};
+function markedFace(reply) {
+  const marker = reply.match(/【[^【】]*】\s*$/);
+  return marker ? faceFor(marker[0]) : null;
+}
+function faceFor(marker) {
+  const worn = bare(marker);
+  for (const [expression, kaomoji] of Object.entries(KAOMOJI)) {
+    if (worn.includes(bare(kaomoji)))
+      return expression;
+  }
+  return null;
+}
+var bare = (text) => text.replace(/\s+/g, "");
+// packages/character-core/src/prompt.ts
+function fillPrompt(template, values = {}) {
+  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare, braced) => {
+    if (match === "$$")
+      return "$";
+    const key = bare ?? braced ?? "";
+    return Object.prototype.hasOwnProperty.call(values, key) ? values[key] ?? match : match;
+  }).replace(/\n+$/, "");
+}
+
+// packages/character-core/src/context.ts
+var FESTIVALS = {
+  "01-01": "New Year's Day",
+  "02-14": "Valentine's Day",
+  "03-03": "Hinamatsuri (Girls’ Day)",
+  "03-14": "White Day",
+  "07-07": "Tanabata",
+  "10-31": "Halloween",
+  "12-24": "Christmas Eve",
+  "12-25": "Christmas",
+  "12-31": "New Year's Eve"
+};
+async function readContext(host, options) {
+  const [config, now] = await Promise.all([host.config(), host.now()]);
+  const pieces = [];
+  if (options.greet && config.greeting !== false) {
+    const date = new Date(now);
+    const time = `${pad(date.getHours())}:${pad(date.getMinutes())} (${date.toLocaleDateString("en-US", { weekday: "long" })})`;
+    const greeting = fillPrompt(await host.readPrompt("greeting"), { time });
+    const cues = fillPrompt(await host.readPrompt("cues"), { lang: options.language || "your reply language" });
+    const weather = await host.weather();
+    pieces.push([greeting, weather && `Weather: ${weather}`, cues].filter(Boolean).join(`
+
+`));
+  }
+  const segments = [`Current time: ${formatDate(new Date(now))}`];
+  const elapsed = now - options.startedAt;
+  if (elapsed >= 600000) {
+    const minutes = Math.floor(elapsed / 60000);
+    const hours = Math.floor(minutes / 60);
+    segments.push(hours ? `session ${hours}h${minutes % 60}m` : `session ${minutes}m`);
+  }
+  if (options.cwd) {
+    const count = await host.commitsToday(options.cwd);
+    if (count)
+      segments.push(`${count} commits today`);
+  }
+  const festival = await readFestival(host, config.festivals, new Date(now));
+  if (festival)
+    segments.push(festival);
+  pieces.push(segments.join("｜"));
+  return pieces.filter(Boolean).join(`
+
+`);
+}
+async function readFestival(host, setting, date) {
+  if (setting === false)
+    return "";
+  let festivals = FESTIVALS;
+  if (typeof setting === "string" && setting.trim()) {
+    try {
+      const path = expandHome(setting.trim(), await host.home());
+      festivals = JSON.parse(await host.readFile(path));
+    } catch {
+      return "";
+    }
+  }
+  return festivals[`${pad(date.getMonth() + 1)}-${pad(date.getDate())}`] ?? "";
+}
+function formatDate(date) {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())} (${days[date.getDay()]})`;
+}
+function expandHome(path, home) {
+  if (path === "~")
+    return home ?? path;
+  if (path.startsWith("~/") && home)
+    return `${home}/${path.slice(2)}`;
+  return path;
+}
+function pad(value) {
+  return String(value).padStart(2, "0");
 }
 // packages/character-core/src/persona.ts
 function parsePersona(text) {
@@ -59,15 +189,6 @@ function frontmatter(text) {
 function field(head, key) {
   const match = new RegExp(`^${key}:[ \\t]*(.+?)\\s*$`, "m").exec(head);
   return match?.[1]?.trim().replace(/^(['"])(.*)\1$/, "$2") ?? "";
-}
-// packages/character-core/src/prompt.ts
-function fillPrompt(template, values = {}) {
-  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare, braced) => {
-    if (match === "$$")
-      return "$";
-    const key = bare ?? braced ?? "";
-    return Object.prototype.hasOwnProperty.call(values, key) ? values[key] ?? match : match;
-  }).replace(/\n+$/, "");
 }
 // packages/character-core/src/selection.ts
 function resolveCharacter(input) {
@@ -315,20 +436,9 @@ function duration(ms) {
 var TOOL = "mcp__persona-panel__set_expression";
 var PANE = { id: "persona-panel", title: "Pixel art" };
 var BLOCK = "persona-panel";
-var FESTIVALS = {
-  "01-01": "New Year's Day",
-  "02-14": "Valentine's Day",
-  "03-03": "Hinamatsuri (Girls’ Day)",
-  "03-14": "White Day",
-  "07-07": "Tanabata",
-  "10-31": "Halloween",
-  "12-24": "Christmas Eve",
-  "12-25": "Christmas",
-  "12-31": "New Year's Eve"
-};
 function register(on) {
   let session;
-  let expression2 = "neutral";
+  let expression = "neutral";
   let greeted = false;
   on("session.start", async ($, event, next) => {
     const result = await next(event);
@@ -341,6 +451,9 @@ function register(on) {
     const result = await next(event);
     const state = await session;
     if (state?.hasPanel && !event.agentId) {
+      const face = markedFace(event.answer);
+      if (face && Object.hasOwn(state.faces, face))
+        expression = face;
       state.stats = await readStats($);
       await $.ui.invalidate("ui.render");
     }
@@ -348,7 +461,7 @@ function register(on) {
   });
   on("command.run", { command: "clear" }, async ($, event, next) => {
     const state = await session;
-    expression2 = "neutral";
+    expression = "neutral";
     greeted = false;
     if (state)
       state.startedAt = await $.clock.now();
@@ -376,9 +489,12 @@ function register(on) {
 ${state.character.persona}`);
     if (state.language)
       pieces.push(`Respond in ${state.language}.`);
-    if (!greeted)
-      pieces.push(await greeting($, state.language));
-    pieces.push(await nowLine($, await $.clock.now(), state.startedAt, state.cwd, await festivals($, state.language)));
+    pieces.push(await readContext(contextHost($), {
+      cwd: state.cwd,
+      language: state.language,
+      startedAt: state.startedAt,
+      greet: !greeted
+    }));
     if (state.hasPanel)
       pieces.push(expressionPrompt(TOOL));
     greeted = true;
@@ -392,15 +508,15 @@ ${state.character.persona}`);
     if (typeof selected !== "string" || !Object.hasOwn(faces, selected)) {
       return { deny: `Unknown face: ${String(selected)}` };
     }
-    if (selected !== expression2) {
-      expression2 = selected;
+    if (selected !== expression) {
+      expression = selected;
       await $.ui.invalidate("ui.render");
     }
-    return { result: `Face: ${expression2}` };
+    return { result: `Face: ${expression}` };
   });
   on("ui.render", { component: "Pane" }, async ($, event, next) => {
     const state = await session;
-    const face = state?.faces[expression2];
+    const face = state?.faces[expression];
     if (event.surface !== "terminal" || event.requestId !== PANE.id || !face)
       return next(event);
     const { Box, Text, Raster } = $.ui.resolve(event);
@@ -414,7 +530,7 @@ ${state.character.persona}`);
     const children = [
       h(Box, { flexDirection: "column", width: face.columns, marginTop: 1 }, ...statusChildren),
       h(Box, { flexGrow: 1 }),
-      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression2}`)))
+      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression}`)))
     ];
     return h(Box, {
       flexDirection: "column",
@@ -561,19 +677,20 @@ async function packPersona($, folder, variant) {
   }
   return null;
 }
-async function greeting($, language) {
-  const root = await dataRoot($);
-  const config = await readConfig($, root);
-  if (config.greeting === false)
-    return "";
-  const now = new Date(await $.clock.now());
-  const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} (${now.toLocaleDateString("en-US", { weekday: "long" })})`;
-  const prompt2 = fillPrompt(await read($, `${$.plugin.root}/prompts/greeting.md`), { time });
-  const cues = fillPrompt(await read($, `${$.plugin.root}/prompts/cues.md`), { lang: language || "your reply language" });
-  const weather = await weatherLine($);
-  return [prompt2, weather && `Weather: ${weather}`, cues].filter(Boolean).join(`
-
-`);
+function contextHost($) {
+  return {
+    now: () => $.clock.now(),
+    config: async () => readConfig($, await dataRoot($)),
+    readPrompt: (name) => read($, `${$.plugin.root}/prompts/${name}.md`),
+    readFile: (path) => read($, path),
+    home: () => $.env.get("HOME"),
+    weather: () => weatherLine($),
+    commitsToday: async (cwd) => {
+      const git = await $.process.run(["git", "-C", cwd, "log", "--oneline", "--since=midnight"], { timeoutMs: 3000 }).catch(() => ({ exitCode: 1, stdout: "", stderr: "" }));
+      return git.exitCode === 0 ? git.stdout.split(`
+`).filter(Boolean).length : 0;
+    }
+  };
 }
 async function weatherLine($) {
   const format = "%l｜%c%t (feels %f)｜sunrise %S, sunset %s";
@@ -593,47 +710,6 @@ async function weatherLine($) {
   } catch {
     return null;
   }
-}
-async function nowLine($, now, started, cwd, festival) {
-  const date = new Date(now);
-  const segments = [`Current time: ${formatDate(date)}`];
-  const elapsed = now - started;
-  if (elapsed >= 600000) {
-    const minutes = Math.floor(elapsed / 60000);
-    const hours = Math.floor(minutes / 60);
-    segments.push(hours ? `session ${hours}h${minutes % 60}m` : `session ${minutes}m`);
-  }
-  if (cwd) {
-    const git = await $.process.run(["git", "-C", cwd, "log", "--oneline", "--since=midnight"], { timeoutMs: 3000 }).catch(() => ({ exitCode: 1, stdout: "", stderr: "" }));
-    const count = git.exitCode === 0 ? git.stdout.split(`
-`).filter(Boolean).length : 0;
-    if (count)
-      segments.push(`${count} commits today`);
-  }
-  if (festival)
-    segments.push(festival);
-  return segments.join("｜");
-}
-function formatDate(date) {
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const pad = (value) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())} (${days[date.getDay()]})`;
-}
-async function festivals($, language) {
-  const root = await dataRoot($);
-  const config = await readConfig($, root);
-  if (config.festivals === false)
-    return "";
-  let pack = FESTIVALS;
-  if (typeof config.festivals === "string" && config.festivals.trim()) {
-    try {
-      pack = JSON.parse(await read($, expandHome(config.festivals.trim(), await $.env.get("HOME"))));
-    } catch {
-      return "";
-    }
-  }
-  const date = new Date(await $.clock.now());
-  return pack[`${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`] ?? "";
 }
 async function read($, path) {
   try {
@@ -655,13 +731,6 @@ async function exists($, path) {
   } catch {
     return false;
   }
-}
-function expandHome(path, home) {
-  if (path === "~")
-    return home ?? path;
-  if (path.startsWith("~/") && home)
-    return `${home}/${path.slice(2)}`;
-  return path;
 }
 async function readStats($) {
   const [root, home, git, usage, now] = await Promise.all([
