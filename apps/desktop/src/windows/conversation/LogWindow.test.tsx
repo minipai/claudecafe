@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CafeBridge, SceneShare } from '@/agent/bridge'
 import { createChatMessage } from '@/galgame/scene/chatlog'
@@ -30,8 +30,8 @@ async function mount(log: SceneShare['log'], conversation: string | null = null)
   ;(window as unknown as { cafe: CafeBridge }).cafe = bridge
   vi.resetModules()
   const { LogWindow } = await import('./LogWindow')
-  render(<LogWindow log={log} conversation={conversation} />)
-  return bridge
+  const view = render(<LogWindow log={log} conversation={conversation} />)
+  return { bridge, LogWindow, ...view }
 }
 
 describe('LogWindow', () => {
@@ -46,7 +46,7 @@ describe('LogWindow', () => {
   })
 
   it('asks the scene to compact, start over, or have him back', async () => {
-    const bridge = await mount(logOf({ isAwaitingAnswer: true }))
+    const { bridge } = await mount(logOf({ isAwaitingAnswer: true }))
 
     await act(async () => screen.getByRole('button', { name: /Compact/ }).click())
     await act(async () => screen.getByRole('button', { name: /New conversation/ }).click())
@@ -57,5 +57,48 @@ describe('LogWindow', () => {
       [{ kind: 'new-session' }],
       [{ kind: 'return' }],
     ])
+  })
+
+  it('follows appended messages at the bottom, preserves older reading, and resumes on demand', async () => {
+    const { rerender, LogWindow } = await mount(logOf())
+    const scroller = screen.getByText('welcome back').closest('.overflow-y-auto') as HTMLDivElement
+    Object.defineProperties(scroller, {
+      scrollHeight: { configurable: true, value: 1000 },
+      clientHeight: { configurable: true, value: 400 },
+      scrollTop: { configurable: true, writable: true, value: 600 },
+    })
+
+    fireEvent.scroll(scroller)
+    rerender(<LogWindow log={logOf({ messages: [createChatMessage('assistant', 'welcome back'), createChatMessage('assistant', 'new reply')] })} conversation={null} />)
+    await act(async () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
+    expect(scroller.scrollTo).toHaveBeenCalledWith({ top: 1000 })
+
+    vi.mocked(scroller.scrollTo).mockClear()
+    scroller.scrollTop = 200
+    fireEvent.scroll(scroller)
+    rerender(<LogWindow log={logOf({ messages: [createChatMessage('assistant', 'welcome back'), createChatMessage('assistant', 'new reply'), createChatMessage('assistant', 'stream update')] })} conversation={null} />)
+    await act(async () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
+    expect(scroller.scrollTo).not.toHaveBeenCalled()
+
+    await act(async () => screen.getByRole('button', { name: /latest/i }).click())
+    expect(scroller.scrollTo).toHaveBeenCalledWith({ top: 1000, behavior: 'smooth' })
+    vi.mocked(scroller.scrollTo).mockClear()
+    rerender(<LogWindow log={logOf({ messages: [createChatMessage('assistant', 'welcome back'), createChatMessage('assistant', 'new reply'), createChatMessage('assistant', 'stream update'), createChatMessage('assistant', 'next update')] })} conversation={null} />)
+    await act(async () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
+    expect(scroller.scrollTo).toHaveBeenCalledWith({ top: 1000 })
+  })
+
+  it('resets follow mode and opens the new conversation at its latest message', async () => {
+    const { rerender, LogWindow } = await mount(logOf(), 'first')
+    const scroller = screen.getByText('welcome back').closest('.overflow-y-auto') as HTMLDivElement
+    Object.defineProperties(scroller, {
+      scrollHeight: { configurable: true, value: 1000 },
+      clientHeight: { configurable: true, value: 400 },
+      scrollTop: { configurable: true, writable: true, value: 100 },
+    })
+    fireEvent.scroll(scroller)
+    rerender(<LogWindow log={logOf({ messages: [createChatMessage('assistant', 'new conversation')] })} conversation="second" />)
+    await act(async () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
+    expect(scroller.scrollTo).toHaveBeenCalledWith({ top: 1000 })
   })
 })

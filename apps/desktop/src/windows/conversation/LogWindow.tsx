@@ -41,15 +41,29 @@ export function LogWindow({ log, conversation }: { log: SceneShare['log']; conve
   // Everything before the last compaction now lives on as a summary, so it is dimmed.
   const lastBoundary = messages.map((message) => message.role).lastIndexOf('boundary')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const shouldFollowRef = useRef(true)
+  const conversationRef = useRef(conversation)
 
   useEffect(() => {
+    if (conversationRef.current !== conversation) {
+      conversationRef.current = conversation
+      shouldFollowRef.current = true
+    }
+    if (!shouldFollowRef.current) return
     const frame = window.requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [messages])
+  }, [messages, conversation])
+
+  function trackScrollPosition() {
+    const element = scrollRef.current
+    if (!element) return
+    shouldFollowRef.current = element.scrollHeight - element.scrollTop - element.clientHeight <= 80
+  }
 
   function jumpToLatest() {
+    shouldFollowRef.current = true
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }
 
@@ -70,6 +84,7 @@ export function LogWindow({ log, conversation }: { log: SceneShare['log']; conve
 
         <div
           ref={scrollRef}
+          onScroll={trackScrollPosition}
           className="min-h-0 flex-1 overflow-y-auto px-[clamp(20px,6vw,72px)] py-5"
         >
               <div className="relative mx-auto max-w-[760px]">
