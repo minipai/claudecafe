@@ -183,6 +183,19 @@ describe('conversationBacklog', () => {
     expect(conversationBacklog('/nowhere', 'nope')).toBeNull()
   })
 
+  it.each(['../outside', '..\\outside', '/absolute', 'C:\\absolute', '..', '.hidden'])('rejects unsafe session filename %s', (sessionId) => {
+    expect(conversationBacklog('/nowhere', sessionId)).toBeNull()
+  })
+
+  it('reads UUID session IDs and keeps accepting ordinary existing filenames', () => {
+    const cwd = '/Users/master/proj'
+    const sessionId = '123e4567-e89b-12d3-a456-426614174000'
+    writeTranscript(home, cwd, sessionId, [userRow('hello')])
+    expect(conversationBacklog(cwd, sessionId)).toEqual([
+      { role: 'user', content: 'hello', at: expect.any(Number) },
+    ])
+  })
+
   it('inherits the previous row\'s timestamp for a row with none of its own, rather than stamping it "now"', () => {
     const cwd = '/Users/master/proj'
     const stamped = '2024-01-01T00:00:00.000Z'

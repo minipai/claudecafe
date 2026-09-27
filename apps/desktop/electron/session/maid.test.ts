@@ -26,7 +26,8 @@ vi.mock('../characters/lines', () => ({
 // ~/.claude — the conversation this window is on, its folder history, what
 // language it speaks. A unit test gets none of that; every conversation is
 // invented per test instead.
-vi.mock('../history/history', () => ({
+vi.mock('../history/history', async (importOriginal) => ({
+  validSessionId: (await importOriginal<typeof import('../history/history')>()).validSessionId,
   rememberSession: vi.fn(),
   forgetSession: vi.fn(),
   lastConversation: vi.fn(),
@@ -896,6 +897,15 @@ describe('MaidSession — trouble paths', () => {
 })
 
 describe('MaidSession — resume/reset/refresh', () => {
+  it('rejects unsafe session IDs before changing the active session or reading history', () => {
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-resume-invalid', emit)
+    for (const id of ['../outside', '/absolute', 'folder\\session', 'invalid\0id']) session.resume(id)
+    expect(events).toEqual([])
+    expect(rememberSession).not.toHaveBeenCalled()
+    expect(conversationBacklog).not.toHaveBeenCalled()
+  })
+
   it('does nothing when asked to resume the conversation it is already on', () => {
     trackConnections()
     const { emit } = collectEvents()

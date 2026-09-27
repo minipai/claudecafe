@@ -39,6 +39,7 @@ export function lastConversation(cwd: string): { sessionId: string; backlog: Bac
 /** What was said in one conversation of this folder — the one the master picked
  * out of the list, or the one this window was already on. */
 export function conversationBacklog(cwd: string, sessionId: string): BacklogLine[] | null {
+  if (!validSessionId(sessionId)) return null
   const file = path.join(
     os.homedir(),
     '.claude/projects',
@@ -289,8 +290,13 @@ export function whoServed(sessionId: string): string | null {
  * folder and strips `.jsonl` — so a file called `..jsonl` would otherwise walk
  * this one folder up and read, or write, the café's own state. */
 function shiftSheet(sessionId: string) {
-  if (sessionId !== path.basename(sessionId) || sessionId.startsWith('.')) return null
+  if (!validSessionId(sessionId)) return null
   return path.join(cafeRoot(), 'sessions', sessionId)
+}
+
+/** Session IDs are used as filenames in both transcript and shift storage. */
+export function validSessionId(sessionId: unknown): sessionId is string {
+  return typeof sessionId === 'string' && sessionId.length > 0 && sessionId === path.basename(sessionId) && !/[\\/\0]/.test(sessionId) && !sessionId.startsWith('.')
 }
 
 /**

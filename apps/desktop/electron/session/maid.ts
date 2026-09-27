@@ -15,7 +15,7 @@ import { askForLines, knownLines, nameOf as maidName, personaOf, replyLanguage }
 import { contextHook } from '../characters/context'
 import { findClaudeCode } from './claude'
 import { chosenShift, chosenSpeech, rememberShift, rememberWhoServed, whoServed } from '../history/history'
-import { conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings } from '../history/history'
+import { conversationBacklog, forgetSession, keptSettings, lastConversation, listConversations, rememberSession, rememberSettings, validSessionId } from '../history/history'
 import { readGit } from '../history/status'
 import type {
   BridgeEvent,
@@ -366,6 +366,7 @@ export class MaidSession {
    * prompt is what picks it up, with everything that was said already on screen.
    */
   resume(sessionId: string) {
+    if (!validSessionId(sessionId)) return
     if (sessionId === this.sessionId) return
     this.close()
     this.sessionId = sessionId
