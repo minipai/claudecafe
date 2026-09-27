@@ -6,24 +6,19 @@ import { useSpeech } from './useSpeech'
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())
 
-/** Runs the typewriter to completion for whatever is currently in the box. */
-function finishTyping(ms = 34 * 40) {
-  act(() => vi.advanceTimersByTime(ms))
-}
-
 describe('useSpeech', () => {
-  it('says the first line straight into an empty box', () => {
+  it('shows complete lines immediately and calls onDone once', () => {
     const onShow = vi.fn()
+    const onDone = vi.fn()
     const { result } = renderHook(() => useSpeech())
 
-    act(() => result.current.say('hello there', { onShow }))
+    act(() => result.current.say('hello there', { onShow, onDone }))
     expect(onShow).toHaveBeenCalledOnce()
+    expect(onDone).toHaveBeenCalledOnce()
     expect(result.current.queued).toBe(0)
-    expect(result.current.isDone).toBe(false)
-
-    finishTyping()
     expect(result.current.line).toBe('hello there')
     expect(result.current.isDone).toBe(true)
+    expect(onDone).toHaveBeenCalledOnce()
   })
 
   it('renders cumulative stream snapshots immediately, updates queued snapshots in place, and completes without typing', () => {
@@ -90,14 +85,13 @@ describe('useSpeech', () => {
     expect(result.current.queued).toBe(1)
     expect(onShow2).not.toHaveBeenCalled()
 
-    finishTyping()
     expect(result.current.line).toBe('first')
 
     act(() => result.current.advance())
     expect(onShow2).toHaveBeenCalledOnce()
     expect(result.current.queued).toBe(0)
-    finishTyping()
     expect(result.current.line).toBe('second')
+    expect(result.current.isDone).toBe(true)
   })
 
   it('runs an act at once when nothing is already showing', () => {
@@ -108,7 +102,7 @@ describe('useSpeech', () => {
     expect(play).toHaveBeenCalledOnce()
   })
 
-  it('queues an act behind a showing line without counting it as something to click through', () => {
+  it('runs a trailing act once the complete showing line leaves nothing for it to wait on', () => {
     const play = vi.fn()
     const { result } = renderHook(() => useSpeech())
 
@@ -116,9 +110,6 @@ describe('useSpeech', () => {
     act(() => result.current.act(play))
     // An act in the queue is not a line waiting to be read.
     expect(result.current.queued).toBe(0)
-    expect(play).not.toHaveBeenCalled()
-
-    act(() => result.current.advance())
     expect(play).toHaveBeenCalledOnce()
   })
 
@@ -131,8 +122,7 @@ describe('useSpeech', () => {
 
     act(() => result.current.cut('urgent'))
     expect(result.current.queued).toBe(0)
-    expect(result.current.isDone).toBe(false)
-    finishTyping()
+    expect(result.current.isDone).toBe(true)
     expect(result.current.line).toBe('urgent')
   })
 
@@ -175,7 +165,7 @@ describe('useSpeech', () => {
     expect(onDrop).toHaveBeenCalledOnce()
   })
 
-  it('drains a trailing act once the line ahead of it finishes typing, since nothing would ever click it through', () => {
+  it('drains a trailing act once the complete line ahead of it is shown', () => {
     const play = vi.fn()
     const { result } = renderHook(() => useSpeech())
 
@@ -184,13 +174,10 @@ describe('useSpeech', () => {
     // Not counted as queued — the doc comment's own promise — so nothing yet
     // renders an advance button for it to wait on.
     expect(result.current.queued).toBe(0)
-    expect(play).not.toHaveBeenCalled()
-
-    finishTyping()
     expect(play).toHaveBeenCalledOnce()
   })
 
-  it('turns the page on its own once a line is fully typed, in auto pace', () => {
+  it('turns the page after the reading delay in auto pace', () => {
     const onShow2 = vi.fn()
     const { result } = renderHook(() => useSpeech())
 
@@ -198,7 +185,6 @@ describe('useSpeech', () => {
     act(() => result.current.say('second', { onShow: onShow2 }))
     act(() => result.current.setPace('auto'))
 
-    finishTyping()
     expect(result.current.line).toBe('first')
     expect(onShow2).not.toHaveBeenCalled()
 

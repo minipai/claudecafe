@@ -29,10 +29,11 @@ and ⌘, settings. Each shortcut brings the existing window forward.
 Mood markers stay in the reply text. They can still select her expression, but
 are not pulled into a separate caption beside the page controls.
 
-Live replies appear as the Agent SDK streams their text. Each text block is a
-dialogue page: the current page updates immediately, while later pages collect
-their text until you advance to them. Opening a page shows everything received
-so far without replaying a typing animation.
+Complete dialogue text appears immediately; it is never replayed with a typing
+animation. Live replies appear as the Agent SDK streams their text. Each text
+block is a dialogue page: the current page updates immediately, while later
+pages collect all text received so far until you advance to them. Auto page turns
+still wait at reading speed after a page is complete.
 
 Non-English opening and permission lines are generated per maid and spoken
 language and cached in a versioned `lines.json` under userData. Bump the cache version in

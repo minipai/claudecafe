@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useTypewriter } from './hooks/useTypewriter'
-
 /**
  * What the scene is made of. A `line` is spoken — `onShow` fires when it takes
- * the box, `onDone` when it has finished typing itself out. An `act` is
+ * the box, `onDone` when its complete text is displayed. An `act` is
  * everything that happens between two lines: her face changing, a whisper of
  * what she just did. Acts are not clicked through; they play on the way past.
  *
@@ -53,7 +51,8 @@ const AUTO_MAX_MS = 4200
  * whatever was still queued and frees the box.
  */
 export function useSpeech() {
-  const { line, isDone, typeLine, showStream } = useTypewriter()
+  const [line, setLine] = useState('')
+  const [isDone, setIsDone] = useState(false)
   const queue = useRef<Beat[]>([])
   /** Whether the box is taken. Empty until the first line, and freed whenever
    * the master moves the scene on himself. */
@@ -100,15 +99,17 @@ export function useSpeech() {
       taken.current = true
       setPast(false)
       // A question hands the scene back: nothing may carry him past the one
-      // line he has to answer himself, so it is typed out like any other.
+      // line he has to answer himself.
       if (beat.halt && paceRef.current !== 'manual') setPace('manual')
       beat.onShow?.()
       activeStream.current = beat.streamId ?? null
       setStreamed(!!beat.streamId)
-      if (beat.streamId) showStream(beat.text, beat.done ?? false)
-      else typeLine(beat.text, beat.onDone)
+      setLine(beat.text)
+      const done = beat.streamId ? beat.done ?? false : true
+      setIsDone(done)
+      if (done && !beat.streamId) beat.onDone?.()
     },
-    [setPace, typeLine, showStream],
+    [setPace],
   )
 
   const push = useCallback(
@@ -138,14 +139,15 @@ export function useSpeech() {
       return
     }
     if (activeStream.current === id) {
-      showStream(text, done)
+      setLine(text)
+      setIsDone(done)
       hooks.onShow?.()
       return
     }
     const beat: Extract<Beat, { kind: 'line' }> = { kind: 'line', streamId: id, text, done, ...hooks }
     if (taken.current) push(beat)
     else show(beat)
-  }, [push, show, showStream])
+  }, [push, show])
 
   /**
    * Something that happens beside the line rather than in it — a face she puts
@@ -210,7 +212,7 @@ export function useSpeech() {
   }, [show])
 
   /** The other half of `drainTail`: acts pushed while the line ahead of them
-   * was still typing have nothing to run at push time — this is what catches
+   * was still streaming have nothing to run at push time — this is what catches
    * them once that line finishes without anyone having clicked through. */
   useEffect(() => {
     drainTail()
