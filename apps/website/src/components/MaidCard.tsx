@@ -3,7 +3,7 @@ import { href, type Locale } from '../i18n.js'
 
 export function MaidCard({ maid, locale }: { maid: Maid; locale: Locale }) {
   return (
-    <a href={href(locale, `/${maid.slug}`)} class="maid-grid maid-row" data-maid={maid.slug}>
+    <a href={href(locale, `/${maid.slug}`)} class="maid-grid maid-row">
       <span class="maid-name">{maid.jaName}</span>
       <span class="maid-traits">{maid.title}</span>
       <span class="maid-en-name">{maid.enName}</span>

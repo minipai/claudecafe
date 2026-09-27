@@ -28,40 +28,11 @@
 body {
     font-family:
         "Noto Serif TC", "Noto Serif JP", Georgia, "Times New Roman", serif;
-    --maid-bg: none;
-    --maid-x: -150px;
-    --maid-y: -20px;
-    --maid-height: 1558.333px;
     background: var(--bg);
     color: var(--text);
     line-height: 1.8;
     min-height: 100vh;
     position: relative;
-}
-
-body[data-maid="kanae"]  { --maid-bg: url("/assets/maids/maid-kanae.webp"); }
-body[data-maid="kokona"] { --maid-bg: url("/assets/maids/maid-kokona.webp"); }
-body[data-maid="kotone"] { --maid-bg: url("/assets/maids/maid-kotone.webp"); }
-body[data-maid="kuroko"] { --maid-bg: url("/assets/maids/maid-kuroko.webp"); }
-body[data-maid="kurumi"] { --maid-bg: url("/assets/maids/maid-kurumi.webp"); }
-
-body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background: var(--maid-bg) no-repeat var(--maid-x) var(--maid-y) / auto
-        var(--maid-height);
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.3;
-    transform: scale(1);
-    transform-origin: center 20%;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-body.maid-fading::before {
-    opacity: 0;
-    transform: scale(1.08);
 }
 
 body > * {
@@ -207,8 +178,7 @@ main {
     border-top: 1px dashed var(--border);
 }
 
-.maid-row:hover,
-.maid-row.active {
+.maid-row:hover {
     background: linear-gradient(
         90deg,
         transparent,
@@ -232,8 +202,7 @@ main {
     transition: opacity 0.15s ease;
 }
 
-.maid-row:hover .maid-name,
-.maid-row.active .maid-name {
+.maid-row:hover .maid-name {
     color: var(--accent-bold);
 }
 
@@ -287,10 +256,6 @@ main {
         align-self: flex-end;
         float: none;
     }
-}
-
-body:has(.not-found)::before {
-    opacity: 0.6;
 }
 
 /* Maid Detail */
@@ -427,14 +392,26 @@ body:has(.not-found)::before {
 
 /* Not Found */
 .not-found {
-    text-align: center;
-    padding: 3rem 1rem;
+    padding: 3rem 0;
+}
+
+/* The same paper as a maid's page, with whoever answered the door standing in
+   its bottom-right corner: her knee-high cut on the bottom edge, her right
+   eighth past the right one. */
+.not-found-paper {
+    --pad: clamp(0.5rem, 5vw, 4rem);
+    --h: min(70vh, 34rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 1rem;
 }
 
 .not-found h1 {
     font-size: var(--fs-lg);
     color: var(--accent);
     margin-bottom: 2rem;
+    text-wrap: balance;
 }
 
 .not-found-quote {
@@ -448,6 +425,27 @@ body:has(.not-found)::before {
     font-size: var(--fs-sm);
     color: var(--text-muted);
     margin-bottom: 2.5rem;
+}
+
+.not-found-stand {
+    align-self: end;
+    height: var(--h);
+    width: calc(var(--h) * 3 / 4);
+    object-fit: contain;
+    object-position: bottom;
+    margin: 0 calc(-1 * var(--pad) - var(--h) * 3 / 32) calc(-1 * var(--pad)) 0;
+    clip-path: inset(0 12.5% 0 0);
+}
+
+@media (max-width: 599px) {
+    .not-found-paper {
+        grid-template-columns: 1fr;
+    }
+
+    .not-found-stand {
+        justify-self: end;
+        margin-top: 1rem;
+    }
 }
 
 .not-found-back a {
@@ -1096,11 +1094,13 @@ main:has(> .home) {
 /* Faint graph paper in the margins either side of the header's width,
    fading out before the content — on the home, plugin and app pages, in
    place of a maid. */
-body:is(:has(.home), :has(.plugin-page))::before,
-body.maid-fading:is(:has(.home), :has(.plugin-page))::before {
+body:is(:has(.home), :has(.plugin-page))::before {
     --margin: max(0px, (100vw - 960px) / 2);
-    opacity: 1;
-    transform: none;
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
     background:
         linear-gradient(rgb(60 47 47 / 0.07) 1px, transparent 1px) 0 0 / 26px 26px,
         linear-gradient(90deg, rgb(60 47 47 / 0.07) 1px, transparent 1px) 0 0 / 26px 26px;

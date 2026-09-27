@@ -17,7 +17,7 @@ const app = new Hono<{ Bindings: { PLUGINS: R2Bucket } }>();
 function render404(c: Context, locale: Locale) {
   const pick = notFoundQuote(locale);
   return c.html(
-    <Layout locale={locale} maid={pick.slug}>
+    <Layout locale={locale}>
       <NotFoundPage pick={pick} locale={locale} />
     </Layout>,
     404,

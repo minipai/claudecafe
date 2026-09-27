@@ -12,14 +12,12 @@ export function Layout({
   title,
   description,
   path = "/",
-  maid,
 }: {
   children: Child;
   locale?: Locale;
   title?: string;
   description?: string;
   path?: string; // logical path, no locale prefix
-  maid?: string;
 }) {
   const pageTitle = title ? `${title} — The Claude Café` : "The Claude Café";
   const ogDescription = description || DEFAULT_DESCRIPTION;
@@ -55,10 +53,9 @@ export function Layout({
           href="/assets/icons/favicon-16x16.png"
         />
         <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
-        {/* maid bg images loaded by maid-bg.js */}
         <link rel="stylesheet" href="/assets/styles.css" />
       </head>
-      <body {...(maid ? { 'data-maid': maid } : {})}>
+      <body>
         <header class="site-header">
           <div class="site-header-inner">
             <a href={href(locale, "/")} class="site-title">
@@ -85,7 +82,6 @@ export function Layout({
           </div>
         </header>
         <main>{children}</main>
-        <script src="/assets/maid-bg.js" defer />
       </body>
     </html>
   );
