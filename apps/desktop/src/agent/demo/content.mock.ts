@@ -30,7 +30,7 @@ export const FACE_PARADE = [
   { expression: 'proud', line: 'But this one! This is after I catch a bug all by myself ☆' },
 ] as const
 
-export const FACE_PARADE_CLOSE = 'Thirteen in all, and I do not pick them for show — whichever one fits what I am doing is the one you get ♪'
+export const FACE_PARADE_CLOSE = `${EXPRESSIONS.length} in all, and I do not pick them for show — whichever one fits what I am doing is the one you get ♪`
 
 export const HEAVY_INTRO = 'Leave it to me! I will go and look right away ～'
 
