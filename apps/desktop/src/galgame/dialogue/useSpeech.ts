@@ -32,6 +32,7 @@ export function useSpeech() {
   const [pageCount, setPageCount] = useState(0)
   const [canPrevious, setCanPrevious] = useState(false)
   const [canNext, setCanNext] = useState(false)
+  const [canReadNext, setCanReadNext] = useState(false)
   const queue = useRef<Beat[]>([])
   const pages = useRef<Extract<Beat, { kind: 'line' }>[]>([])
   const cursor = useRef(-1)
@@ -42,10 +43,12 @@ export function useSpeech() {
     const visiblePage = pages.current[cursor.current]
     const visibleDone = visiblePage ? visiblePage.done ?? true : false
     const queuedLines = queue.current.filter((beat) => beat.kind === 'line').length
+    const latestDone = pages.current.at(-1)?.done ?? true
     setPageCount(pages.current.length + queuedLines)
     setPageIndex(cursor.current < 0 ? 0 : cursor.current + 1)
     setCanPrevious(cursor.current > 0)
     setCanNext(cursor.current + 1 < pages.current.length || (cursor.current === pages.current.length - 1 && visibleDone && queuedLines > 0))
+    setCanReadNext(queuedLines > 0 && latestDone)
   }, [])
 
   const playTrailingActs = useCallback(() => {
@@ -109,6 +112,41 @@ export function useSpeech() {
     }
   }, [enqueue, present])
 
+  const restore = useCallback((texts: string[]) => {
+    for (const beat of pages.current) {
+      if (beat.streamId) discardedStreams.current.add(beat.streamId)
+    }
+    for (const beat of queue.current) if (beat.kind === 'line') {
+      if (beat.streamId) discardedStreams.current.add(beat.streamId)
+      beat.onDrop?.()
+    }
+    queue.current = []
+    setQueued(0)
+    pages.current = texts.map((text) => ({ kind: 'line', text, done: true, shown: true, completed: true }))
+    cursor.current = pages.current.length - 1
+    taken.current = pages.current.length > 0
+    setPast(pages.current.length === 0)
+    setLine(pages.current[cursor.current]?.text ?? '')
+    setStreamed(false)
+    setIsDone(true)
+    updateNavigation()
+  }, [updateNavigation])
+
+  const beginTurn = useCallback((replaceOpening = false) => {
+    if (replaceOpening && pages.current.length === 1 && cursor.current === 0) {
+      for (const beat of pages.current) if (beat.streamId) discardedStreams.current.add(beat.streamId)
+      pages.current = []
+      cursor.current = -1
+      taken.current = false
+      setPageCount(0)
+      setPageIndex(0)
+      setCanPrevious(false)
+      setCanNext(false)
+    }
+    if (cursor.current === pages.current.length - 1) taken.current = false
+    setPast(true)
+  }, [])
+
   const stream = useCallback((id: string, text: string, done: boolean, hooks: Hooks = {}) => {
     if (discardedStreams.current.has(id)) return
     const queuedBeat = queue.current.find((beat) => beat.kind === 'line' && beat.streamId === id)
@@ -162,7 +200,8 @@ export function useSpeech() {
     }
     queue.current = []
     setQueued(0)
-  }, [])
+    updateNavigation()
+  }, [updateNavigation])
 
   const cut = useCallback((text: string, hooks: Hooks = {}) => {
     discardQueue()
@@ -201,9 +240,13 @@ export function useSpeech() {
     runQueue()
   }, [present, runQueue])
 
+  const readNext = useCallback(() => {
+    if (queue.current.some((beat) => beat.kind === 'line') && (pages.current.at(-1)?.done ?? true)) runQueue()
+  }, [runQueue])
+
   const previous = useCallback(() => {
     if (cursor.current > 0) present(cursor.current - 1)
   }, [present])
 
-  return { line, isDone, past, streamed, say, stream, act, cut, clear, advance, queued, previous, canPrevious, canNext, pageIndex, pageCount }
+  return { line, isDone, past, streamed, say, stream, act, cut, clear, discardQueue, restore, beginTurn, advance, readNext, canReadNext, queued, previous, canPrevious, canNext, pageIndex, pageCount }
 }

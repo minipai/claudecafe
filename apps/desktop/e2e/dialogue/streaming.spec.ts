@@ -1,8 +1,9 @@
 import { expect } from '@playwright/test'
 import { clickCafe, test, waitForLine } from '../launchCafe'
 
-test('partial text appears before the final assistant message without replaying streamed blocks', async ({ cafe: { app, page } }) => {
-  await page.getByPlaceholder('Say something to ことね…').fill('stream regression')
+test('streams pages live and gates draft input until Space or shortcuts reach the latest page', async ({ cafe: { app, page } }) => {
+  const composer = page.getByPlaceholder('Say something to ことね…')
+  await composer.fill('stream regression')
   await clickCafe(page.getByRole('button', { name: 'Send' }))
 
   // The fake SDK pauses after a realistic content_block_delta. Seeing this
@@ -11,6 +12,7 @@ test('partial text appears before the final assistant message without replaying 
   const first = await waitForLine(page, 'First streamed block')
   await expect(first).not.toContainText('complete')
   await expect(page.getByText('Second streamed block', { exact: false })).toHaveCount(0)
+  await composer.fill('Keep this draft')
 
   await app.evaluate(() => process.emit('e2e:stream:continue'))
   await expect(first).toContainText('First streamed block complete')
@@ -23,10 +25,28 @@ test('partial text appears before the final assistant message without replaying 
   await expect(next).toBeEnabled()
   await expect(previous).toBeDisabled()
   await expect(page.getByLabel('Message 1 of 2', { exact: true })).toBeVisible()
-  await clickCafe(next)
+  const readNext = page.getByRole('button', { name: 'Read new message', exact: true })
+  await expect(readNext).toBeFocused()
+  const center = await readNext.boundingBox()
+  const arrow = await next.boundingBox()
+  const card = await page.locator('.dialogue-card').boundingBox()
+  expect(center).not.toBeNull()
+  expect(arrow).not.toBeNull()
+  expect(card).not.toBeNull()
+  expect(Math.abs(center!.x + center!.width / 2 - (card!.x + card!.width / 2))).toBeLessThan(3)
+  expect(Math.abs(center!.y + center!.height / 2 - (arrow!.y + arrow!.height / 2))).toBeLessThan(3)
+  await expect(composer).not.toBeEditable()
+  await expect(composer).toHaveValue('Keep this draft')
+  await composer.focus()
+  await page.keyboard.press('x')
+  await expect(composer).toHaveValue('Keep this draft')
+  await page.keyboard.press('Space')
   const second = await waitForLine(page, 'Second streamed block')
   await expect(first).toHaveCount(0)
   await expect(second).toBeVisible()
+  await expect(composer).toBeEditable()
+  await expect(composer).toBeFocused()
+  await expect(composer).toHaveValue('Keep this draft')
 
   // Advancing once more must not reveal an assistant/result replay of either
   // block. There is no further line queued by this turn.
@@ -34,15 +54,18 @@ test('partial text appears before the final assistant message without replaying 
   await expect(page.getByLabel('Message 2 of 2', { exact: true })).toBeVisible()
 
   // Re-reading a page does not append another log entry or replay its actions.
-  await clickCafe(previous)
+  await page.keyboard.press('Meta+[')
   await expect(first).toContainText('First streamed block complete')
   await expect(previous).toBeDisabled()
-  await page.getByPlaceholder('Say something to ことね…').focus()
+  await expect(readNext).toHaveCount(0)
+  await expect(composer).toBeEditable()
+  await composer.focus()
   await page.keyboard.press('ArrowRight')
   await expect(first).toBeVisible()
-  await page.getByPlaceholder('Say something to ことね…').blur()
-  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('Meta+]')
   await expect(second).toBeVisible()
+  await expect(composer).toBeFocused()
+  await expect(composer).toHaveValue('Keep this draft')
 
   const opening = app.waitForEvent('window')
   await clickCafe(page.getByRole('button', { name: 'Open conversation history' }))

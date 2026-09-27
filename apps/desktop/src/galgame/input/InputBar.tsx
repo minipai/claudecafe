@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react'
+import { useId, useState, type ReactNode, type RefObject } from 'react'
 import { ArrowUp, Square } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -15,11 +15,14 @@ type InputBarProps = {
   onStop: () => void
   footer?: ReactNode
   actions?: ReactNode
+  readingGate?: boolean
+  composingChange?: (composing: boolean) => void
+  inputRef?: RefObject<HTMLTextAreaElement | null>
 }
 
 /** Typing never stops: a prompt sent while she is working queues behind the
  * one she is on, and the stop button is there to cut her off instead. */
-export function InputBar({ isBusy, commands, onSubmit, onStop, footer, actions }: InputBarProps) {
+export function InputBar({ isBusy, commands, onSubmit, onStop, footer, actions, readingGate = false, composingChange, inputRef }: InputBarProps) {
   const formId = useId()
   const t = ui().scene
   const [text, setText] = useState('')
@@ -30,7 +33,7 @@ export function InputBar({ isBusy, commands, onSubmit, onStop, footer, actions }
   const [dismissed, setDismissed] = useState(false)
 
   const typing = commandBeingTyped(text)
-  const matches = typing === null || dismissed ? [] : match(commands, typing)
+  const matches = readingGate || typing === null || dismissed ? [] : match(commands, typing)
   const highlighted = matches[Math.min(active, matches.length - 1)]
 
   function retype(next: string) {
@@ -87,6 +90,7 @@ export function InputBar({ isBusy, commands, onSubmit, onStop, footer, actions }
         className="col-span-2 min-w-0"
         onSubmit={(e) => {
           e.preventDefault()
+          if (readingGate) return
           // A picture on its own is worth sending; she will ask what about it.
           if (!text.trim() && !pending.length) return
           onSubmit(text, pending.map(({ mediaType, data }) => ({ mediaType, data })))
@@ -96,7 +100,11 @@ export function InputBar({ isBusy, commands, onSubmit, onStop, footer, actions }
         }}
       >
         <Textarea
+          ref={inputRef}
           value={text}
+          readOnly={readingGate}
+          onCompositionStart={() => composingChange?.(true)}
+          onCompositionEnd={() => composingChange?.(false)}
           onChange={(e) => retype(e.target.value)}
           // A screenshot off the clipboard is the usual way the master shows
           // her something, so it is taken as a picture rather than as a path.
@@ -107,6 +115,10 @@ export function InputBar({ isBusy, commands, onSubmit, onStop, footer, actions }
             void attach(pictures)
           }}
           onKeyDown={(e) => {
+            if (readingGate) {
+              if (e.key === ' ' && !e.nativeEvent.isComposing) e.preventDefault()
+              return
+            }
             if (matches.length > 0) {
               if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                 e.preventDefault()
@@ -154,7 +166,7 @@ export function InputBar({ isBusy, commands, onSubmit, onStop, footer, actions }
             </Button>
           </form>
           ) : (
-            <Button type="submit" form={formId} size="icon" className="size-9 rounded-full" disabled={!text.trim() && !pending.length} aria-label={t.send}>
+            <Button type="submit" form={formId} size="icon" className="size-9 rounded-full" disabled={readingGate || (!text.trim() && !pending.length)} aria-label={t.send}>
               <ArrowUp />
             </Button>
           )}

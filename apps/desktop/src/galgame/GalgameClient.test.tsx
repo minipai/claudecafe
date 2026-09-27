@@ -128,16 +128,57 @@ describe('GalgameClient', () => {
     expect(screen.getByRole('button', { name: 'Next message' })).toBeEnabled()
 
     const composer = screen.getByPlaceholderText('Say something to ことね…')
+    fireEvent.change(composer, { target: { value: 'keep this draft' } })
+    expect(composer).toHaveAttribute('readonly')
+    expect(composer).toHaveValue('keep this draft')
+    const readNext = screen.getByRole('button', { name: /Read new message/ })
+    expect(readNext).toHaveFocus()
     const event = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
     composer.dispatchEvent(event)
     expect(event.defaultPrevented).toBe(false)
     expect(screen.getByLabelText('Message 1 of 2')).toBeInTheDocument()
-    await act(async () => fireEvent.keyDown(window, { key: ' ' }))
+    await act(async () => fireEvent.keyDown(readNext, { key: ' ', bubbles: true, cancelable: true }))
+    expect(screen.getByLabelText('Message 2 of 2')).toBeInTheDocument()
+    expect(composer).not.toHaveAttribute('readonly')
+    expect(composer).toHaveValue('keep this draft')
+    expect(composer).toHaveFocus()
+    const focusBeforeChord = document.activeElement
+    await act(async () => fireEvent.keyDown(composer, { key: '[', metaKey: true, bubbles: true, cancelable: true }))
+    expect(screen.getByLabelText('Message 1 of 2')).toBeInTheDocument()
+    expect(document.activeElement).toBe(focusBeforeChord)
+    await act(async () => fireEvent.keyDown(composer, { key: ']', metaKey: true, bubbles: true, cancelable: true }))
+    expect(screen.getByLabelText('Message 2 of 2')).toBeInTheDocument()
+    expect(document.activeElement).toBe(composer)
+    await act(async () => fireEvent.keyDown(window, { key: 'ArrowLeft' }))
     expect(screen.getByLabelText('Message 1 of 2')).toBeInTheDocument()
     await act(async () => fireEvent.keyDown(window, { key: 'ArrowRight' }))
     expect(screen.getByLabelText('Message 2 of 2')).toBeInTheDocument()
-    await act(async () => fireEvent.keyDown(window, { key: 'ArrowLeft' }))
-    expect(screen.getByLabelText('Message 1 of 2')).toBeInTheDocument()
+    expect(composer).toHaveFocus()
+    expect(composer).not.toHaveAttribute('readonly')
+    expect(screen.queryByRole('button', { name: 'Read new message' })).not.toBeInTheDocument()
+    const space = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true })
+    composer.dispatchEvent(space)
+    expect(space.defaultPrevented).toBe(false)
+  })
+
+  it('waits for IME composition to end before gating and focusing the unread action', async () => {
+    const { bridge, emit } = await mountLive()
+    await act(async () => submit('two messages'))
+    const runId = lastRunId(bridge)
+    const composer = screen.getByPlaceholderText('Say something to ことね…')
+    composer.focus()
+    fireEvent.compositionStart(composer)
+    await act(async () => emit({ kind: 'message', runId, message: { type: 'text_delta', text: 'First page' } }))
+    await act(async () => emit({ kind: 'message', runId, message: { type: 'text_delta', text: 'Second page' } }))
+
+    expect(composer).not.toHaveAttribute('readonly')
+    expect(composer).toHaveFocus()
+    fireEvent.compositionEnd(composer)
+    expect(composer).toHaveAttribute('readonly')
+    expect(screen.getByRole('button', { name: 'Read new message' })).toHaveFocus()
+    await act(async () => screen.getByRole('button', { name: 'Next message' }).click())
+    expect(composer).not.toHaveAttribute('readonly')
+    expect(composer).toHaveFocus()
   })
 
   it('shares transcript and task changes without broadcasting local token updates', async () => {
@@ -164,7 +205,7 @@ describe('GalgameClient', () => {
     expect(logged(bridge)).toContain('Found it')
   })
 
-  it('Bug 1 — clearSpeech answers a permission ask still queued behind an unread line, instead of leaving it hanging', async () => {
+  it('keeps the composer read-only while a permission line is unread', async () => {
     const { bridge, emit } = await mountLive()
 
     await act(async () => submit('go fix the thing'))
@@ -175,11 +216,8 @@ describe('GalgameClient', () => {
       emit({ kind: 'ask-permission', runId, askId: 'ask-1', toolName: 'Bash', input: { command: 'rm -rf dist' } }),
     )
 
-    // The master moving the scene on himself, same as clearSpeech's own doc
-    // comment describes — a fresh prompt while the ask is still queued.
-    await act(async () => submit('never mind, something else'))
-
-    await vi.waitFor(() => expect(bridge.answer).toHaveBeenCalledWith('ask-1', { behavior: 'deny' }))
+    expect(screen.getByPlaceholderText('Say something to ことね…')).toHaveAttribute('readonly')
+    expect(bridge.answer).not.toHaveBeenCalled()
   })
 
   it('Bug 2 — stop clears the queue first, so a permission ask queued behind an unread line is answered rather than left to resurface', async () => {

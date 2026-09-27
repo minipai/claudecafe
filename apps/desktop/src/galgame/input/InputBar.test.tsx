@@ -91,4 +91,20 @@ describe('the slash menu', () => {
     fireEvent.change(input, { target: { value: '/' } })
     expect(screen.getByRole('listbox')).toHaveClass('absolute')
   })
+
+  it('keeps the draft but hides command suggestions behind the reading gate', () => {
+    const onSubmit = vi.fn()
+    const view = render(<InputBar isBusy={false} commands={commands} onSubmit={onSubmit} onStop={() => {}} />)
+    const input = screen.getByRole('textbox')
+    fireEvent.change(input, { target: { value: '/ex' } })
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    view.rerender(<InputBar isBusy={false} commands={commands} onSubmit={onSubmit} onStop={() => {}} readingGate />)
+    expect(input).toHaveAttribute('readonly')
+    expect(input).toHaveValue('/ex')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+
+    view.rerender(<InputBar isBusy={false} commands={commands} onSubmit={onSubmit} onStop={() => {}} />)
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+  })
 })

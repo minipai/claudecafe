@@ -41,6 +41,7 @@ function createScene(overrides: Partial<WindowScene> = {}): WindowScene {
     setLaidOut: vi.fn(),
     resetScene: vi.fn(),
     cut: vi.fn(),
+    restoreSpeech: vi.fn(),
     greetingRef: { current: LINES.greeting },
     linesRef: { current: LINES },
     lastLineRef: { current: LINES.greeting },
@@ -168,7 +169,10 @@ describe('applyWindowEvent', () => {
       expect.objectContaining({ role: 'assistant', content: 'done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】' }),
     ])
     expect(scene.setExpression).toHaveBeenCalledWith('happy')
-    expect(scene.cut).toHaveBeenCalledWith('done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】')
+    expect(scene.restoreSpeech).toHaveBeenCalledWith(['done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】'])
+    expect(scene.lastLineRef.current).toBe('done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】')
+    applyWindowEvent({ kind: 'lines', lines: { ...LINES, greeting: 'a newly generated greeting' } }, scene)
+    expect(scene.cut).not.toHaveBeenCalled()
   })
 
   it('backlog: an answer she wrote out comes back laid out exactly as recorded', () => {
@@ -202,6 +206,6 @@ describe('applyWindowEvent', () => {
       scene,
     )
     expect(scene.setExpression).not.toHaveBeenCalled()
-    expect(scene.cut).toHaveBeenCalledWith('just words')
+    expect(scene.restoreSpeech).toHaveBeenCalledWith(['just words'])
   })
 })

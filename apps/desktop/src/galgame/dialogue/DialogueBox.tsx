@@ -24,8 +24,13 @@ type DialogueBoxProps = {
   pageCount: number
   canPrevious: boolean
   canNext: boolean
+  unreadNext: boolean
+  canAutofocusReadNext: boolean
+  composing: boolean
+  navigationBlocked: boolean
   onPrevious: () => void
   onAdvance: () => void
+  onReadNext: () => void
   /** Her task list while she works — it is read in the reply window. */
   todos: Todo[]
   /** Opens her answer, whole, in a window of its own. */
@@ -58,8 +63,13 @@ export function DialogueBox({
   pageCount,
   canPrevious,
   canNext,
+  unreadNext,
+  canAutofocusReadNext,
+  composing,
+  navigationBlocked,
   onPrevious,
   onAdvance,
+  onReadNext,
   todos,
   onOpenReply,
   onOpenPersona,
@@ -70,6 +80,16 @@ export function DialogueBox({
 }: DialogueBoxProps) {
   const t = text().scene
   const said = useRef<HTMLDivElement>(null)
+  const readNext = useRef<HTMLButtonElement>(null)
+  const previousFocusState = useRef({ unreadNext, canNext, composing, navigationBlocked })
+  useEffect(() => {
+    const before = previousFocusState.current
+    const pageArrived = unreadNext && !before.unreadNext
+    const navigationBecameAvailable = unreadNext && canNext && !before.canNext
+    const compositionEnded = unreadNext && before.composing && !composing
+    if (canAutofocusReadNext && !navigationBlocked && (pageArrived || navigationBecameAvailable || compositionEnded)) readNext.current?.focus()
+    previousFocusState.current = { unreadNext, canNext, composing, navigationBlocked }
+  }, [unreadNext, canNext, canAutofocusReadNext, composing, navigationBlocked])
 
   // A laid-out answer arrives whole, so it is put in front of the master at its
   // beginning rather than wherever the last one was left.
@@ -174,14 +194,14 @@ export function DialogueBox({
           )}
       </motion.div>
 
-      <motion.div layout className="flex items-center justify-between gap-2 px-6 pb-2">
+      <motion.div layout className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-6 pb-2">
         <div className="flex min-w-0 items-center gap-1.5">
             <form onSubmit={(event) => { event.preventDefault(); onPrevious() }}>
-              <button type="submit" aria-label={t.previousMessage} title={t.previousMessage} disabled={!canPrevious} className="rounded p-1 text-muted-foreground transition-colors enabled:hover:text-foreground disabled:opacity-35"><ChevronLeft aria-hidden="true" size={16} /></button>
+              <button type="submit" aria-label={t.previousMessage} title={`${t.previousMessage} (⌘[)`} disabled={!canPrevious} className="rounded p-1 text-muted-foreground transition-colors enabled:hover:text-foreground disabled:opacity-35"><ChevronLeft aria-hidden="true" size={16} /></button>
             </form>
             <span aria-label={fill(t.messageCounter, { current: pageIndex, total: pageCount })} className="min-w-8 text-center text-xs tabular-nums text-muted-foreground">{pageIndex}/{pageCount}</span>
             <form onSubmit={(event) => { event.preventDefault(); onAdvance() }}>
-              <button type="submit" aria-label={t.nextMessage} title={t.nextMessage} disabled={!canNext} className="rounded p-1 text-muted-foreground transition-colors enabled:hover:text-foreground disabled:opacity-35"><ChevronRight aria-hidden="true" size={16} /></button>
+              <button type="submit" aria-label={t.nextMessage} title={`${t.nextMessage} (⌘])`} disabled={!canNext} className="rounded p-1 text-muted-foreground transition-colors enabled:hover:text-foreground disabled:opacity-35"><ChevronRight aria-hidden="true" size={16} /></button>
             </form>
             <form onSubmit={(event) => { event.preventDefault(); onOpenHistory() }}>
               <button type="submit" className="h-7 cursor-pointer border-0 bg-transparent px-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" aria-label={t.openHistory} title={t.history}>{t.logAction}</button>
@@ -201,7 +221,14 @@ export function DialogueBox({
               </button>
             )}
         </div>
-        {controls}
+        <div className="justify-self-end">{controls}</div>
+        <form className="col-start-2 row-start-1" onSubmit={(event) => { event.preventDefault(); if (canAutofocusReadNext) onReadNext() }}>
+          {unreadNext && (
+            <button ref={readNext} type="submit" aria-label={t.readNextMessage} disabled={!canAutofocusReadNext} className="whitespace-nowrap rounded-full border border-border bg-background/80 px-4 py-1.5 text-sm text-foreground transition-colors enabled:hover:bg-muted disabled:cursor-wait disabled:opacity-60" title={`${t.readNextMessage} (Space)`}>
+              {t.readNextMessage} <kbd className="ml-2 rounded border border-border px-1.5 py-0.5 text-xs text-muted-foreground">Space</kbd>
+            </button>
+          )}
+        </form>
       </motion.div>
 
       <motion.div layout className="flex flex-col">

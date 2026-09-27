@@ -15,6 +15,61 @@ describe('useSpeech', () => {
     expect(onDone).toHaveBeenCalledOnce()
   })
 
+  it('restores transcript pages at the latest without replaying hooks and appends across turns', () => {
+    const onShow = vi.fn()
+    const { result } = renderHook(() => useSpeech())
+    act(() => result.current.restore(['one', 'two', 'three', 'four', 'five']))
+    expect(result.current.pageIndex).toBe(5)
+    expect(result.current.pageCount).toBe(5)
+    expect(result.current.line).toBe('five')
+    expect(result.current.canPrevious).toBe(true)
+    act(() => result.current.previous())
+    expect(result.current.pageIndex).toBe(4)
+    act(() => result.current.restore(['one', 'two', 'three', 'four', 'five']))
+    act(() => { result.current.beginTurn(); result.current.stream('new', 'six', true, { onShow }) })
+    expect(result.current.pageCount).toBe(6)
+    expect(result.current.pageIndex).toBe(6)
+    expect(result.current.line).toBe('six')
+    expect(onShow).toHaveBeenCalledOnce()
+    act(() => result.current.restore([]))
+    expect(result.current.pageCount).toBe(0)
+  })
+
+  it('keeps the reader on an older reply when a new turn starts', () => {
+    const { result } = renderHook(() => useSpeech())
+    act(() => result.current.restore(['first', 'second']))
+    act(() => result.current.previous())
+    act(() => { result.current.beginTurn(); result.current.stream('third', 'third reply', true) })
+    expect(result.current.line).toBe('first')
+    expect(result.current.pageCount).toBe(3)
+    expect(result.current.pageIndex).toBe(1)
+  })
+
+  it('reads a queued new reply directly from older history and runs its show hook once', () => {
+    const onShow = vi.fn()
+    const { result } = renderHook(() => useSpeech())
+    act(() => result.current.restore(['first', 'second', 'third']))
+    act(() => result.current.previous())
+    act(() => { result.current.beginTurn(); result.current.stream('new', 'new reply', true, { onShow }) })
+    expect(result.current.line).toBe('second')
+    expect(result.current.canReadNext).toBe(true)
+    act(() => result.current.readNext())
+    expect(result.current.line).toBe('new reply')
+    expect(result.current.pageIndex).toBe(4)
+    expect(onShow).toHaveBeenCalledOnce()
+    expect(result.current.canReadNext).toBe(false)
+  })
+
+  it('replaces only the synthetic opening when the first turn begins', () => {
+    const { result } = renderHook(() => useSpeech())
+    act(() => result.current.say('opening'))
+    act(() => result.current.beginTurn(true))
+    expect(result.current.pageCount).toBe(0)
+    act(() => result.current.stream('reply', 'reply', true))
+    expect(result.current.pageCount).toBe(1)
+    expect(result.current.pageIndex).toBe(1)
+  })
+
   it('keeps seen pages for previous and next without replaying hooks or acts', () => {
     const show1 = vi.fn()
     const show2 = vi.fn()
@@ -146,7 +201,7 @@ describe('useSpeech', () => {
     expect(play).toHaveBeenCalledOnce()
   })
 
-  it.each(['clear', 'cut'] as const)('%s invalidates stream pages even when they are offscreen', (operation) => {
+  it.each(['clear', 'cut', 'restore'] as const)('%s invalidates stream pages even when they are offscreen', (operation) => {
     const { result } = renderHook(() => useSpeech())
     act(() => result.current.stream('first', 'first complete', true))
     act(() => result.current.stream('second', 'partial', false))
@@ -154,6 +209,7 @@ describe('useSpeech', () => {
     act(() => result.current.previous())
     act(() => {
       if (operation === 'clear') result.current.clear()
+      else if (operation === 'restore') result.current.restore(['replacement'])
       else result.current.cut('replacement')
     })
     act(() => result.current.stream('second', 'late update', true))

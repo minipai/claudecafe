@@ -17,9 +17,13 @@ The dialogue and inset composer use OpenChan's maroon-and-cream design. The
 name opens the maid picker; the adjoining model/effort control opens a separate
 selection window. A permission-mode pill beside Send/Stop cycles through manual,
 accept-edits, plan and auto modes when clicked.
-Previous/next arrows and a current/total message counter sit beside Log on the
-left above the composer; Compact and New sit on the right. Arrow keys navigate
-the current reply when focus is outside an input. The project path opens projects. Settings
+Previous/next arrows and a current/total assistant-reply counter sit beside Log on the
+left above the composer; Compact and New sit on the right. Unread received pages
+must be read before typing: the centered “Read new message · Space” action takes
+focus when a page becomes available, and stays disabled while its current stream
+is incomplete. Space opens the next unread page directly; reaching the latest unread page restores the composer
+focus. ⌘[ / ⌘] navigate backward and forward while preserving focus. Arrow keys
+navigate all assistant replies in the conversation when focus is outside an input. The project path opens projects. Settings
 remain available with ⌘,. There is no ⌘⇧P palette; slash-command completion
 and the scene's floating information bubbles remain.
 
@@ -31,11 +35,14 @@ Mood markers stay in the reply text. They can still select her expression, but
 are not pulled into a separate caption beside the page controls.
 
 Complete dialogue text appears immediately; it is never replayed with a typing
-animation. Live replies appear as the Agent SDK streams their text. Each text
-block is a dialogue page: the current page updates immediately, while later
+animation. Live replies appear as the Agent SDK streams their text. Each assistant
+message is a dialogue page across the whole conversation: the current page updates immediately, while later
 pages collect all text received so far until you advance to them. Previous pages
 can be revisited without replaying tools or questions. There is no automatic
 page turning, and new messages do not move you away from the page you are reading.
+Restored transcripts open on the latest assistant reply with the full history available;
+the greeting is a placeholder and is replaced by the first real reply. Stop preserves
+completed reply pages while adding its interruption as another page.
 
 Non-English opening and permission lines are generated per maid and spoken
 language and cached in a versioned `lines.json` under userData. Bump the cache version in

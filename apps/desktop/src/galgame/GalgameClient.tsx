@@ -171,6 +171,9 @@ export function GalgameClient({
   /** The bridge listener lives for the mount, but the scene it calls changes
    * with the maid. Always point it at the newest closure. */
   const playAmbientRef = useRef<(message: AgentMessage) => void>(() => {})
+  const composerRef = useRef<HTMLTextAreaElement>(null)
+  const restoreComposerRef = useRef(false)
+  const [composing, setComposing] = useState(false)
 
   const {
     line,
@@ -182,13 +185,42 @@ export function GalgameClient({
     act,
     cut: cutIn,
     clear: clearSpeech,
+    discardQueue: discardSpeechQueue,
+    restore: restoreSpeech,
+    beginTurn,
     advance,
     previous,
     canPrevious,
     canNext,
+    canReadNext,
+    readNext,
+    queued,
     pageIndex,
     pageCount,
   } = useSpeech()
+
+  const unreadNext = queued > 0
+  const navigationBlocked = permissionExpanded || pickingShift || personaOpen || trouble !== null || permissionRequest !== null || choiceRequest !== null
+  const readingGate = unreadNext && !navigationBlocked && !composing
+
+  function advancePage() {
+    restoreComposerRef.current = queued === 1 && pageIndex + 1 === pageCount
+    setLaidOut(null)
+    advance()
+  }
+
+  function readUnreadPage() {
+    restoreComposerRef.current = queued === 1
+    setLaidOut(null)
+    readNext()
+  }
+
+  useEffect(() => {
+    if (!restoreComposerRef.current) return
+    if (pageIndex < pageCount) return
+    restoreComposerRef.current = false
+    if (!navigationBlocked && !composing) composerRef.current?.focus()
+  }, [pageIndex, pageCount, navigationBlocked, composing])
 
   /** Behind whatever she is already saying. One block of hers is one line —
    * she already writes them as separate things. */
@@ -353,6 +385,7 @@ export function GalgameClient({
       setLaidOut,
       resetScene,
       cut,
+      restoreSpeech,
       greetingRef,
       linesRef,
       lastLineRef,
@@ -456,22 +489,41 @@ export function GalgameClient({
   /** Arrow keys navigate dialogue unless focus or an unresolved scene action owns them. */
   useEffect(() => {
     const turn = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return
-      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || event.isComposing) return
+      if (event.defaultPrevented) return
+      if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && ['[', ']'].includes(event.key)) {
+        if (navigationBlocked || composing || event.isComposing) return
+        const canNavigate = event.key === '[' ? canPrevious : canNext
+        if (!canNavigate) return
+        event.preventDefault()
+        setLaidOut(null)
+        if (event.key === '[') previous()
+        else advancePage()
+        return
+      }
+      if (!['ArrowLeft', 'ArrowRight', ' '].includes(event.key)) return
+      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || event.isComposing || composing) return
       const target = event.target
+      if (navigationBlocked) return
+      const unread = queued > 0
+      if (event.key === ' ' && unread && canReadNext) {
+        event.preventDefault()
+        event.stopPropagation()
+        readUnreadPage()
+        return
+      }
+      if (event.key === ' ') return
       if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/i.test(target.tagName) || target.closest('[role="menu"], [role="menuitem"], [role="listbox"], [role="option"]'))) return
-      if (permissionExpanded || pickingShift || personaOpen || trouble || permissionRequest || choiceRequest) return
       const canNavigate = event.key === 'ArrowLeft' ? canPrevious : canNext
       if (!canNavigate) return
       event.preventDefault()
       event.stopPropagation()
       setLaidOut(null)
       if (event.key === 'ArrowLeft') previous()
-      else advance()
+      else advancePage()
     }
     window.addEventListener('keydown', turn, true)
     return () => window.removeEventListener('keydown', turn, true)
-  }, [advance, previous, canPrevious, canNext, permissionExpanded, pickingShift, personaOpen, trouble, permissionRequest, choiceRequest])
+  }, [advancePage, readUnreadPage, previous, canPrevious, canNext, canReadNext, queued, navigationBlocked, composing])
 
 
   function askPermission(request: PermissionRequest | null) {
@@ -577,7 +629,8 @@ export function GalgameClient({
     // — belongs to the question before this one; left in place, it would
     // resurface once the master clicks past what is on screen now, asking to
     // answer something that is already over.
-    clearSpeech()
+    discardSpeechQueue()
+    beginTurn()
     appendEvent(text().scene.interrupted)
     setPhase('idle')
     say(lines.interrupted)
@@ -691,7 +744,7 @@ export function GalgameClient({
     setPhase('working')
     // The master has moved the scene on himself: anything of hers still waiting
     // to be clicked through belongs to the question before this one.
-    clearSpeech()
+    beginTurn(chatMessages.length === 1 && chatMessages[0].role === 'assistant' && chatMessages[0].content === greetingRef.current)
     setOutputTokens(0)
 
     const controller = new AbortController()
@@ -779,11 +832,16 @@ export function GalgameClient({
               waiting={lines.waiting}
               outputTokens={outputTokens}
               onPrevious={() => { setLaidOut(null); previous() }}
-              onAdvance={() => { setLaidOut(null); advance() }}
+              onAdvance={advancePage}
+              onReadNext={readUnreadPage}
               pageIndex={pageIndex}
               pageCount={pageCount}
               canPrevious={canPrevious && !permissionRequest && !choiceRequest}
               canNext={canNext && !permissionRequest && !choiceRequest}
+              unreadNext={unreadNext}
+              canAutofocusReadNext={readingGate && canReadNext}
+              composing={composing}
+              navigationBlocked={navigationBlocked}
               todos={board}
               onOpenReply={() => openSideWindow('reply')}
               onOpenPersona={chooseNewMaid}
@@ -822,6 +880,9 @@ export function GalgameClient({
                   )}
                   <div className="relative z-10 mx-3 -mt-3 translate-y-[18px]">
                   <InputBar
+                        readingGate={readingGate}
+                        composingChange={setComposing}
+                        inputRef={composerRef}
                         isBusy={phase === 'working'}
                         commands={commands}
                         onSubmit={handleSubmit}
