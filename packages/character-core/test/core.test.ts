@@ -5,6 +5,7 @@ import {
   defaultFace,
   expressionToolDescription,
   fillPrompt,
+  markedFace,
   parsePersona,
   personaFiles,
   resolveCharacter,
@@ -89,5 +90,13 @@ describe("shared context", () => {
     expect(custom).toContain("Custom day")
     const disabled = await readContext(makeHost({ festivals: false }), { cwd: "", language: "", startedAt: 0, greet: false })
     expect(disabled).not.toContain("New Year's Day")
+  })
+})
+
+describe("mood markers", () => {
+  test("a reply wears the face of the marker it ends on", () => {
+    expect(markedFace("Fixed it♪\n【 開心 ＼(ˆ ᗜ ˆ)／ 】\n")).toBe("happy")
+    expect(markedFace("【 開心 ＼(ˆ ᗜ ˆ)／ 】 and then more")).toBeNull()
+    expect(markedFace("No marker at all.")).toBeNull()
   })
 })

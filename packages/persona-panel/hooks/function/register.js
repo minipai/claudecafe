@@ -3,6 +3,7 @@ import {
   readContext,
   expressionPrompt,
   expressionToolDescription,
+  markedFace,
   parsePersona,
   personaFiles,
   resolveCharacter,
@@ -30,6 +31,9 @@ export function register(on) {
     const result = await next(event)
     const state = await session
     if (state?.hasPanel && !event.agentId) {
+      // Her reply's closing mood marker names a face, as the desktop reads it.
+      const face = markedFace(event.answer)
+      if (face && Object.hasOwn(state.faces, face)) expression = face
       state.stats = await readStats($)
       await $.ui.invalidate('ui.render')
     }

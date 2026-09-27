@@ -47,8 +47,9 @@ the things that are expensive to find out the hard way.
   installed + enabled from the marketplace — there are no loose hook mirrors or symlinks,
   and none should be laid down by hand again.
 
-The mood marker is **emit-only**: the `【…】` at the end of a reply is pure style; no Stop hook
-or status line reads it.
+The mood marker at the end of a reply picks her face: the desktop and persona-panel both read
+its kaomoji with `markedFace`/`faceFor` from `packages/character-core`, alongside the
+`set_expression` tool.
 
 ## Workspace
 

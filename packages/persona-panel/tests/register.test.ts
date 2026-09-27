@@ -320,6 +320,31 @@ describe('Portrait pane', () => {
     expect(await $.ui.render(pane())).toEqual(drawn(panelImage))
   })
 
+  test('wears the face her reply signs off with', async ($, on) => {
+    on('ui.invalidate', () => ({ value: undefined }))
+    on('turn.complete', (_, e) => ({ text: e.answer }))
+    await start($, on)
+    await $.turn.complete({
+      reason: 'answer', answer: 'Fixed it♪\n【 開心 ＼(ˆ ᗜ ˆ)／ 】', durationMs: 10, isAborted: false, turnId: 't3',
+    })
+    expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, figuresAtStart, 'happy'))
+  })
+
+  for (const [name, turn] of [
+    ['a subagent', { answer: '【 開心 ＼(ˆ ᗜ ˆ)／ 】', agentId: 'a1' }],
+    ['a face she has no art for', { answer: '【 擔心 (´･ω･｀) 】' }],
+    ['a marker mid-reply', { answer: '【 開心 ＼(ˆ ᗜ ˆ)／ 】 then more words' }],
+  ] as const) {
+    test(`keeps her face for ${name}`, async ($, on) => {
+      on('ui.invalidate', () => ({ value: undefined }))
+      on('turn.complete', (_, e) => ({ text: e.answer }))
+      await start($, on)
+      await $.tool.call({ tool, face: 'angry' })
+      await $.turn.complete({ reason: 'answer', durationMs: 10, isAborted: false, turnId: 't4', ...turn })
+      expect(await $.ui.render(pane())).toEqual(drawn(expressions.angry!, figuresAtStart, 'angry'))
+    })
+  }
+
   for (const input of [
     { ...pane(), requestId: 'another-plugin' },
     { ...pane(), surface: 'desktop' as const },
