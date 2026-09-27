@@ -1,4 +1,5 @@
 import type { Locale } from '../i18n.js'
+import { Cast } from '../components/Cast.js'
 
 /** The demo is the app itself, built for the web and served from Cloudflare —
  * the same window, running on its canned script because there is no Claude Code
@@ -133,6 +134,8 @@ export function AppPage({ locale }: { locale: Locale }) {
           {t.dependsC}
         </p>
       </section>
+
+      <Cast locale={locale} />
 
       <script dangerouslySetInnerHTML={{ __html: pageJs }} />
     </div>

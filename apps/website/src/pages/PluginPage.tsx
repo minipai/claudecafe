@@ -1,4 +1,5 @@
 import type { Locale } from '../i18n.js'
+import { Cast } from '../components/Cast.js'
 
 // The persona-panel plugin's page. All copy lives here, per locale; the session
 // terminal is hand-laid JSX because its lines each have their own structure.
@@ -171,6 +172,8 @@ export function PluginPage({ locale }: { locale: Locale }) {
           ))}
         </ul>
       </section>
+
+      <Cast locale={locale} />
 
       <script dangerouslySetInnerHTML={{ __html: revealJs }} />
     </div>

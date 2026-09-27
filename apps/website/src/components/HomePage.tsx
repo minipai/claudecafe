@@ -1,10 +1,5 @@
-import type { Maid } from "../utils/maids.js";
-import { MaidCard } from "./MaidCard.js";
+import { Cast } from "./Cast.js";
 import { href, type Locale } from "../i18n.js";
-
-/** Who greets you at the door. The rest of the cast keeps their pages; the
- * homepage only introduces these three. */
-const ON_SHIFT = ["kurumi", "kotone", "kokona"];
 
 const copy = {
   en: {
@@ -55,8 +50,6 @@ const copy = {
         cta: "Install the plugin",
       },
     ],
-    castTitle: "Pick your maid",
-    castLede: "Each with her own personality, and her own way of talking.",
   },
   zh: {
     h1: "おかえりなさいませ",
@@ -104,8 +97,6 @@ const copy = {
         cta: "安裝 Plugin",
       },
     ],
-    castTitle: "挑一位女僕",
-    castLede: "每一位都有自己的個性，和自己說話的方式。",
   },
 } as const;
 
@@ -117,9 +108,8 @@ const FACES = [
   "confused", "sorry", "relieved", "excited",
 ].map((name) => ({ name, src: `/assets/home/faces/${name}.webp` }));
 
-export function HomePage({ maids, locale }: { maids: Maid[]; locale: Locale }) {
+export function HomePage({ locale }: { locale: Locale }) {
   const t = copy[locale];
-  const cast = ON_SHIFT.map((slug) => maids.find((m) => m.slug === slug)).filter((m) => m !== undefined);
 
   return (
     <div class="home">
@@ -212,16 +202,7 @@ export function HomePage({ maids, locale }: { maids: Maid[]; locale: Locale }) {
           </div>
         </section>
 
-        <section class="home-cast">
-          <h2>{t.castTitle}</h2>
-          <p class="home-lead">{t.castLede}</p>
-        </section>
-
-        <div class="maid-list">
-          {cast.map((maid) => (
-            <MaidCard maid={maid} locale={locale} />
-          ))}
-        </div>
+        <Cast locale={locale} />
         <footer class="site-footer">
           <a
             href="https://www.flaticon.com/free-icon/bow_12575123"

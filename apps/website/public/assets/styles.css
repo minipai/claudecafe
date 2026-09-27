@@ -153,22 +153,10 @@ main {
     padding: 2rem 10px;
 }
 
-@media (max-width: 1500px) {
-    .maid-page {
-        margin-top: 130px;
-    }
-}
-
 /* Maid List */
 .maid-list {
     display: flex;
     flex-direction: column;
-    background: rgb(from var(--bg) r g b / 0.85);
-}
-
-/* The homepage list sits over the character art — no masking backdrop. */
-body:has(.home) .maid-list {
-    background: transparent;
 }
 
 /* Shared grid: desktop 4-col, mobile 2-col */
@@ -254,7 +242,43 @@ body:has(.home) .maid-list {
     overflow: hidden;
 }
 
-body:has(.maid-page)::before,
+/* The portrait is cut at the knees: she stands in the paper's bottom-right
+   corner with the cut flush against its bottom edge, and the text hugs her
+   outline. */
+.maid-content {
+    display: flow-root;
+}
+
+/* She leans past the paper's right edge, which cuts off her right eighth. */
+.maid-stand {
+    --pad: clamp(0.5rem, 5vw, 4rem);
+    --h: min(100vh, 54rem);
+    float: right;
+    height: var(--h);
+    width: calc(var(--h) * 3 / 4);
+    object-fit: contain;
+    object-position: bottom;
+    margin: 1rem calc(-1 * var(--pad) - var(--h) * 3 / 32) calc(-1 * var(--pad))
+        0;
+    clip-path: inset(0 12.5% 0 0);
+    shape-image-threshold: 0.3;
+    shape-margin: 1rem;
+}
+
+/* Too narrow to wrap text beside her: she closes the page instead. */
+@media (max-width: 599px) {
+    .maid-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .maid-stand {
+        order: 1;
+        align-self: flex-end;
+        float: none;
+    }
+}
+
 body:has(.not-found)::before {
     opacity: 0.6;
 }
@@ -509,10 +533,6 @@ body:has(.not-found)::before {
     --code-sep: #6b5b52;
 }
 
-body:has(.plugin-page)::before {
-    display: none;
-}
-
 .plugin-page .ui-label {
     font-family: var(--font-sans);
 }
@@ -739,7 +759,7 @@ body:has(.plugin-page)::before {
     margin: 0 0 34px;
 }
 
-.plugin-page section {
+.plugin-page section:not(.home-cast) {
     padding: 44px 0;
 }
 
@@ -1063,8 +1083,20 @@ main:has(> .home) {
     padding: 0;
 }
 
-body:has(.home)::before {
-    display: none;
+/* Faint graph paper in the margins either side of the header's width,
+   fading out before the content — on the home, plugin and app pages, in
+   place of a maid. */
+body:is(:has(.home), :has(.plugin-page))::before,
+body.maid-fading:is(:has(.home), :has(.plugin-page))::before {
+    --margin: max(0px, (100vw - 960px) / 2);
+    opacity: 1;
+    transform: none;
+    background:
+        linear-gradient(rgb(60 47 47 / 0.07) 1px, transparent 1px) 0 0 / 26px 26px,
+        linear-gradient(90deg, rgb(60 47 47 / 0.07) 1px, transparent 1px) 0 0 / 26px 26px;
+    mask: linear-gradient(to right,
+        #000 calc(var(--margin) * 0.3), transparent var(--margin),
+        transparent calc(100% - var(--margin)), #000 calc(100% - var(--margin) * 0.3));
 }
 
 /* Snap only while the story is pinned — the rest of the page scrolls freely.
@@ -1078,22 +1110,6 @@ html.home-snapping {
     isolation: isolate;
     /* On a narrow screen she is wider than the row; the rest of her is cut. */
     overflow-x: clip;
-}
-
-/* Faint graph paper in the margins either side of the header's width,
-   fading out before the content. */
-.home::before {
-    --margin: max(0px, (100vw - 960px) / 2);
-    content: "";
-    position: absolute;
-    z-index: -1;
-    inset: 0;
-    background:
-        linear-gradient(rgb(60 47 47 / 0.07) 1px, transparent 1px) 0 0 / 26px 26px,
-        linear-gradient(90deg, rgb(60 47 47 / 0.07) 1px, transparent 1px) 0 0 / 26px 26px;
-    mask: linear-gradient(to right,
-        #000 calc(var(--margin) * 0.3), transparent var(--margin),
-        transparent calc(100% - var(--margin)), #000 calc(100% - var(--margin) * 0.3));
 }
 
 .home-top-stop {

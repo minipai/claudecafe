@@ -87,7 +87,7 @@ function site(locale: Locale) {
 
     return c.html(
       <Layout locale={locale}>
-        <HomePage maids={maids} locale={locale} />
+        <HomePage locale={locale} />
       </Layout>,
     );
   });
@@ -144,7 +144,7 @@ function site(locale: Locale) {
     }
 
     return c.html(
-      <Layout locale={locale} title={`${maid.jaName} (${maid.enName})`} description={`${maid.title}「${maid.quote}」`} path={`/${maid.slug}`} maid={maid.slug}>
+      <Layout locale={locale} title={`${maid.jaName} (${maid.enName})`} description={`${maid.title}「${maid.quote}」`} path={`/${maid.slug}`}>
         <MaidPage maid={maid} locale={locale} />
       </Layout>,
     );
