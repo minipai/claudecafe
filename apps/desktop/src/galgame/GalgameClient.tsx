@@ -860,27 +860,30 @@ export function GalgameClient({
               }
               footer={
                 <>
-                  {choiceRequest ? (
-                    <ChoiceRow
-                      key={choiceRequest.id}
-                      question={choiceRequest.question}
-                      onAnswer={answerChoice}
-                    />
-                  ) : permissionRequest ? (
-                    <PermissionPrompt
-                      ask={permissionRequest.ask}
-                      onAllow={() => resolvePermission('allow')}
-                      onAlwaysAllow={() => resolvePermission('allow', true)}
-                      onDeny={() => resolvePermission('deny')}
-                      onExpand={() => setPermissionExpanded(true)}
-                    />
-                  ) : isLive ? null : (
-                    // The demo buttons drive the canned mock; with a real agent
-                    // on the other end there is nothing for them to stand in for.
-                    <DemoRow onSelect={run} />
+                  {(choiceRequest || permissionRequest) && (
+                    // Inset like the dialogue above it, and clear of the input
+                    // box that tucks up under the plate.
+                    <div className="px-6 pb-5">
+                      {choiceRequest ? (
+                        <ChoiceRow
+                          key={choiceRequest.id}
+                          question={choiceRequest.question}
+                          onAnswer={answerChoice}
+                        />
+                      ) : permissionRequest && (
+                        <PermissionPrompt
+                          ask={permissionRequest.ask}
+                          onAllow={() => resolvePermission('allow')}
+                          onAlwaysAllow={() => resolvePermission('allow', true)}
+                          onDeny={() => resolvePermission('deny')}
+                          onExpand={() => setPermissionExpanded(true)}
+                        />
+                      )}
+                    </div>
                   )}
                   <div className="relative z-10 mx-3 -mt-3 translate-y-[18px]">
-                  <InputBar
+                    {isLive ? (
+                      <InputBar
                         readingGate={readingGate}
                         composingChange={setComposing}
                         inputRef={composerRef}
@@ -890,7 +893,12 @@ export function GalgameClient({
                         onStop={stop}
                         footer={<StatusBar folder={folder} />}
                         actions={<PermissionMode settings={settings} onChange={updateSettings} />}
-                  />
+                      />
+                    ) : (
+                      // The canned mock only knows its errands, so the web demo
+                      // offers those in place of a box to type into.
+                      <DemoRow onSelect={run} />
+                    )}
                   </div>
                 </>
               }

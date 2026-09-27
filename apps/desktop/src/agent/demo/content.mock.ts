@@ -5,18 +5,7 @@
  * demo, where there is nobody to have set anything. */
 
 import type { CastMember, SessionStatus, UsageReport } from '../bridge'
-
-export const SHORT_ANSWER = 'Oh, that one defaults to a 30 second timeout ♪ Nothing to set, Master.'
-
-export const MEDIUM_INTRO = 'Let me have a look at this ♪'
-
-export const MEDIUM_ANSWER = `This is \`debounceQueue()\` — and it does something quite simple:
-
-- it gathers up writes that arrive close together
-- it waits until \`200ms\` passes with nothing new before sending anything
-- so one session never gets hammered over and over for no reason
-
-In short: all that tap-tap-tap typing turns into one write instead of twenty. Kinder on the server, and nothing gets lost ♪`
+import { EXPRESSIONS } from '../expressions'
 
 /** "What can you do?" — the tour, in her own account of herself. */
 export const ABOUT_INTRO = 'Ehehe — asking about me? ♪'
@@ -49,34 +38,6 @@ export const HEAVY_DONE_LINE = 'Found it and fixed it — the sign-in pool was f
 
 export const HEAVY_DENIED_LINE = 'Eh… not allowed? Then… then I will leave the tests alone…'
 
-export const PLAN_INTRO = 'Certainly ♪ I will lay the steps out first, so you can see them ～'
-
-export const PLAN_APPROVED_LINE = 'Then I will get to work exactly like this!'
-
-export const PLAN_REJECTED_LINE = 'I see… then I will go and think of another way…'
-
-/** ExitPlanMode hands the player a markdown plan and waits for a yes/no. */
-export const PLAN_MD = `## Goal
-
-Fix the connection pool behind the sign-in flow, so the busy hours stop timing out.
-
-## Steps
-
-1. Read \`config/session-pool.ts\` and see what the long-session pool is capped at.
-2. Compare it with the ordinary API pool, and find where the two differ.
-3. Raise the cap to match, and add a fail-fast for requests that queue too long.
-4. Run a load test and confirm p99 comes down.
-
-## Files this touches
-
-- \`config/session-pool.ts\` (the setting itself)
-- \`test/session-pool.bench.ts\` (a new load test)
-
-## Risk
-
-A higher cap means more connections open against the database at once, so max_connections on that side needs to be able to take it before this ships.
-`
-
 /** Edit tool input, exactly as the real SDK shapes it — the UI diffs the two strings itself. */
 export const EDIT_REQUEST = {
   file_path: 'config/session-pool.ts',
@@ -99,33 +60,6 @@ export const HEAVY_THOUGHTS = [
   { text: 'Only at the busy hours, so it queues until it spills over, surely…', delay: 2000 },
 ]
 
-/** The model asking the player to choose — the AskUserQuestion tool. */
-export const CHOICE_QUESTION = {
-  header: 'Where first',
-  question: 'Either side can be fixed — which would you like me to start with, Master?',
-  options: [
-    { label: 'The pool cap', description: 'Give long sessions the same ceiling as the ordinary API pool' },
-    { label: 'The queue timeout', description: 'Let a request that has waited too long fail fast instead of piling up' },
-  ],
-  multiSelect: false,
-}
-
-export const EXTRAS_QUESTION = {
-  header: 'While I am here',
-  question: 'Shall I do these too? You may pick as many as you like ♪',
-  options: [
-    { label: 'Add a load test', description: 'Recreate the top-of-the-hour rush' },
-    { label: 'Add an alarm', description: 'Say something when pool usage passes 80%' },
-    { label: 'Write it in the diary', description: 'So the next shift knows how this went' },
-  ],
-  multiSelect: true,
-}
-
-export function choiceAckLine(picks: string[]) {
-  if (picks.length === 0) return 'Understood ～ nothing extra then, I will do just as planned!'
-  return `Certainly! "${picks.join('", "')}" — I have written it down ☆`
-}
-
 export const TODO_STEPS = [
   'Read the pool settings',
   'Line up the access logs',
@@ -134,7 +68,7 @@ export const TODO_STEPS = [
 ]
 
 export const HEAVY_WHISPERS = [
-  { name: 'Read', label: '＊opened up config.json＊', delay: 500 },
+  { name: 'Read', label: '＊opened up session-pool.ts＊', delay: 500 },
   { name: 'Grep', label: '＊lined the access logs up＊', delay: 1500 },
   { name: 'Bash', label: '＊ran the load test once＊', delay: 2500 },
 ]
@@ -224,19 +158,15 @@ export function mockUsage(): UsageReport {
 }
 
 /**
- * Anything that was not one of the errands. There is no model behind the demo
- * to answer it with, and a made-up answer would be a worse first impression
- * than the truth — so she tells the truth, and points at the door she can be
- * let in through.
+ * The maid the window is drawn with, for a browser with no café behind it. Her
+ * art is copied beside the page by `ship:demo`. Live, this comes off the persona
+ * files — see castOf in electron/characters/characters.ts.
  */
-export const OFF_SCRIPT = [
-  'Ehehe… you have caught me out. There is no Claude behind this window — only a little script I know by heart ♪ Ask me that again once I am on your desktop, and I will answer it for real!',
-  'Mm… I would love to answer that properly, but out here I can only say what I was taught ～ take me home and I can go and actually look.',
-  'That one needs the real me, Goshujin-sama ♪ Out here I am only a rehearsal — those buttons above are my whole repertoire.',
+export const MOCK_CAST: CastMember[] = [
+  {
+    id: 'kotone',
+    name: 'ことね',
+    avatar: 'cast/kotone/avatar.webp',
+    expressions: Object.fromEntries(EXPRESSIONS.map((face) => [face, `cast/kotone/portraits/${face}.webp`])),
+  },
 ]
-
-/**
- * The two maids the window is drawn with, for a browser with no café behind it.
- * Live, this comes off their persona files — see castOf in electron/characters/characters.ts.
- */
-export const MOCK_CAST: CastMember[] = []
