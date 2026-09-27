@@ -22,9 +22,6 @@ export function Layout({
 }) {
   const pageTitle = title ? `${title} — The Claude Café` : "The Claude Café";
   const ogDescription = description || DEFAULT_DESCRIPTION;
-  const segments = path?.replace(/\/$/, "").split("/").filter(Boolean) ?? [];
-  const backHref = segments.length > 1 ? "/" + segments.slice(0, -1).join("/") : segments.length === 1 ? "/" : null;
-  const backLabel = segments.length > 1 ? segments[segments.length - 2] : "café";
   const other: Locale = locale === "zh" ? "en" : "zh";
   return (
     <html lang={locale === "zh" ? "zh-Hant" : "en"}>
@@ -63,17 +60,15 @@ export function Layout({
       <body {...(maid ? { 'data-maid': maid } : {})}>
         <header class="site-header">
           <div class="site-header-inner">
-            <div class="header-left">
-              {backHref ? (
-                <a href={href(locale, backHref)} class="header-back">
-                  ←&nbsp;<span class="header-back-text">{backLabel}</span>
-                </a>
-              ) : null}
-            </div>
             <a href={href(locale, "/")} class="site-title">
               <img src="/assets/icons/bow.png" alt="" class="site-logo" />
               The Claude Café
             </a>
+            <nav class="header-nav" aria-label={locale === "zh" ? "主要導覽" : "Main navigation"}>
+              <a href={href(locale, "/plugin")} aria-current={path === "/plugin" ? "page" : undefined}>Plugin</a>
+              <span aria-hidden="true">✦</span>
+              <a href={href(locale, "/app")} aria-current={path === "/app" ? "page" : undefined}>Desktop</a>
+            </nav>
             <div class="header-right">
               {/* ?lang= sets the preference cookie, then redirects clean */}
               <a href={`${href(other, path)}?lang=${other}`} class="lang-switch" rel="nofollow">
