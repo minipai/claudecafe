@@ -1,7 +1,10 @@
 # characters
 
 The cast. One folder per character, named after her, containing her persona and
-the runtime artwork shipped with it:
+the runtime artwork shipped with it.
+
+The maintained cast is **Kotone, Kokona, and Kurumi**. Kanae and Kuroko's folders
+remain here as legacy material and are no longer actively maintained.
 
 ```
 kurumi/
@@ -17,8 +20,8 @@ kurumi/
       portraits/       a complete visual alternative, still the same maid
 ```
 
-A folder counts as a character **only if it holds a persona file** — which is why
-the drawing scripts can sit beside the five without being mistaken for a sixth.
+A folder counts as a character **only if it holds a persona file**, so drawing
+scripts and other support directories are not mistaken for characters.
 
 The character root is a complete default variant: it owns `avatar.webp`,
 `portraits/`, and optional `pixels/`. A different outfit is visual artwork for
@@ -50,9 +53,9 @@ actual persona.
   `pixels/*.gif` files by filename, decodes static or animated frames, and draws
   them as ordinary text cells. It syncs the three published packs into
   `characters/` and accepts additional folders there.
-- **Published hosts** sync the released packs into
-  `$XDG_CONFIG_HOME/claudecafe/characters/` automatically; the site remains
-  the catalog and source for those releases.
+- **The Claude Code plugin** bundles the three maids' personas and terminal
+  sprites. It checks `$XDG_CONFIG_HOME/claudecafe/characters/` first, then its
+  bundled cast; it does not download character packs.
 
 ## Publishing a character pack
 
@@ -119,8 +122,8 @@ and should not become the contract.
 Everything here is runtime-sized WebP or GIF. The workshop — archival PNG
 masters, native generations, upscales, pencil references, shared palettes, and
 rebuild scripts — lives in
-`art-masters/` beside the repository and never in git, because nothing that runs
-reads it. `scripts/normalize-website-art.py` works from there and says so plainly
+`art-masters/` at the repository root and never in git. The apps do not read it
+at runtime. `scripts/normalize-website-art.py` works from there and says so plainly
 when it isn't present.
 
 The sprites were generated with AI image tools from those references. See

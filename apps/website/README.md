@@ -12,7 +12,8 @@ pnpm dev    # http://localhost:5050
 
 ## What it serves
 
-- **A page per maid**, built from `packages/characters/<id>/persona.<lang>.md`:
+- **A page per maid**, built from `packages/characters/<id>/persona.md` and
+  `persona.zh.md`:
   the frontmatter is the page's metadata, the body is what you read. A Worker has
   no filesystem, so `scripts/build-cast.ts` bundles them in as `src/cast.json`.
 - **`/<id>.md`** — the same persona file, frontmatter included. It is the

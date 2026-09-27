@@ -44,9 +44,13 @@ page turning, and new messages do not move you away from the page you are readin
 The log records manual and automatic context compaction, including token counts
 and duration when Claude Code supplies them. These boundaries are restored from
 the conversation transcript and do not count as reply pages.
-Restored transcripts open on the latest assistant reply with the full history available;
-the greeting is a placeholder and is replaced by the first real reply. Stop preserves
+Restored transcripts open on the latest assistant reply from the last 60 backlog
+entries; the page total counts the assistant replies loaded from those entries.
+The greeting is a placeholder and is replaced by the first real reply. Stop preserves
 completed reply pages while adding its interruption as another page.
+
+The log follows incoming messages while the reader is near the bottom. Reading
+older entries keeps the scroll position; “Jump to latest” resumes following.
 
 Non-English opening and permission lines are generated per maid and spoken
 language and cached in a versioned `lines.json` under userData. Bump the cache version in

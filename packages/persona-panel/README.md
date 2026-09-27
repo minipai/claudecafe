@@ -37,10 +37,10 @@ Open a new session. A character is drawn for it and stays for that session.
   time and weather; every turn gets the current time, how long the session has
   run, how many commits the project has today, and the day's festival if any.
 - **A mood marker.** Replies end with a one-line mood and a kaomoji from a fixed
-  table.
+  table. The kaomoji on a completed reply also selects the portrait's expression.
 - **The portrait panel.** A pixel portrait beside the conversation, with the
   project, branch, context left, rate-limit left and session time above it.
-  Claude changes the face through the `set_expression` tool.
+  Claude changes the face through the `set_expression` tool or the reply's mood marker.
 - **Two skills.** `/persona-panel:config` views or changes the settings;
   `/persona-panel:look` has the character describe what they look like right
   now.

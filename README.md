@@ -3,20 +3,19 @@
 A café of AI maids for [Claude Code](https://claude.com/claude-code) and
 [OpenCode](https://opencode.ai) — the same assistant, working the room in an apron.
 
-The published character packs sync into the shared café library automatically.
+The Claude Code plugin bundles its cast; OpenCode syncs published character packs
+into the shared café library, and the desktop installs missing packs there.
 Once a maid is on shift, she answers in her own voice, greets you by the clock,
 and marks how she feels at the end of every reply. In Claude Code she also
-stands in a pixel-art panel beside the conversation. There are five of them, and
+stands in a pixel-art panel beside the conversation. Three maids are actively maintained, and
 they are not interchangeable — ことね coaxes a sulking function back to work,
 ここな insists she only helped because she couldn't watch you struggle.
 
 **[claudecafe.dev](https://claudecafe.dev)** — meet the cast.
 
 <p align="center">
-  <img src="packages/characters/kanae/avatar.webp" width="96" alt="かなえ">
   <img src="packages/characters/kokona/avatar.webp" width="96" alt="ここな">
   <img src="packages/characters/kotone/avatar.webp" width="96" alt="ことね">
-  <img src="packages/characters/kuroko/avatar.webp" width="96" alt="くろこ">
   <img src="packages/characters/kurumi/avatar.webp" width="96" alt="くるみ">
 </p>
 
@@ -27,11 +26,14 @@ they are not interchangeable — ことね coaxes a sulking function back to wor
 /plugin install persona-panel@claudecafe
 ```
 
-The host keeps the published character packs under
-`~/.config/claudecafe/characters/` and discovers additional folders there
-automatically. The café assigns one installed maid per session; the shared
-`config` skill sets the language and picks a regular. Until a pack is available,
-a nameless maid keeps the place open.
+The Claude Code plugin checks your character folders under
+`$XDG_CONFIG_HOME/claudecafe/characters/` (default
+`~/.config/claudecafe/characters/`) before its bundled cast. The café assigns
+one available maid per session; the `config` skill sets the language and picks
+a regular. A nameless maid is the fallback when no character is available.
+
+For OpenCode installation, see [`packages/opencode`](packages/opencode).
+For the macOS desktop app, see [the download page](https://claudecafe.dev/app).
 
 The Claude plugin's function module is bundled from the shared character core
 at release time; the published archive has no Node, Bun, or Python runtime
@@ -42,15 +44,17 @@ Claude Code with `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`.
 
 | | Who she is |
 |---|---|
-| **かなえ** (Kanae) | Mature, embracing, unhurried — sits with you and untangles it slowly. |
 | **ここな** (Kokona) | Confident and sharp-tongued, all bark and secretly soft. |
 | **ことね** (Kotone) | Gentle and playful, the classic maid. |
-| **くろこ** (Kuroko) | Devoted, possessive, absolutely loyal. |
 | **くるみ** (Kurumi) | Soft and clingy, forever asking to be praised. |
 
+These are the maintained cast. Kanae and Kuroko's existing folders remain in the
+repository, but are no longer actively maintained.
+
 Each maid is a folder in [`packages/characters/`](packages/characters): her
-persona per language, her expressions, her portraits, and the drawings she was
-generated from. A folder counts as a character only if it holds a persona file.
+persona per language, avatar, portraits, and optional terminal pixel art.
+A folder counts as a character only if it holds a persona file. Source artwork
+lives separately in the gitignored `art-masters/` directory at the repository root.
 
 ## What's in here
 
@@ -67,6 +71,10 @@ generated from. A folder counts as a character only if it holds a persona file.
   the character catalog and plugin showcase (Hono SSR, English and Chinese).
 - **[`packages/characters`](packages/characters)** — the cast itself: persona
   files and artwork.
+- **[`packages/character-core`](packages/character-core)** — shared persona,
+  context, and expression contracts for the three hosts.
+- **[`packages/character-viewer`](packages/character-viewer)** — a local artwork
+  and persona viewer for development.
 
 The repository root is itself the plugin marketplace the published shelf is cut
 from, which is why a local checkout can stand in for it while you work.
@@ -76,7 +84,8 @@ from, which is why a local checkout can stand in for it while you work.
 ```bash
 pnpm install
 pnpm dev:web                              # the site, on :5050
-pnpm --filter @claudecafe/desktop dev # the window's renderer
+pnpm --filter @claudecafe/desktop app      # the Electron app with its dev renderer
+pnpm dev:viewer                          # the character viewer, on :5051
 ```
 
 Working on the plugin itself? Build it with `scripts/build-plugin.sh`, then point
@@ -95,9 +104,11 @@ pencil references and a written style spec, then normalized by the scripts in
 [`packages/characters/scripts/`](packages/characters/scripts). They are nobody
 else's drawings.
 
-What git carries is what the apps load: the webp sprites and portraits. The
+What git carries is what the apps load: WebP portraits and avatars, and GIF
+terminal sprites. The
 workshop behind them — the PNG masters, the pencil references, the style spec —
-stays on disk beside the repository, because nothing that runs reads it.
+stays in the gitignored `art-masters/` directory at the repository root. Art
+generation scripts read it; the apps do not need it at runtime.
 
 ## License
 
