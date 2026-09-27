@@ -1,5 +1,6 @@
 import { Heading } from '@/galgame/panels/CommandPanel'
 import { text } from '@/i18n'
+import { WINDOW_KEYS } from '@/agent/windowKeys'
 
 /**
  * The keys the scene answers to, written down. Everything here works whether
@@ -9,10 +10,22 @@ import { text } from '@/i18n'
  */
 export function Keys() {
   const t = text().panel.keys
+  const labels = {
+    log: t.log,
+    reply: text().reply.title,
+    projects: text().bar.projects,
+    models: text().scene.model,
+    usage: text().bar.usage,
+    settings: t.settings,
+  }
 
   const groups = [
     { heading: t.scene, keys: [['Space', t.turn], ['esc', t.stop]] },
-    { heading: t.panels, keys: [['⌘L', t.log], ['⌘,', t.settings], ['esc', t.close]] },
+    { heading: t.panels, keys: [
+      ...WINDOW_KEYS.map(({ display, window }) => [display, window === null ? t.main : labels[window]]),
+      ['⌘W', t.closeWindow],
+      ['esc', t.close],
+    ] },
     {
       heading: t.composer,
       keys: [['⏎', t.send], ['⇧⏎', t.newline], ['/', t.slash], ['⌘V', t.paste]],

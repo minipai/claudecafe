@@ -197,14 +197,11 @@ describe('GalgameClient', () => {
     expect(screen.getByRole('button', { name: 'Always allow Bash git' })).toBeInTheDocument()
   })
 
-  it('⌘L opens the log window and ⌘, the settings window, beside her rather than over her', async () => {
+  it('leaves live shortcuts to Electron so a native accelerator opens only one window', async () => {
     const { bridge } = await mountLive()
 
     await act(async () => fireEvent.keyDown(window, { key: 'l', metaKey: true }))
-    await act(async () => fireEvent.keyDown(window, { key: ',', metaKey: true }))
-
-    expect(bridge.openSideWindow).toHaveBeenNthCalledWith(1, 'log')
-    expect(bridge.openSideWindow).toHaveBeenNthCalledWith(2, 'settings')
+    expect(bridge.openSideWindow).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 

@@ -108,6 +108,8 @@ export const zhTW: Text = {
       weekNote: '從這台機器的逐字稿統計，各項比例會重疊。',
     },
     keys: {
+      main: '回到女僕主畫面',
+      closeWindow: '關閉目前視窗',
       scene: '在場景上',
       panels: '開啟面板',
       composer: '跟她打字的時候',

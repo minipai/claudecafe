@@ -254,7 +254,16 @@ function focusedScene() {
 function rebuildMenu() {
   buildMenu(drawnIn(), (name) => {
     const scene = focusedScene()
-    if (scene) sides.get(scene)?.show(name)
+    if (!scene) return
+    if (name) sides.get(scene)?.show(name)
+    else {
+      const owner = BrowserWindow.fromWebContents(scene)
+      if (owner && !owner.isDestroyed()) {
+        if (owner.isMinimized()) owner.restore()
+        owner.show()
+        owner.focus()
+      }
+    }
   })
 }
 

@@ -113,6 +113,8 @@ export const en = {
       weekNote: "Counted from this machine's transcripts, and the shares overlap.",
     },
     keys: {
+      main: 'Return to the maid',
+      closeWindow: 'Close the current window',
       scene: 'On the scene',
       panels: 'Panels',
       composer: 'While typing to her',

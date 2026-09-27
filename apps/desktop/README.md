@@ -22,6 +22,10 @@ and New sit above the composer, and the project path opens projects. Settings
 remain available with ⌘,. There is no ⌘⇧P palette; slash-command completion
 and the scene's floating information bubbles remain.
 
+Window shortcuts work from the scene and every side window: ⌘⇧0 returns to the
+maid, ⌘L opens history, ⌘⇧L her answer, ⌘⇧O projects, ⌘⇧M models, ⌘⇧U usage,
+and ⌘, settings. Each shortcut brings the existing window forward.
+
 Mood markers stay in the reply text. They can still select her expression, but
 are not pulled into a separate caption beside the page controls.
 

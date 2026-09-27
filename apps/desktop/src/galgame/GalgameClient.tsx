@@ -29,6 +29,7 @@ import type { ChatMessage, Expression, Phase, Whisper } from './types'
 import { lines as currentLines } from './scene/content'
 import { fill, her, nowServing, text } from '@/i18n'
 import { listenToSideWindows, openSideWindow, shareScene } from '@/agent/windows'
+import { WINDOW_KEYS } from '@/agent/windowKeys'
 import {
   isLive,
   newSession,
@@ -411,21 +412,17 @@ export function GalgameClient({
     window.cafe?.configure(patch)
   }
 
-  /** ⌘L opens the log; ⌘, opens settings. */
+  /** Electron owns live accelerators; the browser preview handles them here. */
   useEffect(() => {
+    if (window.cafe) return
     const shortcut = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return
-      // A folded-out plan is drawn over everything, so a panel opened under it is one
-      // the master can neither see nor close — and it would take the next esc
-      // meant for the plan.
       if (permissionExpanded || trouble) return
-      if (!event.shiftKey && event.key === 'l') {
-        event.preventDefault()
-        openSideWindow('log')
-      } else if (event.key === ',') {
-        event.preventDefault()
-        openSideWindow('settings')
-      }
+      const accelerator = `CmdOrCtrl+${event.shiftKey ? 'Shift+' : ''}${event.key === ',' ? ',' : event.key.toUpperCase()}`
+      const target = WINDOW_KEYS.find((key) => key.accelerator === accelerator)?.window
+      if (!target) return
+      event.preventDefault()
+      openSideWindow(target)
     }
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)

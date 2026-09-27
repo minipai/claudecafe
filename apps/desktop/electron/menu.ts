@@ -1,20 +1,9 @@
 import { Menu, type MenuItemConstructorOptions } from 'electron'
 import type { SideWindow } from '../src/agent/bridge'
+import { WINDOW_KEYS } from '../src/agent/windowKeys'
 
-/** The side windows the Window menu reaches, in the command bar's own order,
- * each with the accelerator the renderer already binds for it — shown on the
- * item so the master reads it there too, but not registered a second time. */
-const WINDOWS: { name: SideWindow; accelerator?: string }[] = [
-  { name: 'log', accelerator: 'CmdOrCtrl+L' },
-  { name: 'reply' },
-  { name: 'projects' },
-  { name: 'usage' },
-  { name: 'models' },
-  { name: 'settings', accelerator: 'CmdOrCtrl+,' },
-]
-
-/** The same wording the renderer puts on these windows' titles and the command
- * bar's rows, kept here rather than reached for at menu-build time because the
+/** The same wording the renderer puts on these windows' titles,
+ * kept here rather than reached for at menu-build time because the
  * main process draws no page of its own to read `text()` from. */
 const LABELS: Record<'en' | 'zh-TW', Record<SideWindow, string>> = {
   en: {
@@ -38,11 +27,10 @@ const LABELS: Record<'en' | 'zh-TW', Record<SideWindow, string>> = {
 /**
  * The application menu Electron would otherwise leave at its bare default: the
  * standard app, file, edit and view menus, and a Window menu that — beyond the usual
- * minimize and zoom — reaches every side window without going through the
- * command bar first. Rebuilt whenever the interface's language changes, since
+ * minimize and zoom — reaches every café window. Rebuilt whenever the interface's language changes, since
  * the labels are drawn in it rather than read live.
  */
-export function buildMenu(locale: string, openSide: (name: SideWindow) => void) {
+export function buildMenu(locale: string, openWindow: (name: SideWindow | null) => void) {
   // Matched the way the renderer's readLocale matches, so the menu and the page agree.
   const code = locale.replace('_', '-')
   const words = LABELS[code as keyof typeof LABELS] ?? LABELS[code.split('-')[0] as keyof typeof LABELS] ?? LABELS.en
@@ -58,12 +46,11 @@ export function buildMenu(locale: string, openSide: (name: SideWindow) => void) 
         { role: 'minimize' },
         { role: 'zoom' },
         { type: 'separator' },
-        ...WINDOWS.map(
-          ({ name, accelerator }): MenuItemConstructorOptions => ({
-            label: words[name],
+        ...WINDOW_KEYS.map(
+          ({ window: name, accelerator }): MenuItemConstructorOptions => ({
+            label: name ? words[name] : words === LABELS['zh-TW'] ? '女僕主畫面' : 'Maid',
             accelerator,
-            registerAccelerator: false,
-            click: () => openSide(name),
+            click: () => openWindow(name),
           }),
         ),
         { type: 'separator' },
