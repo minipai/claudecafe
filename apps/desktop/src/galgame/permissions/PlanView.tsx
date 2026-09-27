@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useIsPresent } from 'motion/react'
 import { motion } from 'motion/react'
 import { X } from 'lucide-react'
-import { marked } from 'marked'
+import { renderMarkdown } from '@/lib/markdown'
 import { Button } from '@/components/ui/button'
 import { text } from '@/i18n'
 
@@ -78,7 +78,7 @@ export function PlanView({ shortline, plan, onClose, actions }: PlanViewProps) {
         <div
           className="report-md mx-auto max-w-[620px]"
           // Line breaks are kept, the same as the dialogue box and the log.
-          dangerouslySetInnerHTML={{ __html: marked.parse(plan, { async: false, breaks: true }) }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(plan) }}
         />
       </div>
 

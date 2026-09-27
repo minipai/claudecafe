@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { marked } from 'marked'
+import { renderInlineMarkdown, renderMarkdown } from '@/lib/markdown'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { NamePlate } from './NamePlate'
 import { WaitingLine } from './WaitingLine'
@@ -154,7 +154,7 @@ export function DialogueBox({
               // Single line breaks are kept, the same as the log does: she
               // writes a line per point as often as she leaves a
               // blank line between them, and run together they read as one.
-              dangerouslySetInnerHTML={{ __html: marked.parse(laidOut, { async: false, breaks: true }) }}
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(laidOut) }}
             />
           ) : (
             // A line said to the question before this one stays where it is —
@@ -176,8 +176,8 @@ export function DialogueBox({
                 className={streamed ? 'report-md' : undefined}
                 dangerouslySetInnerHTML={{
                   __html: streamed
-                    ? marked.parse(line, { async: false, breaks: true })
-                    : marked.parseInline(line, { async: false, breaks: true }),
+                    ? renderMarkdown(line)
+                    : renderInlineMarkdown(line),
                 }}
               />
               {isTyping && (

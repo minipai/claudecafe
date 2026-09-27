@@ -1,4 +1,4 @@
-import { marked } from 'marked'
+import { renderMarkdown } from '@/lib/markdown'
 import { CommandPanel, useAnswer } from './CommandPanel'
 import { text } from '@/i18n'
 import { maidPersona } from '@/agent'
@@ -28,7 +28,7 @@ export function PersonaPanel({ open, onClose }: { open: boolean; onClose: () => 
       {persona && (
         <div
           className="report-md persona-md"
-          dangerouslySetInnerHTML={{ __html: marked.parse(persona, { async: false }) }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(persona, false) }}
         />
       )}
     </CommandPanel>

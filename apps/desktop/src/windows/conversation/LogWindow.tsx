@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowDown, ChevronRight, Plus, Shrink } from 'lucide-react'
-import { marked } from 'marked'
+import { renderMarkdown } from '@/lib/markdown'
 import { Button } from '@/components/ui/button'
 import { fill, her, text } from '@/i18n'
 import { sendToScene } from '@/agent/windows'
@@ -201,7 +201,7 @@ export function LogWindow({ log, conversation }: { log: SceneShare['log']; conve
                           <div
                             className="report-md text-[15px] leading-[1.8] sm:text-base [&>*:last-child]:mb-0"
                             dangerouslySetInnerHTML={{
-                              __html: marked.parse(message.content, { async: false, breaks: true }),
+                              __html: renderMarkdown(message.content),
                             }}
                           />
                         )}

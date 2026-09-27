@@ -7,7 +7,13 @@ export default defineConfig({
   // The packaged window loads the page off disk, where an absolute /assets path
   // points at the root of the volume rather than at the app.
   base: './',
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), {
+    name: 'development-csp',
+    apply: 'serve',
+    transformIndexHtml(html) {
+      return html.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'")
+    },
+  }],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '../src'),

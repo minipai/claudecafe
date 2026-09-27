@@ -1,4 +1,4 @@
-import { marked } from 'marked'
+import { renderMarkdown } from '@/lib/markdown'
 import { text } from '@/i18n'
 import type { SceneShare } from '@/agent'
 import { TodoBoard } from './TodoBoard'
@@ -24,7 +24,7 @@ export function ReplyWindow({ log, todos }: { log: SceneShare['log']; todos: Sce
         <div
           key={reply.id}
           className="report-md mx-auto w-full max-w-[760px] [&>*:last-child]:mb-0"
-          dangerouslySetInnerHTML={{ __html: marked.parse(reply.content, { async: false, breaks: true }) }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(reply.content) }}
         />
       ) : (
         <p className="py-10 text-center text-sm text-muted-foreground">{t.empty}</p>
