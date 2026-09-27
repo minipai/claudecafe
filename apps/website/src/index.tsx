@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
+import { trimTrailingSlash } from "hono/trailing-slash";
 import { Layout } from "./components/Layout.js";
 import { HomePage } from "./components/HomePage.js";
 import { MaidPage } from "./pages/MaidPage.js";
@@ -22,6 +23,9 @@ function render404(c: Context, locale: Locale) {
     404,
   );
 }
+
+// /zh/ and friends: a trailing slash that would 404 redirects to the page.
+app.use(trimTrailingSlash());
 
 app.use("*", async (c, next) => {
   await next();
