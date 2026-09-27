@@ -8,6 +8,9 @@ import { cafeRoot } from './cafehome'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import type { Lines } from '../../src/agent/bridge'
 
+// Bump when the writing brief's meaning changes so old generated lines are rewritten.
+const LINES_VERSION = 1
+
 /**
  * The handful of lines the window puts in her mouth — the opening, the one she
  * says when she is stopped, the ones she asks permission with. The window has
@@ -20,7 +23,7 @@ import type { Lines } from '../../src/agent/bridge'
  * that cannot be translated without being rebuilt.
  */
 const ENGLISH: Lines = {
-  greeting: 'Goshujin-sama~ what can I do for you today? Ask away, or press ⌘⇧P to send me somewhere else ♪',
+  greeting: 'Goshujin-sama~ it is lovely to see you. What would you like to do today? ♪',
   interrupted: 'Eh, stopping there? O-okay…',
   commandAsk: 'Goshujin-sama, I would like to run this — may I?',
   editAsk: 'I would like to change this file~ have a look at what I am changing first?',
@@ -72,7 +75,7 @@ export function languageSettled() {
  * asking — it is the copy the app ships with. */
 export function knownLines(maid: string, language: string): Lines | null {
   if (isEnglish(language)) return ENGLISH
-  const kept = readKept()[maid]?.[language]
+  const kept = readKept().lines[maid]?.[language]
   // A note written before she had waiting lines is short of them, and English
   // ones under a maid speaking something else is not what was kept. Treating it
   // as unwritten is what gets her to write the missing ones in her own voice.
@@ -119,7 +122,7 @@ The maid above works inside a desktop window rather than a terminal. The window 
 
 Return JSON and nothing else, with exactly these keys:
 
-- "greeting": what she says as the window opens and whenever a fresh conversation starts. Mention that ⌘⇧P is how she is sent to another folder or back to an earlier conversation.
+- "greeting": a warm, simple greeting for when the window opens or a fresh conversation starts. Do not mention keyboard shortcuts, controls, navigation, or give a UI tutorial.
 - "interrupted": she has just been stopped in the middle of working.
 - "commandAsk": she is asking to be allowed to run a shell command. The command itself is printed on the card beside her, so the line must not contain it or describe which one it is.
 - "editAsk": she is asking to be allowed to change a file. The file name and the diff are shown beside her, so the line must not name the file.
@@ -164,14 +167,19 @@ const isEnglish = (language: string) => language.trim().toLowerCase() === 'engli
  * mouth. */
 function rememberLines(maid: string, language: string, lines: Lines) {
   const kept = readKept()
-  fs.writeFileSync(linesFile(), JSON.stringify({ ...kept, [maid]: { ...kept[maid], [language]: lines } }, null, 2))
+  fs.writeFileSync(linesFile(), JSON.stringify({
+    version: LINES_VERSION,
+    lines: { ...kept.lines, [maid]: { ...kept.lines[maid], [language]: lines } },
+  }, null, 2))
 }
 
-function readKept(): Record<string, Record<string, Lines>> {
+function readKept(): { version: number; lines: Record<string, Record<string, Lines>> } {
   try {
-    return JSON.parse(fs.readFileSync(linesFile(), 'utf8'))
+    const kept = JSON.parse(fs.readFileSync(linesFile(), 'utf8'))
+    if (kept.version === LINES_VERSION && kept.lines && typeof kept.lines === 'object') return kept
+    return { version: LINES_VERSION, lines: {} }
   } catch {
-    return {}
+    return { version: LINES_VERSION, lines: {} }
   }
 }
 

@@ -3,9 +3,16 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { app } from 'electron'
-import { englishLines, knownLines, readAnswer, replyLanguage } from './lines'
+import { askForLines, englishLines, knownLines, readAnswer, replyLanguage } from './lines'
 import { rememberSpeech } from '../history/history'
 import type { Lines } from '../../src/agent/bridge'
+
+const { queryMock, findClaudeCodeMock } = vi.hoisted(() => ({ queryMock: vi.fn(), findClaudeCodeMock: vi.fn() }))
+vi.mock('@anthropic-ai/claude-agent-sdk', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@anthropic-ai/claude-agent-sdk')>(),
+  query: queryMock,
+}))
+vi.mock('../session/claude', () => ({ findClaudeCode: findClaudeCodeMock }))
 
 const ENGLISH = englishLines()
 
@@ -80,7 +87,7 @@ describe('knownLines', () => {
   it('does not put one maid\'s lines in another maid\'s mouth', () => {
     fs.writeFileSync(
       path.join(app.getPath('userData'), 'lines.json'),
-      JSON.stringify({ kotone: { 日本語: WRITTEN } }),
+      JSON.stringify({ version: 1, lines: { kotone: { 日本語: WRITTEN } } }),
     )
     expect(knownLines('kotone', '日本語')).toEqual(WRITTEN)
     expect(knownLines('kurumi', '日本語')).toBeNull()
@@ -89,14 +96,42 @@ describe('knownLines', () => {
   it('treats a kept note with no waiting lines as unwritten', () => {
     fs.writeFileSync(
       path.join(app.getPath('userData'), 'lines.json'),
-      JSON.stringify({ kotone: { 日本語: { ...WRITTEN, waiting: [] } } }),
+      JSON.stringify({ version: 1, lines: { kotone: { 日本語: { ...WRITTEN, waiting: [] } } } }),
     )
     expect(knownLines('kotone', '日本語')).toBeNull()
   })
 
   it('returns a kept note that does have waiting lines', () => {
-    fs.writeFileSync(path.join(app.getPath('userData'), 'lines.json'), JSON.stringify({ kotone: { 日本語: WRITTEN } }))
+    fs.writeFileSync(path.join(app.getPath('userData'), 'lines.json'), JSON.stringify({ version: 1, lines: { kotone: { 日本語: WRITTEN } } }))
     expect(knownLines('kotone', '日本語')).toEqual(WRITTEN)
+  })
+
+  it.each([{ kotone: { 日本語: WRITTEN } }, { version: 0, lines: { kotone: { 日本語: WRITTEN } } }])('ignores obsolete cache formats without mutating them', (cache) => {
+    const file = path.join(app.getPath('userData'), 'lines.json')
+    const contents = JSON.stringify(cache)
+    fs.writeFileSync(file, contents)
+    expect(knownLines('kotone', '日本語')).toBeNull()
+    expect(fs.readFileSync(file, 'utf8')).toBe(contents)
+  })
+
+  it('writes successful generation into a versioned cache and preserves current entries', async () => {
+    const file = path.join(app.getPath('userData'), 'lines.json')
+    fs.writeFileSync(file, JSON.stringify({ version: 1, lines: { kurumi: { Français: WRITTEN } } }))
+    findClaudeCodeMock.mockReturnValue({ found: true, path: '/mock/claude' })
+    queryMock.mockReturnValue((async function* () { yield { type: 'result', subtype: 'success', result: JSON.stringify(WRITTEN) } })())
+    expect(await askForLines('kotone', '日本語', 'persona')).toEqual(WRITTEN)
+    expect(knownLines('kotone', '日本語')).toEqual(WRITTEN)
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ version: 1, lines: { kurumi: { Français: WRITTEN }, kotone: { 日本語: WRITTEN } } })
+  })
+
+  it('does not overwrite the cache when generation fails', async () => {
+    const file = path.join(app.getPath('userData'), 'lines.json')
+    const contents = JSON.stringify({ version: 1, lines: { kurumi: { Français: WRITTEN } } })
+    fs.writeFileSync(file, contents)
+    findClaudeCodeMock.mockReturnValue({ found: true, path: '/mock/claude' })
+    queryMock.mockImplementation(() => { throw new Error('offline') })
+    expect(await askForLines('kotone', '日本語', 'persona')).toBeNull()
+    expect(fs.readFileSync(file, 'utf8')).toBe(contents)
   })
 })
 

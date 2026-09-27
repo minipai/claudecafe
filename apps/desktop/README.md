@@ -30,6 +30,13 @@ dialogue page: the current page updates immediately, while later pages collect
 their text until you advance to them. Opening a page shows everything received
 so far without replaying a typing animation.
 
+Non-English opening and permission lines are generated per maid and spoken
+language and cached in a versioned `lines.json` under userData. Bump the cache version in
+`electron/characters/lines.ts` when the writing brief changes. Older versions are
+treated as missing and replaced after successful generation; English stands in
+while generation is unavailable. Opening lines welcome the user without teaching
+UI controls or shortcuts that can become stale.
+
 The desktop disables only `persona-panel@claudecafe` through per-session SDK
 settings, leaving other user and project plugins and hooks enabled. It owns
 the selected character and portrait, and calls `@claudecafe/character-core`'s
