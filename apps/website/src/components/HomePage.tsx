@@ -1,4 +1,5 @@
 import { Cast } from "./Cast.js";
+import { Icon } from "./Icon.js";
 import { href, type Locale } from "../i18n.js";
 
 const copy = {
@@ -37,6 +38,7 @@ const copy = {
     ways: [
       {
         href: "/app",
+        icon: "desktop",
         title: "Desktop app",
         desc: "A little window of her own: she stands beside the conversation, her face changing as you talk.",
         meta: ["macOS · Apple silicon", "Needs Claude Code, signed in"],
@@ -44,6 +46,7 @@ const copy = {
       },
       {
         href: "/plugin",
+        icon: "terminal",
         title: "Terminal plugin",
         desc: "She keeps you company in the terminal you already use, every session — with a face that follows the work.",
         meta: ["Claude Code", "Two lines to install"],
@@ -84,6 +87,7 @@ const copy = {
     ways: [
       {
         href: "/app",
+        icon: "desktop",
         title: "桌面 App",
         desc: "一個屬於她的小視窗，她就站在對話旁邊，表情跟著你們的對話變化。",
         meta: ["macOS · Apple 晶片", "需要已登入的 Claude Code"],
@@ -91,6 +95,7 @@ const copy = {
       },
       {
         href: "/plugin",
+        icon: "terminal",
         title: "終端機 Plugin",
         desc: "不用換工具，在你原本的終端機裡，每個 session 都有她陪著，表情也會跟著工作變化。",
         meta: ["Claude Code", "貼上兩行指令就裝好"],
@@ -138,8 +143,14 @@ export function HomePage({ locale }: { locale: Locale }) {
                 {t.lead2}
               </p>
               <nav class="home-cta">
-                <a class="home-pill" href={href(locale, "/app")}>{t.ctaDesktop}</a>
-                <a class="home-pill" href={href(locale, "/plugin")}>{t.ctaTerminal}</a>
+                <a class="home-pill" href={href(locale, "/app")}>
+                  <Icon name="desktop" />
+                  {t.ctaDesktop}
+                </a>
+                <a class="home-pill" href={href(locale, "/plugin")}>
+                  <Icon name="terminal" />
+                  {t.ctaTerminal}
+                </a>
               </nav>
             </header>
 
@@ -196,7 +207,10 @@ export function HomePage({ locale }: { locale: Locale }) {
                     <li>{line}</li>
                   ))}
                 </ul>
-                <a class="home-pill" href={href(locale, way.href)}>{way.cta}</a>
+                <a class="home-pill" href={href(locale, way.href)}>
+                  <Icon name={way.icon} />
+                  {way.cta}
+                </a>
               </article>
             ))}
           </div>

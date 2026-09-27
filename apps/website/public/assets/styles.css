@@ -96,6 +96,9 @@ body > * {
 }
 
 .header-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
     color: var(--header-text);
     text-decoration: none;
     opacity: 0.8;
@@ -151,6 +154,13 @@ main {
     max-width: 960px;
     margin: 0 auto;
     padding: 2rem 10px;
+}
+
+/* Line icons sized to the text they sit beside. */
+.icon {
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
 }
 
 /* Maid List */
@@ -1302,7 +1312,9 @@ html.home-snapping {
 }
 
 .home-pill {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
     padding: 10px 24px;
     border-radius: 999px;
     background: var(--accent-bold);
@@ -1315,7 +1327,6 @@ html.home-snapping {
 .home-pill::after {
     content: "→";
     display: inline-block;
-    margin-left: 0.4em;
     transition: transform 0.15s;
 }
 

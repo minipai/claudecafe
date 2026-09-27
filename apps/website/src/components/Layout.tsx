@@ -1,5 +1,6 @@
 import type { Child } from "hono/jsx";
 import { href, ui, type Locale } from "../i18n.js";
+import { Icon } from "./Icon.js";
 
 const SITE_URL = "https://claudecafe.dev";
 const DEFAULT_DESCRIPTION =
@@ -65,9 +66,15 @@ export function Layout({
               The Claude Café
             </a>
             <nav class="header-nav" aria-label={locale === "zh" ? "主要導覽" : "Main navigation"}>
-              <a href={href(locale, "/plugin")} aria-current={path === "/plugin" ? "page" : undefined}>Plugin</a>
+              <a href={href(locale, "/plugin")} aria-current={path === "/plugin" ? "page" : undefined}>
+                <Icon name="terminal" />
+                Plugin
+              </a>
               <span aria-hidden="true">✦</span>
-              <a href={href(locale, "/app")} aria-current={path === "/app" ? "page" : undefined}>Desktop</a>
+              <a href={href(locale, "/app")} aria-current={path === "/app" ? "page" : undefined}>
+                <Icon name="desktop" />
+                Desktop
+              </a>
             </nav>
             <div class="header-right">
               {/* ?lang= sets the preference cookie, then redirects clean */}
