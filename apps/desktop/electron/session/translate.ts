@@ -124,7 +124,18 @@ export class Turn {
 
   private readSystem(sdk: Extract<SDKMessage, { type: 'system' }>): AgentMessage[] {
     if (sdk.subtype === 'init') return [{ type: 'system', subtype: 'init' }]
-    if (sdk.subtype === 'compact_boundary') return [{ type: 'system', subtype: 'compact_boundary' }]
+    if (sdk.subtype === 'compact_boundary') {
+      const metadata = sdk.compact_metadata
+      return [{
+        type: 'system', subtype: 'compact_boundary',
+        compact: metadata ? {
+          ...(metadata.trigger === 'manual' || metadata.trigger === 'auto' ? { trigger: metadata.trigger } : {}),
+          ...(typeof metadata.pre_tokens === 'number' ? { preTokens: metadata.pre_tokens } : {}),
+          ...(typeof metadata.post_tokens === 'number' ? { postTokens: metadata.post_tokens } : {}),
+          ...(typeof metadata.duration_ms === 'number' ? { durationMs: metadata.duration_ms } : {}),
+        } : undefined,
+      }]
+    }
 
     const update = this.board.read(sdk)
     return update ? [update] : []

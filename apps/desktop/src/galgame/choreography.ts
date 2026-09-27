@@ -1,7 +1,7 @@
 import type { AgentMessage, Todo } from '@/agent'
 import { EXPRESSIONS } from '@/agent/expressions'
 import { text } from '@/i18n'
-import { shorten } from './scene/chatlog'
+import { compactDetail, shorten } from './scene/chatlog'
 import type { Hooks } from './dialogue/useSpeech'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
 
@@ -11,7 +11,7 @@ import type { ChatMessage, Expression, Phase, Whisper } from './types'
  * decides which ones fire and in what order, never how they are stored.
  */
 export type Scene = {
-  appendChatMessage: (role: ChatMessage['role'], content: string) => void
+  appendChatMessage: (role: ChatMessage['role'], content: string, detail?: string) => void
   upsertStreamMessage: (id: string, content: string) => void
   appendEvent: (content: string, detail?: string, toolId?: string, output?: string) => void
   recordResult: (toolId: string, output: string, failed: boolean) => void
@@ -40,6 +40,9 @@ function isExpression(value: unknown): value is Expression {
 export function choreograph(msg: AgentMessage, scene: Scene) {
   switch (msg.type) {
     case 'system':
+      if (msg.subtype === 'compact_boundary') {
+        scene.appendChatMessage('boundary', text().log.compacted, compactDetail(msg.compact))
+      }
       break
     case 'text_delta':
       // Into the log the moment she says it — the log is the conversation as

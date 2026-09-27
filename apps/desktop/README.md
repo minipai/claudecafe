@@ -40,6 +40,10 @@ message is a dialogue page across the whole conversation: the current page updat
 pages collect all text received so far until you advance to them. Previous pages
 can be revisited without replaying tools or questions. There is no automatic
 page turning, and new messages do not move you away from the page you are reading.
+
+The log records manual and automatic context compaction, including token counts
+and duration when Claude Code supplies them. These boundaries are restored from
+the conversation transcript and do not count as reply pages.
 Restored transcripts open on the latest assistant reply with the full history available;
 the greeting is a placeholder and is replaced by the first real reply. Stop preserves
 completed reply pages while adding its interruption as another page.

@@ -403,10 +403,12 @@ describe('Turn — system init and compact_boundary', () => {
     expect(out).toEqual([{ type: 'system', subtype: 'init' }])
   })
 
-  it('announces a compact_boundary — this is what the renderer\'s "compacted" toast keys off', () => {
+  it('preserves compact metadata and tolerates SDK events without it', () => {
     const turn = new Turn('hi')
-    const out = turn.read(system({ subtype: 'compact_boundary' }))
-    expect(out).toEqual([{ type: 'system', subtype: 'compact_boundary' }])
+    expect(turn.read(system({ subtype: 'compact_boundary', compact_metadata: { trigger: 'auto', pre_tokens: 1200, post_tokens: 300 } }))).toEqual([
+      { type: 'system', subtype: 'compact_boundary', compact: { trigger: 'auto', preTokens: 1200, postTokens: 300 } },
+    ])
+    expect(turn.read(system({ subtype: 'compact_boundary' }))).toEqual([{ type: 'system', subtype: 'compact_boundary', compact: undefined }])
   })
 })
 

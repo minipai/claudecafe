@@ -374,6 +374,22 @@ function readBacklog(transcript: string): BacklogLine[] {
     }
     // Subagents talk in the same file; that is not the conversation the master had.
     if (row.isSidechain || row.isMeta) continue
+    if (row.type === 'system' && row.subtype === 'compact_boundary') {
+      const metadata = row.compactMetadata
+      const compact = metadata && typeof metadata === 'object' ? metadata as Record<string, unknown> : undefined
+      const at = Date.parse(row.timestamp ?? '') || lastAt
+      lastAt = at
+      lines.push({
+        role: 'boundary', content: 'Context compacted', at,
+        compact: compact ? {
+          ...(compact.trigger === 'manual' || compact.trigger === 'auto' ? { trigger: compact.trigger } : {}),
+          ...(typeof compact.preTokens === 'number' ? { preTokens: compact.preTokens } : {}),
+          ...(typeof compact.postTokens === 'number' ? { postTokens: compact.postTokens } : {}),
+          ...(typeof compact.durationMs === 'number' ? { durationMs: compact.durationMs } : {}),
+        } : undefined,
+      })
+      continue
+    }
     if (row.type !== 'user' && row.type !== 'assistant') continue
 
     const at = Date.parse(row.timestamp ?? '') || lastAt
@@ -411,6 +427,8 @@ type Row = {
   isSidechain?: boolean
   isMeta?: boolean
   timestamp?: string
+  subtype?: string
+  compactMetadata?: unknown
   message?: { content?: string | Block[] }
 }
 

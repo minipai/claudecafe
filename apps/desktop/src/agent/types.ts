@@ -10,8 +10,15 @@ export type Tier = 'light' | 'medium' | 'heavy'
  * them into the whole list the UI renders. */
 export type Todo = { content: string; status: 'pending' | 'in_progress' | 'completed' }
 
+export type CompactBoundary = {
+  trigger?: 'manual' | 'auto'
+  preTokens?: number
+  postTokens?: number
+  durationMs?: number
+}
+
 export type AgentMessage =
-  | { type: 'system'; subtype: 'init' | 'compact_boundary' } // compact_boundary fires after the history is summarised
+  | { type: 'system'; subtype: 'init' | 'compact_boundary'; compact?: CompactBoundary } // compact_boundary fires after the history is summarised
   // label = 地の文 narration line; silent = already has its own place on screen
   // id = the call this is, so what comes back can be put with it
   | { type: 'tool_use'; id: string; name: string; label: string; input?: Record<string, unknown>; silent?: boolean }

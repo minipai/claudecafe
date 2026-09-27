@@ -2,7 +2,7 @@ import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { faceFor } from '@/agent/expressions'
 import { nowServing, speakThis } from '@/i18n'
 import type { BacklogLine, BridgeEvent, CafeCommand, Lines, ModelChoice, SessionSettings, Shift, Trouble } from '@/agent'
-import { createChatMessage } from './scene/chatlog'
+import { compactDetail, createChatMessage } from './scene/chatlog'
 import { speakThese } from './scene/content'
 import type { ChatMessage, Expression, Phase } from './types'
 
@@ -105,7 +105,7 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
       return
     }
     scene.setChatMessages(
-      event.lines.map((entry: BacklogLine) => createChatMessage(entry.role, entry.content, entry.at)),
+      event.lines.map((entry: BacklogLine) => createChatMessage(entry.role, entry.content, entry.at, compactDetail(entry.compact))),
     )
     scene.restoreSpeech(event.lines.filter((entry) => entry.role === 'assistant').map((entry) => entry.content))
     // Restore the exact reply body; the marker also supplies its face.

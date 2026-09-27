@@ -92,6 +92,10 @@ export const zhTW: Text = {
     newSession: '開新對話',
     newSessionHint: '在這個資料夾重新開始',
     compacted: '已壓縮',
+    compactTrigger: { manual: '手動', auto: '自動' },
+    compactBefore: '壓縮前 {count} tokens',
+    compactAfter: '壓縮後 {count} tokens',
+    tokens: '權杖',
     you: 'ご主人様',
   },
   panel: {

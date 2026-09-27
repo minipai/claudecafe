@@ -1,6 +1,24 @@
 import type { ChatMessage } from '../types'
+import type { CompactBoundary } from '@/agent'
+import { fill, text } from '@/i18n'
 
 let chatMessageId = 0
+
+/** Live and restored boundaries show only measurements supplied by Claude Code. */
+export function compactDetail(compact?: CompactBoundary) {
+  if (!compact) return undefined
+  const t = text().log
+  const parts = [compact.trigger ? t.compactTrigger[compact.trigger] : undefined]
+  if (compact.preTokens !== undefined && compact.postTokens !== undefined) {
+    parts.push(`${compact.preTokens} → ${compact.postTokens} ${t.tokens}`)
+  } else if (compact.preTokens !== undefined) {
+    parts.push(fill(t.compactBefore, { count: compact.preTokens }))
+  } else if (compact.postTokens !== undefined) {
+    parts.push(fill(t.compactAfter, { count: compact.postTokens }))
+  }
+  if (compact.durationMs !== undefined) parts.push(`${(compact.durationMs / 1000).toFixed(1)}s`)
+  return parts.filter(Boolean).join(' · ') || undefined
+}
 
 export function createChatMessage(
   role: ChatMessage['role'],

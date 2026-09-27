@@ -1,4 +1,4 @@
-import type { AgentMessage, Attachment, Question, Todo } from './types'
+import type { AgentMessage, Attachment, CompactBoundary, Question, Todo } from './types'
 import type { ChatMessage } from '@/galgame/types'
 
 /**
@@ -83,9 +83,10 @@ export type Conversation = { sessionId: string; opening: string; at: number }
 
 /** A line from the conversation this window reopened on. */
 export type BacklogLine = {
-  role: 'user' | 'assistant' | 'event'
+  role: 'user' | 'assistant' | 'event' | 'boundary'
   content: string
   at: number
+  compact?: CompactBoundary
   /** Written out with shape to it — markdown, laid out in the box rather than
    * read back as one spoken line. */
   laidOut?: boolean

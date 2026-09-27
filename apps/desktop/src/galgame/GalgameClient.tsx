@@ -257,8 +257,8 @@ export function GalgameClient({
     cutIn(text)
   }
 
-  const appendChatMessage = useCallback((role: ChatMessage['role'], content: string) => {
-    setChatMessages((current) => [...current, createChatMessage(role, content)])
+  const appendChatMessage = useCallback((role: ChatMessage['role'], content: string, detail?: string) => {
+    setChatMessages((current) => [...current, createChatMessage(role, content, Date.now(), detail)])
   }, [])
 
   const updateStreamMessage = useCallback((id: string, content: string) => {
@@ -710,7 +710,7 @@ export function GalgameClient({
     try {
       for await (const msg of query({ prompt: '/compact', abortController: controller })) {
         if (msg.type === 'system' && msg.subtype === 'compact_boundary') {
-          setChatMessages((current) => [...current, createChatMessage('boundary', text().log.compacted)])
+          choreograph(msg, currentScene())
           toast.success(text().scene.compacted, { description: text().scene.compactedNote })
         }
       }
@@ -744,7 +744,8 @@ export function GalgameClient({
     setPhase('working')
     // The master has moved the scene on himself: anything of hers still waiting
     // to be clicked through belongs to the question before this one.
-    beginTurn(chatMessages.length === 1 && chatMessages[0].role === 'assistant' && chatMessages[0].content === greetingRef.current)
+    const dialogue = chatMessages.filter((message) => message.role === 'user' || message.role === 'assistant')
+    beginTurn(dialogue.length === 1 && dialogue[0].role === 'assistant' && dialogue[0].content === greetingRef.current)
     setOutputTokens(0)
 
     const controller = new AbortController()

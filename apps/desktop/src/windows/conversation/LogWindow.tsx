@@ -88,8 +88,9 @@ export function LogWindow({ log, conversation }: { log: SceneShare['log']; conve
                       <div key={message.id} className="flex items-center gap-3 py-5 pl-[142px]">
                         <span className="h-px flex-1 bg-border" />
                         <span className="font-mono text-[10px] tracking-[0.12em] whitespace-nowrap text-muted-foreground">
-                          {message.content.toUpperCase()} · {formatTime(message.createdAt)}
+                          {(t.log.compacted).toUpperCase()} · {formatTime(message.createdAt)}
                         </span>
+                        {message.detail && <span className="font-mono text-[10px] text-muted-foreground">{message.detail}</span>}
                         <span className="h-px flex-1 bg-border" />
                       </div>
                     )

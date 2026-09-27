@@ -134,6 +134,22 @@ describe('conversationBacklog', () => {
     expect(conversationBacklog(cwd, 'sess')).toEqual([])
   })
 
+  it('restores compact boundaries before filtering non-conversation transcript rows', () => {
+    const cwd = '/Users/master/proj'
+    writeTranscript(home, cwd, 'sess', [
+      userRow('before'),
+      { type: 'system', subtype: 'compact_boundary', timestamp: '2026-01-02T03:04:05.000Z', isMeta: false, isSidechain: false, compactMetadata: { trigger: 'manual', preTokens: 187427, postTokens: 10115, durationMs: 139464, preservedSegment: { headUuid: 'h' } } },
+      { type: 'system', subtype: 'compact_boundary', isMeta: false, isSidechain: false, compactMetadata: { trigger: 'auto', preTokens: 12000 } },
+      { ...userRow('after'), timestamp: undefined },
+    ])
+    expect(conversationBacklog(cwd, 'sess')).toEqual([
+      { role: 'user', content: 'before', at: expect.any(Number) },
+      { role: 'boundary', content: 'Context compacted', at: Date.parse('2026-01-02T03:04:05.000Z'), compact: { trigger: 'manual', preTokens: 187427, postTokens: 10115, durationMs: 139464 } },
+      { role: 'boundary', content: 'Context compacted', at: Date.parse('2026-01-02T03:04:05.000Z'), compact: { trigger: 'auto', preTokens: 12000 } },
+      { role: 'user', content: 'after', at: Date.parse('2026-01-02T03:04:05.000Z') },
+    ])
+  })
+
   it('keeps a message that legitimately starts with a plain HTML-looking tag like <div>, since that is not one of the wrappers', () => {
     const cwd = '/Users/master/proj'
     writeTranscript(home, cwd, 'sess', [userRow('<div>this is what I actually typed</div>')])

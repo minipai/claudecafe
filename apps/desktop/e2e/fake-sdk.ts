@@ -158,6 +158,12 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
   void turns()
 
   async function answer(said: string) {
+    if (said === '/compact') {
+      compact('manual')
+      push(result('', sessionId))
+      return
+    }
+    if (said === 'auto compact') compact('auto')
     if (said.includes('ask permission')) return askPermission()
     if (said.includes('ask a question')) return askQuestion()
     if (said.includes('go offline')) return goOffline()
@@ -165,6 +171,13 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
     if (said.includes('slow')) return workSlowly()
     if (said.includes('stream regression')) return streamAnswer(sessionId)
     return echo(said)
+  }
+
+  function compact(trigger: 'manual' | 'auto') {
+    push({
+      type: 'system', subtype: 'compact_boundary', uuid: randomUUID(), session_id: sessionId,
+      compact_metadata: { trigger, pre_tokens: 12000, post_tokens: 3000, duration_ms: 2500 },
+    })
   }
 
   function expireLogin() {

@@ -97,6 +97,10 @@ export const en = {
     newSession: 'New conversation',
     newSessionHint: 'Start over in this folder',
     compacted: 'compacted',
+    compactTrigger: { manual: 'Manual', auto: 'Automatic' },
+    compactBefore: '{count} tokens before',
+    compactAfter: '{count} tokens after',
+    tokens: 'tokens',
     you: 'ご主人様',
   },
   panel: {

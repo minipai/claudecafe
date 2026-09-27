@@ -37,6 +37,14 @@ describe('choreograph', () => {
     expect(Object.values(scene).every((fn) => (fn as ReturnType<typeof vi.fn>).mock.calls.length === 0)).toBe(true)
   })
 
+  it('records manual and automatic compaction boundaries without making dialogue pages', () => {
+    const scene = createScene()
+    choreograph({ type: 'system', subtype: 'compact_boundary', compact: { trigger: 'auto', preTokens: 900, postTokens: 200 } }, scene)
+    expect(scene.appendChatMessage).toHaveBeenCalledWith('boundary', expect.any(String), expect.stringContaining('Automatic'))
+    expect(scene.say).not.toHaveBeenCalled()
+    expect(scene.setPhase).not.toHaveBeenCalled()
+  })
+
   it('text_delta: preserves the raw body in the log and dialogue while wearing its face', () => {
     const scene = createScene()
     choreograph({ type: 'text_delta', text: 'hello there', expression: 'happy', mood: '【 開心 】' }, scene)
