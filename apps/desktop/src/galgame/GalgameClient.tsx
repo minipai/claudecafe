@@ -183,9 +183,11 @@ export function GalgameClient({
     cut: cutIn,
     clear: clearSpeech,
     advance,
-    queued,
-    pace,
-    setPace,
+    previous,
+    canPrevious,
+    canNext,
+    pageIndex,
+    pageCount,
   } = useSpeech()
 
   /** Behind whatever she is already saying. One block of hers is one line —
@@ -451,30 +453,25 @@ export function GalgameClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, permissionExpanded, personaOpen, trouble, permissionRequest, choiceRequest])
 
-  /**
-   * Space turns the page, the way a galgame does — and it is taken in the
-   * capture pass, before whatever has focus can have it. A line waiting to be
-   * read is the scene asking to be clicked on, and until it has been, Space
-   * belongs to the scene rather than to the composer: one key, one meaning,
-   * wherever the hand happens to be. Once she has nothing left queued it is a
-   * space again.
-   */
+  /** Arrow keys navigate dialogue unless focus or an unresolved scene action owns them. */
   useEffect(() => {
     const turn = (event: KeyboardEvent) => {
-      if (event.key !== ' ' || event.metaKey || event.ctrlKey || event.altKey) return
-      // Mid-composition Space is the IME picking a word, never a page turn.
-      if (event.isComposing) return
-      if (queued === 0 || !isDone) return
-      // Except while something else holds the scene — a folded-out permission,
-      // a panel — where there is no box to turn.
-       if (permissionExpanded || personaOpen) return
+      if (event.defaultPrevented || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return
+      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || event.isComposing) return
+      const target = event.target
+      if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/i.test(target.tagName) || target.closest('[role="menu"], [role="menuitem"], [role="listbox"], [role="option"]'))) return
+      if (permissionExpanded || pickingShift || personaOpen || trouble || permissionRequest || choiceRequest) return
+      const canNavigate = event.key === 'ArrowLeft' ? canPrevious : canNext
+      if (!canNavigate) return
       event.preventDefault()
       event.stopPropagation()
-      advance()
+      setLaidOut(null)
+      if (event.key === 'ArrowLeft') previous()
+      else advance()
     }
     window.addEventListener('keydown', turn, true)
     return () => window.removeEventListener('keydown', turn, true)
-  }, [queued, isDone, advance, permissionExpanded, personaOpen])
+  }, [advance, previous, canPrevious, canNext, permissionExpanded, pickingShift, personaOpen, trouble, permissionRequest, choiceRequest])
 
 
   function askPermission(request: PermissionRequest | null) {
@@ -781,19 +778,19 @@ export function GalgameClient({
               isLoading={phase === 'working'}
               waiting={lines.waiting}
               outputTokens={outputTokens}
-              queued={queued}
-              onAdvance={advance}
-              pace={pace}
-              onPace={setPace}
+              onPrevious={() => { setLaidOut(null); previous() }}
+              onAdvance={() => { setLaidOut(null); advance() }}
+              pageIndex={pageIndex}
+              pageCount={pageCount}
+              canPrevious={canPrevious && !permissionRequest && !choiceRequest}
+              canNext={canNext && !permissionRequest && !choiceRequest}
               todos={board}
               onOpenReply={() => openSideWindow('reply')}
               onOpenPersona={chooseNewMaid}
               utility={<SessionPlaque settings={settings} models={models} />}
+              onOpenHistory={() => openSideWindow('log')}
               controls={
                 <div className="flex items-center gap-1">
-                  <form onSubmit={(event) => { event.preventDefault(); openSideWindow('log') }}>
-                    <button type="submit" className="h-7 cursor-pointer border-0 bg-transparent px-2 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" aria-label={text().scene.openHistory} title={text().scene.history}>{text().scene.logAction}</button>
-                  </form>
                   <form onSubmit={(event) => { event.preventDefault(); void compactSession() }}>
                     <button type="submit" className="h-7 cursor-pointer border-0 bg-transparent px-2 text-xs text-muted-foreground transition-colors enabled:hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-50" disabled={phase === 'working' || compacting}>{compacting ? text().log.compacting : text().log.compact}</button>
                   </form>

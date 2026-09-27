@@ -20,7 +20,7 @@ export function Keys() {
   }
 
   const groups = [
-    { heading: t.scene, keys: [['Space', t.turn], ['esc', t.stop]] },
+    { heading: t.scene, keys: [['← / →', t.turn], ['esc', t.stop]] },
     { heading: t.panels, keys: [
       ...WINDOW_KEYS.map(({ display, window }) => [display, window === null ? t.main : labels[window]]),
       ['⌘W', t.closeWindow],

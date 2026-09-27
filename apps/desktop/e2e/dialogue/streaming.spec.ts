@@ -18,15 +18,31 @@ test('partial text appears before the final assistant message without replaying 
   // The two SDK text blocks become separate scene lines. Turning the page
   // between them also checks that completion of the stream does not replace
   // the currently displayed partial line or skip its queued successor.
-  await expect(page.getByRole('button', { name: /more lines?/ })).toBeVisible()
-  await page.keyboard.press(' ')
+  const next = page.getByRole('button', { name: 'Next message', exact: true })
+  const previous = page.getByRole('button', { name: 'Previous message', exact: true })
+  await expect(next).toBeEnabled()
+  await expect(previous).toBeDisabled()
+  await expect(page.getByLabel('Message 1 of 2', { exact: true })).toBeVisible()
+  await clickCafe(next)
   const second = await waitForLine(page, 'Second streamed block')
   await expect(first).toHaveCount(0)
   await expect(second).toBeVisible()
 
   // Advancing once more must not reveal an assistant/result replay of either
   // block. There is no further line queued by this turn.
-  await expect(page.getByRole('button', { name: /more lines?/ })).toHaveCount(0)
+  await expect(next).toBeDisabled()
+  await expect(page.getByLabel('Message 2 of 2', { exact: true })).toBeVisible()
+
+  // Re-reading a page does not append another log entry or replay its actions.
+  await clickCafe(previous)
+  await expect(first).toContainText('First streamed block complete')
+  await expect(previous).toBeDisabled()
+  await page.getByPlaceholder('Say something to ことね…').focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(first).toBeVisible()
+  await page.getByPlaceholder('Say something to ことね…').blur()
+  await page.keyboard.press('ArrowRight')
+  await expect(second).toBeVisible()
 
   const opening = app.waitForEvent('window')
   await clickCafe(page.getByRole('button', { name: 'Open conversation history' }))

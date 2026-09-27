@@ -112,6 +112,34 @@ function submit(said: string) {
 }
 
 describe('GalgameClient', () => {
+  it('labels the message navigation and leaves arrow keys available to the composer', async () => {
+    const { bridge, emit } = await mountLive()
+
+    expect(screen.getByLabelText('Message 1 of 1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Previous message' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Next message' })).toBeDisabled()
+
+    await act(async () => submit('two messages'))
+    const runId = lastRunId(bridge)
+    for (const text of ['First page', 'Second page']) {
+      await act(async () => emit({ kind: 'message', runId, message: { type: 'text_delta', text } }))
+    }
+    expect(screen.getByLabelText('Message 1 of 2')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Next message' })).toBeEnabled()
+
+    const composer = screen.getByPlaceholderText('Say something to ことね…')
+    const event = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+    composer.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    expect(screen.getByLabelText('Message 1 of 2')).toBeInTheDocument()
+    await act(async () => fireEvent.keyDown(window, { key: ' ' }))
+    expect(screen.getByLabelText('Message 1 of 2')).toBeInTheDocument()
+    await act(async () => fireEvent.keyDown(window, { key: 'ArrowRight' }))
+    expect(screen.getByLabelText('Message 2 of 2')).toBeInTheDocument()
+    await act(async () => fireEvent.keyDown(window, { key: 'ArrowLeft' }))
+    expect(screen.getByLabelText('Message 1 of 2')).toBeInTheDocument()
+  })
+
   it('shares transcript and task changes without broadcasting local token updates', async () => {
     const { bridge, emit } = await mountLive()
     await act(async () => submit('work'))

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { marked } from 'marked'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { NamePlate } from './NamePlate'
 import { WaitingLine } from './WaitingLine'
 import type { Todo } from '@/agent'
-import type { Pace } from './useSpeech'
 import { fill, her, text } from '@/i18n'
 
 type DialogueBoxProps = {
@@ -20,12 +20,12 @@ type DialogueBoxProps = {
   waiting: string[]
   /** How much she has written this turn, as the session counts it. */
   outputTokens: number
-  /** How many lines are behind this one, waiting for the master to click on. */
-  queued: number
+  pageIndex: number
+  pageCount: number
+  canPrevious: boolean
+  canNext: boolean
+  onPrevious: () => void
   onAdvance: () => void
-  /** Who is turning the pages — him, or the scene itself. */
-  pace: Pace
-  onPace: (pace: Pace) => void
   /** Her task list while she works — it is read in the reply window. */
   todos: Todo[]
   /** Opens her answer, whole, in a window of its own. */
@@ -34,6 +34,7 @@ type DialogueBoxProps = {
   onOpenPersona: () => void
   footer: ReactNode
   controls: ReactNode
+  onOpenHistory: () => void
   utility: ReactNode
 }
 
@@ -53,15 +54,18 @@ export function DialogueBox({
   isLoading,
   waiting,
   outputTokens,
-  queued,
+  pageIndex,
+  pageCount,
+  canPrevious,
+  canNext,
+  onPrevious,
   onAdvance,
-  pace,
-  onPace,
   todos,
   onOpenReply,
   onOpenPersona,
   footer,
   controls,
+  onOpenHistory,
   utility,
 }: DialogueBoxProps) {
   const t = text().scene
@@ -171,42 +175,17 @@ export function DialogueBox({
       </motion.div>
 
       <motion.div layout className="flex items-center justify-between gap-2 px-6 pb-2">
-        <div className="flex items-center gap-1.5">
-            {/* A blinking triangle is a thing the master has to have been
-                taught, so it says the rest in words: how many she still has
-                waiting, and the key that brings the next one. It grows out of
-                AUTO's left rather than holding a slot of its own, so nothing
-                beside it moves when it leaves and the corner is empty rather
-                than blank. */}
-            <button
-              type="button"
-              aria-pressed={pace === 'auto'}
-              title={t.autoPace}
-              onClick={() => onPace(pace === 'auto' ? 'manual' : 'auto')}
-              className={`rounded px-1.5 py-1 font-mono text-[10px] leading-none tracking-[0.14em] uppercase transition-colors ${
-                pace === 'auto'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground/50 hover:text-foreground'
-              }`}
-            >
-              auto
-            </button>
-            {queued > 0 && !isTyping && (
-              <button
-                type="button"
-                aria-keyshortcuts="Space"
-                onClick={onAdvance}
-                className="flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 py-1 pr-2 pl-2.5 text-primary transition-colors hover:bg-primary/20"
-              >
-                <span className="text-xs leading-none font-medium">
-                  {queued === 1 ? t.oneMore : fill(t.more, { count: queued })}
-                </span>
-                <kbd className="rounded-sm border border-primary/30 px-1 py-0.5 font-mono text-[11px] leading-none">
-                  space
-                </kbd>
-                <span className="block h-0 w-0 animate-[tri-blink_1.1s_ease-in-out_infinite] border-t-[11px] border-r-[7px] border-l-[7px] border-t-primary border-r-transparent border-l-transparent" />
-              </button>
-            )}
+        <div className="flex min-w-0 items-center gap-1.5">
+            <form onSubmit={(event) => { event.preventDefault(); onPrevious() }}>
+              <button type="submit" aria-label={t.previousMessage} title={t.previousMessage} disabled={!canPrevious} className="rounded p-1 text-muted-foreground transition-colors enabled:hover:text-foreground disabled:opacity-35"><ChevronLeft aria-hidden="true" size={16} /></button>
+            </form>
+            <span aria-label={fill(t.messageCounter, { current: pageIndex, total: pageCount })} className="min-w-8 text-center text-xs tabular-nums text-muted-foreground">{pageIndex}/{pageCount}</span>
+            <form onSubmit={(event) => { event.preventDefault(); onAdvance() }}>
+              <button type="submit" aria-label={t.nextMessage} title={t.nextMessage} disabled={!canNext} className="rounded p-1 text-muted-foreground transition-colors enabled:hover:text-foreground disabled:opacity-35"><ChevronRight aria-hidden="true" size={16} /></button>
+            </form>
+            <form onSubmit={(event) => { event.preventDefault(); onOpenHistory() }}>
+              <button type="submit" className="h-7 cursor-pointer border-0 bg-transparent px-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" aria-label={t.openHistory} title={t.history}>{t.logAction}</button>
+            </form>
             {/* The way to the reply window, and to her task list in it: while
                 she has a list, it says how far along she is. */}
             {(todos.length > 0 || overflowing) && (
@@ -218,7 +197,7 @@ export function DialogueBox({
                 {todos.length > 0
                   ? `${t.tasks} ${todos.filter((todo) => todo.status === 'completed').length}/${todos.length}`
                   : t.openReply}{' '}
-                ↗
+                <span aria-hidden="true">↗</span>
               </button>
             )}
         </div>

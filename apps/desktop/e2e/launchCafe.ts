@@ -90,32 +90,24 @@ export async function clickCafe(target: Locator) {
  * A line said mid-turn is not necessarily the one already on screen — she
  * says one thing at a time, and whatever follows a line already showing (an
  * answered permission, a stopped turn) queues up behind it. Turning the page
- * is Space (see the `turn` keydown handler in GalgameClient), and it does
- * nothing until the line on screen is done typing *and* something is
- * actually waiting behind it — the button reading "N more line(s)" is that
- * exact condition, on screen precisely when Space would do something. So
- * Space is only ever pressed here when that button is showing, never on a
- * guess: pressing it when nothing is queued is harmless, but pressing it
- * once the awaited line has already arrived can carry the scene straight
- * past it to whatever was queued next, and there would be nothing left on
- * screen for this to find.
+  * uses the enabled Next message button, only while the awaited line is absent.
  *
  * `exact: false` so a line already on screen is found by substring — the
  * `<span>` it renders into runs the text through `marked.parseInline` and
- * carries a caret alongside it while still typing, either of which can throw
+  * carries a caret alongside it while streaming, either of which can throw
  * off a whole-string match without changing what she actually said.
  *
  * What this can wait for: a line that is already showing, or one still to
- * come because something ahead of it is showing its "more" button. What it
+  * come because something ahead of it enables the next button. What it
  * cannot: a line the turn never queues at all, or one already advanced past
  * before this was ever called — both run out the 10s clock rather than
- * hanging on a Space that was never going to reveal it.
+  * waiting for a page turn that was never going to reveal it.
  */
 export async function waitForLine(page: Page, text: string) {
   const line = page.getByText(text, { exact: false })
-  const queuedBehind = page.getByRole('button', { name: /more lines?/ })
+  const queuedBehind = page.getByRole('button', { name: 'Next message', exact: true })
   await expect(async () => {
-    if (!(await line.isVisible()) && (await queuedBehind.isVisible())) await page.keyboard.press(' ')
+    if (!(await line.isVisible()) && (await queuedBehind.isEnabled())) await clickCafe(queuedBehind)
     await expect(line).toBeVisible({ timeout: 250 })
   }).toPass({ timeout: 10_000 })
   return line
