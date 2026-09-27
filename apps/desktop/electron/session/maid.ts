@@ -499,8 +499,12 @@ export class MaidSession {
   private async checkWayIn(stream: Query) {
     const late = Symbol('late')
     let timer!: ReturnType<typeof setTimeout>
-    const answered = await Promise.race([
-      stream.initializationResult().catch((error) => error as Error),
+    const initialization = stream.initializationResult().then(
+      () => null,
+      (error) => error instanceof Error ? error : new Error(String(error)),
+    )
+    let answered = await Promise.race([
+      initialization,
       new Promise<symbol>((resolve) => {
         timer = setTimeout(() => resolve(late), WAY_IN_TIMEOUT)
       }),
@@ -512,7 +516,10 @@ export class MaidSession {
         kind: 'trouble',
         trouble: { reason: 'sign-in', detail: `The session did not report in within ${WAY_IN_TIMEOUT / 1000}s.` },
       })
-    } else if (answered instanceof Error) {
+      answered = await initialization
+      if (this.stream !== stream) return
+    }
+    if (answered instanceof Error) {
       const reason = whyStopped(answered.message) ?? 'sign-in'
       this.emit({ kind: 'trouble', trouble: { reason, detail: answered.message } })
     } else {

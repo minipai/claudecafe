@@ -379,8 +379,12 @@ type CanUseTool = (
 
 function deferred<T>() {
   let resolve!: (value: T) => void
-  const promise = new Promise<T>((r) => (resolve = r))
-  return { promise, resolve }
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((r, j) => {
+    resolve = r
+    reject = j
+  })
+  return { promise, resolve, reject }
 }
 
 /** Wires the mocked `query` to open a fresh fake connection every time
@@ -854,6 +858,90 @@ describe('MaidSession — trouble paths', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('clears the timeout trouble when the same stream initializes later', async () => {
+    vi.useFakeTimers()
+    try {
+      const initialized = deferred<Awaited<ReturnType<ReturnType<typeof fakeStream>['stream']['initializationResult']>>>()
+      vi.mocked(query).mockImplementation((args) => {
+        const fake = fakeStream(args.prompt as AsyncIterable<SDKUserMessage>)
+        fake.stream.initializationResult = vi.fn(() => initialized.promise)
+        return fake.stream
+      })
+      const { events, emit } = collectEvents()
+      const session = new MaidSession('/tmp/cafe-maid-test-wayin-recovery', emit)
+      session.ask('run-1', 'hello')
+      await vi.advanceTimersByTimeAsync(15_000)
+      expect(events.filter((event) => event.kind === 'trouble')).toHaveLength(1)
+
+      initialized.resolve({ account: {}, commands: [], agents: [], output_style: 'default', available_output_styles: [], models: [] })
+      await vi.waitFor(() => expect(events.at(-1)).toEqual({ kind: 'trouble', trouble: null }))
+      session.close()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('classifies a rejection after the timeout without an unhandled rejection', async () => {
+    vi.useFakeTimers()
+    try {
+      const initialized = deferred<never>()
+      vi.mocked(query).mockImplementation((args) => {
+        const fake = fakeStream(args.prompt as AsyncIterable<SDKUserMessage>)
+        fake.stream.initializationResult = vi.fn(() => initialized.promise)
+        return fake.stream
+      })
+      const { events, emit } = collectEvents()
+      const session = new MaidSession('/tmp/cafe-maid-test-wayin-late-failure', emit)
+      session.ask('run-1', 'hello')
+      await vi.advanceTimersByTimeAsync(15_000)
+      initialized.reject(new Error('OAuth credentials expired'))
+      await vi.waitFor(() => expect(events.at(-1)).toEqual({
+        kind: 'trouble', trouble: { reason: 'sign-in', detail: 'OAuth credentials expired' },
+      }))
+      session.close()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('ignores late initialization from a stream replaced after its timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      const initialized = deferred<Awaited<ReturnType<ReturnType<typeof fakeStream>['stream']['initializationResult']>>>()
+      let connections = 0
+      vi.mocked(query).mockImplementation((args) => {
+        const fake = fakeStream(args.prompt as AsyncIterable<SDKUserMessage>)
+        if (connections++ === 0) fake.stream.initializationResult = vi.fn(() => initialized.promise)
+        return fake.stream
+      })
+      const { events, emit } = collectEvents()
+      const session = new MaidSession('/tmp/cafe-maid-test-wayin-stale', emit)
+      session.ask('run-1', 'hello')
+      await vi.advanceTimersByTimeAsync(15_000)
+      session.reset()
+      session.ask('run-2', 'again')
+      initialized.resolve({ account: {}, commands: [], agents: [], output_style: 'default', available_output_styles: [], models: [] })
+      await Promise.resolve()
+      expect(events.filter((event) => event.kind === 'trouble')).toEqual([
+        { kind: 'trouble', trouble: { reason: 'sign-in', detail: 'The session did not report in within 15s.' } },
+      ])
+      session.close()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a timely initialization only once', async () => {
+    trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-wayin-timely', emit)
+    session.ask('run-1', 'hello')
+    await vi.waitFor(() => expect(events.filter((event) => event.kind === 'trouble')).toEqual([
+      { kind: 'trouble', trouble: null },
+    ]))
+    session.close()
   })
 
   it('treats the connection itself dying mid-run as trouble, closing every run without a duplicate per-run error', async () => {
