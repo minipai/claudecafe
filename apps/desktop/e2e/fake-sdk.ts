@@ -161,9 +161,24 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
     if (said.includes('ask permission')) return askPermission()
     if (said.includes('ask a question')) return askQuestion()
     if (said.includes('go offline')) return goOffline()
+    if (said.includes('expire login')) return expireLogin()
     if (said.includes('slow')) return workSlowly()
     if (said.includes('stream regression')) return streamAnswer(sessionId)
     return echo(said)
+  }
+
+  function expireLogin() {
+    const detail = 'Failed to authenticate: OAuth session expired and could not be refreshed'
+    push({
+      type: 'assistant', session_id: sessionId, uuid: randomUUID(), parent_tool_use_id: null,
+      error: 'authentication_failed',
+      message: { model: '<synthetic>', role: 'assistant', content: [{ type: 'text', text: detail }], usage: { output_tokens: 0 } },
+    } as unknown as SDKMessage)
+    push({
+      type: 'result', subtype: 'error_during_execution', session_id: sessionId,
+      uuid: randomUUID(), is_error: true, errors: [detail],
+      usage: { output_tokens: 0 },
+    } as unknown as SDKMessage)
   }
 
   /** A real-shaped partial stream, held at a process event so the e2e can
@@ -275,7 +290,8 @@ function conversationQuery(promptIter: AsyncIterable<SDKUserMessage>, options: O
   }
 
   async function echo(said: string) {
-    const text = `Echo: ${said} 【 開心 ＼(ˆ ᗜ ˆ)／ 】`
+    const separator = said === 'multiline reply' ? '\n\n' : ' '
+    const text = `Echo: ${said}${separator}【 開心 ＼(ˆ ᗜ ˆ)／ 】`
     push(assistantText(text, sessionId))
     push(result(text, sessionId))
   }

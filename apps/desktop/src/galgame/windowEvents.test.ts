@@ -150,7 +150,7 @@ describe('applyWindowEvent', () => {
     expect(scene.resetScene).toHaveBeenCalledOnce()
   })
 
-  it('backlog: restores the transcript, and puts her last line and its mood back on the box', () => {
+  it('backlog: restores the transcript and the exact last reply body with its mood face', () => {
     const scene = createScene()
     applyWindowEvent(
       {
@@ -168,11 +168,10 @@ describe('applyWindowEvent', () => {
       expect.objectContaining({ role: 'assistant', content: 'done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】' }),
     ])
     expect(scene.setExpression).toHaveBeenCalledWith('happy')
-    // The marker is worn on her face, not left typed in the box.
-    expect(scene.cut).toHaveBeenCalledWith('done ♪')
+    expect(scene.cut).toHaveBeenCalledWith('done ♪ 【 開心 ＼(ˆ ᗜ ˆ)／ 】')
   })
 
-  it('backlog: an answer she wrote out comes back laid out, with its marker off it', () => {
+  it('backlog: an answer she wrote out comes back laid out exactly as recorded', () => {
     const scene = createScene()
     applyWindowEvent(
       {
@@ -184,7 +183,7 @@ describe('applyWindowEvent', () => {
       },
       scene,
     )
-    expect(scene.setLaidOut).toHaveBeenCalledWith('first para\n\n- and a list')
+    expect(scene.setLaidOut).toHaveBeenCalledWith('first para\n\n- and a list\n\n【 開心 ＼(ˆ ᗜ ˆ)／ 】')
   })
 
   it('backlog: a line she simply said comes back as speech, not laid out', () => {

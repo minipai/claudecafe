@@ -150,7 +150,7 @@ export const zhTW: Text = {
   trouble: {
     signIn: {
       title: '{her}進不了咖啡廳',
-      body: '這個視窗是透過 Claude Code 工作的，而這台 Mac 上的 Claude Code 還沒登入。登入一次，她就能開始上班了。',
+      body: 'Claude Code 尚未登入，或登入已逾期。請在終端機重新登入，再按「登入好了，讓她進來」讓她繼續工作。',
       open: '在終端機登入',
       retry: '登入好了，讓她進來',
       checking: '正在敲門…',

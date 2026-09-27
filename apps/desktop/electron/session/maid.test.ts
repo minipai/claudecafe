@@ -778,6 +778,59 @@ describe('MaidSession — AskUserQuestion round trip', () => {
 })
 
 describe('MaidSession — trouble paths', () => {
+  it('routes a synthetic authentication failure to sign-in once and closes the run without command output', async () => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-synthetic-auth', emit)
+    session.ask('run-1', '謝謝')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+
+    const detail = 'Failed to authenticate: OAuth session expired and could not be refreshed'
+    const authFailure = {
+      type: 'assistant',
+      message: { model: '<synthetic>', content: [{ type: 'text', text: detail }] },
+      error: 'authentication_failed',
+      parent_tool_use_id: null,
+      uuid: 'auth',
+      session_id: 's',
+    } as unknown as SDKMessage
+    fakes[0].push(authFailure)
+    fakes[0].push(authFailure)
+    fakes[0].push({ type: 'result', subtype: 'error_during_execution', result: detail, is_error: true, uuid: 'result', session_id: 's' } as unknown as SDKMessage)
+
+    await vi.waitFor(() => expect(events).toContainEqual({ kind: 'done', runId: 'run-1' }))
+    expect(events.filter((event) => event.kind === 'trouble' && event.trouble !== null)).toEqual([
+      { kind: 'trouble', trouble: { reason: 'sign-in', detail } },
+    ])
+    expect(events.some((event) => event.kind === 'message' && event.message.type === 'command_output')).toBe(false)
+    expect(events.filter((event) => event.kind === 'done' && event.runId === 'run-1')).toHaveLength(1)
+  })
+
+  it('ignores synthetic auth messages owed by an interrupted run instead of attributing them to the next run', async () => {
+    const fakes = trackConnections()
+    const { events, emit } = collectEvents()
+    const session = new MaidSession('/tmp/cafe-maid-test-stale-synthetic-auth', emit)
+    session.ask('run-1', 'first')
+    await vi.waitFor(() => expect(fakes).toHaveLength(1))
+    session.interrupt()
+    session.ask('run-2', 'second')
+
+    const detail = 'Failed to authenticate: OAuth session expired and could not be refreshed'
+    const authFailure = {
+      type: 'assistant',
+      message: { model: '<synthetic>', content: [{ type: 'text', text: detail }] },
+      error: 'authentication_failed',
+      parent_tool_use_id: null,
+      uuid: 'stale-auth',
+      session_id: 's',
+    } as unknown as SDKMessage
+    fakes[0].push(authFailure)
+    fakes[0].push({ type: 'result', subtype: 'error_during_execution', result: detail, is_error: true, uuid: 'stale-result', session_id: 's' } as unknown as SDKMessage)
+    fakes[0].push(resultMessage('second run succeeded'))
+    await vi.waitFor(() => expect(events).toContainEqual({ kind: 'done', runId: 'run-2' }))
+    expect(events.some((event) => event.kind === 'trouble' && event.trouble !== null)).toBe(false)
+  })
+
   it('raises trouble when the session never reports in within the way-in window', async () => {
     vi.useFakeTimers()
     try {

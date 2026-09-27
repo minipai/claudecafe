@@ -319,8 +319,8 @@ ipcMain.on('cafe:sign-in', () => {
 /** He says he has signed in: open the way in again and look. */
 ipcMain.on('cafe:reconnect', (event) => shiftOf(event)?.reconnect())
 
-/** Starting Claude Code is the sign-in — it asks on a machine that has none. */
-const SIGN_IN = 'claude'
+/** Explicit login also replaces an expired credential on an already configured Mac. */
+const SIGN_IN = 'claude auth login'
 
 /** Another language for the interface. Nothing reopens: the window redraws, and
  * the choice is kept for the next start. */

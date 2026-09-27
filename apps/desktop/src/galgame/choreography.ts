@@ -1,7 +1,7 @@
 import type { AgentMessage, Todo } from '@/agent'
 import { EXPRESSIONS } from '@/agent/expressions'
 import { text } from '@/i18n'
-import { shorten, signed } from './scene/chatlog'
+import { shorten } from './scene/chatlog'
 import type { Hooks } from './dialogue/useSpeech'
 import type { ChatMessage, Expression, Phase, Whisper } from './types'
 
@@ -44,14 +44,13 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
     case 'text_delta':
       // Into the log the moment she says it — the log is the conversation as
       // it happens, not a summary written at the end of the turn. It goes in
-      // the way she wrote it, marker and all. The same full line stays visible
-      // in the dialogue box while the marker also names her face.
-      scene.appendChatMessage('assistant', signed(msg.text, msg.mood))
-      scene.say(signed(msg.text, msg.mood), { onShow: () => scene.wear(msg.expression, msg.mood) })
+      // exactly as received; mood is metadata used only to choose her face.
+      scene.appendChatMessage('assistant', msg.text)
+      scene.say(msg.text, { onShow: () => scene.wear(msg.expression, msg.mood) })
       break
     case 'text_stream':
-      scene.upsertStreamMessage(msg.id, signed(msg.text, msg.mood))
-      scene.stream(msg.id, signed(msg.text, msg.mood), msg.done, { onShow: () => scene.wear(msg.expression, msg.mood) })
+      scene.upsertStreamMessage(msg.id, msg.text)
+      scene.stream(msg.id, msg.text, msg.done, { onShow: () => scene.wear(msg.expression, msg.mood) })
       break
     case 'command_output':
       // The café's own paperwork, handed over on the spot: it is not
@@ -102,7 +101,7 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
       scene.notify(shorten(msg.line))
       // A line already spoken went on the record when she said it, marker
       // included; the result is that same line coming back round.
-      if (!msg.said) scene.appendChatMessage('assistant', signed(msg.line, msg.mood))
+      if (!msg.said) scene.appendChatMessage('assistant', msg.line)
       // A long piece of work leaves her board up; anything shorter puts her
       // back to waiting the moment the line lands.
       scene.setPhase(msg.tier === 'heavy' ? 'done' : 'idle')
@@ -111,14 +110,14 @@ export function choreograph(msg: AgentMessage, scene: Scene) {
       if (msg.tier === 'medium') {
         // Laid out rather than typed, but it still waits its turn behind
         // anything she said on the way here.
-          scene.say(signed(msg.line, msg.mood), {
+          scene.say(msg.line, {
           onShow: () => {
             scene.wear(msg.expression, msg.mood)
-            scene.setLaidOut(signed(msg.line, msg.mood))
+            scene.setLaidOut(msg.line)
           },
         })
       } else {
-        scene.say(signed(msg.line, msg.mood), { onShow: () => scene.wear(msg.expression, msg.mood) })
+        scene.say(msg.line, { onShow: () => scene.wear(msg.expression, msg.mood) })
       }
       break
   }

@@ -37,13 +37,11 @@ describe('choreograph', () => {
     expect(Object.values(scene).every((fn) => (fn as ReturnType<typeof vi.fn>).mock.calls.length === 0)).toBe(true)
   })
 
-  it('text_delta: keeps the signed line in the log and dialogue while wearing its face', () => {
+  it('text_delta: preserves the raw body in the log and dialogue while wearing its face', () => {
     const scene = createScene()
     choreograph({ type: 'text_delta', text: 'hello there', expression: 'happy', mood: '【 開心 】' }, scene)
-    // On the record the way she wrote it, marker and all — written once, when
-    // she said it, rather than gone back over at the end of the turn.
-    expect(scene.appendChatMessage).toHaveBeenCalledWith('assistant', 'hello there 【 開心 】')
-    expect(scene.say).toHaveBeenCalledWith('hello there 【 開心 】', expect.any(Object))
+    expect(scene.appendChatMessage).toHaveBeenCalledWith('assistant', 'hello there')
+    expect(scene.say).toHaveBeenCalledWith('hello there', expect.any(Object))
     showLastLine(scene)
     expect(scene.wear).toHaveBeenCalledWith('happy', '【 開心 】')
   })
@@ -61,9 +59,9 @@ describe('choreograph', () => {
     const scene = createScene()
     choreograph({ type: 'text_stream', id: 'block-1', text: '**hel', done: false, mood: '【 嬉しい 】' }, scene)
     choreograph({ type: 'text_stream', id: 'block-1', text: '**hello**', done: true, expression: 'happy' }, scene)
-    expect(scene.upsertStreamMessage).toHaveBeenNthCalledWith(1, 'block-1', '**hel 【 嬉しい 】')
+    expect(scene.upsertStreamMessage).toHaveBeenNthCalledWith(1, 'block-1', '**hel')
     expect(scene.upsertStreamMessage).toHaveBeenNthCalledWith(2, 'block-1', '**hello**')
-    expect(scene.stream).toHaveBeenNthCalledWith(1, 'block-1', '**hel 【 嬉しい 】', false, expect.any(Object))
+    expect(scene.stream).toHaveBeenNthCalledWith(1, 'block-1', '**hel', false, expect.any(Object))
     expect(scene.stream).toHaveBeenNthCalledWith(2, 'block-1', '**hello**', true, expect.any(Object))
     expect(scene.say).not.toHaveBeenCalled()
   })
@@ -162,12 +160,12 @@ describe('choreograph', () => {
   describe('result: light', () => {
     it('not already said: logs it signed, says it, and goes idle', () => {
       const scene = createScene()
-      choreograph({ type: 'result', tier: 'light', line: 'all done~', mood: '【 開心 】', expression: 'happy' }, scene)
-      expect(scene.notify).toHaveBeenCalledWith('all done~')
-      expect(scene.appendChatMessage).toHaveBeenCalledWith('assistant', 'all done~ 【 開心 】')
+      choreograph({ type: 'result', tier: 'light', line: 'all done~  【 開心 】', mood: '【 開心 】', expression: 'happy' }, scene)
+      expect(scene.notify).toHaveBeenCalledWith('all done~  【 開心 】')
+      expect(scene.appendChatMessage).toHaveBeenCalledWith('assistant', 'all done~  【 開心 】')
       expect(scene.setPhase).toHaveBeenCalledWith('idle')
       expect(scene.setLaidOut).not.toHaveBeenCalled()
-      expect(scene.say).toHaveBeenCalledWith('all done~ 【 開心 】', expect.any(Object))
+      expect(scene.say).toHaveBeenCalledWith('all done~  【 開心 】', expect.any(Object))
       showLastLine(scene)
       expect(scene.wear).toHaveBeenCalledWith('happy', '【 開心 】')
     })

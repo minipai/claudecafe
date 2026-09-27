@@ -69,10 +69,10 @@ describe('Turn — text blocks', () => {
     const second = stream({ type: 'content_block_start', index: 2, content_block: { type: 'text', text: 'Second page' } })[0]
     if (second?.type !== 'text_stream') throw new Error('expected streamed text')
     const secondComplete = turn.read(assistant([textBlock(`Second page ${HAPPY}`)]))
-    expect(secondComplete).toContainEqual(expect.objectContaining({ type: 'text_stream', id: second.id, text: 'Second page', done: true, mood: HAPPY }))
+    expect(secondComplete).toContainEqual(expect.objectContaining({ type: 'text_stream', id: second.id, text: `Second page ${HAPPY}`, done: true, mood: HAPPY }))
     expect(textDeltas(secondComplete)).toEqual([])
     expect(stream({ type: 'content_block_stop', index: 2 })).toContainEqual(expect.objectContaining({ id: second.id, done: true, mood: HAPPY }))
-    expect(turn.read(result('Second page'))).toMatchObject([{ type: 'result', line: 'Second page', said: true }])
+    expect(turn.read(result(`Second page ${HAPPY}`))).toMatchObject([{ type: 'result', line: `Second page ${HAPPY}`, said: true }])
   })
 
   it('streams cumulative snapshots before the completed assistant and marks the result already said', () => {
@@ -89,13 +89,13 @@ describe('Turn — text blocks', () => {
     expect(turn.read(result('Hello there'))).toMatchObject([{ type: 'result', line: 'Hello there', said: true }])
   })
 
-  it('holds an unfinished mood marker out of snapshots and supplies it when complete', () => {
+  it('preserves partial and complete mood marker text in stream snapshots', () => {
     const turn = new Turn('hi')
     const stream = (event: unknown) => turn.read({ type: 'stream_event', event, parent_tool_use_id: null, uuid: 'u', session_id: 's' } as unknown as SDKMessage)
     stream({ type: 'message_start', message: { model: 'claude-sonnet' } })
     stream({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } })
-    stream({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: `Hi ${HAPPY.slice(0, 4)}` } })
-    expect(stream({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: HAPPY.slice(4) } })[0]).toMatchObject({ text: 'Hi', mood: HAPPY, expression: 'happy' })
+    expect(stream({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: `Hi ${HAPPY.slice(0, 4)}` } })[0]).toMatchObject({ text: `Hi ${HAPPY.slice(0, 4)}` })
+    expect(stream({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: HAPPY.slice(4) } })[0]).toMatchObject({ text: `Hi ${HAPPY}`, mood: HAPPY, expression: 'happy' })
   })
 
   it('reconciles canonical corrections under the same id and never emits a duplicate when tools follow', () => {
@@ -131,7 +131,7 @@ describe('Turn — text blocks', () => {
     expect(nextBlock.id).not.toBe(first.id)
     stream({ type: 'content_block_start', index: 1, content_block: { type: 'text', text: HAPPY } })
     const signed = stream({ type: 'content_block_stop', index: 1 })
-    expect(signed).toContainEqual(expect.objectContaining({ type: 'text_stream', id: second.id, text: 'Same', mood: HAPPY }))
+    expect(signed).toContainEqual(expect.objectContaining({ type: 'text_stream', text: HAPPY, mood: HAPPY }))
     stream({ type: 'message_start', message: { model: '<synthetic>' } })
     expect(stream({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'printed' } })).toEqual([])
   })
@@ -158,10 +158,18 @@ describe('Turn — text blocks', () => {
 })
 
 describe('Turn — mood markers', () => {
-  it('strips the marker from the text and resolves the expression', () => {
+  it('preserves marker and whitespace in the text while resolving the expression', () => {
     const turn = new Turn('hi')
-    const out = turn.read(assistant([textBlock(`So happy~ ${HAPPY}`), toolUseBlock('t1', 'Read', { file_path: 'a' })]))
-    expect(textDeltas(out)).toEqual([{ type: 'text_delta', text: 'So happy~', expression: 'happy', mood: HAPPY }])
+    const body = `So happy~  ${HAPPY}\n`
+    const out = turn.read(assistant([textBlock(body), toolUseBlock('t1', 'Read', { file_path: 'a' })]))
+    expect(textDeltas(out)).toEqual([{ type: 'text_delta', text: body, expression: 'happy', mood: HAPPY }])
+  })
+
+  it.each([' ', '\n', '\n\n'])('keeps the authored separator %j before the marker', (separator) => {
+    const turn = new Turn('hi')
+    const body = `Echo: hello there${separator}${HAPPY}`
+    const out = turn.read(assistant([textBlock(body), toolUseBlock('t1', 'Read')]))
+    expect(textDeltas(out)).toEqual([{ type: 'text_delta', text: body, expression: 'happy', mood: HAPPY }])
   })
 
   it('carries the held ending line\'s own marker and face onto the result', () => {
@@ -171,7 +179,7 @@ describe('Turn — mood markers', () => {
     expect(out[0]).toEqual({
       type: 'result',
       tier: 'light',
-      line: 'So happy~',
+      line: `So happy~ ${HAPPY}`,
       mood: HAPPY,
       expression: 'happy',
       said: false,
@@ -187,7 +195,7 @@ describe('Turn — mood markers', () => {
     expect(out[0]).toEqual({
       type: 'result',
       tier: 'light',
-      line: 'All done~',
+      line: `All done~ ${HAPPY}`,
       mood: HAPPY,
       expression: 'happy',
       said: false,
@@ -211,13 +219,13 @@ describe('Turn — mood markers', () => {
     })
   })
 
-  it('signs the line before it when she puts the marker in a block of its own', () => {
-    // The cue tells her to sign off on a line of her own, and she sometimes
-    // takes that as far as a separate block. The marker still belongs to what
-    // she just said, so the line goes out signed rather than bare.
+  it('keeps a marker-only SDK text block as its own body', () => {
     const turn = new Turn('hi')
     const out = turn.read(assistant([textBlock('All done~'), textBlock(HAPPY), toolUseBlock('t1', 'Read', { file_path: 'a' })]))
-    expect(textDeltas(out)).toEqual([{ type: 'text_delta', text: 'All done~', expression: 'happy', mood: HAPPY }])
+    expect(textDeltas(out)).toEqual([
+      { type: 'text_delta', text: 'All done~', expression: undefined, mood: undefined },
+      { type: 'text_delta', text: HAPPY, expression: 'happy', mood: HAPPY },
+    ])
   })
 
   it('a plain line with no marker keeps a straight face', () => {
@@ -318,6 +326,28 @@ describe('Turn — <synthetic> local commands', () => {
     const turn = new Turn('/context')
     const out = turn.read(assistant([], undefined, '<synthetic>'))
     expect(out).toEqual([])
+  })
+
+  it('does not turn a synthetic authentication failure into command output and suppresses its error result', () => {
+    const turn = new Turn('謝謝')
+    const message = assistant([textBlock('Failed to authenticate: OAuth session expired and could not be refreshed')], undefined, '<synthetic>') as Extract<SDKMessage, { type: 'assistant' }>
+    message.error = 'authentication_failed'
+    expect(turn.read(message)).toEqual([])
+    expect(turn.read(result('Failed to authenticate: OAuth session expired and could not be refreshed', 'error_during_execution'))).toEqual([])
+  })
+
+  it('filters the known synthetic OAuth failure text when older SDKs omit the structured error', () => {
+    const turn = new Turn('謝謝')
+    const message = 'Failed to authenticate: OAuth session expired and could not be refreshed'
+    expect(turn.read(assistant([textBlock(message)], undefined, '<synthetic>'))).toEqual([])
+    expect(turn.read(result(message, 'error_during_execution'))).toEqual([])
+  })
+
+  it('still shows valid synthetic command output after failures are filtered', () => {
+    const turn = new Turn('/usage')
+    expect(turn.read(assistant([textBlock('Usage report: OAuth credentials; use /login to change accounts')], undefined, '<synthetic>'))).toEqual([
+      { type: 'command_output', label: '/usage', body: 'Usage report: OAuth credentials; use /login to change accounts' },
+    ])
   })
 })
 

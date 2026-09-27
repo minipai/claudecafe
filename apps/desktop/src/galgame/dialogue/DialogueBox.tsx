@@ -157,7 +157,7 @@ export function DialogueBox({
                 dangerouslySetInnerHTML={{
                   __html: streamed
                     ? marked.parse(line, { async: false, breaks: true })
-                    : marked.parseInline(line, { async: false }),
+                    : marked.parseInline(line, { async: false, breaks: true }),
                 }}
               />
               {isTyping && (

@@ -106,18 +106,16 @@ export function applyWindowEvent(event: BridgeEvent, scene: WindowScene) {
     scene.setChatMessages(
       event.lines.map((entry: BacklogLine) => createChatMessage(entry.role, entry.content, entry.at)),
     )
-    // Her last line comes back to the box the way the scene wants it —
-    // marker off, and worn on her face instead.
+    // Restore the exact reply body; the marker also supplies its face.
     const last = [...event.lines].reverse().find((entry) => entry.role === 'assistant')
     if (last) {
       const marker = last.content.match(/【[^【】]*】\s*$/)
       const face = marker && faceFor(marker[0])
       if (face) scene.setExpression(face)
-      const spoken = marker ? last.content.slice(0, marker.index).trim() : last.content
-      scene.cut(spoken)
+      scene.cut(last.content)
       // She wrote this one out rather than saying it, so it comes back laid out
       // rather than typed — read as speech, the paragraphs run together.
-      if (last.laidOut) scene.setLaidOut(spoken)
+      if (last.laidOut) scene.setLaidOut(last.content)
     }
   }
 }

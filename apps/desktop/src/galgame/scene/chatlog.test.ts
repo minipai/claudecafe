@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createChatMessage, createPreviewHistory, glance, recordToolResult, shorten, signed } from './chatlog'
+import { createChatMessage, createPreviewHistory, glance, recordToolResult, shorten } from './chatlog'
 
 describe('createChatMessage', () => {
   it('assigns increasing ids', () => {
@@ -57,17 +57,6 @@ describe('glance', () => {
     const pasted = glance('x'.repeat(500))
     expect(pasted.length).toBe(89)
     expect(pasted.endsWith('…')).toBe(true)
-  })
-})
-
-describe('signed', () => {
-  it('appends the mood marker with a space', () => {
-    expect(signed('Done ♪', '【 開心 】')).toBe('Done ♪ 【 開心 】')
-  })
-
-  it('returns the line as-is when there is no mood', () => {
-    expect(signed('Done ♪')).toBe('Done ♪')
-    expect(signed('Done ♪', undefined)).toBe('Done ♪')
   })
 })
 

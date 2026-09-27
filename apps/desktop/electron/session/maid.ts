@@ -155,7 +155,7 @@ export class MaidSession {
   private stream: Query | null = null
   private prompts = new PromptQueue()
   /** Turns waiting their turn — the SDK answers them one at a time, in order. */
-  private runs: { runId: string; turn: Turn }[] = []
+  private runs: { runId: string; turn: Turn; authFailureReported?: boolean }[] = []
   /** A turn the CLI started itself when a background task reported in after
    * its launching renderer run had already ended. Once it starts, it keeps
    * ownership through its result even if the master submits another prompt
@@ -602,6 +602,20 @@ export class MaidSession {
           continue
         }
         if (!run) continue
+        // Synthetic assistant messages are how the CLI reports failures as
+        // well as local slash-command output. Only the active top-level run
+        // owns its auth failure; stale and ambient messages were routed above.
+        if (sdk.type === 'assistant' && !sdk.parent_tool_use_id && sdk.message.model === '<synthetic>') {
+          const detail = sdk.message.content
+            .flatMap((block) => block.type === 'text' ? [block.text] : [])
+            .join('\n\n')
+            .trim()
+          const reason = sdk.error === 'authentication_failed' || (!sdk.error && /^Failed to authenticate:/i.test(detail)) ? 'sign-in' : null
+          if (reason === 'sign-in' && !run.authFailureReported) {
+            run.authFailureReported = true
+            this.emit({ kind: 'trouble', trouble: { reason, detail } })
+          }
+        }
         for (const message of run.turn.read(sdk)) {
           this.emit({ kind: 'message', runId: run.runId, message })
         }

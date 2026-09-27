@@ -117,21 +117,9 @@ export class Turn {
   }
 
   private streamSnapshot(block: { id: string; text: string }, done: boolean): AgentMessage[] {
-    const moodMatch = block.text.match(/【[^【】]*】\s*$/)
-    const incompleteMarker = block.text.match(/【[^【】]*$/)
-    const visibleRaw = moodMatch ? block.text.slice(0, moodMatch.index) : incompleteMarker ? block.text.slice(0, incompleteMarker.index) : block.text
-    const { text, expression } = readMood(visibleRaw)
-    if (!text && moodMatch && this.pendingLine?.streamId) {
-      const parsed = readMood(block.text)
-      const previous = { ...this.pendingLine, expression: parsed.expression, marker: parsed.marker }
-      this.pendingLine = previous
-      return [{ type: 'text_stream', id: previous.streamId!, text: previous.text, done: true, expression: parsed.expression ?? undefined, mood: parsed.marker ?? undefined }]
-    }
-    if (!text) return []
-    const marker = moodMatch?.[0] ?? null
-    const face = moodMatch ? faceFor(marker!) : expression
-    this.pendingLine = { text, expression: face, marker, streamId: block.id }
-    return [{ type: 'text_stream', id: block.id, text, done, expression: face ?? undefined, mood: marker ?? undefined }]
+    const { expression, marker } = readMood(block.text)
+    this.pendingLine = { text: block.text, expression, marker, streamId: block.id }
+    return [{ type: 'text_stream', id: block.id, text: block.text, done, expression: expression ?? undefined, mood: marker ?? undefined }]
   }
 
   private readSystem(sdk: Extract<SDKMessage, { type: 'system' }>): AgentMessage[] {
@@ -150,10 +138,14 @@ export class Turn {
    */
   private readPrinted(sdk: Extract<SDKMessage, { type: 'assistant' }>): AgentMessage[] {
     this.printed = true
+    // The synthetic assistant channel also carries failures. They are not
+    // locally answered commands, even when the CLI printed the error text.
+    if (sdk.error) return []
     const body = sdk.message.content
       .flatMap((block) => (block.type === 'text' ? [block.text] : []))
       .join('\n\n')
       .trim()
+    if (/^Failed to authenticate:/i.test(body)) return []
     if (!body) return []
     return [{ type: 'command_output', label: this.prompt.trim().split(/\s+/)[0], body }]
   }
@@ -173,7 +165,8 @@ export class Turn {
 
     for (const block of sdk.message.content) {
       if (block.type === 'text') {
-        const { text, expression, marker } = readMood(block.text)
+        const { expression, marker } = readMood(block.text)
+        const text = block.text
         // Claude Code emits an assistant message for each completed block:
         // its content[0] can belong to stream index 1, after a thinking block.
         // Consume streamed text blocks in order, keeping their SDK indices for
@@ -189,14 +182,9 @@ export class Turn {
           this.pendingLine = { text, expression, marker, streamId: streamed.id }
           continue
         }
-        // She sometimes signs off in a block of its own — the marker belongs
-        // to the line before it, not to nothing at all. Signed where it stands,
-        // the line still goes out complete and in one piece.
-        if (!text && marker && this.pendingLine) {
-          this.pendingLine = { ...this.pendingLine, expression, marker }
-          if (this.pendingLine.streamId) out.push({ type: 'text_stream', id: this.pendingLine.streamId, text: this.pendingLine.text, done: true, expression: expression ?? undefined, mood: marker })
-          continue
-        }
+        // Each SDK text block is its own body, including a marker-only block.
+        // Flush the prior block and keep this one verbatim rather than merging
+        // the two or transferring its marker across the boundary.
         this.flush(out)
         this.pendingLine = text ? { text, expression, marker } : null
       } else if (block.type === 'thinking') {
@@ -296,9 +284,14 @@ export class Turn {
       this.printed = false
       return []
     }
+    if (sdk.subtype !== 'success') {
+      this.pendingLine = null
+      this.spoken = null
+      return []
+    }
     const held = this.pendingLine
-    const ending = held ?? (sdk.subtype === 'success' ? readMood(sdk.result) : null)
-    const text = ending?.text ?? ''
+    const ending = held ?? readMood(sdk.result)
+    const text = ending.text
     // The face belongs to whichever line is actually ending the turn — the
     // held one if there was one, or the result text's own marker when the
     // marker rode along in the result instead of a streamed block.
@@ -322,17 +315,11 @@ export class Turn {
  * board, the plan prompt — so they don't also whisper past as narration. */
 const SILENT_TOOLS = new Set(['AskUserQuestion', 'ExitPlanMode', 'TodoWrite', 'TaskCreate', 'TaskUpdate'])
 
-/**
- * A maid ends her replies with a mood marker — `【 開心 (˶ˆᗜˆ˵) 】`. That is
- * where the sprite's face comes from: the kaomoji picks the artwork and the
- * marker itself is taken off the line before she says it. No marker (a plain
- * project with no persona) just means she keeps a straight face.
- */
+/** Read expression metadata without changing the model-authored body. */
 function readMood(raw: string) {
-  const marker = raw.match(/【[^【】]*】\s*$/)
-  const text = (marker ? raw.slice(0, marker.index) : raw).trim()
-  if (!marker) return { text, expression: null, marker: null }
-  return { text, expression: faceFor(marker[0]), marker: marker[0] }
+  const marker = raw.match(/【[^【】]*】(?=\s*$)/)
+  if (!marker) return { text: raw, expression: null, marker: null }
+  return { text: raw, expression: faceFor(marker[0]), marker: marker[0] }
 }
 
 /** The checklist as TodoWrite writes it: content plus a status the board knows. */

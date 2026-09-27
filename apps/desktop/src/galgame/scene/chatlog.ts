@@ -33,12 +33,6 @@ export function glance(text: string) {
   return oneLine.length > 90 ? `${oneLine.slice(0, 88)}…` : oneLine
 }
 
-/** Her line as she wrote it: the mood marker belongs on the record, so it goes
- * on at the moment the line does — the box is the only place it comes off. */
-export function signed(line: string, mood?: string) {
-  return mood ? `${line} ${mood}` : line
-}
-
 export function createPreviewHistory(greeting: string) {
   const now = Date.now()
   return [

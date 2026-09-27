@@ -68,6 +68,11 @@ The dev build and a packaged build keep separate state (`ClaudeCafe (dev)`
 versus `ClaudeCafe` under Application Support), so you can run one while using
 the other.
 
+Expired Claude Code credentials open the sign-in recovery panel with the original
+error available under details. Its Terminal action runs `claude auth login`;
+after signing in, use the check button to reconnect. Authentication failures are
+not shown as successful slash-command output.
+
 ## Code layout
 
 Keep implementation and its tests together, grouped by responsibility. Aim for

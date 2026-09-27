@@ -7,7 +7,7 @@ import type { Trouble } from '@/agent'
 
 /** The one thing to go and type when she is locked out. It is a command, not a
  * sentence, so it is the same in every language. */
-const SIGN_IN = 'claude'
+const SIGN_IN = 'claude auth login'
 
 /** What fixes a missing or outdated Claude Code, typed in Terminal the same way. */
 const FIX = {
@@ -67,20 +67,23 @@ export function TroublePanel({ trouble, onClose }: { trouble: Trouble | null; on
                 {SIGN_IN}
               </pre>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => window.cafe?.signIn()}>
-                  {t.signIn.open}
-                </Button>
+                <form onSubmit={(event) => { event.preventDefault(); window.cafe?.signIn() }}>
+                  <Button type="submit" size="sm">{t.signIn.open}</Button>
+                </form>
+                <form onSubmit={(event) => {
+                  event.preventDefault()
+                  setRetrying(true)
+                  window.cafe?.reconnect()
+                }}>
                 <Button
+                  type="submit"
                   size="sm"
                   variant="secondary"
                   disabled={retrying}
-                  onClick={() => {
-                    setRetrying(true)
-                    window.cafe?.reconnect()
-                  }}
                 >
                   {retrying ? t.signIn.checking : t.signIn.retry}
                 </Button>
+                </form>
               </div>
             </>
           )}
