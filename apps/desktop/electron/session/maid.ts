@@ -696,11 +696,12 @@ export class MaidSession {
   }
 
   private async decide(toolName: string, input: Record<string, unknown>): Promise<PermissionResult> {
+    // Her own two tools only move the scene around — nothing to ask about, and
+    // an ambient turn with no run behind it still gets to change her face.
+    if (toolName === EXPRESSION_TOOL) return { behavior: 'allow' }
+
     const run = this.runs[0]
     if (!run) return { behavior: 'deny', message: 'No conversation is running.' }
-
-    // Her own two tools only move the scene around — nothing to ask about.
-    if (toolName === EXPRESSION_TOOL) return { behavior: 'allow' }
 
     if (toolName === 'AskUserQuestion') {
       return { behavior: 'allow', updatedInput: await this.collectAnswers(run.runId, input) }
