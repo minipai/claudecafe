@@ -22,6 +22,19 @@ export function personaFiles(variant = ""): string[] {
   return variant ? [`persona.${variant}.md`, "persona.md"] : ["persona.md"]
 }
 
+/** Orders two dotted versions numerically; either one unreadable counts as a tie. */
+export function compareVersions(a: string, b: string): number {
+  const parts = (version: string) => /^\d+(\.\d+)*$/.test(version) ? version.split(".").map(Number) : null
+  const left = parts(a)
+  const right = parts(b)
+  if (!left || !right) return 0
+  for (let index = 0; index < Math.max(left.length, right.length); index++) {
+    const difference = (left[index] ?? 0) - (right[index] ?? 0)
+    if (difference) return Math.sign(difference)
+  }
+  return 0
+}
+
 export function personaBody(text: string): string {
   return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "")
 }

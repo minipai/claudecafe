@@ -54,8 +54,9 @@ actual persona.
   them as ordinary text cells. It syncs the three published packs into
   `characters/` and accepts additional folders there.
 - **The Claude Code plugin** bundles the three maids' personas and terminal
-  sprites. It checks `$XDG_CONFIG_HOME/claudecafe/characters/` first, then its
-  bundled cast; it does not download character packs.
+  sprites. It reads `$XDG_CONFIG_HOME/claudecafe/characters/` beside its
+  bundled cast and uses whichever copy of a maid has the newer persona version,
+  the user's on a tie; it does not download character packs.
 
 ## Publishing a character pack
 

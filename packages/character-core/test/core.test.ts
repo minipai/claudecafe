@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import {
   commitAuthorship,
+  compareVersions,
   readContext,
   defaultFace,
   expressionToolDescription,
@@ -20,6 +21,13 @@ describe("persona contracts", () => {
   test("a variant is tried before the default persona", () => {
     expect(personaFiles()).toEqual(["persona.md"])
     expect(personaFiles("zh")).toEqual(["persona.zh.md", "persona.md"])
+  })
+
+  test("versions compare numerically, and an unreadable one ties", () => {
+    expect(compareVersions("1.10.0", "1.9.2")).toBe(1)
+    expect(compareVersions("1.2", "1.2.1")).toBe(-1)
+    expect(compareVersions("1.3.0", "1.3")).toBe(0)
+    expect(compareVersions("", "1.3.0")).toBe(0)
   })
 
   test("authorship is derived from frontmatter", () => {

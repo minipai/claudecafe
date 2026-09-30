@@ -1,5 +1,6 @@
 import {
   commitAuthorship,
+  compareVersions,
   readContext,
   expressionPrompt,
   expressionToolDescription,
@@ -206,7 +207,7 @@ async function loadCharacter($, root, config, sessionID) {
   const id = resolveCharacter({ session, config: configured, pool })
   if (!id) return null
   if (!session && !configured) await $.fs.write(drawn, id)
-  const pack = await packFolder($, dirs, id)
+  const pack = await packFolder($, dirs, id, variant)
   const path = await personaFile($, id, pack, variant)
   if (!path) return null
   const text = await read($, path)
@@ -219,34 +220,42 @@ async function loadCharacter($, root, config, sessionID) {
 }
 
 async function castPool($, dirs, variant) {
-  const ids = new Map()
+  const ids = new Set()
   for (const dir of dirs) {
     for (const entry of await list($, dir)) {
-      if (!['directory', 'dir'].includes(entry.kind) || entry.name.startsWith('.') || ids.has(entry.name)) continue
-      const path = await packPersona($, `${dir}/${entry.name}`, variant)
-      if (path) ids.set(entry.name, path)
+      if (['directory', 'dir'].includes(entry.kind) && !entry.name.startsWith('.')) ids.add(entry.name)
     }
   }
   const available = []
-  for (const [id, path] of ids) {
-    const text = await read($, path)
-    if (!parsePersona(text).offDuty) available.push(id)
+  for (const id of ids) {
+    const pack = await packFolder($, dirs, id, variant)
+    if (pack && !parsePersona(await read($, await packPersona($, pack, variant))).offDuty) available.push(id)
   }
   if (available.length) return available.sort()
   const bundled = `${$.plugin.root}/fallback/noname.md`
   return (await $.fs.exists(bundled)) ? ['noname'] : []
 }
 
-/** The user's character folders first, then the cast bundled with the plugin. */
+/** The user's character folders, then the cast bundled with the plugin. */
 function castDirs($, root) {
   return [`${root}/characters`, `${$.plugin.root}/characters`]
 }
 
-async function packFolder($, dirs, id) {
+/**
+ * The newest copy of a character: a user's folder goes stale when only the
+ * plugin updates, so the bundled cast wins on a higher persona version. The
+ * user's copy wins a tie, which keeps hand-made packs in charge.
+ */
+async function packFolder($, dirs, id, variant) {
+  let newest = null
   for (const dir of dirs) {
-    if (await exists($, `${dir}/${id}`)) return `${dir}/${id}`
+    const folder = `${dir}/${id}`
+    const path = await packPersona($, folder, variant)
+    if (!path) continue
+    const version = parsePersona(await read($, path)).version
+    if (!newest || compareVersions(version, newest.version) > 0) newest = { folder, version }
   }
-  return null
+  return newest?.folder ?? null
 }
 
 async function personaFile($, id, pack, variant) {

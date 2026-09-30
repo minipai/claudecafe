@@ -22,7 +22,9 @@ $XDG_CONFIG_HOME/claudecafe/           # default ~/.config/claudecafe
 The built plugin also bundles the cast that has terminal pixels under its own
 `characters/<id>/` (personas and GIFs only, copied from `packages/characters`
 by `scripts/build-plugin.sh`, under that package's license). A user
-pack with the same id wins over the bundled one. The bundled
+pack with the same id wins over the bundled one unless the bundled persona
+version is newer, so a pack left behind by an older install cannot hide the
+faces a plugin update brings. The bundled
 `fallback/noname.md` steps in when every character is off duty.
 
 ## Claude function profile

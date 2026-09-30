@@ -29,7 +29,7 @@ not in config.
 
 The draw pool includes any `characters/<id>/` folders under `DATA_ROOT` and the
 cast bundled in the plugin's own `characters/` directory; a user folder wins over
-a bundled one with the same id. A character uses a lowercase folder id and a
+a bundled one with the same id unless the bundled persona version is newer. A character uses a lowercase folder id and a
 `persona.md` (plus optional `persona.<variant>.md`) with YAML frontmatter holding `name:` and a body containing
 persona instructions. The bundled fallback, used when every character is off
 duty, is under the plugin's `fallback/` directory.

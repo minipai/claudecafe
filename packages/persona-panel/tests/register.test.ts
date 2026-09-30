@@ -154,6 +154,34 @@ describe('Portrait pane', () => {
     expect(context.blocks[0]?.text).toContain('Kotone body.')
   })
 
+  for (const [mine, persona] of [
+    ['1.2.2', 'Bundled body.'],
+    ['1.3.0', 'My body.'],
+    ['1.4.0', 'My body.'],
+  ] as const) {
+    test(`takes the newer of her own copy (${mine}) and the bundled 1.3.0`, async ($, on) => {
+      const files: Record<string, string> = {
+        '/claudecafe/characters/kotone/persona.md': `---\nname: ことね\nversion: ${mine}\n---\nMy body.\n`,
+        '/dist/characters/kotone/persona.md': '---\nname: ことね\nversion: 1.3.0\n---\nBundled body.\n',
+      }
+      const file = (path = '') => Object.entries(files).find(([suffix]) => path.endsWith(suffix))?.[1]
+      on('fs.list', (_, e) => ({
+        value: e.path?.endsWith('/characters') ? [{ name: 'kotone', kind: 'directory' as const, size: 0, isLink: false }] : [],
+      }))
+      on('fs.read', (_, e) => ({ value: file(e.path) ?? '' }))
+      on('fs.exists', (_, e) => ({ value: file(e.path) !== undefined }))
+      on('fs.write', () => ({ value: undefined }))
+      on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
+      on('session.id', () => ({ value: 'test-session' }))
+      on('session.cwd', () => ({ value: '' }))
+      on('session.surfaces', () => ({ value: ['desktop'] }))
+      on('http.fetch', () => { throw new Error('offline') })
+      mock.clock(on)
+      on('prompt.context', (_, e) => e)
+      expect((await $.prompt.context({ blocks: [] })).blocks[0]?.text).toContain(persona)
+    })
+  }
+
   for (const [config, persona, reply] of [
     [{}, 'Default body.', null],
     [{ variant: 'zh', lang: 'Traditional Chinese' }, '中文內容。', 'Respond in Traditional Chinese.'],

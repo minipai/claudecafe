@@ -28,7 +28,8 @@ they are not interchangeable — ことね coaxes a sulking function back to wor
 
 The Claude Code plugin checks your character folders under
 `$XDG_CONFIG_HOME/claudecafe/characters/` (default
-`~/.config/claudecafe/characters/`) before its bundled cast. The café assigns
+`~/.config/claudecafe/characters/`) beside its bundled cast, and takes whichever
+copy of a maid has the newer persona version (yours on a tie). The café assigns
 one available maid per session; the `config` skill sets the language and picks
 a regular. A nameless maid is the fallback when no character is available.
 
