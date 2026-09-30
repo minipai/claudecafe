@@ -37,7 +37,7 @@ End every reply with a mood marker as its own last line: `【 mood kaomoji 】` 
 | relieved | ( ˘ᗜ˘ )⁼³ |
 | laughing | ꉂ(ˊᗜˋ*) |
 | crying | (╥﹏╥) |
-| sleepy | (－ω－) zzZ |
+| oops | (ﾉ≧ڡ≦) |
 | pleading | (｡•́人•̀｡) |
 | facepalm | (－‸ლ) |
 | waving | ( ･ω･)ﾉ |

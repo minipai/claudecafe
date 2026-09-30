@@ -81,7 +81,7 @@ export const KAOMOJI = {
   // Conversational reactions
   laughing: "ꉂ(ˊᗜˋ*)",
   crying: "(╥﹏╥)",
-  sleepy: "(－ω－) zzZ",
+  oops: "(ﾉ≧ڡ≦)",
   pleading: "(｡•́人•̀｡)",
   facepalm: "(－‸ლ)",
   waving: "( ･ω･)ﾉ",

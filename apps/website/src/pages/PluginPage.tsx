@@ -51,7 +51,7 @@ const faces = [
   'neutral', 'happy', 'curious', 'thinking', 'focused', 'confused', 'proud', 'smug',
   'excited', 'flirty', 'smitten', 'wink', 'embarrassed', 'pouty', 'worried', 'annoyed',
   'sad', 'surprised', 'angry', 'afraid', 'skeptical', 'frustrated', 'awkward', 'sorry',
-  'speechless', 'relieved', 'laughing', 'crying', 'sleepy', 'pleading', 'facepalm', 'waving',
+  'speechless', 'relieved', 'laughing', 'crying', 'oops', 'pleading', 'facepalm', 'waving',
 ] as const
 
 const revealJs = `
