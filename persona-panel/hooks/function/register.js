@@ -41,7 +41,7 @@ var KAOMOJI = {
   relieved: "( ˘ᗜ˘ )⁼³",
   laughing: "ꉂ(ˊᗜˋ*)",
   crying: "(╥﹏╥)",
-  sleepy: "(－ω－) zzZ",
+  oops: "(ﾉ≧ڡ≦)",
   pleading: "(｡•́人•̀｡)",
   facepalm: "(－‸ლ)",
   waving: "( ･ω･)ﾉ"
