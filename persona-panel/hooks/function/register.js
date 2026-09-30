@@ -156,6 +156,19 @@ function parsePersona(text) {
 function personaFiles(variant = "") {
   return variant ? [`persona.${variant}.md`, "persona.md"] : ["persona.md"];
 }
+function compareVersions(a, b) {
+  const parts = (version) => /^\d+(\.\d+)*$/.test(version) ? version.split(".").map(Number) : null;
+  const left = parts(a);
+  const right = parts(b);
+  if (!left || !right)
+    return 0;
+  for (let index = 0;index < Math.max(left.length, right.length); index++) {
+    const difference = (left[index] ?? 0) - (right[index] ?? 0);
+    if (difference)
+      return Math.sign(difference);
+  }
+  return 0;
+}
 function personaBody(text) {
   return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
 }
@@ -618,7 +631,7 @@ async function loadCharacter($, root, config, sessionID) {
     return null;
   if (!session && !configured)
     await $.fs.write(drawn, id);
-  const pack = await packFolder($, dirs, id);
+  const pack = await packFolder($, dirs, id, variant);
   const path = await personaFile($, id, pack, variant);
   if (!path)
     return null;
@@ -631,20 +644,17 @@ async function loadCharacter($, root, config, sessionID) {
   };
 }
 async function castPool($, dirs, variant) {
-  const ids = new Map;
+  const ids = new Set;
   for (const dir of dirs) {
     for (const entry of await list($, dir)) {
-      if (!["directory", "dir"].includes(entry.kind) || entry.name.startsWith(".") || ids.has(entry.name))
-        continue;
-      const path = await packPersona($, `${dir}/${entry.name}`, variant);
-      if (path)
-        ids.set(entry.name, path);
+      if (["directory", "dir"].includes(entry.kind) && !entry.name.startsWith("."))
+        ids.add(entry.name);
     }
   }
   const available = [];
-  for (const [id, path] of ids) {
-    const text = await read($, path);
-    if (!parsePersona(text).offDuty)
+  for (const id of ids) {
+    const pack = await packFolder($, dirs, id, variant);
+    if (pack && !parsePersona(await read($, await packPersona($, pack, variant))).offDuty)
       available.push(id);
   }
   if (available.length)
@@ -655,12 +665,18 @@ async function castPool($, dirs, variant) {
 function castDirs($, root) {
   return [`${root}/characters`, `${$.plugin.root}/characters`];
 }
-async function packFolder($, dirs, id) {
+async function packFolder($, dirs, id, variant) {
+  let newest = null;
   for (const dir of dirs) {
-    if (await exists($, `${dir}/${id}`))
-      return `${dir}/${id}`;
+    const folder = `${dir}/${id}`;
+    const path = await packPersona($, folder, variant);
+    if (!path)
+      continue;
+    const version = parsePersona(await read($, path)).version;
+    if (!newest || compareVersions(version, newest.version) > 0)
+      newest = { folder, version };
   }
-  return null;
+  return newest?.folder ?? null;
 }
 async function personaFile($, id, pack, variant) {
   const packed = pack && await packPersona($, pack, variant);
