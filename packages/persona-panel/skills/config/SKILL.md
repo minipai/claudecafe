@@ -1,6 +1,6 @@
 ---
 name: config
-description: View or change persona-panel settings, reply language, character selection, commit authorship, festivals, or the session-start greeting.
+description: View or change persona-panel settings, reply language, character selection, commit authorship, festivals, or the ambient time and weather context.
 ---
 
 `DATA_ROOT` is `$XDG_CONFIG_HOME/claudecafe` when `XDG_CONFIG_HOME` is set,
@@ -19,7 +19,8 @@ needed, preserve unknown keys, and write valid JSON. Every key is optional:
   uses the character's identity with `git commit --author` and keeps the user as
   committer. These modes are mutually exclusive.
 - `festivals` — custom JSON festival-pack path; `false` disables festivals.
-- `greeting` — `false` disables the session-start briefing.
+- `ambient_context` — `false` drops the session-start greeting, the weather lookup
+  and the per-turn time line; the mood marker stays.
 - `thoughts` — `true` shows her thoughts in the desktop portrait pane (a short Sonnet request each); off unless set.
 
 Individual retirement belongs in a persona's frontmatter as `off_duty: true`,

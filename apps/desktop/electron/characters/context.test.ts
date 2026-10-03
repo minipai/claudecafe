@@ -61,11 +61,11 @@ describe('desktop shared context hook', () => {
     expect(JSON.stringify(reconnected)).toContain('End every reply with a mood marker')
   })
 
-  it('honours the shared greeting setting without fetching weather', async () => {
-    config = { greeting: false, festivals: false }
+  it('honours the shared ambient_context setting without fetching weather, keeping the mood marker', async () => {
+    config = { ambient_context: false }
     const output = await contextHook()(input, undefined, options)
-    expect(JSON.stringify(output)).toContain('Current time:')
-    expect(JSON.stringify(output)).not.toContain('End every reply with a mood marker')
+    expect(JSON.stringify(output)).not.toContain('Current time:')
+    expect(JSON.stringify(output)).toContain('End every reply with a mood marker')
     expect(fetch).not.toHaveBeenCalled()
   })
 })

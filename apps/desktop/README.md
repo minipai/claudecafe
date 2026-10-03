@@ -65,8 +65,8 @@ the selected character and portrait, and calls `@claudecafe/character-core`'s
 shared context function from `UserPromptSubmit` for greeting, mood-marker,
 time, session age, commit count and festival cues. Greeting and mood text come
 from persona-panel's prompt files; the build copies those files, not a stripped
-plugin. The shared `greeting` and `festivals` settings apply here too, including
-the first-turn weather lookup when greeting is enabled.
+plugin. The shared `ambient_context` and `festivals` settings apply here too,
+including the first-turn weather lookup while ambient context is on.
 
 ## Running it
 

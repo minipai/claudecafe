@@ -2,7 +2,7 @@ import { fillPrompt } from "./prompt.ts"
 
 export type ContextHost = {
   now(): number | Promise<number>
-  config(): Promise<{ greeting?: boolean; festivals?: boolean | string }>
+  config(): Promise<{ ambient_context?: boolean; festivals?: boolean | string }>
   readPrompt(name: "greeting" | "cues"): Promise<string>
   readFile(path: string): Promise<string>
   home(): Promise<string | undefined>
@@ -27,17 +27,29 @@ export async function readContext(
   options: { cwd: string; language: string; startedAt: number; greet: boolean },
 ): Promise<string> {
   const [config, now] = await Promise.all([host.config(), host.now()])
+  // The time, place and weather are ambient; the mood marker is how her face is read, so it stays.
+  const ambient = config.ambient_context !== false
   const pieces: string[] = []
+  if (options.greet && ambient) pieces.push(await readGreeting(host, now))
+  if (options.greet) pieces.push(fillPrompt(await host.readPrompt("cues"), { lang: options.language || "your reply language" }))
+  if (ambient) pieces.push(await readTimeLine(host, config, options, now))
+  return pieces.join("\n\n")
+}
 
-  if (options.greet && config.greeting !== false) {
-    const date = new Date(now)
-    const time = `${pad(date.getHours())}:${pad(date.getMinutes())} (${date.toLocaleDateString("en-US", { weekday: "long" })})`
-    const greeting = fillPrompt(await host.readPrompt("greeting"), { time })
-    const cues = fillPrompt(await host.readPrompt("cues"), { lang: options.language || "your reply language" })
-    const weather = await host.weather()
-    pieces.push([greeting, weather && `Weather: ${weather}`, cues].filter(Boolean).join("\n\n"))
-  }
+async function readGreeting(host: ContextHost, now: number): Promise<string> {
+  const date = new Date(now)
+  const time = `${pad(date.getHours())}:${pad(date.getMinutes())} (${date.toLocaleDateString("en-US", { weekday: "long" })})`
+  const greeting = fillPrompt(await host.readPrompt("greeting"), { time })
+  const weather = await host.weather()
+  return [greeting, weather && `Weather: ${weather}`].filter(Boolean).join("\n\n")
+}
 
+async function readTimeLine(
+  host: ContextHost,
+  config: { festivals?: boolean | string },
+  options: { cwd: string; startedAt: number },
+  now: number,
+): Promise<string> {
   const segments = [`Current time: ${formatDate(new Date(now))}`]
   const elapsed = now - options.startedAt
   if (elapsed >= 600_000) {
@@ -51,8 +63,7 @@ export async function readContext(
   }
   const festival = await readFestival(host, config.festivals, new Date(now))
   if (festival) segments.push(festival)
-  pieces.push(segments.join("｜"))
-  return pieces.filter(Boolean).join("\n\n")
+  return segments.join("｜")
 }
 
 async function readFestival(host: ContextHost, setting: boolean | string | undefined, date: Date): Promise<string> {

@@ -79,7 +79,7 @@ describe("prompt and expression contracts", () => {
 })
 
 describe("shared context", () => {
-  const makeHost = (config: { greeting?: boolean; festivals?: boolean | string } = {}) => ({
+  const makeHost = (config: { ambient_context?: boolean; festivals?: boolean | string } = {}) => ({
     now: async () => new Date(2026, 0, 1, 9, 5).getTime(),
     config: async () => config,
     readPrompt: async (name: "greeting" | "cues") => name === "greeting" ? "Hello at $time." : "Cues for $lang.",
@@ -100,14 +100,11 @@ describe("shared context", () => {
     expect(text).toContain("New Year's Day")
   })
 
-  test("greeting=false suppresses greeting, weather, and cues while retaining current context", async () => {
-    const host = makeHost({ greeting: false })
-    const text = await readContext(host, { cwd: "", language: "", startedAt: 0, greet: true })
-    expect(text).not.toContain("Hello")
-    expect(text).not.toContain("Weather")
-    expect(text).not.toContain("Cues")
-    expect(text).toContain("Current time:")
-    expect(text).toContain("New Year's Day")
+  test("ambient_context=false drops the greeting, weather and time line but keeps the mood cues", async () => {
+    const host = makeHost({ ambient_context: false })
+    const first = await readContext(host, { cwd: "/work", language: "", startedAt: 0, greet: true })
+    expect(first).toBe("Cues for your reply language.")
+    expect(await readContext(host, { cwd: "/work", language: "", startedAt: 0, greet: false })).toBe("")
   })
 
   test("loads a custom festival file with home expansion and honors disabled festivals", async () => {

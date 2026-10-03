@@ -358,12 +358,14 @@ describe("session briefing", () => {
     expect(systemText(second)).not.toContain("local time is")
   })
 
-  test("greeting false silences the briefing but still starts the shift clock", async () => {
-    setConfig({ greeting: false, character: "none" })
+  test("ambient_context false silences the briefing and time line but keeps the mood marker and shift clock", async () => {
+    setConfig({ ambient_context: false, character: "none" })
     const { context: transform } = hooks()
     const output = context("sid")
     await transform(output)
     expect(systemText(output)).not.toContain("local time is")
+    expect(systemText(output)).not.toContain("Current time")
+    expect(systemText(output)).toContain("mood marker")
     expect(existsSync(join(cafe.stateDir("sid", false), "started-at"))).toBe(true)
   })
 

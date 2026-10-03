@@ -420,8 +420,8 @@ export function createCafe(directory: string) {
       if (!shift.persona) shift.maid = null
     }
     // The briefing is housekeeping's counterpart, not part of the persona:
-    // config "greeting": false silences it while the shift clock still ticks.
-    if (config().greeting !== false) shift.greeting = await buildGreeting()
+    // config "ambient_context": false silences it while the shift clock still ticks.
+    if (config().ambient_context !== false) shift.greeting = await buildGreeting()
     return shift
   }
 
@@ -473,7 +473,7 @@ export function createCafe(directory: string) {
       const cues = prompt("cues", { lang: lang() || "your reply language" })
       if (cues) blocks.push(cues)
       blocks.push(expressionPrompt())
-      blocks.push(nowLine(shift, directory))
+      if (config().ambient_context !== false) blocks.push(nowLine(shift, directory))
       if (!greeted.has(sessionID)) {
         greeted.add(sessionID)
         if (shift.greeting) blocks.push(shift.greeting)

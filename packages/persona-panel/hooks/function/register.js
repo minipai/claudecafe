@@ -125,7 +125,7 @@ export function register(on) {
     }))
     if (state.hasPanel) pieces.push(expressionPrompt(TOOL))
     greeted = true
-    return { blocks: [...blocks, { name: BLOCK, text: pieces.join('\n\n') }] }
+    return { blocks: [...blocks, { name: BLOCK, text: pieces.filter(Boolean).join('\n\n') }] }
   })
 
   on('tool.call', { tool: TOOL }, async ($, event) => {

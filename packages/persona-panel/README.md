@@ -65,7 +65,7 @@ change them for you. Changes apply from the next session.
   "character": "kotone",
   "lang": "English",
   "commit_authorship": "co-author",
-  "greeting": true,
+  "ambient_context": true,
   "festivals": true
 }
 ```
@@ -76,8 +76,9 @@ change them for you. Changes apply from the next session.
 - `commit_authorship` — when Claude makes a Git commit, `"co-author"` adds the
   character as a `Co-Authored-By` trailer; `"author"` makes the character the
   commit author while you stay the committer.
-- `greeting` — `false` drops the first-turn greeting, mood-marker cue and
-  weather lookup.
+- `ambient_context` — `false` drops the time, weather and Git context: the
+  first-turn greeting and weather lookup, and the time line on every turn. The
+  mood marker stays.
 - `festivals` — `false` turns the festival calendar off, or a path to a JSON
   file of `"MM-DD": "name"` entries replaces it.
 - `thoughts` — `true` shows her thoughts in the desktop portrait pane, each one
@@ -93,7 +94,7 @@ id, lowercase letters, digits and hyphens. Only `persona.md` is required:
 characters/<id>/
   persona.md            # who she is: frontmatter, then the persona text
   pixels/*.gif          # optional terminal faces, 36×48
-  avatars/*.webp        # optional square faces for the desktop
+  avatars/*.webp        # optional square faces for the desktop, each under 95 KB
   portraits-540/*.webp  # optional 540×720 desktop portraits, each under 95 KB
 ```
 
@@ -142,6 +143,9 @@ pleading facepalm waving
 
 Draw as many as you like; she is only offered the faces she has. The desktop
 pictures work the same way, but need both `avatars/` and `portraits-540/`.
+The Claude Code desktop draws each picture as an SVG with the WebP inlined,
+and one SVG holds at most 131,072 characters, about 98 KB of image; keep every
+file in those two folders under 95 KB, or it is too large to draw.
 
 ### Building on an existing character
 
@@ -182,7 +186,7 @@ updates.
 - **Sends** one request per session to [wttr.in](https://wttr.in), a third-party
   weather service, for the local weather in the greeting. The request carries
   no data of yours, but wttr.in sees your IP address and uses it to guess your
-  location. Set `"greeting": false` to skip it.
+  location. Set `"ambient_context": false` to skip it.
 - **Asks the model**, only with `"thoughts": true`, for her thoughts in the
   desktop portrait pane: about one short Sonnet request per turn, carrying the
   persona and the last few things said and done in the session, through Claude
