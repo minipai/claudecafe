@@ -77,7 +77,9 @@ The module owns the behavior previously split across the classic hooks:
 
 The pixel panel opens for interactive terminal sessions; a pack without `pixels/` still supplies its persona,
 but has no portrait to draw. The desktop draws from the pack's `avatars/` and `portraits-540/`, which the
-plugin does not bundle.
+plugin does not bundle: a desktop session installs the published packs (pinned in
+`packages/character-core/src/packs.ts`) when the ones in the data root are missing or older. The hooks runtime
+fetches and writes text only, so `curl` and `unzip` carry the archive and the module checks its SHA-256.
 
 What the desktop allows was found by trial, not documentation: it draws no `Image`, so every picture is an
 `Svg` with the WebP inline (about 98 KB at most); an `Svg` whose `alt` is blank is not drawn; `session.start`

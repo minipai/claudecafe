@@ -1,4 +1,5 @@
 import {
+  PUBLISHED_CHARACTER_PACKS,
   commitAuthorship,
   compareVersions,
   readContext,
@@ -234,6 +235,16 @@ async function openSession($, cwd, surface) {
     desktop,
   }
   if (desktop) await openDesktop($, Object.keys(desktop.avatars))
+  if (surface === 'desktop') {
+    // Her pictures come from her pack: a missing or older one is fetched in the background and drawn once it lands.
+    void installPacks($, root).then(async (installed) => {
+      if (!character || !installed.includes(character.id)) return
+      const wasDrawn = Boolean(state.desktop)
+      state.desktop = await loadDesktop($, castDirs($, root), character.id, config)
+      if (state.desktop && !wasDrawn) await openDesktop($, Object.keys(state.desktop.avatars))
+      await $.ui.invalidate('ui.render')
+    })
+  }
   if (!state.hasPanel) return state
 
   await $.tool.register({
@@ -345,6 +356,60 @@ async function portraitPane($, event, state, face, line) {
     ),
     columns && rows && h(Box, { position: 'absolute', top: 0, left: 0, width: columns * 2 }, h(Svg, { source: petalField(rows, columns), alt: 'falling sakura' })),
   )
+}
+
+/**
+ * Brings each published pack into the café data root when the one there is missing or older, as the desktop app
+ * and OpenCode do. A failure leaves the old pack and is tried again next session. Returns the ids installed.
+ */
+async function installPacks($, root) {
+  const installed = []
+  for (const pack of PUBLISHED_CHARACTER_PACKS) {
+    try {
+      if (await installPack($, root, pack)) installed.push(pack.id)
+    } catch {
+      // The pack already there, if any, stays in use.
+    }
+  }
+  return installed
+}
+
+/**
+ * The hooks runtime fetches and writes text only, so the system's curl and unzip carry the archive; its SHA-256
+ * is checked here before anything is unpacked, and the new folder replaces the old one only once it is whole.
+ */
+async function installPack($, root, pack) {
+  const folder = `${root}/characters/${pack.id}`
+  const current = parsePersona(await read($, `${folder}/persona.md`)).version
+  if (current && compareVersions(current, pack.version) >= 0) return false
+
+  const staging = `${root}/characters/.${pack.id}-${await $.clock.now()}`
+  try {
+    await mustRun($, ['mkdir', '-p', staging])
+    await mustRun($, ['curl', '-fsSL', '--max-time', '60', '-o', `${staging}/pack.zip`, pack.url])
+    const { base64 } = await $.fs.read(`${staging}/pack.zip`, { as: 'bytes' })
+    if (await sha256(base64) !== pack.sha256) throw new Error(`${pack.id} pack SHA-256 mismatch`)
+    await mustRun($, ['unzip', '-q', `${staging}/pack.zip`, '-d', staging])
+    if (parsePersona(await read($, `${staging}/${pack.id}/persona.md`)).version !== pack.version) {
+      throw new Error(`${pack.id} pack holds an unexpected persona version`)
+    }
+    if (await exists($, folder)) await mustRun($, ['mv', folder, `${staging}/previous`])
+    await mustRun($, ['mv', `${staging}/${pack.id}`, folder])
+    return true
+  } finally {
+    await $.process.run(['rm', '-rf', staging], { timeoutMs: 30_000 }).catch(() => {})
+  }
+}
+
+async function mustRun($, argv) {
+  const ran = await $.process.run(argv, { timeoutMs: 90_000 })
+  if (ran.exitCode !== 0) throw new Error(`${argv[0]} exited ${ran.exitCode}: ${ran.stderr.trim()}`)
+}
+
+async function sha256(base64) {
+  const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0))
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))
+  return [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 /** Sends her half-body across the band above the prompt, which closes again once it has played. */

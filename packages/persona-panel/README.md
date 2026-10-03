@@ -19,8 +19,8 @@ CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude
 ```
 
 Without that switch only the two skills load; the persona and the panel don't.
-The desktop pictures come from the character's pack, not the plugin: see
-[Adding a character](#adding-a-character).
+The desktop pictures come from the character's pack, not the plugin; in a
+desktop session the plugin installs the published packs itself (see below).
 
 ## Install
 
@@ -105,18 +105,24 @@ A folder there wins over a bundled character with the same id. Add
 `off_duty: true` to a persona's frontmatter to keep that character out of the
 roster. A character without `pixels/` still supplies a persona, but has no
 terminal portrait; without both `avatars/` and `portraits-540/` she has no
-desktop pictures. The packs published at claudecafe.dev carry all three; the
-plugin bundles only personas and pixels.
+desktop pictures. The published packs carry all three; the plugin bundles only
+personas and pixels, and installs the published packs in desktop sessions.
 
 ## What it reads, runs and sends
 
 - **Reads** `config.json` and `characters/` under `~/.config/claudecafe/`, and
   its own bundled files.
 - **Writes** one file per session, `~/.config/claudecafe/sessions/<session id>/character`,
-  holding the id of the character on shift for that session.
+  holding the id of the character on shift for that session; and, in a desktop
+  session, the published packs of Kotone, Kurumi and Kokona into
+  `~/.config/claudecafe/characters/` when one there is missing or older,
+  replacing that folder.
+- **Downloads** those packs, in a desktop session and only when needed, from the
+  project's GitHub releases, checking each archive's SHA-256 before unpacking it.
 - **Runs** two local Git commands in the project: `git log --oneline
   --since=midnight` to count today's commits, and `git branch --show-current`
-  for the panel. Their output is used only for those two figures.
+  for the panel. Their output is used only for those two figures. To install a
+  pack it runs `curl`, `unzip`, `mkdir`, `mv` and `rm`, which must be on the path.
 - **Sends** one request per session to [wttr.in](https://wttr.in), a third-party
   weather service, for the local weather in the greeting. The request carries
   no data of yours, but wttr.in sees your IP address and uses it to guess your

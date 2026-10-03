@@ -501,10 +501,42 @@ describe('Desktop', () => {
   })
 })
 
+describe('Character packs', () => {
+  test('fetches a missing pack, but unpacks nothing whose digest is wrong', async ($, on) => {
+    const ran: string[] = []
+    on('process.run', (_, e) => {
+      ran.push(e.argv[0]!)
+      return { value: { exitCode: 0, stdout: '', stderr: '' } }
+    })
+    await startDesktop($, on)
+    await settle()
+    expect(ran).toContain('curl')
+    expect(ran).not.toContain('unzip')
+    expect(ran).not.toContain('mv')
+    expect(ran.at(-1)).toBe('rm')
+  })
+
+  test('leaves a pack alone that is as new as the published one', async ($, on) => {
+    const ran: string[] = []
+    on('process.run', (_, e) => {
+      ran.push(e.argv[0]!)
+      return { value: { exitCode: 0, stdout: '', stderr: '' } }
+    })
+    await startDesktop($, on, {}, '9.9.9')
+    await settle()
+    expect(ran).toEqual([])
+  })
+})
+
+/** Lets the background pack check run its course. */
+async function settle(): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, 20))
+}
+
 /** くるみ's pack as the desktop reads it: avatars and the 540 portraits, one tiny WebP per face. */
 const webp: Record<string, string> = { neutral: 'TkVVVFJBTA==', happy: 'SEFQUFk=' }
 
-function desktop(on: On, config: Record<string, unknown> = {}): void {
+function desktop(on: On, config: Record<string, unknown> = {}, version = ''): void {
   mock.clock(on)
   on('fs.list', (_, e) => {
     if (e.path?.endsWith('/claudecafe/characters')) {
@@ -518,7 +550,8 @@ function desktop(on: On, config: Record<string, unknown> = {}): void {
   on('fs.read', (_, e) => {
     if (e.as === 'bytes') return { value: { base64: webp[e.path.split('/').at(-1)!.replace('.webp', '')]! } }
     if (e.path?.endsWith('/config.json')) return { value: JSON.stringify(config) }
-    if (e.path?.endsWith('/characters/kurumi/persona.md')) return { value: '---\nname: くるみ\n---\nKurumi body.\n' }
+    if (e.path?.endsWith('/characters/kurumi/persona.md')) return { value: `---\nname: くるみ\n${version ? `version: ${version}\n` : ''}---\nKurumi body.\n` }
+    if (/\/characters\/\w+\/persona\.md$/.test(e.path ?? '')) return { value: version ? `---\nversion: ${version}\n---\n` : '' }
     return { value: '' }
   })
   on('fs.exists', (_, e) => ({
@@ -530,8 +563,8 @@ function desktop(on: On, config: Record<string, unknown> = {}): void {
   on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
 }
 
-async function startDesktop($: Engine, on: On, config: Record<string, unknown> = {}): Promise<void> {
-  desktop(on, config)
+async function startDesktop($: Engine, on: On, config: Record<string, unknown> = {}, version = ''): Promise<void> {
+  desktop(on, config, version)
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('tool.register', (_, e) => ({ value: { tool: `mcp__persona-panel__${e.name}` } }))
   on('command.register', () => ({ value: undefined }))

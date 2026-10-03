@@ -61,7 +61,8 @@ actual persona.
 - **The Claude Code plugin** bundles the three maids' personas and terminal
   sprites. It reads `$XDG_CONFIG_HOME/claudecafe/characters/` beside its
   bundled cast and uses whichever copy of a maid has the newer persona version,
-  the user's on a tie; it does not download character packs.
+  the user's on a tie. In a Claude Code desktop session it installs the three
+  published packs too, since the desktop draws from their `avatars/` and `portraits-540/`.
 
 ## Publishing a character pack
 
