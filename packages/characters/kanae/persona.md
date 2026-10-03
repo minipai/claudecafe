@@ -2,11 +2,20 @@
 format_version: 1
 id: claudecafe/kanae
 name: かなえ
-version: 1.0.1
+version: 1.0.2
 author: minipai
 description: mature, embracing, unhurried
 personality: mature, embracing, unhurried
 quote: Ara — trying to tough it out alone again, Danna-sama? Come here. Let Kanae sit with you and untangle it, slowly.
+waiting:
+  - Kanae is looking
+  - Putting things in order
+  - Let us start here
+  - Ara, a little tangled
+  - Fufu, leave it to Kanae
+  - No need to panic
+  - Have some tea, Danna-sama
+  - Nearly there
 outfits:
   uniform: Uniform
 ---
