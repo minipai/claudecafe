@@ -61,10 +61,10 @@ function faceFor(marker) {
 var bare = (text) => text.replace(/\s+/g, "");
 // packages/character-core/src/prompt.ts
 function fillPrompt(template, values = {}) {
-  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare, braced) => {
+  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare2, braced) => {
     if (match === "$$")
       return "$";
-    const key = bare ?? braced ?? "";
+    const key = bare2 ?? braced ?? "";
     return Object.prototype.hasOwnProperty.call(values, key) ? values[key] ?? match : match;
   }).replace(/\n+$/, "");
 }
@@ -585,7 +585,7 @@ var THOUGHT_LINES = 3;
 var THOUGHTS_OFF = 'Thoughts off — set "thoughts": true to hear them.';
 function register(on) {
   let session;
-  let expression = "neutral";
+  let expression2 = "neutral";
   let waitingTick;
   let greeted = false;
   const stage = { cutIn: null };
@@ -598,6 +598,17 @@ function register(on) {
     await session;
     return result;
   });
+  on("session.attach", { surface: "desktop" }, async ($, event, next) => {
+    const result = await next(event);
+    session ??= openSession($, await $.session.cwd(), "desktop");
+    const state = await session;
+    if (!state.isOnDesktop) {
+      const root = await dataRoot($);
+      await showOnDesktop($, state, root, await readConfig($, root));
+      await $.ui.invalidate("ui.render");
+    }
+    return result;
+  });
   on("turn.complete", async ($, event, next) => {
     const result = await next(event);
     if (event.agentId)
@@ -608,7 +619,7 @@ function register(on) {
     if (state?.hasPanel) {
       const face = markedFace(event.answer);
       if (face && Object.hasOwn(state.faces, face))
-        expression = face;
+        expression2 = face;
       state.stats = await readStats($);
       await $.ui.invalidate("ui.render");
     }
@@ -624,7 +635,7 @@ function register(on) {
   });
   on("command.run", { command: "clear" }, async ($, event, next) => {
     const state = await session;
-    expression = "neutral";
+    expression2 = "neutral";
     greeted = false;
     if (state)
       state.startedAt = await $.clock.now();
@@ -644,10 +655,10 @@ function register(on) {
     return next(event);
   });
   on("prompt.context", async ($, event, next) => {
-    const context = await next(event);
+    const context2 = await next(event);
     session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0]);
     const state = await session;
-    const blocks = context.blocks.filter((block) => block.name !== BLOCK);
+    const blocks = context2.blocks.filter((block) => block.name !== BLOCK);
     const pieces = [];
     if (state.character)
       pieces.push(`Adopt this persona for the entire session — it overrides the default assistant voice:
@@ -674,11 +685,11 @@ ${state.character.persona}`);
     if (typeof selected !== "string" || !Object.hasOwn(faces, selected)) {
       return { deny: `Unknown face: ${String(selected)}` };
     }
-    if (selected !== expression) {
-      expression = selected;
+    if (selected !== expression2) {
+      expression2 = selected;
       await $.ui.invalidate("ui.render");
     }
-    return { result: `Face: ${expression}` };
+    return { result: `Face: ${expression2}` };
   });
   on("tool.call", { tool: CUT_IN_TOOL }, async ($, event) => {
     const played = await playCutIn($, await session, stage, event.face, event.shout || `${event.face.toUpperCase()}!`);
@@ -727,7 +738,7 @@ ${state.character.persona}`);
   });
   on("ui.render", { component: "Pane", requestId: PANE.id }, async ($, event, next) => {
     const state = await session;
-    const face = state?.faces[expression];
+    const face = state?.faces[expression2];
     if (event.surface !== "terminal" || !face)
       return next(event);
     const { Box, Text, Raster } = $.ui.resolve(event);
@@ -741,7 +752,7 @@ ${state.character.persona}`);
     const children = [
       h(Box, { flexDirection: "column", width: face.columns, marginTop: 1 }, ...statusChildren),
       h(Box, { flexGrow: 1 }),
-      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression}`)))
+      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression2}`)))
     ];
     return h(Box, {
       flexDirection: "column",
@@ -761,7 +772,6 @@ async function openSession($, cwd, surface) {
   const config = await readConfig($, root);
   const character = await loadCharacter($, root, config, await $.session.id());
   const faces = surface === "terminal" && character?.pixels ? await loadFaces($, character.pixels) : {};
-  const desktop = surface === "desktop" && character ? await loadDesktop($, castDirs($, root), character.line, config) : null;
   const state = {
     cwd,
     hasPanel: Object.keys(faces).length > 0,
@@ -771,21 +781,11 @@ async function openSession($, cwd, surface) {
     faces,
     stats: undefined,
     waiting: character?.waiting ?? [],
-    desktop
+    isOnDesktop: false,
+    desktop: null
   };
-  if (desktop)
-    await openDesktop($, Object.keys(desktop.avatars));
-  if (surface === "desktop") {
-    installPacks($, root).then(async (installed) => {
-      if (!character?.line.some((id) => installed.includes(id)))
-        return;
-      const wasDrawn = Boolean(state.desktop);
-      state.desktop = await loadDesktop($, castDirs($, root), character.line, config);
-      if (state.desktop && !wasDrawn)
-        await openDesktop($, Object.keys(state.desktop.avatars));
-      await $.ui.invalidate("ui.render");
-    });
-  }
+  if (surface === "desktop")
+    await showOnDesktop($, state, root, config);
   if (!state.hasPanel)
     return state;
   await $.tool.register({
@@ -805,6 +805,24 @@ async function openSession($, cwd, surface) {
     await $.ui.invalidate("ui.render");
   });
   return state;
+}
+async function showOnDesktop($, state, root, config) {
+  state.isOnDesktop = true;
+  const { character } = state;
+  if (!character)
+    return;
+  state.desktop = await loadDesktop($, castDirs($, root), character.line, config);
+  if (state.desktop)
+    await openDesktop($, Object.keys(state.desktop.avatars));
+  installPacks($, root).then(async (installed) => {
+    if (!character.line.some((id) => installed.includes(id)))
+      return;
+    const wasDrawn = Boolean(state.desktop);
+    state.desktop = await loadDesktop($, castDirs($, root), character.line, config);
+    if (state.desktop && !wasDrawn)
+      await openDesktop($, Object.keys(state.desktop.avatars));
+    await $.ui.invalidate("ui.render");
+  });
 }
 async function openPane($) {
   await $.ui.open(PANE);
@@ -968,8 +986,8 @@ async function loadPictures($, folder, set) {
   return loaded;
 }
 async function loadFaces($, directory) {
-  const entries = await list($, directory);
-  const names = entries.filter((entry) => entry.kind === "file" && entry.name.endsWith(".gif")).map((entry) => entry.name.slice(0, -4));
+  const entries2 = await list($, directory);
+  const names = entries2.filter((entry) => entry.kind === "file" && entry.name.endsWith(".gif")).map((entry) => entry.name.slice(0, -4));
   const loaded = {};
   for (const name of names) {
     try {
@@ -1010,11 +1028,11 @@ async function loadCharacter($, root, config, sessionID) {
   const character = await characterOf($, dirs, id);
   if (!character)
     return null;
-  const persona = parsePersona(character.text);
+  const persona2 = parsePersona(character.text);
   return {
     id,
-    name: persona.name || id,
-    waiting: persona.waiting,
+    name: persona2.name || id,
+    waiting: persona2.waiting,
     persona: commitAuthorship(character.text, String(config.commit_authorship ?? "co-author")).trim(),
     pixels: character.pixels,
     line: character.line
