@@ -15,7 +15,13 @@ import {
 describe("persona contracts", () => {
   test("parses frontmatter and strips the body", () => {
     const persona = parsePersona("---\nid: claudecafe/kotone\nname: ことね\nversion: 1.1.1\noff_duty: yes\n---\nBody.\n")
-    expect(persona).toEqual({ id: "claudecafe/kotone", name: "ことね", version: "1.1.1", offDuty: true, body: "Body.\n" })
+    expect(persona).toEqual({ id: "claudecafe/kotone", name: "ことね", version: "1.1.1", offDuty: true, waiting: [], body: "Body.\n" })
+  })
+
+  test("reads her waiting lines from a block list", () => {
+    const persona = parsePersona("---\nname: ここな\nwaiting:\n  - 在看了，別催\n  - '快好了'\nquote: hi\n---\nBody.\n")
+    expect(persona.waiting).toEqual(["在看了，別催", "快好了"])
+    expect(parsePersona("---\nname: ここな\n---\nBody.\n").waiting).toEqual([])
   })
 
   test("a variant is tried before the default persona", () => {

@@ -15,9 +15,12 @@ import { homePath, statusRows } from './stats.js'
 const TOOL = 'mcp__persona-panel__set_expression'
 const PANE = { id: 'persona-panel', title: 'Pixel art' }
 const BLOCK = 'persona-panel'
+/** Long enough to be read twice over before it is replaced, as the desktop holds a line. */
+const WAITING_MS = 4500
 export function register(on) {
   let session
   let expression = 'neutral'
+  let waitingTick
   let greeted = false
 
   on('session.start', async ($, event, next) => {
@@ -30,8 +33,11 @@ export function register(on) {
 
   on('turn.complete', async ($, event, next) => {
     const result = await next(event)
+    if (event.agentId) return result
+    waitingTick?.cancel()
+    waitingTick = undefined
     const state = await session
-    if (state?.hasPanel && !event.agentId) {
+    if (state?.hasPanel) {
       // Her reply's closing mood marker names a face, as the desktop reads it.
       const face = markedFace(event.answer)
       if (face && Object.hasOwn(state.faces, face)) expression = face
@@ -57,6 +63,8 @@ export function register(on) {
     if (state.hasPanel && (await $.ui.panes()).some((pane) => pane.id === PANE.id && !pane.isPlaced)) {
       await openPane($)
     }
+    // The spinner draws once per turn unless asked again, so her waiting lines turn over on a timer.
+    waitingTick ??= $.clock.every(WAITING_MS, () => $.ui.invalidate('ui.render'))
     return next(event)
   })
 
@@ -91,6 +99,13 @@ export function register(on) {
       await $.ui.invalidate('ui.render')
     }
     return { result: `Face: ${expression}` }
+  })
+
+  on('ui.render', { component: 'Spinner' }, async ($, event, next) => {
+    const waiting = (await session)?.waiting ?? []
+    if (!waiting.length) return next(event)
+    const word = waiting[Math.floor(await $.clock.now() / WAITING_MS) % waiting.length]
+    return next({ ...event, props: { ...event.props, word } })
   })
 
   on('ui.render', { component: 'Pane' }, async ($, event, next) => {
@@ -134,6 +149,7 @@ async function openSession($, cwd, isTerminal) {
     character,
     faces,
     stats: undefined,
+    waiting: character?.waiting ?? [],
   }
   if (!state.hasPanel) return state
 
@@ -211,9 +227,11 @@ async function loadCharacter($, root, config, sessionID) {
   const path = await personaFile($, id, pack, variant)
   if (!path) return null
   const text = await read($, path)
+  const persona = parsePersona(text)
   return {
     id,
-    name: parsePersona(text).name || id,
+    name: persona.name || id,
+    waiting: persona.waiting,
     persona: commitAuthorship(text, String(config.commit_authorship ?? 'co-author')).trim(),
     pack,
   }

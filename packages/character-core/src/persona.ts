@@ -3,6 +3,8 @@ export type ParsedPersona = {
   name: string
   version: string
   offDuty: boolean
+  /** What she says on a spinner while she is off working, turned over one at a time. */
+  waiting: string[]
   body: string
 }
 
@@ -13,6 +15,7 @@ export function parsePersona(text: string): ParsedPersona {
     name: field(head, "name"),
     version: field(head, "version"),
     offDuty: /^off_duty:\s*(?:true|yes)\b/im.test(head),
+    waiting: items(head, "waiting"),
     body: personaBody(text),
   }
 }
@@ -71,5 +74,15 @@ function frontmatter(text: string): string {
 
 function field(head: string, key: string): string {
   const match = new RegExp(`^${key}:[ \\t]*(.+?)\\s*$`, "m").exec(head)
-  return match?.[1]?.trim().replace(/^(['"])(.*)\1$/, "$2") ?? ""
+  return unquote(match?.[1]?.trim() ?? "")
+}
+
+/** A block list: `key:` on its own line, then one `- item` per line beneath it. */
+function items(head: string, key: string): string[] {
+  const block = new RegExp(`^${key}:[ \\t]*\\r?\\n((?:[ \\t]+-.*(?:\\r?\\n|$))*)`, "m").exec(head)?.[1] ?? ""
+  return [...block.matchAll(/^[ \t]+-[ \t]*(.+?)\s*$/gm)].map((item) => unquote(item[1]!)).filter(Boolean)
+}
+
+function unquote(value: string): string {
+  return value.replace(/^(['"])(.*)\1$/, "$2")
 }

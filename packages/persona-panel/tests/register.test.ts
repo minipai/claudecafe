@@ -17,6 +17,7 @@ const expressions: Record<string, Face> = {
 }
 
 const tool = 'mcp__persona-panel__set_expression'
+const waitingLines = ['先喝口茶', '別催', '快好了', '再等一下', '還在想']
 const panelImage = expressions.neutral!
 const placed = { isPlaced: true } as const
 const submission = { text: 'hello', wait: false, origin: { kind: 'composer' } } as const
@@ -358,6 +359,36 @@ describe('Portrait pane', () => {
     expect(await $.ui.render(pane())).toEqual(drawn(expressions.happy!, figuresAtStart, 'happy'))
   })
 
+  test('turns her waiting lines over while one turn runs, panel or not', async ($, on) => {
+    const { clock } = world(on)
+    const invalidations: string[] = []
+    on('session.start', (_, e) => ({ cwd: e.cwd }))
+    on('prompt.submit', (_, e) => ({ text: e.text }))
+    on('turn.complete', (_, e) => ({ text: e.answer }))
+    on('ui.invalidate', (_, e) => { invalidations.push(e.event); return { value: undefined } })
+    on('ui.render', { component: 'Spinner' }, (_, e) => ({ type: 'Text', children: [e.props.word] }))
+    await $.session.start({ cwd: '/work', surface: 'desktop', isInteractive: true })
+    await $.prompt.submit(submission)
+
+    const first = await said($)
+    expect(waitingLines).toContain(first)
+    await clock.advance(4500)
+    expect(invalidations).toEqual(['ui.render'])
+    expect(await said($)).toBe(waitingLines[(waitingLines.indexOf(first) + 1) % waitingLines.length]!)
+
+    await $.turn.complete({ reason: 'answer', answer: 'Done.', durationMs: 10, isAborted: false, turnId: 't5' })
+    await clock.advance(4500)
+    expect(invalidations).toEqual(['ui.render'])
+  })
+
+  test('leaves the spinner its own word when her persona has no lines', async ($, on) => {
+    world(on, [])
+    on('session.start', (_, e) => ({ cwd: e.cwd }))
+    on('ui.render', { component: 'Spinner' }, (_, e) => ({ type: 'Text', children: [e.props.word] }))
+    await $.session.start({ cwd: '/work', surface: 'desktop', isInteractive: true })
+    expect(await said($)).toBe('Sauteing')
+  })
+
   for (const [name, turn] of [
     ['a subagent', { answer: '【 開心 ＼(ˆ ᗜ ˆ)／ 】', agentId: 'a1' }],
     ['a face she has no art for', { answer: '【 擔心 (´･ω･｀) 】' }],
@@ -396,7 +427,7 @@ describe('Portrait pane', () => {
 })
 
 /** Answers the characters directory: one character, くるみ, with her own GIFs and a stray file beside them. */
-function pixels(on: On): void {
+function pixels(on: On, lines: string[] = waitingLines): void {
   on('fs.list', (_, e) => {
     if (e.path?.endsWith('/claudecafe/characters')) {
       return { value: [{ name: 'kurumi', kind: 'directory' as const, size: 0, isLink: false }] }
@@ -414,7 +445,7 @@ function pixels(on: On): void {
     if (e.path?.endsWith('/config.json')) return { value: '{}' }
     if (e.path?.endsWith('/prompts/greeting.md')) return { value: 'Greet at $time.' }
     if (e.path?.endsWith('/prompts/cues.md')) return { value: 'Cues for $lang.' }
-    if (e.path?.endsWith('/characters/kurumi/persona.md')) return { value: '---\nname: くるみ\n---\nKurumi body.\n' }
+    if (e.path?.endsWith('/characters/kurumi/persona.md')) return { value: `---\nname: くるみ\n${waiting(lines)}---\nKurumi body.\n` }
     return { value: '' }
   })
   on('fs.exists', (_, e) => ({
@@ -428,10 +459,10 @@ type Figures = { percent: number; quota?: number; usd?: number; sessionMinutes: 
 const figuresAtStart: Figures = { percent: 22, quota: 31, usd: 2.41, sessionMinutes: 7 * 60 + 7, branch: 'main' }
 
 /** The world beneath the plugin: the cast directory, the session's figures and a mocked clock. */
-function world(on: On): { clock: MockClock; figures: Figures } {
+function world(on: On, lines: string[] = waitingLines): { clock: MockClock; figures: Figures } {
   const clock = mock.clock(on)
   const figures = { ...figuresAtStart }
-  pixels(on)
+  pixels(on, lines)
   on('session.usage', () => ({
     value: {
       startedAt: clock.now() - figures.sessionMinutes * 60_000,
@@ -455,7 +486,7 @@ function world(on: On): { clock: MockClock; figures: Figures } {
   return { clock, figures }
 }
 
-async function start($: Engine, on: On): Promise<{ clock: MockClock; figures: Figures }> {
+async function start($: Engine, on: On): Promise<ReturnType<typeof world>> {
   const handles = world(on)
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('tool.register', () => ({ value: { tool } }))
@@ -540,4 +571,22 @@ function pane(): RenderInput<'Pane', 'terminal'> {
       scroll: { offset: 0, bodyRows: 40 }, view: {},
     },
   }
+}
+
+function spinner(): RenderInput<'Spinner', 'desktop'> {
+  return {
+    surface: 'desktop', component: 'Spinner', requestId: 'main',
+    props: { word: 'Sauteing', message: null, suffix: '…', mode: 'thinking' },
+  }
+}
+
+/** The spinner's word. */
+async function said($: Engine): Promise<string> {
+  const drawn = await $.ui.render(spinner()) as { children: string[] }
+  return drawn.children[0]!
+}
+
+/** Her waiting lines as a persona's frontmatter lists them. */
+function waiting(lines: string[]): string {
+  return lines.length ? `waiting:\n${lines.map((line) => `  - ${line}\n`).join('')}` : ''
 }
