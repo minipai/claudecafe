@@ -50,6 +50,19 @@ export function register(on) {
     return result
   })
 
+  on('session.attach', { surface: 'desktop' }, async ($, event, next) => {
+    const result = await next(event)
+    // The desktop app connects after the session has started, so the start could not tell it would draw there.
+    session ??= openSession($, await $.session.cwd(), 'desktop')
+    const state = await session
+    if (!state.isOnDesktop) {
+      const root = await dataRoot($)
+      await showOnDesktop($, state, root, await readConfig($, root))
+      await $.ui.invalidate('ui.render')
+    }
+    return result
+  })
+
   on('turn.complete', async ($, event, next) => {
     const result = await next(event)
     if (event.agentId) return result
@@ -222,7 +235,6 @@ async function openSession($, cwd, surface) {
   const config = await readConfig($, root)
   const character = await loadCharacter($, root, config, await $.session.id())
   const faces = surface === 'terminal' && character?.pixels ? await loadFaces($, character.pixels) : {}
-  const desktop = surface === 'desktop' && character ? await loadDesktop($, castDirs($, root), character.line, config) : null
   const state = {
     cwd,
     hasPanel: Object.keys(faces).length > 0,
@@ -232,19 +244,10 @@ async function openSession($, cwd, surface) {
     faces,
     stats: undefined,
     waiting: character?.waiting ?? [],
-    desktop,
+    isOnDesktop: false,
+    desktop: null,
   }
-  if (desktop) await openDesktop($, Object.keys(desktop.avatars))
-  if (surface === 'desktop') {
-    // Her pictures come from her pack: a missing or older one is fetched in the background and drawn once it lands.
-    void installPacks($, root).then(async (installed) => {
-      if (!character?.line.some((id) => installed.includes(id))) return
-      const wasDrawn = Boolean(state.desktop)
-      state.desktop = await loadDesktop($, castDirs($, root), character.line, config)
-      if (state.desktop && !wasDrawn) await openDesktop($, Object.keys(state.desktop.avatars))
-      await $.ui.invalidate('ui.render')
-    })
-  }
+  if (surface === 'desktop') await showOnDesktop($, state, root, config)
   if (!state.hasPanel) return state
 
   await $.tool.register({
@@ -264,6 +267,25 @@ async function openSession($, cwd, surface) {
     await $.ui.invalidate('ui.render')
   })
   return state
+}
+
+/**
+ * Sets up her avatars, portrait pane and cut-ins. Her pictures come from her pack: a missing or older one is
+ * fetched in the background and drawn once it lands.
+ */
+async function showOnDesktop($, state, root, config) {
+  state.isOnDesktop = true
+  const { character } = state
+  if (!character) return
+  state.desktop = await loadDesktop($, castDirs($, root), character.line, config)
+  if (state.desktop) await openDesktop($, Object.keys(state.desktop.avatars))
+  void installPacks($, root).then(async (installed) => {
+    if (!character.line.some((id) => installed.includes(id))) return
+    const wasDrawn = Boolean(state.desktop)
+    state.desktop = await loadDesktop($, castDirs($, root), character.line, config)
+    if (state.desktop && !wasDrawn) await openDesktop($, Object.keys(state.desktop.avatars))
+    await $.ui.invalidate('ui.render')
+  })
 }
 
 async function openPane($) {

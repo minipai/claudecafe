@@ -1,4 +1,4 @@
-import type { On, RenderElement, RenderInput } from 'claude-code'
+import type { On, RenderElement, RenderInput, RenderSurface } from 'claude-code'
 import { describe, expect, mock, test, type Engine, type MockClock } from 'claude-code/testing'
 import type { Face } from '../hooks/function/faces.js'
 
@@ -486,6 +486,21 @@ describe('Desktop', () => {
     expect(tools).toContain('cut_in')
   })
 
+  test('sets up her desktop pictures when the desktop app connects after the session started', async ($, on) => {
+    const tools: string[] = []
+    desktop(on, {}, '', [])
+    on('session.start', (_, e) => ({ cwd: e.cwd }))
+    on('session.attach', (_, e) => ({ clientId: e.clientId }))
+    on('tool.register', (_, e) => { tools.push(e.name); return { value: { tool: `mcp__persona-panel__${e.name}` } } })
+    on('command.register', () => ({ value: undefined }))
+    on('ui.open', () => ({ value: placed }))
+    on('ui.invalidate', () => ({ value: undefined }))
+    await $.session.start({ cwd: '/work', surface: null, isInteractive: true })
+    expect(tools).not.toContain('cut_in')
+    await $.session.attach({ surface: 'desktop', clientId: 'desktop:default' })
+    expect(tools).toContain('cut_in')
+  })
+
   test('leaves replies alone when her pack has no desktop pictures', async ($, on) => {
     world(on)
     on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -562,7 +577,7 @@ async function settle(): Promise<void> {
 /** くるみ's pack as the desktop reads it: avatars and the 540 portraits, one tiny WebP per face. */
 const webp: Record<string, string> = { neutral: 'TkVVVFJBTA==', happy: 'SEFQUFk=' }
 
-function desktop(on: On, config: Record<string, unknown> = {}, version = ''): void {
+function desktop(on: On, config: Record<string, unknown> = {}, version = '', surfaces: RenderSurface[] = ['desktop']): void {
   mock.clock(on)
   on('fs.list', (_, e) => {
     if (e.path?.endsWith('/claudecafe/characters')) {
@@ -585,7 +600,7 @@ function desktop(on: On, config: Record<string, unknown> = {}, version = ''): vo
   }))
   on('fs.write', () => ({ value: undefined }))
   on('session.id', () => ({ value: 'test-session' }))
-  on('session.surfaces', () => ({ value: ['desktop'] }))
+  on('session.surfaces', () => ({ value: surfaces }))
   on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
 }
 
