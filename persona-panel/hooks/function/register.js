@@ -223,6 +223,27 @@ function resolveCharacter(input) {
 function normalizeCharacter(value) {
   return value.trim().toLowerCase() === "none" ? "" : value.trim().toLowerCase();
 }
+// packages/character-core/src/packs.ts
+var PUBLISHED_CHARACTER_PACKS = [
+  {
+    id: "kotone",
+    version: "1.4.0",
+    url: "https://github.com/minipai/claudecafe/releases/download/kotone-characters-v1.4.0/ClaudeCafe-Kotone-characters-v1.4.0.zip",
+    sha256: "7a0d8d9b7e52104feaff94be2745ad4179367325b2eb69432b94fc689a29f041"
+  },
+  {
+    id: "kurumi",
+    version: "1.4.0",
+    url: "https://github.com/minipai/claudecafe/releases/download/kurumi-characters-v1.4.0/ClaudeCafe-Kurumi-characters-v1.4.0.zip",
+    sha256: "1f028c4189a0e605517d85089a19f8662789c1f8068ccdb9dba6069b6b8aa17b"
+  },
+  {
+    id: "kokona",
+    version: "1.4.0",
+    url: "https://github.com/minipai/claudecafe/releases/download/kokona-characters-v1.4.0/ClaudeCafe-Kokona-characters-v1.4.0.zip",
+    sha256: "2151f12a2c8569bdab5c8d4df86c91da200c40946318a75e7c1c883604dbb9fb"
+  }
+];
 // packages/persona-panel/hooks/function/desktop.js
 var AVATAR = 72;
 var ROSE = "#d9708f";
@@ -723,6 +744,17 @@ async function openSession($, cwd, surface) {
   };
   if (desktop)
     await openDesktop($, Object.keys(desktop.avatars));
+  if (surface === "desktop") {
+    installPacks($, root).then(async (installed) => {
+      if (!character || !installed.includes(character.id))
+        return;
+      const wasDrawn = Boolean(state.desktop);
+      state.desktop = await loadDesktop($, castDirs($, root), character.id, config);
+      if (state.desktop && !wasDrawn)
+        await openDesktop($, Object.keys(state.desktop.avatars));
+      await $.ui.invalidate("ui.render");
+    });
+  }
   if (!state.hasPanel)
     return state;
   await $.tool.register({
@@ -788,6 +820,50 @@ async function portraitPane($, event, state, face, line) {
   const picture = await readPicture($, state.desktop.folder, "portraits-540", face);
   const tag = nameTagSvg(`${state.character.name}（心の声）`);
   return h(Box, { position: "relative", overflow: "hidden", flexDirection: "column", justifyContent: "flex-end", backgroundColor: PANE_WASH, ...rows ? { height: rows } : {} }, h(Box, { position: "relative", flexShrink: 0, flexDirection: "column", alignSelf: "center", ...width ? { width } : {} }, picture && h(Svg, { source: portraitSvg(picture), alt: `${state.character.name}, ${face}` }), h(Box, { position: "absolute", left: 0, bottom: 1, flexDirection: "column", ...width ? { width } : {} }, h(Svg, { source: gapSvg(NAME_TAG_HEIGHT / 2), alt: "gap", width: 1, height: NAME_TAG_HEIGHT / 2 }), h(Box, { flexDirection: "column", marginX: 1, paddingX: 2, paddingY: 1, borderStyle: "round", borderColor: ROSE, backgroundColor: "rgba(255,250,251,0.92)" }, h(Box, { height: THOUGHT_LINES, overflow: "hidden" }, state.desktop.thinks ? h(Text, { color: THOUGHT_INK }, line || "……") : h(Text, { color: THOUGHT_INK, dimColor: true }, THOUGHTS_OFF))), h(Box, { position: "absolute", top: 0, left: 3 }, h(Svg, { source: tag.source, alt: tag.text, width: tag.width, height: NAME_TAG_HEIGHT })))), columns && rows && h(Box, { position: "absolute", top: 0, left: 0, width: columns * 2 }, h(Svg, { source: petalField(rows, columns), alt: "falling sakura" })));
+}
+async function installPacks($, root) {
+  const installed = [];
+  for (const pack of PUBLISHED_CHARACTER_PACKS) {
+    try {
+      if (await installPack($, root, pack))
+        installed.push(pack.id);
+    } catch {}
+  }
+  return installed;
+}
+async function installPack($, root, pack) {
+  const folder = `${root}/characters/${pack.id}`;
+  const current = parsePersona(await read($, `${folder}/persona.md`)).version;
+  if (current && compareVersions(current, pack.version) >= 0)
+    return false;
+  const staging = `${root}/characters/.${pack.id}-${await $.clock.now()}`;
+  try {
+    await mustRun($, ["mkdir", "-p", staging]);
+    await mustRun($, ["curl", "-fsSL", "--max-time", "60", "-o", `${staging}/pack.zip`, pack.url]);
+    const { base64 } = await $.fs.read(`${staging}/pack.zip`, { as: "bytes" });
+    if (await sha256(base64) !== pack.sha256)
+      throw new Error(`${pack.id} pack SHA-256 mismatch`);
+    await mustRun($, ["unzip", "-q", `${staging}/pack.zip`, "-d", staging]);
+    if (parsePersona(await read($, `${staging}/${pack.id}/persona.md`)).version !== pack.version) {
+      throw new Error(`${pack.id} pack holds an unexpected persona version`);
+    }
+    if (await exists($, folder))
+      await mustRun($, ["mv", folder, `${staging}/previous`]);
+    await mustRun($, ["mv", `${staging}/${pack.id}`, folder]);
+    return true;
+  } finally {
+    await $.process.run(["rm", "-rf", staging], { timeoutMs: 30000 }).catch(() => {});
+  }
+}
+async function mustRun($, argv) {
+  const ran = await $.process.run(argv, { timeoutMs: 90000 });
+  if (ran.exitCode !== 0)
+    throw new Error(`${argv[0]} exited ${ran.exitCode}: ${ran.stderr.trim()}`);
+}
+async function sha256(base64) {
+  const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 async function playCutIn($, state, stage, face, shout) {
   const picture = state?.desktop && await readPicture($, state.desktop.folder, "portraits-540", face);
