@@ -15,6 +15,9 @@ kurumi/
     neutral.webp       runtime portrait; filename = expression ID
   avatars/             optional square faces cut from portraits/, one per expression
     neutral.webp       filename = expression ID
+  portraits-540/       optional 540 × 720 copy of portraits/, each under 95 KB, for
+                       clients that inline pictures (the Claude Code desktop draws
+                       one SVG of at most ~98 KB of image)
   pixels/               default 36×48 terminal portraits
     neutral.gif         static or animated; filename = expression ID
   variants/
