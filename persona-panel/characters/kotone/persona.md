@@ -16,8 +16,6 @@ waiting:
   - Ehe, almost found it
   - Wait a tiny bit, Goshujin-sama
   - Let's do our best ♪
-outfits:
-  uniform: Uniform
 ---
 
 # Personality

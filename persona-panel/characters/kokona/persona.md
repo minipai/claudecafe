@@ -16,8 +16,6 @@ waiting:
   - Not working hard for your sake
   - Almost done
   - One more moment
-outfits:
-  uniform: Uniform
 ---
 
 # Personality

@@ -61,10 +61,10 @@ function faceFor(marker) {
 var bare = (text) => text.replace(/\s+/g, "");
 // packages/character-core/src/prompt.ts
 function fillPrompt(template, values = {}) {
-  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare2, braced) => {
+  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare, braced) => {
     if (match === "$$")
       return "$";
-    const key = bare2 ?? braced ?? "";
+    const key = bare ?? braced ?? "";
     return Object.prototype.hasOwnProperty.call(values, key) ? values[key] ?? match : match;
   }).replace(/\n+$/, "");
 }
@@ -150,12 +150,25 @@ function parsePersona(text) {
     name: field(head, "name"),
     version: field(head, "version"),
     offDuty: /^off_duty:\s*(?:true|yes)\b/im.test(head),
+    extends: /^[a-z0-9][a-z0-9-]*$/.test(field(head, "extends")) ? field(head, "extends") : "",
     waiting: items(head, "waiting"),
     body: personaBody(text)
   };
 }
-function personaFiles(variant = "") {
-  return variant ? [`persona.${variant}.md`, "persona.md"] : ["persona.md"];
+function extendPersona(child, parent) {
+  const fields = new Map(entries(frontmatter(parent)));
+  fields.delete("off_duty");
+  for (const [key, entry] of entries(frontmatter(child))) {
+    if (entry.slice(key.length + 1).trim())
+      fields.set(key, entry);
+  }
+  fields.delete("extends");
+  const body = personaBody(child).trim() ? personaBody(child) : personaBody(parent);
+  return `---
+${[...fields.values()].join(`
+`)}
+---
+${body}`;
 }
 function compareVersions(a, b) {
   const parts = (version) => /^\d+(\.\d+)*$/.test(version) ? version.split(".").map(Number) : null;
@@ -199,6 +212,19 @@ ${instruction}`;
 }
 function frontmatter(text) {
   return /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)?.[1] ?? "";
+}
+function entries(head) {
+  const fields = [];
+  for (const line of head.split(/\r?\n/)) {
+    const key = /^([A-Za-z_][\w-]*):/.exec(line)?.[1];
+    const last = fields[fields.length - 1];
+    if (key)
+      fields.push([key, line]);
+    else if (last)
+      last[1] += `
+${line}`;
+  }
+  return fields;
 }
 function field(head, key) {
   const match = new RegExp(`^${key}:[ \\t]*(.+?)\\s*$`, "m").exec(head);
@@ -511,17 +537,27 @@ function encode(bytes) {
 // packages/persona-panel/hooks/function/stats.js
 function statusRows(stats) {
   const quotaLeft = stats.quota === undefined ? undefined : 100 - Math.round(stats.quota);
-  const cost = stats.usd === undefined ? "" : `    $${stats.usd.toFixed(2)}`;
   return [
     [{ text: stats.project, bold: true, wrap: "truncate-start" }],
-    ...stats.branch ? [[{ text: `⎇ ${stats.branch}` }]] : [],
+    [{ text: `◆ ${stats.model}` }],
     [{ text: "HP " }, ...bar(stats.contextLeft, gaugeColor(stats.contextLeft, "green")), { text: `  context left ${stats.contextLeft}%` }],
     [{ text: "MP " }, ...bar(quotaLeft ?? 0, gaugeColor(quotaLeft ?? 0, "cyan")), { text: `  5h left ${quotaLeft === undefined ? "—" : `${quotaLeft}%`}` }],
-    [{ text: `⏱ session ${duration(stats.sessionMs)}${cost}` }]
+    ...stats.branch ? [[{ text: `⎇ ${stats.branch}` }, ...changes(stats.changes)]] : []
   ];
 }
 function homePath(path, home) {
   return home && (path === home || path.startsWith(`${home}/`)) ? `~${path.slice(home.length)}` : path;
+}
+function changes(diff) {
+  if (!diff)
+    return [];
+  return [
+    { text: " (" },
+    { text: `+${diff.added}`, color: "green" },
+    { text: "," },
+    { text: `-${diff.removed}`, color: "red" },
+    { text: ")" }
+  ];
 }
 function bar(percent, color) {
   const filled = Math.max(0, Math.min(10, Math.round(percent / 10)));
@@ -533,11 +569,6 @@ function gaugeColor(left, full) {
   if (left > 20)
     return "yellow";
   return "red";
-}
-function duration(ms) {
-  const minutes = Math.floor(ms / 60000);
-  const hours = Math.floor(minutes / 60);
-  return hours ? `${hours}h${String(minutes % 60).padStart(2, "0")}m` : `${minutes}m`;
 }
 
 // packages/persona-panel/hooks/function/register.js
@@ -554,7 +585,7 @@ var THOUGHT_LINES = 3;
 var THOUGHTS_OFF = 'Thoughts off — set "thoughts": true to hear them.';
 function register(on) {
   let session;
-  let expression2 = "neutral";
+  let expression = "neutral";
   let waitingTick;
   let greeted = false;
   const stage = { cutIn: null };
@@ -577,7 +608,7 @@ function register(on) {
     if (state?.hasPanel) {
       const face = markedFace(event.answer);
       if (face && Object.hasOwn(state.faces, face))
-        expression2 = face;
+        expression = face;
       state.stats = await readStats($);
       await $.ui.invalidate("ui.render");
     }
@@ -593,7 +624,7 @@ function register(on) {
   });
   on("command.run", { command: "clear" }, async ($, event, next) => {
     const state = await session;
-    expression2 = "neutral";
+    expression = "neutral";
     greeted = false;
     if (state)
       state.startedAt = await $.clock.now();
@@ -613,10 +644,10 @@ function register(on) {
     return next(event);
   });
   on("prompt.context", async ($, event, next) => {
-    const context2 = await next(event);
+    const context = await next(event);
     session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0]);
     const state = await session;
-    const blocks = context2.blocks.filter((block) => block.name !== BLOCK);
+    const blocks = context.blocks.filter((block) => block.name !== BLOCK);
     const pieces = [];
     if (state.character)
       pieces.push(`Adopt this persona for the entire session — it overrides the default assistant voice:
@@ -643,11 +674,11 @@ ${state.character.persona}`);
     if (typeof selected !== "string" || !Object.hasOwn(faces, selected)) {
       return { deny: `Unknown face: ${String(selected)}` };
     }
-    if (selected !== expression2) {
-      expression2 = selected;
+    if (selected !== expression) {
+      expression = selected;
       await $.ui.invalidate("ui.render");
     }
-    return { result: `Face: ${expression2}` };
+    return { result: `Face: ${expression}` };
   });
   on("tool.call", { tool: CUT_IN_TOOL }, async ($, event) => {
     const played = await playCutIn($, await session, stage, event.face, event.shout || `${event.face.toUpperCase()}!`);
@@ -696,7 +727,7 @@ ${state.character.persona}`);
   });
   on("ui.render", { component: "Pane", requestId: PANE.id }, async ($, event, next) => {
     const state = await session;
-    const face = state?.faces[expression2];
+    const face = state?.faces[expression];
     if (event.surface !== "terminal" || !face)
       return next(event);
     const { Box, Text, Raster } = $.ui.resolve(event);
@@ -710,7 +741,7 @@ ${state.character.persona}`);
     const children = [
       h(Box, { flexDirection: "column", width: face.columns, marginTop: 1 }, ...statusChildren),
       h(Box, { flexGrow: 1 }),
-      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression2}`)))
+      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression}`)))
     ];
     return h(Box, {
       flexDirection: "column",
@@ -729,8 +760,8 @@ async function openSession($, cwd, surface) {
   const root = await dataRoot($);
   const config = await readConfig($, root);
   const character = await loadCharacter($, root, config, await $.session.id());
-  const faces = surface === "terminal" && character?.pack ? await loadFaces($, `${character.pack}/pixels`) : {};
-  const desktop = surface === "desktop" && character ? await loadDesktop($, castDirs($, root), character.id, config) : null;
+  const faces = surface === "terminal" && character?.pixels ? await loadFaces($, character.pixels) : {};
+  const desktop = surface === "desktop" && character ? await loadDesktop($, castDirs($, root), character.line, config) : null;
   const state = {
     cwd,
     hasPanel: Object.keys(faces).length > 0,
@@ -746,10 +777,10 @@ async function openSession($, cwd, surface) {
     await openDesktop($, Object.keys(desktop.avatars));
   if (surface === "desktop") {
     installPacks($, root).then(async (installed) => {
-      if (!character || !installed.includes(character.id))
+      if (!character?.line.some((id) => installed.includes(id)))
         return;
       const wasDrawn = Boolean(state.desktop);
-      state.desktop = await loadDesktop($, castDirs($, root), character.id, config);
+      state.desktop = await loadDesktop($, castDirs($, root), character.line, config);
       if (state.desktop && !wasDrawn)
         await openDesktop($, Object.keys(state.desktop.avatars));
       await $.ui.invalidate("ui.render");
@@ -778,12 +809,14 @@ async function openSession($, cwd, surface) {
 async function openPane($) {
   await $.ui.open(PANE);
 }
-async function loadDesktop($, dirs, id, config) {
-  for (const dir of dirs) {
-    const folder = `${dir}/${id}`;
-    const avatars = await loadPictures($, folder, "avatars");
-    if (avatars.neutral && await exists($, `${folder}/portraits-540/neutral.webp`)) {
-      return { folder, avatars, thinks: config.thoughts === true };
+async function loadDesktop($, dirs, line, config) {
+  for (const id of line) {
+    for (const dir of dirs) {
+      const folder = `${dir}/${id}`;
+      const avatars = await loadPictures($, folder, "avatars");
+      if (avatars.neutral && await exists($, `${folder}/portraits-540/neutral.webp`)) {
+        return { folder, avatars, thinks: config.thoughts === true };
+      }
     }
   }
   return null;
@@ -964,9 +997,8 @@ async function replyLanguage($, config) {
   return String(config.lang ?? "").trim();
 }
 async function loadCharacter($, root, config, sessionID) {
-  const variant = String(config.variant ?? "").trim();
   const dirs = castDirs($, root);
-  const pool = await castPool($, dirs, variant);
+  const pool = await castPool($, dirs);
   const drawn = `${root}/sessions/${sessionID}/character`;
   const session = await read($, drawn);
   const configured = String(config.character ?? "").trim();
@@ -975,21 +1007,20 @@ async function loadCharacter($, root, config, sessionID) {
     return null;
   if (!session && !configured)
     await $.fs.write(drawn, id);
-  const pack = await packFolder($, dirs, id, variant);
-  const path = await personaFile($, id, pack, variant);
-  if (!path)
+  const character = await characterOf($, dirs, id);
+  if (!character)
     return null;
-  const text = await read($, path);
-  const persona2 = parsePersona(text);
+  const persona = parsePersona(character.text);
   return {
     id,
-    name: persona2.name || id,
-    waiting: persona2.waiting,
-    persona: commitAuthorship(text, String(config.commit_authorship ?? "co-author")).trim(),
-    pack
+    name: persona.name || id,
+    waiting: persona.waiting,
+    persona: commitAuthorship(character.text, String(config.commit_authorship ?? "co-author")).trim(),
+    pixels: character.pixels,
+    line: character.line
   };
 }
-async function castPool($, dirs, variant) {
+async function castPool($, dirs) {
   const ids = new Set;
   for (const dir of dirs) {
     for (const entry of await list($, dir)) {
@@ -999,8 +1030,10 @@ async function castPool($, dirs, variant) {
   }
   const available = [];
   for (const id of ids) {
-    const pack = await packFolder($, dirs, id, variant);
-    if (pack && !parsePersona(await read($, await packPersona($, pack, variant))).offDuty)
+    if (!await packFolder($, dirs, id))
+      continue;
+    const { text } = await characterOf($, dirs, id);
+    if (!parsePersona(text).offDuty)
       available.push(id);
   }
   if (available.length)
@@ -1011,12 +1044,26 @@ async function castPool($, dirs, variant) {
 function castDirs($, root) {
   return [`${root}/characters`, `${$.plugin.root}/characters`];
 }
-async function packFolder($, dirs, id, variant) {
+async function characterOf($, dirs, id, seen = new Set) {
+  seen.add(id);
+  const pack = await packFolder($, dirs, id);
+  const path = pack ? `${pack}/persona.md` : await fallbackPersona($, id);
+  if (!path)
+    return null;
+  const text = await read($, path);
+  const pixels = pack && (await list($, `${pack}/pixels`)).length ? `${pack}/pixels` : null;
+  const parentID = parsePersona(text).extends;
+  const parent = parentID && !seen.has(parentID) ? await characterOf($, dirs, parentID, seen) : null;
+  if (!parent)
+    return { text, pixels, line: [id] };
+  return { text: extendPersona(text, parent.text), pixels: pixels ?? parent.pixels, line: [id, ...parent.line] };
+}
+async function packFolder($, dirs, id) {
   let newest = null;
   for (const dir of dirs) {
     const folder = `${dir}/${id}`;
-    const path = await packPersona($, folder, variant);
-    if (!path)
+    const path = `${folder}/persona.md`;
+    if (!await exists($, path))
       continue;
     const version = parsePersona(await read($, path)).version;
     if (!newest || compareVersions(version, newest.version) > 0)
@@ -1024,20 +1071,9 @@ async function packFolder($, dirs, id, variant) {
   }
   return newest?.folder ?? null;
 }
-async function personaFile($, id, pack, variant) {
-  const packed = pack && await packPersona($, pack, variant);
-  if (packed)
-    return packed;
+async function fallbackPersona($, id) {
   const bundled = `${$.plugin.root}/fallback/${id}.md`;
   return await exists($, bundled) ? bundled : null;
-}
-async function packPersona($, folder, variant) {
-  for (const name of personaFiles(variant)) {
-    const path = `${folder}/${name}`;
-    if (await exists($, path))
-      return path;
-  }
-  return null;
 }
 function contextHost($) {
   return {
@@ -1095,21 +1131,26 @@ async function exists($, path) {
   }
 }
 async function readStats($) {
-  const [root, home, git, usage, now] = await Promise.all([
+  const [root, home, git, diff, usage, model] = await Promise.all([
     $.session.root(),
     $.env.get("HOME"),
     $.process.run(["git", "branch", "--show-current"]).catch(() => ({ exitCode: 1, stdout: "", stderr: "" })),
+    $.process.run(["git", "diff", "--shortstat", "HEAD"]).catch(() => ({ exitCode: 1, stdout: "", stderr: "" })),
     $.session.usage(),
-    $.clock.now()
+    $.session.model()
   ]);
   return {
     project: homePath(root, home),
     branch: git.exitCode === 0 ? git.stdout.trim() : "",
+    changes: diff.exitCode === 0 ? diffChanges(diff.stdout) : undefined,
     contextLeft: 100 - (usage.context.percent ?? 0),
     quota: usage.rateLimits.find((limit) => limit.kind === "five_hour")?.percentUsed,
-    sessionMs: now - usage.startedAt,
-    usd: usage.cost?.usd
+    model
   };
+}
+function diffChanges(shortstat) {
+  const count = (word) => Number(shortstat.match(new RegExp(`(\\d+) ${word}`))?.[1] ?? 0);
+  return { added: count("insertion"), removed: count("deletion") };
 }
 export {
   register

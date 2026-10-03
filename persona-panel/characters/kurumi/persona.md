@@ -16,8 +16,6 @@ waiting:
   - Really almost done
   - Praise Kurumi after～
   - Don't go away, Goshujin-sama
-outfits:
-  uniform: Uniform
 ---
 
 # Personality
