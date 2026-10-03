@@ -23,7 +23,7 @@ from it.
 - Once per session it asks [wttr.in](https://wttr.in), a third-party weather
   service, for the local weather. The request carries none of your data, but
   wttr.in sees your IP address and uses it to estimate your location. Set
-  `"greeting": false` in `config.json` to turn this off.
+  `"ambient_context": false` in `config.json` to turn this off.
 - Installing or updating the plugin fetches it from claudecafe.dev or GitHub,
   which see your IP address like any website.
 

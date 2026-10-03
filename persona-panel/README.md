@@ -65,7 +65,7 @@ change them for you. Changes apply from the next session.
   "character": "kotone",
   "lang": "English",
   "commit_authorship": "co-author",
-  "greeting": true,
+  "ambient_context": true,
   "festivals": true
 }
 ```
@@ -76,48 +76,97 @@ change them for you. Changes apply from the next session.
 - `commit_authorship` — when Claude makes a Git commit, `"co-author"` adds the
   character as a `Co-Authored-By` trailer; `"author"` makes the character the
   commit author while you stay the committer.
-- `greeting` — `false` drops the first-turn greeting, mood-marker cue and
-  weather lookup.
+- `ambient_context` — `false` drops the time, weather and Git context: the
+  first-turn greeting and weather lookup, and the time line on every turn. The
+  mood marker stays.
 - `festivals` — `false` turns the festival calendar off, or a path to a JSON
   file of `"MM-DD": "name"` entries replaces it.
 - `thoughts` — `true` shows her thoughts in the desktop portrait pane, each one
   a short model request. Off unless set; while off, the pane's thought box says
   how to turn it on.
 
-## Adding a character
+## Making a character
 
-A character is a folder under `~/.config/claudecafe/characters/<id>/` with a
-lowercase id:
+A character is a folder under `~/.config/claudecafe/characters/` named by its
+id, lowercase letters, digits and hyphens. Only `persona.md` is required:
 
 ```text
 characters/<id>/
-  persona.md          # YAML frontmatter with name:, then the persona text
-  pixels/*.gif        # optional 36×48 faces; neutral.gif is the fallback
-  avatars/*.webp      # optional square faces for the desktop, one per expression
-  portraits-540/*.webp  # optional 540×720 portraits for the desktop, each under 95 KB
+  persona.md            # who she is: frontmatter, then the persona text
+  pixels/*.gif          # optional terminal faces, 36×48
+  avatars/*.webp        # optional square faces for the desktop, each under 95 KB
+  portraits-540/*.webp  # optional 540×720 desktop portraits, each under 95 KB
 ```
 
-A folder there wins over a bundled character with the same id. Add
-`off_duty: true` to a persona's frontmatter to keep that character out of the
-roster. A character without `pixels/` still supplies a persona, but has no
-terminal portrait; without both `avatars/` and `portraits-540/` she has no
-desktop pictures. The published packs carry all three; the plugin bundles only
-personas and pixels, and installs the published packs in desktop sessions.
+**1. Write her persona.** Frontmatter on top, then the persona Claude adopts,
+in any language:
 
-To make your own take on a character, give the new folder's persona
-`extends: <id>`. Each frontmatter field it fills in replaces the other
-character's, and so does a body that is not blank; whatever it leaves blank,
-and `pixels/` if it has none, comes from the character it extends. `off_duty`
-is the one field that is never passed on:
+```markdown
+---
+name: Mio
+waiting:
+  - Hold on
+  - Reading it now
+---
+
+# Personality
+
+You are Mio, a calm, dry-humoured AI maid. You call the user "Master" …
+```
+
+| Field | What it does |
+|---|---|
+| `name` | Her name, shown under the portrait. Defaults to the folder id. |
+| `waiting` | Lines shown on the spinner while a turn runs, one at a time. |
+| `id` | `claudecafe/<id>` gives her a commit identity (`<id>@claudecafe.dev`) for `commit_authorship`; any other value gives her none. |
+| `version` | Compared with a bundled character of the same id; the higher one is used, and yours wins a tie. |
+| `extends` | Builds on another character (see below). |
+| `off_duty` | `true` skips her when nobody is chosen and the café falls back to someone else. |
+
+The mood-marker table and the expression tool are added for you; the persona
+only has to say who she is.
+
+**2. Put her on shift.** A new folder changes nothing until you choose her: set
+`"character": "<id>"` in `config.json`, or ask `/persona-panel:config`, then
+open a new session.
+
+**3. Give her faces (optional).** Without `pixels/` she still talks in
+character, but the terminal shows no portrait. Each GIF is named after the
+expression it shows, `neutral.gif` first, from this set:
 
 ```text
-characters/kokona-ja/persona.md
+neutral happy curious thinking focused confused proud smug excited flirty
+smitten wink embarrassed pouty worried annoyed sad surprised angry afraid
+skeptical frustrated awkward sorry speechless relieved laughing crying oops
+pleading facepalm waving
+```
+
+Draw as many as you like; she is only offered the faces she has. The desktop
+pictures work the same way, but need both `avatars/` and `portraits-540/`.
+The Claude Code desktop draws each picture as an SVG with the WebP inlined,
+and one SVG holds at most 131,072 characters, about 98 KB of image; keep every
+file in those two folders under 95 KB, or it is too large to draw.
+
+### Building on an existing character
+
+To change a character without copying her whole file, make a new folder whose
+persona says `extends: <id>`. Each frontmatter field it fills in replaces the
+other character's, and so does a body that is not blank; whatever it leaves
+blank, and any picture folder it lacks, comes from the character it extends.
+`off_duty` is the one field never passed on:
+
+```markdown
 ---
-name: ここな
 extends: kokona
+waiting:
+  - 任せて
 ---
 Reply in Japanese, and call the user ご主人様.
 ```
+
+Your own folder with a bundled character's id replaces her outright, but a
+newer bundled version takes over again after an update; `extends` survives
+updates.
 
 ## What it reads, runs and sends
 
@@ -137,7 +186,7 @@ Reply in Japanese, and call the user ご主人様.
 - **Sends** one request per session to [wttr.in](https://wttr.in), a third-party
   weather service, for the local weather in the greeting. The request carries
   no data of yours, but wttr.in sees your IP address and uses it to guess your
-  location. Set `"greeting": false` to skip it.
+  location. Set `"ambient_context": false` to skip it.
 - **Asks the model**, only with `"thoughts": true`, for her thoughts in the
   desktop portrait pane: about one short Sonnet request per turn, carrying the
   persona and the last few things said and done in the session, through Claude

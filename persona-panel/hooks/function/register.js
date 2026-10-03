@@ -61,10 +61,10 @@ function faceFor(marker) {
 var bare = (text) => text.replace(/\s+/g, "");
 // packages/character-core/src/prompt.ts
 function fillPrompt(template, values = {}) {
-  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare2, braced) => {
+  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare, braced) => {
     if (match === "$$")
       return "$";
-    const key = bare2 ?? braced ?? "";
+    const key = bare ?? braced ?? "";
     return Object.prototype.hasOwnProperty.call(values, key) ? values[key] ?? match : match;
   }).replace(/\n+$/, "");
 }
@@ -83,17 +83,28 @@ var FESTIVALS = {
 };
 async function readContext(host, options) {
   const [config, now] = await Promise.all([host.config(), host.now()]);
+  const ambient = config.ambient_context !== false;
   const pieces = [];
-  if (options.greet && config.greeting !== false) {
-    const date = new Date(now);
-    const time = `${pad(date.getHours())}:${pad(date.getMinutes())} (${date.toLocaleDateString("en-US", { weekday: "long" })})`;
-    const greeting = fillPrompt(await host.readPrompt("greeting"), { time });
-    const cues = fillPrompt(await host.readPrompt("cues"), { lang: options.language || "your reply language" });
-    const weather = await host.weather();
-    pieces.push([greeting, weather && `Weather: ${weather}`, cues].filter(Boolean).join(`
+  if (options.greet && ambient)
+    pieces.push(await readGreeting(host, now));
+  if (options.greet)
+    pieces.push(fillPrompt(await host.readPrompt("cues"), { lang: options.language || "your reply language" }));
+  if (ambient)
+    pieces.push(await readTimeLine(host, config, options, now));
+  return pieces.join(`
 
-`));
-  }
+`);
+}
+async function readGreeting(host, now) {
+  const date = new Date(now);
+  const time = `${pad(date.getHours())}:${pad(date.getMinutes())} (${date.toLocaleDateString("en-US", { weekday: "long" })})`;
+  const greeting = fillPrompt(await host.readPrompt("greeting"), { time });
+  const weather = await host.weather();
+  return [greeting, weather && `Weather: ${weather}`].filter(Boolean).join(`
+
+`);
+}
+async function readTimeLine(host, config, options, now) {
   const segments = [`Current time: ${formatDate(new Date(now))}`];
   const elapsed = now - options.startedAt;
   if (elapsed >= 600000) {
@@ -109,10 +120,7 @@ async function readContext(host, options) {
   const festival = await readFestival(host, config.festivals, new Date(now));
   if (festival)
     segments.push(festival);
-  pieces.push(segments.join("｜"));
-  return pieces.filter(Boolean).join(`
-
-`);
+  return segments.join("｜");
 }
 async function readFestival(host, setting, date) {
   if (setting === false)
@@ -585,7 +593,7 @@ var THOUGHT_LINES = 3;
 var THOUGHTS_OFF = 'Thoughts off — set "thoughts": true to hear them.';
 function register(on) {
   let session;
-  let expression2 = "neutral";
+  let expression = "neutral";
   let waitingTick;
   let greeted = false;
   const stage = { cutIn: null };
@@ -619,7 +627,7 @@ function register(on) {
     if (state?.hasPanel) {
       const face = markedFace(event.answer);
       if (face && Object.hasOwn(state.faces, face))
-        expression2 = face;
+        expression = face;
       state.stats = await readStats($);
       await $.ui.invalidate("ui.render");
     }
@@ -635,7 +643,7 @@ function register(on) {
   });
   on("command.run", { command: "clear" }, async ($, event, next) => {
     const state = await session;
-    expression2 = "neutral";
+    expression = "neutral";
     greeted = false;
     if (state)
       state.startedAt = await $.clock.now();
@@ -655,10 +663,10 @@ function register(on) {
     return next(event);
   });
   on("prompt.context", async ($, event, next) => {
-    const context2 = await next(event);
+    const context = await next(event);
     session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0]);
     const state = await session;
-    const blocks = context2.blocks.filter((block) => block.name !== BLOCK);
+    const blocks = context.blocks.filter((block) => block.name !== BLOCK);
     const pieces = [];
     if (state.character)
       pieces.push(`Adopt this persona for the entire session — it overrides the default assistant voice:
@@ -675,7 +683,7 @@ ${state.character.persona}`);
     if (state.hasPanel)
       pieces.push(expressionPrompt(TOOL));
     greeted = true;
-    return { blocks: [...blocks, { name: BLOCK, text: pieces.join(`
+    return { blocks: [...blocks, { name: BLOCK, text: pieces.filter(Boolean).join(`
 
 `) }] };
   });
@@ -685,11 +693,11 @@ ${state.character.persona}`);
     if (typeof selected !== "string" || !Object.hasOwn(faces, selected)) {
       return { deny: `Unknown face: ${String(selected)}` };
     }
-    if (selected !== expression2) {
-      expression2 = selected;
+    if (selected !== expression) {
+      expression = selected;
       await $.ui.invalidate("ui.render");
     }
-    return { result: `Face: ${expression2}` };
+    return { result: `Face: ${expression}` };
   });
   on("tool.call", { tool: CUT_IN_TOOL }, async ($, event) => {
     const played = await playCutIn($, await session, stage, event.face, event.shout || `${event.face.toUpperCase()}!`);
@@ -738,7 +746,7 @@ ${state.character.persona}`);
   });
   on("ui.render", { component: "Pane", requestId: PANE.id }, async ($, event, next) => {
     const state = await session;
-    const face = state?.faces[expression2];
+    const face = state?.faces[expression];
     if (event.surface !== "terminal" || !face)
       return next(event);
     const { Box, Text, Raster } = $.ui.resolve(event);
@@ -752,7 +760,7 @@ ${state.character.persona}`);
     const children = [
       h(Box, { flexDirection: "column", width: face.columns, marginTop: 1 }, ...statusChildren),
       h(Box, { flexGrow: 1 }),
-      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression2}`)))
+      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression}`)))
     ];
     return h(Box, {
       flexDirection: "column",
@@ -986,8 +994,8 @@ async function loadPictures($, folder, set) {
   return loaded;
 }
 async function loadFaces($, directory) {
-  const entries2 = await list($, directory);
-  const names = entries2.filter((entry) => entry.kind === "file" && entry.name.endsWith(".gif")).map((entry) => entry.name.slice(0, -4));
+  const entries = await list($, directory);
+  const names = entries.filter((entry) => entry.kind === "file" && entry.name.endsWith(".gif")).map((entry) => entry.name.slice(0, -4));
   const loaded = {};
   for (const name of names) {
     try {
@@ -1028,11 +1036,11 @@ async function loadCharacter($, root, config, sessionID) {
   const character = await characterOf($, dirs, id);
   if (!character)
     return null;
-  const persona2 = parsePersona(character.text);
+  const persona = parsePersona(character.text);
   return {
     id,
-    name: persona2.name || id,
-    waiting: persona2.waiting,
+    name: persona.name || id,
+    waiting: persona.waiting,
     persona: commitAuthorship(character.text, String(config.commit_authorship ?? "co-author")).trim(),
     pixels: character.pixels,
     line: character.line
