@@ -150,6 +150,7 @@ function parsePersona(text) {
     name: field(head, "name"),
     version: field(head, "version"),
     offDuty: /^off_duty:\s*(?:true|yes)\b/im.test(head),
+    waiting: items(head, "waiting"),
     body: personaBody(text)
   };
 }
@@ -201,7 +202,14 @@ function frontmatter(text) {
 }
 function field(head, key) {
   const match = new RegExp(`^${key}:[ \\t]*(.+?)\\s*$`, "m").exec(head);
-  return match?.[1]?.trim().replace(/^(['"])(.*)\1$/, "$2") ?? "";
+  return unquote(match?.[1]?.trim() ?? "");
+}
+function items(head, key) {
+  const block = new RegExp(`^${key}:[ \\t]*\\r?\\n((?:[ \\t]+-.*(?:\\r?\\n|$))*)`, "m").exec(head)?.[1] ?? "";
+  return [...block.matchAll(/^[ \t]+-[ \t]*(.+?)\s*$/gm)].map((item) => unquote(item[1])).filter(Boolean);
+}
+function unquote(value) {
+  return value.replace(/^(['"])(.*)\1$/, "$2");
 }
 // packages/character-core/src/selection.ts
 function resolveCharacter(input) {
@@ -449,9 +457,11 @@ function duration(ms) {
 var TOOL = "mcp__persona-panel__set_expression";
 var PANE = { id: "persona-panel", title: "Pixel art" };
 var BLOCK = "persona-panel";
+var WAITING_MS = 4500;
 function register(on) {
   let session;
   let expression = "neutral";
+  let waitingTick;
   let greeted = false;
   on("session.start", async ($, event, next) => {
     const result = await next(event);
@@ -462,8 +472,12 @@ function register(on) {
   });
   on("turn.complete", async ($, event, next) => {
     const result = await next(event);
+    if (event.agentId)
+      return result;
+    waitingTick?.cancel();
+    waitingTick = undefined;
     const state = await session;
-    if (state?.hasPanel && !event.agentId) {
+    if (state?.hasPanel) {
       const face = markedFace(event.answer);
       if (face && Object.hasOwn(state.faces, face))
         expression = face;
@@ -488,6 +502,7 @@ function register(on) {
     if (state.hasPanel && (await $.ui.panes()).some((pane) => pane.id === PANE.id && !pane.isPlaced)) {
       await openPane($);
     }
+    waitingTick ??= $.clock.every(WAITING_MS, () => $.ui.invalidate("ui.render"));
     return next(event);
   });
   on("prompt.context", async ($, event, next) => {
@@ -527,6 +542,13 @@ ${state.character.persona}`);
     }
     return { result: `Face: ${expression}` };
   });
+  on("ui.render", { component: "Spinner" }, async ($, event, next) => {
+    const waiting = (await session)?.waiting ?? [];
+    if (!waiting.length)
+      return next(event);
+    const word = waiting[Math.floor(await $.clock.now() / WAITING_MS) % waiting.length];
+    return next({ ...event, props: { ...event.props, word } });
+  });
   on("ui.render", { component: "Pane" }, async ($, event, next) => {
     const state = await session;
     const face = state?.faces[expression];
@@ -565,7 +587,8 @@ async function openSession($, cwd, isTerminal) {
     startedAt: await $.clock.now(),
     character,
     faces,
-    stats: undefined
+    stats: undefined,
+    waiting: character?.waiting ?? []
   };
   if (!state.hasPanel)
     return state;
@@ -636,9 +659,11 @@ async function loadCharacter($, root, config, sessionID) {
   if (!path)
     return null;
   const text = await read($, path);
+  const persona = parsePersona(text);
   return {
     id,
-    name: parsePersona(text).name || id,
+    name: persona.name || id,
+    waiting: persona.waiting,
     persona: commitAuthorship(text, String(config.commit_authorship ?? "co-author")).trim(),
     pack
   };
