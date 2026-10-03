@@ -186,7 +186,7 @@ for maid_id in "${IDS[@]}"; do
 
   rm -f "$archive"
   cp -RL "$source_dir" "$STAGE_DIR/$maid_id"
-  (cd "$STAGE_DIR" && zip -qr "$archive" "$maid_id")
+  (cd "$STAGE_DIR" && zip -qr "$archive" "$maid_id" -x "*.DS_Store")
   validate_archive "$archive" "$maid_id"
   hash="$(sha256 "$archive")"
 
@@ -242,5 +242,5 @@ done
 
 if [ -z "$DRY" ]; then
   echo
-  echo "Update apps/desktop/electron/characters.ts with the new URL and SHA-256 before shipping a desktop build."
+  echo "Update packages/character-core/src/packs.ts with the new version, URL and SHA-256; the desktop app, OpenCode and persona-panel all read it."
 fi

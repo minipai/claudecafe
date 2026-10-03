@@ -3,27 +3,11 @@ import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { promisify } from 'node:util'
-import { personaFiles } from '@claudecafe/character-core'
+import { PUBLISHED_CHARACTER_PACKS, personaFiles } from '@claudecafe/character-core'
 import { cafeRoot } from './cafehome'
 import type { CastMember } from '../../src/agent/bridge'
 
-const characterPacks = [
-  {
-    id: 'kotone',
-    url: 'https://github.com/minipai/claudecafe/releases/download/kotone-characters-v1.4.0/ClaudeCafe-Kotone-characters-v1.4.0.zip',
-    sha256: '7a0d8d9b7e52104feaff94be2745ad4179367325b2eb69432b94fc689a29f041',
-  },
-  {
-    id: 'kurumi',
-    url: 'https://github.com/minipai/claudecafe/releases/download/kurumi-characters-v1.4.0/ClaudeCafe-Kurumi-characters-v1.4.0.zip',
-    sha256: '1f028c4189a0e605517d85089a19f8662789c1f8068ccdb9dba6069b6b8aa17b',
-  },
-  {
-    id: 'kokona',
-    url: 'https://github.com/minipai/claudecafe/releases/download/kokona-characters-v1.4.0/ClaudeCafe-Kokona-characters-v1.4.0.zip',
-    sha256: '2151f12a2c8569bdab5c8d4df86c91da200c40946318a75e7c1c883604dbb9fb',
-  },
-] as const
+const characterPacks = PUBLISHED_CHARACTER_PACKS
 const unzip = promisify(execFile)
 
 /** Characters live beside the shared café settings, not in an app chooser. */
