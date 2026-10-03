@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { loadFaceNames } from "../src/expressions.ts"
 import { loadFaces, renderFace } from "../src/faces.ts"
@@ -13,7 +14,7 @@ describe("terminal faces", () => {
   })
 
   test("a malformed extra GIF does not hide valid faces", () => {
-    const directory = mkdtempSync("/tmp/opencode/face-test-")
+    const directory = mkdtempSync(join(tmpdir(), "opencode-face-test-"))
     copyFileSync(join(import.meta.dir, "fixtures", "animated", "blink.gif"), join(directory, "blink.gif"))
     writeFileSync(join(directory, "broken.gif"), "not a gif")
     expect(Object.keys(loadFaces(directory))).toEqual(["blink"])
