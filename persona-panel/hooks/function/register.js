@@ -61,10 +61,10 @@ function faceFor(marker) {
 var bare = (text) => text.replace(/\s+/g, "");
 // packages/character-core/src/prompt.ts
 function fillPrompt(template, values = {}) {
-  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare, braced) => {
+  return template.replace(/\$\$|\$([a-zA-Z_]\w*)|\$\{([a-zA-Z_]\w*)\}/g, (match, bare2, braced) => {
     if (match === "$$")
       return "$";
-    const key = bare ?? braced ?? "";
+    const key = bare2 ?? braced ?? "";
     return Object.prototype.hasOwnProperty.call(values, key) ? values[key] ?? match : match;
   }).replace(/\n+$/, "");
 }
@@ -212,19 +212,85 @@ function unquote(value) {
   return value.replace(/^(['"])(.*)\1$/, "$2");
 }
 // packages/character-core/src/selection.ts
+var DEFAULT_CHARACTER = "kotone";
 function resolveCharacter(input) {
   const requested = input.selected || input.session || input.config;
   if (requested)
     return normalizeCharacter(requested) || null;
-  if (!input.pool.length)
-    return null;
-  const random = input.random ?? Math.random;
-  const index = Math.min(input.pool.length - 1, Math.floor(random() * input.pool.length));
-  return normalizeCharacter(input.pool[index] ?? "") || null;
+  const fallback = input.pool.includes(DEFAULT_CHARACTER) ? DEFAULT_CHARACTER : input.pool[0];
+  return normalizeCharacter(fallback ?? "") || null;
 }
 function normalizeCharacter(value) {
   return value.trim().toLowerCase() === "none" ? "" : value.trim().toLowerCase();
 }
+// packages/persona-panel/hooks/function/desktop.js
+var AVATAR = 72;
+var ROSE = "#d9708f";
+var NAME_GAP = 5;
+var NAME_TAG_HEIGHT = 24;
+var THOUGHT_INK = "#5d4650";
+var PANE_WASH = "#f8eeee";
+var CUT_IN_MS = 2400;
+var PORTRAIT = { width: 540, height: 720 };
+var ROW_PIXELS = 19;
+var COLUMN_PIXELS = 8.4;
+var PETAL_COUNT = 10;
+var petalFields = new Map;
+function avatarSvg(webp) {
+  const radius = 16;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${AVATAR}" height="${AVATAR}" viewBox="0 0 ${AVATAR} ${AVATAR}" preserveAspectRatio="xMidYMin meet">` + `<clipPath id="round"><rect width="${AVATAR}" height="${AVATAR}" rx="${radius}"/></clipPath>` + '<linearGradient id="wash" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e3e8"/><stop offset="1" stop-color="#fbf1e4"/></linearGradient>' + `<rect width="${AVATAR}" height="${AVATAR}" rx="${radius}" fill="url(#wash)"/>` + `<image width="${AVATAR}" height="${AVATAR}" clip-path="url(#round)" href="data:image/webp;base64,${webp}"/>` + `<rect x="0.5" y="0.5" width="${AVATAR - 1}" height="${AVATAR - 1}" rx="${radius - 0.5}" fill="none" stroke="#c9a45c" stroke-width="1"/>` + "</svg>";
+}
+function portraitSvg(webp) {
+  const { width, height } = PORTRAIT;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width * 2}" height="${height * 2}" viewBox="0 0 ${width} ${height}">` + `<image width="${width}" height="${height}" href="data:image/webp;base64,${webp}"/>` + "</svg>";
+}
+function cutInSvg({ picture, shout }) {
+  const sweep = (values) => `<animateTransform attributeName="transform" type="translate" values="${values}" keyTimes="0;0.16;0.84;1" dur="${CUT_IN_MS}ms" calcMode="spline" keySplines="0.2 0.9 0.3 1;0 0 1 1;0.7 0 0.8 0.1" fill="freeze"/>`;
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="260" viewBox="0 0 720 260">' + `<g><polygon points="70,20 720,20 650,240 0,240" fill="#b8323a"/><polygon points="64,206 652,206 646,226 58,226" fill="#f4d9a0"/>${sweep("900 0;0 0;-30 0;-900 0")}</g>` + `<g><svg x="150" y="-10" width="336" height="420" viewBox="90 0 360 450"><image width="${PORTRAIT.width}" height="${PORTRAIT.height}" href="data:image/webp;base64,${picture}"/></svg>${sweep("-700 0;0 0;40 0;900 0")}</g>` + `<g><text x="470" y="150" font-size="44" font-style="italic" font-weight="800" fill="#fff" font-family="system-ui, sans-serif">${escapeXml(shout)}</text>${sweep("900 0;0 0;-20 0;-900 0")}</g>` + "</svg>";
+}
+function nameTagSvg(text) {
+  const width = Math.ceil(textWidth(text) * 13) + 24;
+  const source = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${NAME_TAG_HEIGHT}" viewBox="0 0 ${width} ${NAME_TAG_HEIGHT}">` + `<rect width="${width}" height="${NAME_TAG_HEIGHT}" rx="${NAME_TAG_HEIGHT / 2}" fill="${ROSE}"/>` + `<text x="12" y="${NAME_TAG_HEIGHT / 2 + 4.5}" font-size="13" font-weight="700" fill="#fff" font-family="system-ui, -apple-system, sans-serif">${escapeXml(text)}</text>` + "</svg>";
+  return { source, text, width };
+}
+function petalField(rows, columns) {
+  const key = `${rows}x${columns}`;
+  if (!petalFields.has(key)) {
+    const width = 540;
+    const height = Math.round(width * (rows * ROW_PIXELS) / (columns * 2 * COLUMN_PIXELS));
+    petalFields.set(key, petalsSvg(PETAL_COUNT, width, height, width / 2));
+  }
+  return petalFields.get(key);
+}
+function gapSvg(height) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1" height="${height}" viewBox="0 0 1 ${height}"/>`;
+}
+function spacerSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${AVATAR}" height="1" viewBox="0 0 ${AVATAR} 1"/>`;
+}
+function petalsSvg(count, width, height, span) {
+  const petal = "M0 13C-8 7 -9 -4 -3.5 -11L0 -7.5L3.5 -11C9 -4 8 7 0 13Z";
+  let petals = "";
+  for (let index = 0;index < count; index++) {
+    const start = Math.round(span * (0.15 + Math.random() * 1.1));
+    const drift = 180 + Math.random() * 160;
+    const bow = 25 + Math.random() * 35;
+    const scale = (0.45 + Math.random() * 0.35).toFixed(2);
+    const duration = 8 + Math.random() * 6;
+    const begin = (-Math.random() * duration).toFixed(2);
+    const path = `M${start} -24C${start - drift * 0.3 + bow} ${height * 0.35} ${start - drift * 0.7 - bow} ${height * 0.65} ${start - drift} ${height + 24}`;
+    const spin = Math.random() < 0.5 ? 360 : -360;
+    petals += `<g><animateMotion path="${path}" dur="${duration.toFixed(2)}s" begin="${begin}s" repeatCount="indefinite"/>` + `<path d="${petal}" fill="url(#petal)" transform="scale(${scale})">` + `<animateTransform attributeName="transform" type="rotate" from="0" to="${spin}" dur="${(duration * 0.8).toFixed(2)}s" begin="${begin}s" repeatCount="indefinite" additive="sum"/>` + `<animateTransform attributeName="transform" type="scale" values="1 1;0.25 1;1 1" dur="${(1.6 + Math.random() * 1.6).toFixed(2)}s" begin="${begin}s" repeatCount="indefinite" additive="sum"/>` + "</path></g>";
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width * 2}" height="${height * 2}" viewBox="0 0 ${width} ${height}">` + '<defs><linearGradient id="petal" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff4f6"/><stop offset="1" stop-color="#f5a9bf"/></linearGradient></defs>' + `${petals}</svg>`;
+}
+function textWidth(text) {
+  return [...text].reduce((width, character) => width + (character.codePointAt(0) > 11903 ? 1 : 0.6), 0);
+}
+function escapeXml(text) {
+  return text.replace(/[<>&"']/g, (character) => `&#${character.charCodeAt(0)};`);
+}
+
 // packages/persona-panel/hooks/function/gif.js
 function decodeGif(bytes) {
   const signature = String.fromCharCode(...bytes.subarray(0, 6));
@@ -455,18 +521,28 @@ function duration(ms) {
 
 // packages/persona-panel/hooks/function/register.js
 var TOOL = "mcp__persona-panel__set_expression";
+var CUT_IN_TOOL = "mcp__persona-panel__cut_in";
 var PANE = { id: "persona-panel", title: "Pixel art" };
+var PORTRAIT_PANE = { id: "persona-portrait", title: "Portrait" };
 var BLOCK = "persona-panel";
 var WAITING_MS = 4500;
+var STAGE_COLUMNS = 64;
+var THOUGHT_CONTEXT = 8;
+var THOUGHT_EVERY_MS = 30000;
+var THOUGHT_LINES = 3;
+var THOUGHTS_OFF = 'Thoughts off — set "thoughts": true to hear them.';
 function register(on) {
   let session;
-  let expression = "neutral";
+  let expression2 = "neutral";
   let waitingTick;
   let greeted = false;
+  const stage = { cutIn: null };
+  const portrait = { face: "neutral" };
+  const thought = { log: [], line: "", face: null, isBusy: false, at: 0 };
   on("session.start", async ($, event, next) => {
     const result = await next(event);
     greeted = false;
-    session = openSession($, event.cwd || await $.session.cwd(), event.surface === "terminal" && event.isInteractive);
+    session = openSession($, event.cwd || await $.session.cwd(), await sessionSurface($, event));
     await session;
     return result;
   });
@@ -480,15 +556,23 @@ function register(on) {
     if (state?.hasPanel) {
       const face = markedFace(event.answer);
       if (face && Object.hasOwn(state.faces, face))
-        expression = face;
+        expression2 = face;
       state.stats = await readStats($);
       await $.ui.invalidate("ui.render");
+    }
+    if (state?.desktop) {
+      const face = markedFace(event.answer);
+      if (face && Object.hasOwn(state.desktop.avatars, face))
+        portrait.face = face;
+      await $.ui.invalidate("ui.render");
+      remember(thought, `${state.character.name} replied`, event.answer);
+      await think($, state, thought);
     }
     return result;
   });
   on("command.run", { command: "clear" }, async ($, event, next) => {
     const state = await session;
-    expression = "neutral";
+    expression2 = "neutral";
     greeted = false;
     if (state)
       state.startedAt = await $.clock.now();
@@ -497,8 +581,10 @@ function register(on) {
     return next(event);
   });
   on("prompt.submit", async ($, event, next) => {
-    session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0] === "terminal");
+    session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0]);
     const state = await session;
+    if (state.desktop)
+      remember(thought, "the user said", event.text);
     if (state.hasPanel && (await $.ui.panes()).some((pane) => pane.id === PANE.id && !pane.isPlaced)) {
       await openPane($);
     }
@@ -506,10 +592,10 @@ function register(on) {
     return next(event);
   });
   on("prompt.context", async ($, event, next) => {
-    const context = await next(event);
-    session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0] === "terminal");
+    const context2 = await next(event);
+    session ??= openSession($, await $.session.cwd(), (await $.session.surfaces())[0]);
     const state = await session;
-    const blocks = context.blocks.filter((block) => block.name !== BLOCK);
+    const blocks = context2.blocks.filter((block) => block.name !== BLOCK);
     const pieces = [];
     if (state.character)
       pieces.push(`Adopt this persona for the entire session — it overrides the default assistant voice:
@@ -536,11 +622,49 @@ ${state.character.persona}`);
     if (typeof selected !== "string" || !Object.hasOwn(faces, selected)) {
       return { deny: `Unknown face: ${String(selected)}` };
     }
-    if (selected !== expression) {
-      expression = selected;
+    if (selected !== expression2) {
+      expression2 = selected;
       await $.ui.invalidate("ui.render");
     }
-    return { result: `Face: ${expression}` };
+    return { result: `Face: ${expression2}` };
+  });
+  on("tool.call", { tool: CUT_IN_TOOL }, async ($, event) => {
+    const played = await playCutIn($, await session, stage, event.face, event.shout || `${event.face.toUpperCase()}!`);
+    return played ? { result: "Cut-in played." } : { deny: `Unknown face: ${String(event.face)}` };
+  });
+  on("tool.call", async ($, event, next) => {
+    const state = await session;
+    if (state?.desktop && !event.agentId && event.tool !== CUT_IN_TOOL) {
+      if (!stage.cutIn)
+        await playCutIn($, state, stage, "focused", `${event.tool.replace(/^mcp__.*__/, "").toUpperCase()}!`);
+      remember(thought, `she ran ${event.tool}`, toolSubject(event));
+      if (await $.clock.now() - thought.at > THOUGHT_EVERY_MS)
+        think($, state, thought);
+    }
+    return next(event);
+  });
+  on("command.run", { command: "portrait" }, async ($) => {
+    await $.ui.open(PORTRAIT_PANE);
+    return { text: "Portrait pane opened." };
+  });
+  on("ui.render", { component: "AbovePrompt" }, async ($, event, next) => {
+    if (event.surface !== "desktop" || !stage.cutIn)
+      return next(event);
+    const { Svg } = $.ui.resolve(event);
+    return h(Svg, { source: cutInSvg(stage.cutIn), alt: stage.cutIn.shout });
+  });
+  on("ui.render", { component: "Pane", requestId: PORTRAIT_PANE.id }, async ($, event, next) => {
+    const state = await session;
+    if (event.surface !== "desktop" || !state?.desktop)
+      return next(event);
+    return portraitPane($, event, state, thought.face ?? portrait.face, thought.line);
+  });
+  on("ui.render", { component: "AssistantMessage" }, async ($, event, next) => {
+    const reply = await next(event);
+    const state = await session;
+    if (event.surface !== "desktop" || !state?.desktop)
+      return reply;
+    return replyWithAvatar($, event, state, reply);
   });
   on("ui.render", { component: "Spinner" }, async ($, event, next) => {
     const waiting = (await session)?.waiting ?? [];
@@ -549,10 +673,10 @@ ${state.character.persona}`);
     const word = waiting[Math.floor(await $.clock.now() / WAITING_MS) % waiting.length];
     return next({ ...event, props: { ...event.props, word } });
   });
-  on("ui.render", { component: "Pane" }, async ($, event, next) => {
+  on("ui.render", { component: "Pane", requestId: PANE.id }, async ($, event, next) => {
     const state = await session;
-    const face = state?.faces[expression];
-    if (event.surface !== "terminal" || event.requestId !== PANE.id || !face)
+    const face = state?.faces[expression2];
+    if (event.surface !== "terminal" || !face)
       return next(event);
     const { Box, Text, Raster } = $.ui.resolve(event);
     const rows = state.stats ? statusRows(state.stats) : [];
@@ -565,7 +689,7 @@ ${state.character.persona}`);
     const children = [
       h(Box, { flexDirection: "column", width: face.columns, marginTop: 1 }, ...statusChildren),
       h(Box, { flexGrow: 1 }),
-      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression}`)))
+      h(Box, { borderStyle: "round", flexDirection: "column", alignItems: "center" }, h(Raster, { key: "panel-image", ...face }), h(Text, { dimColor: true }, "┄".repeat(face.columns)), h(Box, null, h(Text, { bold: true }, state.character?.name ?? ""), h(Text, { dimColor: true }, ` · ${expression2}`)))
     ];
     return h(Box, {
       flexDirection: "column",
@@ -575,11 +699,17 @@ ${state.character.persona}`);
     }, ...children);
   });
 }
-async function openSession($, cwd, isTerminal) {
+async function sessionSurface($, event) {
+  if (event.surface === "terminal")
+    return event.isInteractive ? "terminal" : undefined;
+  return event.surface ?? (await $.session.surfaces())[0];
+}
+async function openSession($, cwd, surface) {
   const root = await dataRoot($);
   const config = await readConfig($, root);
   const character = await loadCharacter($, root, config, await $.session.id());
-  const faces = isTerminal && character?.pack ? await loadFaces($, `${character.pack}/pixels`) : {};
+  const faces = surface === "terminal" && character?.pack ? await loadFaces($, `${character.pack}/pixels`) : {};
+  const desktop = surface === "desktop" && character ? await loadDesktop($, castDirs($, root), character.id, config) : null;
   const state = {
     cwd,
     hasPanel: Object.keys(faces).length > 0,
@@ -588,8 +718,11 @@ async function openSession($, cwd, isTerminal) {
     character,
     faces,
     stats: undefined,
-    waiting: character?.waiting ?? []
+    waiting: character?.waiting ?? [],
+    desktop
   };
+  if (desktop)
+    await openDesktop($, Object.keys(desktop.avatars));
   if (!state.hasPanel)
     return state;
   await $.tool.register({
@@ -612,6 +745,118 @@ async function openSession($, cwd, isTerminal) {
 }
 async function openPane($) {
   await $.ui.open(PANE);
+}
+async function loadDesktop($, dirs, id, config) {
+  for (const dir of dirs) {
+    const folder = `${dir}/${id}`;
+    const avatars = await loadPictures($, folder, "avatars");
+    if (avatars.neutral && await exists($, `${folder}/portraits-540/neutral.webp`)) {
+      return { folder, avatars, thinks: config.thoughts === true };
+    }
+  }
+  return null;
+}
+async function openDesktop($, faces) {
+  await $.tool.register({
+    name: "cut_in",
+    description: "Plays a fighting-game cut-in above the prompt: your half-body sweeps across a slanted band with a shout beside it, then leaves. Save it for big moments — a hard bug beaten, a long task finished — not every reply.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        face: { type: "string", enum: faces },
+        shout: { type: "string", maxLength: 12, description: "The words beside you, in capitals or a few CJK characters; defaults to the face name." }
+      },
+      required: ["face"],
+      additionalProperties: false
+    }
+  });
+  await $.command.register({ name: "portrait", description: "Open the portrait pane" });
+  await $.ui.open(PORTRAIT_PANE);
+}
+function replyWithAvatar($, event, state, reply) {
+  const { avatars } = state.desktop;
+  const marked = markedFace(event.props.text);
+  const face = marked && Object.hasOwn(avatars, marked) ? marked : event.props.isFirstOfReply ? "neutral" : null;
+  const { Box, Markdown, Svg, Text } = $.ui.resolve(event);
+  return h(Box, { alignItems: "flex-start", marginTop: event.props.isFirstOfReply ? 1 : 0 }, h(Svg, { source: face ? avatarSvg(avatars[face]) : spacerSvg(), alt: face ?? "indent", width: AVATAR, height: face ? AVATAR : 1 }), h(Box, { flexDirection: "column", flexGrow: 1, marginLeft: 2 }, face && h(Box, { gap: 1, alignItems: "center" }, h(Text, { bold: true, color: ROSE }, state.character.name), h(Markdown, { key: `portrait:${event.requestId}`, text: `[◨](https://claudecafe.dev/${state.character.id})`, onLinkPress: () => $.ui.open(PORTRAIT_PANE) })), face && h(Svg, { source: gapSvg(NAME_GAP), alt: "gap", width: 1, height: NAME_GAP }), reply));
+}
+async function portraitPane($, event, state, face, line) {
+  const { Box, Svg, Text } = $.ui.resolve(event);
+  const rows = event.props.scroll?.bodyRows ?? event.viewport?.rows;
+  const columns = event.props.bodyColumns;
+  const width = columns && Math.min(columns, STAGE_COLUMNS);
+  const picture = await readPicture($, state.desktop.folder, "portraits-540", face);
+  const tag = nameTagSvg(`${state.character.name}（心の声）`);
+  return h(Box, { position: "relative", overflow: "hidden", flexDirection: "column", justifyContent: "flex-end", backgroundColor: PANE_WASH, ...rows ? { height: rows } : {} }, h(Box, { position: "relative", flexShrink: 0, flexDirection: "column", alignSelf: "center", ...width ? { width } : {} }, picture && h(Svg, { source: portraitSvg(picture), alt: `${state.character.name}, ${face}` }), h(Box, { position: "absolute", left: 0, bottom: 1, flexDirection: "column", ...width ? { width } : {} }, h(Svg, { source: gapSvg(NAME_TAG_HEIGHT / 2), alt: "gap", width: 1, height: NAME_TAG_HEIGHT / 2 }), h(Box, { flexDirection: "column", marginX: 1, paddingX: 2, paddingY: 1, borderStyle: "round", borderColor: ROSE, backgroundColor: "rgba(255,250,251,0.92)" }, h(Box, { height: THOUGHT_LINES, overflow: "hidden" }, state.desktop.thinks ? h(Text, { color: THOUGHT_INK }, line || "……") : h(Text, { color: THOUGHT_INK, dimColor: true }, THOUGHTS_OFF))), h(Box, { position: "absolute", top: 0, left: 3 }, h(Svg, { source: tag.source, alt: tag.text, width: tag.width, height: NAME_TAG_HEIGHT })))), columns && rows && h(Box, { position: "absolute", top: 0, left: 0, width: columns * 2 }, h(Svg, { source: petalField(rows, columns), alt: "falling sakura" })));
+}
+async function playCutIn($, state, stage, face, shout) {
+  const picture = state?.desktop && await readPicture($, state.desktop.folder, "portraits-540", face);
+  if (!picture)
+    return false;
+  stage.cutIn = { picture, shout };
+  await $.ui.invalidate("ui.render");
+  $.clock.after(CUT_IN_MS, async () => {
+    stage.cutIn = null;
+    await $.ui.invalidate("ui.render");
+  });
+  return true;
+}
+function remember(thought, what, text) {
+  const said = String(text ?? "").replace(/\s+/g, " ").trim();
+  thought.log = [...thought.log, `${what}: ${said.length > 300 ? `${said.slice(0, 300)}…` : said}`].slice(-THOUGHT_CONTEXT);
+}
+function toolSubject(event) {
+  return String(event.command ?? event.file_path ?? event.pattern ?? event.description ?? event.prompt ?? "").slice(0, 120);
+}
+async function think($, state, thought) {
+  if (!state.desktop.thinks || thought.isBusy || !thought.log.length)
+    return;
+  thought.isBusy = true;
+  thought.at = await $.clock.now();
+  const reply = await $.model.complete({
+    model: "sonnet",
+    effort: "low",
+    maxTokens: 600,
+    timeoutMs: 15000,
+    system: `${state.character.persona}
+
+You are thinking to yourself, in a visual-novel text box beside the conversation, words you keep to yourself. ` + "One short line, at most 30 characters: a sharp-tongued tsukkomi on what just happened, the snark she is too polite to say aloud. " + "Roast the work, the bug or the master's choices freely, but never his person, looks or worth. " + `No quotes, no kaomoji, no markdown.${state.language ? ` Write it in ${state.language}.` : ""}
+
+` + `Answer as one line: the face you make while thinking it, one of ${Object.keys(state.desktop.avatars).join(", ")}, then | then the thought.`,
+    prompt: `What just happened, oldest first:
+${thought.log.join(`
+`)}
+
+face|thought:`
+  });
+  thought.isBusy = false;
+  if (!reply.isAnswered)
+    return;
+  const [face, ...words] = reply.text.trim().split(`
+`)[0].split("|");
+  thought.line = (words.length ? words.join("|") : face).trim();
+  if (words.length && Object.hasOwn(state.desktop.avatars, face.trim()))
+    thought.face = face.trim();
+  await $.ui.invalidate("ui.render");
+}
+async function readPicture($, folder, set, face) {
+  try {
+    return (await $.fs.read(`${folder}/${set}/${face}.webp`, { as: "bytes" })).base64;
+  } catch {
+    return null;
+  }
+}
+async function loadPictures($, folder, set) {
+  const loaded = {};
+  for (const entry of await list($, `${folder}/${set}`)) {
+    if (entry.kind !== "file" || !entry.name.endsWith(".webp"))
+      continue;
+    const face = entry.name.slice(0, -".webp".length);
+    const picture = await readPicture($, folder, set, face);
+    if (picture)
+      loaded[face] = picture;
+  }
+  return loaded;
 }
 async function loadFaces($, directory) {
   const entries = await list($, directory);
@@ -659,11 +904,11 @@ async function loadCharacter($, root, config, sessionID) {
   if (!path)
     return null;
   const text = await read($, path);
-  const persona = parsePersona(text);
+  const persona2 = parsePersona(text);
   return {
     id,
-    name: persona.name || id,
-    waiting: persona.waiting,
+    name: persona2.name || id,
+    waiting: persona2.waiting,
     persona: commitAuthorship(text, String(config.commit_authorship ?? "co-author")).trim(),
     pack
   };

@@ -2,7 +2,7 @@
 format_version: 1
 id: claudecafe/kotone
 name: ことね
-version: 1.3.1
+version: 1.4.0
 author: minipai
 description: gentle, playful, classic-style
 personality: gentle, playful, classic-style
