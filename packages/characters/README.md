@@ -13,6 +13,8 @@ kurumi/
   avatar.webp          stable square identity image
   portraits/           default visual variant, for graphical clients
     neutral.webp       runtime portrait; filename = expression ID
+  avatars/             optional square faces cut from portraits/, one per expression
+    neutral.webp       filename = expression ID
   pixels/               default 36×48 terminal portraits
     neutral.gif         static or animated; filename = expression ID
   variants/
