@@ -134,7 +134,7 @@ export function offDuty(body: string): boolean {
   return parsePersona(body).offDuty
 }
 
-/** The ids a draw may pick from; the first folder with a given id wins. */
+/** The ids on the roster; the first folder with a given id wins. */
 export function drawFrom(dirs: string[], extraIDs: string[] = []): string[] {
   const pool = new Map<string, string>()
   for (const dir of dirs) {
@@ -250,8 +250,8 @@ type Shift = {
 }
 
 /**
- * Shift order: this session's explicit picker choice > the persisted draw >
- * config "character" > a draw from the pool. "none" means nobody on shift: no persona, but the liveliness still
+ * Shift order: this session's explicit picker choice > the persisted shift >
+ * config "character" > the default maid. "none" means nobody on shift: no persona, but the liveliness still
  * runs.
  */
 function resolveMaid(sessionID?: string): string | null {

@@ -1,9 +1,11 @@
+/** Who is on shift when nobody was chosen: the same maid every time, so a resumed session (which gets a new id) cannot come back as another. */
+export const DEFAULT_CHARACTER = "kotone"
+
 export type CharacterResolution = {
   selected?: string
   session?: string
   config?: string
   pool: readonly string[]
-  random?: () => number
 }
 
 /** Resolve the character without knowing which host owns the files or session store. */
@@ -11,10 +13,8 @@ export function resolveCharacter(input: CharacterResolution): string | null {
   const requested = input.selected || input.session || input.config
   if (requested) return normalizeCharacter(requested) || null
 
-  if (!input.pool.length) return null
-  const random = input.random ?? Math.random
-  const index = Math.min(input.pool.length - 1, Math.floor(random() * input.pool.length))
-  return normalizeCharacter(input.pool[index] ?? "") || null
+  const fallback = input.pool.includes(DEFAULT_CHARACTER) ? DEFAULT_CHARACTER : input.pool[0]
+  return normalizeCharacter(fallback ?? "") || null
 }
 
 export function normalizeCharacter(value: string): string {

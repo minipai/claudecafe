@@ -344,13 +344,13 @@ describe("session briefing", () => {
 describe("shift persistence", () => {
   const shiftFile = (sessionID: string) => join(cafe.stateDir(sessionID, false), "on-shift")
 
-  test("the draw is written to the session's shift file", async () => {
+  test("the default maid is written to the session's shift file", async () => {
     const { context: transform } = hooks()
     await transform({ sessionID: "sid", system: [] })
     expect(readFileSync(shiftFile("sid"), "utf8").trim()).toBe("noname")
   })
 
-  test("the fixed pick in config beats the draw and skips the shift file", async () => {
+  test("the fixed pick in config beats the default and skips the shift file", async () => {
     setConfig({ character: "kokona" })
     writeCharacter("kokona", "K", "Body.")
     const { context: transform } = hooks()

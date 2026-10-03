@@ -23,11 +23,12 @@ needed, preserve unknown keys, and write valid JSON. Every key is optional:
   committer. These modes are mutually exclusive.
 - `festivals` — custom JSON festival-pack path; `false` disables festivals.
 - `greeting` — `false` disables the session-start briefing.
+- `thoughts` — `true` shows her thoughts in the desktop portrait pane (a short Sonnet request each); off unless set.
 
 Individual retirement belongs in a persona's frontmatter as `off_duty: true`,
 not in config.
 
-The draw pool includes any `characters/<id>/` folders under `DATA_ROOT` and the
+The roster includes any `characters/<id>/` folders under `DATA_ROOT` and the
 cast bundled in the plugin's own `characters/` directory; a user folder wins over
 a bundled one with the same id unless the bundled persona version is newer. A character uses a lowercase folder id and a
 `persona.md` (plus optional `persona.<variant>.md`) with YAML frontmatter holding `name:` and a body containing

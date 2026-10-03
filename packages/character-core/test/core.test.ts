@@ -48,9 +48,10 @@ describe("selection contracts", () => {
     expect(resolveCharacter({ selected: "kurumi", session: "kotone", config: "kokona", pool: ["a"] })).toBe("kurumi")
   })
 
-  test("none disables the character and random selection is bounded", () => {
+  test("none disables the character and an unchosen one is always the same", () => {
     expect(resolveCharacter({ selected: "none", pool: ["kotone"] })).toBeNull()
-    expect(resolveCharacter({ pool: ["kotone", "kurumi"], random: () => 0.99 })).toBe("kurumi")
+    expect(resolveCharacter({ pool: ["kurumi", "kotone"] })).toBe("kotone")
+    expect(resolveCharacter({ pool: ["kurumi", "kokona"] })).toBe("kurumi")
   })
 })
 

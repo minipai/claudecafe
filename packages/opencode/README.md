@@ -58,7 +58,7 @@ reply language is config `lang`, set on its own. The pack's
 frontmatter `name` is shown in the sidebar. `/maid` writes an explicit choice
 for the current session, so it takes precedence over config `character` for
 that session. To add a maid, create another lowercase `<id>/` folder; it joins the
-draw without being overwritten. Restart or reload OpenCode after adding a pack
+roster without being overwritten. Restart or reload OpenCode after adding a pack
 so the sidebar rediscovers its faces.
 
 ## TUI: the portrait
