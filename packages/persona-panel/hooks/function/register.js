@@ -647,19 +647,25 @@ async function exists($, path) {
 }
 
 async function readStats($) {
-  const [root, home, git, usage, now] = await Promise.all([
+  const [root, home, git, diff, usage, model] = await Promise.all([
     $.session.root(),
     $.env.get('HOME'),
     $.process.run(['git', 'branch', '--show-current']).catch(() => ({ exitCode: 1, stdout: '', stderr: '' })),
+    $.process.run(['git', 'diff', '--shortstat', 'HEAD']).catch(() => ({ exitCode: 1, stdout: '', stderr: '' })),
     $.session.usage(),
-    $.clock.now(),
+    $.session.model(),
   ])
   return {
     project: homePath(root, home),
     branch: git.exitCode === 0 ? git.stdout.trim() : '',
+    changes: diff.exitCode === 0 ? diffChanges(diff.stdout) : undefined,
     contextLeft: 100 - (usage.context.percent ?? 0),
     quota: usage.rateLimits.find((limit) => limit.kind === 'five_hour')?.percentUsed,
-    sessionMs: now - usage.startedAt,
-    usd: usage.cost?.usd,
+    model,
   }
+}
+
+function diffChanges(shortstat) {
+  const count = (word) => Number(shortstat.match(new RegExp(`(\\d+) ${word}`))?.[1] ?? 0)
+  return { added: count('insertion'), removed: count('deletion') }
 }

@@ -146,6 +146,7 @@ describe('Portrait pane', () => {
     on('fs.write', () => ({ value: undefined }))
     on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
     on('session.id', () => ({ value: 'test-session' }))
+  on('session.model', () => ({ value: figures.model }))
     on('session.cwd', () => ({ value: '' }))
     on('session.surfaces', () => ({ value: ['desktop'] }))
     on('http.fetch', () => { throw new Error('offline') })
@@ -174,6 +175,7 @@ describe('Portrait pane', () => {
       on('fs.write', () => ({ value: undefined }))
       on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
       on('session.id', () => ({ value: 'test-session' }))
+  on('session.model', () => ({ value: figures.model }))
       on('session.cwd', () => ({ value: '' }))
       on('session.surfaces', () => ({ value: ['desktop'] }))
       on('http.fetch', () => { throw new Error('offline') })
@@ -203,6 +205,7 @@ describe('Portrait pane', () => {
       on('fs.write', () => ({ value: undefined }))
       on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
       on('session.id', () => ({ value: 'test-session' }))
+  on('session.model', () => ({ value: figures.model }))
       on('session.cwd', () => ({ value: '' }))
       on('session.surfaces', () => ({ value: ['desktop'] }))
       on('http.fetch', () => { throw new Error('offline') })
@@ -328,14 +331,13 @@ describe('Portrait pane', () => {
     on('ui.invalidate', () => ({ value: undefined }))
     on('turn.complete', (_, e) => ({ text: e.answer }))
     const { clock, figures } = await start($, on)
-    Object.assign(figures, { percent: 81, quota: undefined, usd: undefined, branch: '' })
+    Object.assign(figures, { percent: 81, quota: undefined, branch: '' })
     await $.turn.complete({ reason: 'answer', answer: 'Done.', durationMs: 10, isAborted: false, turnId: 't1' })
-    const later: Figures = { ...figures, sessionMinutes: 7 * 60 + 7 }
-    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, later))
+    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, { ...figures }))
 
-    figures.sessionMinutes = 8 * 60
+    Object.assign(figures, { model: 'Sonnet 5.5', branch: 'main', added: 0, removed: 0 })
     await clock.advance(60_000)
-    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, { ...later, sessionMinutes: 8 * 60 }))
+    expect(await $.ui.render(pane())).toEqual(drawn(panelImage, { ...figures }))
   })
 
   test('leaves the status alone when a subagent turn ends', async ($, on) => {
@@ -601,9 +603,9 @@ function pixels(on: On, lines: string[] = waitingLines): void {
   on('fs.write', () => ({ value: undefined }))
 }
 
-/** What the session reports: context used, the five-hour limit, the session so far, the branch. */
-type Figures = { percent: number; quota?: number; usd?: number; sessionMinutes: number; branch: string }
-const figuresAtStart: Figures = { percent: 22, quota: 31, usd: 2.41, sessionMinutes: 7 * 60 + 7, branch: 'main' }
+/** What the session reports: context used, the five-hour limit, the model, the branch and its uncommitted lines. */
+type Figures = { percent: number; quota?: number; model: string; branch: string; added: number; removed: number }
+const figuresAtStart: Figures = { percent: 22, quota: 31, model: 'Opus 5.5', branch: 'main', added: 12, removed: 3 }
 
 /** The world beneath the plugin: the cast directory, the session's figures and a mocked clock. */
 function world(on: On, lines: string[] = waitingLines): { clock: MockClock; figures: Figures } {
@@ -612,14 +614,14 @@ function world(on: On, lines: string[] = waitingLines): { clock: MockClock; figu
   pixels(on, lines)
   on('session.usage', () => ({
     value: {
-      startedAt: clock.now() - figures.sessionMinutes * 60_000,
+      startedAt: clock.now(),
       context: { window: 200_000, percent: figures.percent },
       rateLimits: figures.quota === undefined ? [] : [{ kind: 'five_hour', percentUsed: figures.quota }],
-      ...(figures.usd === undefined ? {} : { cost: { usd: figures.usd } }),
     },
   }))
   on('session.root', () => ({ value: '/Users/tester/Dev/claudecafe' }))
   on('session.id', () => ({ value: 'test-session' }))
+  on('session.model', () => ({ value: figures.model }))
   on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
   on('http.fetch', () => { throw new Error('offline') })
   on('process.run', (_, e) => {
@@ -628,9 +630,24 @@ function world(on: On, lines: string[] = waitingLines): { clock: MockClock; figu
         ? { exitCode: 0, stdout: `${figures.branch}\n`, stderr: '' }
         : { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }
     }
+    if (e.argv.includes('diff')) {
+      return { value: figures.branch
+        ? { exitCode: 0, stdout: diffStat(figures), stderr: '' }
+        : { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }
+    }
     return { value: { exitCode: 0, stdout: 'one commit\n', stderr: '' } }
   })
   return { clock, figures }
+}
+
+/** `git diff --shortstat` leaves out a side with no lines, and prints nothing for a clean tree. */
+function diffStat({ added, removed }: Figures): string {
+  if (!added && !removed) return ''
+  const sides = [
+    ...(added ? [`${added} insertion${added === 1 ? '' : 's'}(+)`] : []),
+    ...(removed ? [`${removed} deletion${removed === 1 ? '' : 's'}(-)`] : []),
+  ]
+  return ` 2 files changed, ${sides.join(', ')}\n`
 }
 
 async function start($: Engine, on: On): Promise<ReturnType<typeof world>> {
@@ -676,17 +693,19 @@ function drawn(image: Face, figures: Figures = figuresAtStart, expression = 'neu
   }
 }
 
-function status({ percent, quota, usd, sessionMinutes, branch }: Figures): RenderElement[][] {
+function status({ percent, quota, model, branch, added, removed }: Figures): RenderElement[][] {
   const left = 100 - percent
   const quotaLeft = quota === undefined ? undefined : 100 - quota
-  const hours = Math.floor(sessionMinutes / 60)
-  const time = `${hours}h${String(sessionMinutes % 60).padStart(2, '0')}m`
   return [
     [{ type: 'Text', props: { bold: true, wrap: 'truncate-start' }, children: ['~/Dev/claudecafe'] }],
-    ...(branch ? [[text(`⎇ ${branch}`)]] : []),
+    [text(`◆ ${model}`)],
     [text('HP '), ...bar(left, gauge(left, 'green')), text(`  context left ${left}%`)],
     [text('MP '), ...bar(quotaLeft ?? 0, gauge(quotaLeft ?? 0, 'cyan')), text(`  5h left ${quotaLeft === undefined ? '—' : `${quotaLeft}%`}`)],
-    [text(`⏱ session ${time}${usd === undefined ? '' : `    $${usd.toFixed(2)}`}`)],
+    ...(branch ? [[
+      text(`⎇ ${branch}`), text(' ('),
+      { type: 'Text', props: { color: 'green' }, children: [`+${added}`] }, text(','),
+      { type: 'Text', props: { color: 'red' }, children: [`-${removed}`] }, text(')'),
+    ]] : []),
   ]
 }
 

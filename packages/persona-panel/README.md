@@ -41,7 +41,7 @@ Open a new session. Kotone is on shift unless you choose another character, and 
 - **A mood marker.** Replies end with a one-line mood and a kaomoji from a fixed
   table. The kaomoji on a completed reply also selects the portrait's expression.
 - **The portrait panel.** A pixel portrait beside the conversation, with the
-  project, branch, context left, rate-limit left and session time above it.
+  project, model, context left, rate-limit left and branch above it.
   Claude changes the face through the `set_expression` tool or the reply's mood marker.
 - **On the desktop.** Her avatar beside each reply, wearing the face the reply
   signs off with, and her name, whose ◨ opens a portrait pane: her portrait with
