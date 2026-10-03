@@ -72,9 +72,18 @@ The module owns the behavior previously split across the classic hooks:
 - registers `mcp__persona-panel__set_expression` and keeps the selected face per session
 - renders the terminal portrait pane from the character's `characters/<id>/pixels/*.gif`, with the character's name
 - resets the face on `/clear` and refreshes status after turns
+- on the desktop, draws her avatar beside replies, the portrait pane with her Sonnet-written thought, and the
+  cut-ins above the prompt (`hooks/function/desktop.js` holds the drawings)
 
-The panel is terminal-only and opens for interactive sessions. A character pack
-without `pixels/` still supplies its persona, but has no portrait to draw.
+The pixel panel opens for interactive terminal sessions; a pack without `pixels/` still supplies its persona,
+but has no portrait to draw. The desktop draws from the pack's `avatars/` and `portraits-540/`, which the
+plugin does not bundle.
+
+What the desktop allows was found by trial, not documentation: it draws no `Image`, so every picture is an
+`Svg` with the WebP inline (about 98 KB at most); an `Svg` whose `alt` is blank is not drawn; `session.start`
+names no surface there; a positioned `Box` does not stretch and paints over unpositioned siblings; the engine's
+own nodes refuse to sit under a positioned `Box`; offsets are whole rows, never negative; only `Button`s and
+`Markdown` links take a press.
 
 ## Develop
 

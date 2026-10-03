@@ -426,6 +426,120 @@ describe('Portrait pane', () => {
   })
 })
 
+describe('Desktop', () => {
+  test('opens her portrait pane and offers the cut-in when her pack has desktop pictures', async ($, on) => {
+    const events: string[] = []
+    desktop(on)
+    on('session.start', (_, e) => ({ cwd: e.cwd }))
+    on('tool.register', (_, e) => {
+      events.push(`tool:${e.name}`)
+      return { value: { tool: `mcp__persona-panel__${e.name}` } }
+    })
+    on('command.register', (_, e) => {
+      events.push(`command:${e.name}`)
+      return { value: undefined }
+    })
+    on('ui.open', (_, e) => {
+      events.push(`open:${e.id}`)
+      return { value: placed }
+    })
+    await $.session.start({ cwd: '/work', surface: null, isInteractive: true })
+    expect(events).toEqual(['tool:cut_in', 'command:portrait', 'open:persona-portrait'])
+  })
+
+  test('puts her name and the face her reply signs off with beside the reply', async ($, on) => {
+    on('ui.render', { component: 'AssistantMessage' }, () => ({ type: 'Text', children: ['Done.'] }))
+    await startDesktop($, on)
+    const drawn = await $.ui.render({
+      surface: 'desktop', component: 'AssistantMessage', requestId: 'reply-1',
+      props: { text: 'Done.\n\n【 開心 ＼(ˆ ᗜ ˆ)／ 】', isFirstOfReply: true },
+    })
+    const tree = JSON.stringify(drawn)
+    expect(tree).toContain('くるみ')
+    expect(tree).toContain(`base64,${webp.happy}`)
+    expect(tree).toContain('Done.')
+  })
+
+  test('leaves replies alone when her pack has no desktop pictures', async ($, on) => {
+    world(on)
+    on('session.start', (_, e) => ({ cwd: e.cwd }))
+    const existing: RenderElement = { type: 'Text', children: ['Original reply'] }
+    on('ui.render', { component: 'AssistantMessage' }, () => existing)
+    await $.session.start({ cwd: '/work', surface: 'desktop', isInteractive: true })
+    expect(await $.ui.render({
+      surface: 'desktop', component: 'AssistantMessage', requestId: 'reply-1',
+      props: { text: 'Original reply', isFirstOfReply: true },
+    })).toEqual(existing)
+  })
+
+  test('keeps her thoughts off unless config turns them on, and says how in the thought box', async ($, on) => {
+    on('turn.complete', (_, e) => ({ text: e.answer }))
+    let asked = 0
+    on('model.complete', () => {
+      asked++
+      return { value: { isAnswered: true, text: 'happy|hmm', usage: {} } }
+    })
+    await startDesktop($, on)
+    await $.turn.complete({ reason: 'answer', answer: 'Done.', durationMs: 10, isAborted: false, turnId: 't1' })
+    expect(asked).toBe(0)
+    expect(JSON.stringify(await $.ui.render(portraitPane()))).toContain('\\"thoughts\\": true')
+  })
+
+  test('thinks once a turn when config turns her thoughts on', async ($, on) => {
+    on('turn.complete', (_, e) => ({ text: e.answer }))
+    let asked = 0
+    on('model.complete', () => {
+      asked++
+      return { value: { isAnswered: true, text: 'happy|hmm', usage: {} } }
+    })
+    await startDesktop($, on, { thoughts: true })
+    await $.turn.complete({ reason: 'answer', answer: 'Done.', durationMs: 10, isAborted: false, turnId: 't1' })
+    expect(asked).toBe(1)
+    const box = JSON.stringify(await $.ui.render(portraitPane()))
+    expect(box).toContain('hmm')
+    expect(box).not.toContain('\\"thoughts\\": true')
+  })
+})
+
+/** くるみ's pack as the desktop reads it: avatars and the 540 portraits, one tiny WebP per face. */
+const webp: Record<string, string> = { neutral: 'TkVVVFJBTA==', happy: 'SEFQUFk=' }
+
+function desktop(on: On, config: Record<string, unknown> = {}): void {
+  mock.clock(on)
+  on('fs.list', (_, e) => {
+    if (e.path?.endsWith('/claudecafe/characters')) {
+      return { value: [{ name: 'kurumi', kind: 'directory' as const, size: 0, isLink: false }] }
+    }
+    if (e.path?.endsWith('/characters/kurumi/avatars')) {
+      return { value: Object.keys(webp).map(name => ({ name: `${name}.webp`, kind: 'file' as const, size: 0, isLink: false })) }
+    }
+    return { value: [] }
+  })
+  on('fs.read', (_, e) => {
+    if (e.as === 'bytes') return { value: { base64: webp[e.path.split('/').at(-1)!.replace('.webp', '')]! } }
+    if (e.path?.endsWith('/config.json')) return { value: JSON.stringify(config) }
+    if (e.path?.endsWith('/characters/kurumi/persona.md')) return { value: '---\nname: くるみ\n---\nKurumi body.\n' }
+    return { value: '' }
+  })
+  on('fs.exists', (_, e) => ({
+    value: ['/characters/kurumi/persona.md', '/characters/kurumi/portraits-540/neutral.webp'].some(path => e.path?.endsWith(path)),
+  }))
+  on('fs.write', () => ({ value: undefined }))
+  on('session.id', () => ({ value: 'test-session' }))
+  on('session.surfaces', () => ({ value: ['desktop'] }))
+  on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
+}
+
+async function startDesktop($: Engine, on: On, config: Record<string, unknown> = {}): Promise<void> {
+  desktop(on, config)
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('tool.register', (_, e) => ({ value: { tool: `mcp__persona-panel__${e.name}` } }))
+  on('command.register', () => ({ value: undefined }))
+  on('ui.open', () => ({ value: placed }))
+  on('ui.invalidate', () => ({ value: undefined }))
+  await $.session.start({ cwd: '/work', surface: null, isInteractive: true })
+}
+
 /** Answers the characters directory: one character, くるみ, with her own GIFs and a stray file beside them. */
 function pixels(on: On, lines: string[] = waitingLines): void {
   on('fs.list', (_, e) => {
@@ -561,6 +675,16 @@ function rule(image: Face): RenderElement {
 
 function text(content: string): RenderElement {
   return { type: 'Text', children: [content] }
+}
+
+function portraitPane(): RenderInput<'Pane', 'desktop'> {
+  return {
+    surface: 'desktop', component: 'Pane', requestId: 'persona-portrait',
+    props: {
+      title: 'Portrait', isFocused: true, bodyColumns: 38, placement: 'dock',
+      scroll: { offset: 0, bodyRows: 40 }, view: {},
+    },
+  }
 }
 
 function pane(): RenderInput<'Pane', 'terminal'> {
