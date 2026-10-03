@@ -16,8 +16,6 @@ waiting:
   - 真的快好了啦
   - 等等要誇くるみ喔
   - ご主人様不要走開嘛
-outfits:
-  uniform: 女僕裝
 ---
 
 # Personality

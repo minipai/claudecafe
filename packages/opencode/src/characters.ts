@@ -4,7 +4,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { promisify } from "node:util"
-import { PUBLISHED_CHARACTER_PACKS, parsePersona, personaFiles } from "./character-core/index.ts"
+import { PUBLISHED_CHARACTER_PACKS, extendPersona, parsePersona } from "./character-core/index.ts"
 import { cafeRoot } from "./root.ts"
 
 const unzip = promisify(execFile)
@@ -14,7 +14,8 @@ export { PUBLISHED_CHARACTER_PACKS }
 export type Character = {
   id: string
   name: string
-  personaPath: string
+  /** The persona text, with whatever it extends folded in. */
+  persona: string
   pixelsDir: string | null
 }
 
@@ -22,8 +23,8 @@ export function charactersDir(): string {
   return join(cafeRoot(), "characters")
 }
 
-export function personaFileInCharacters(id: string, variant = ""): string | null {
-  return personaFileInFolder(charactersDir(), id, variant)
+export function personaFileInCharacters(id: string): string | null {
+  return personaFileInFolder(charactersDir(), id)
 }
 
 export function characterIds(): string[] {
@@ -37,16 +38,32 @@ export function characterIds(): string[] {
   }
 }
 
-export function characterForId(id: string, variant = ""): Character | null {
-  const personaPath = personaFileInCharacters(id, variant)
-  if (!personaPath) return null
-  const pixels = join(charactersDir(), id, "pixels")
+/** A character folder, its persona and art inherited from the characters it extends. */
+export function characterForId(id: string): Character | null {
+  const line = lineage(id)
+  if (!line.length) return null
+  const persona = line.map(({ text }) => text).reduceRight((parent, child) => extendPersona(child, parent))
+  const pixels = line.map((ancestor) => join(charactersDir(), ancestor.id, "pixels")).find(existsSync)
   return {
     id,
-    name: parsePersona(read(personaPath)).name || id,
-    personaPath,
-    pixelsDir: existsSync(pixels) ? pixels : null,
+    name: parsePersona(persona).name || id,
+    persona,
+    pixelsDir: pixels ?? null,
   }
+}
+
+/** The character and the ones it extends, nearest first; a missing parent or a cycle ends the line. */
+function lineage(id: string): Array<{ id: string; text: string }> {
+  const line: Array<{ id: string; text: string }> = []
+  let next = id
+  while (next && !line.some((ancestor) => ancestor.id === next)) {
+    const path = personaFileInCharacters(next)
+    if (!path) break
+    const text = read(path)
+    line.push({ id: next, text })
+    next = parsePersona(text).extends
+  }
+  return line
 }
 
 export function characterVersion(id: string): string | null {
@@ -131,13 +148,10 @@ async function replaceDirectory(source: string, target: string): Promise<void> {
   }
 }
 
-function personaFileInFolder(root: string, id: string, variant = ""): string | null {
+function personaFileInFolder(root: string, id: string): string | null {
   if (!validId(id)) return null
-  for (const file of personaFiles(variant)) {
-    const path = join(root, id, file)
-    if (existsSync(path)) return path
-  }
-  return null
+  const path = join(root, id, "persona.md")
+  return existsSync(path) ? path : null
 }
 
 function validId(id: string): boolean {

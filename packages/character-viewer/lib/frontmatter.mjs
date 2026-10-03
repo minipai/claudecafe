@@ -1,5 +1,5 @@
 // Persona frontmatter, read the same way `character-core` reads it: scalars plus
-// one level of nested keys, which is all a persona declares (`outfits`). The raw
+// one level of nested keys. The raw
 // block is handed back untouched so character-viewer can show what is really on disk.
 
 export function parseFrontmatter(text) {

@@ -14,7 +14,7 @@ the things that are expensive to find out the hard way.
 - **`apps/website`** — claudecafe.dev (Hono SSR): the showcase, and the hiring channel —
   `/<id>.md` serves a persona file, frontmatter included.
 - **`packages/characters`** — the cast. One folder per maid: persona per language,
-  root `avatar.webp`, default `portraits/` and `pixels/`, and optional `variants/`.
+  root `avatar.webp`, `portraits/` and `pixels/`.
   **The PNG masters, pencil references and drawing spec live in `art-masters/` at the
   repo root, gitignored** — the art scripts read from there and stop with a plain error
   when it isn't present.

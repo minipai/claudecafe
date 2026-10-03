@@ -110,31 +110,66 @@ describe("root and config", () => {
 })
 
 describe("personas", () => {
-  test("the bundled nameless maid loads with her frontmatter stripped", () => {
-    const path = cafe.personaFile("noname")
-    expect(path).toBe(join(BUNDLED, "fallback", "noname.md"))
-    expect(cafe.personaBody(path ?? "").trim()).toBe("The maid with no name.")
+  test("the bundled nameless maid loads with her frontmatter", () => {
+    const text = cafe.persona("noname")
+    expect(text).toBe(readFileSync(join(BUNDLED, "fallback", "noname.md"), "utf8"))
+    expect(cafe.characterForMaid("noname")?.name).toBe("？？？")
   })
 
   test("a local character folder is a persona source", () => {
     writeCharacter("mymaid", "My Pack", "Pack body.")
-    expect(cafe.personaFile("mymaid")).toBe(join(charactersDir(), "mymaid", "persona.md"))
+    expect(cafe.persona("mymaid")).toContain("Pack body.")
     expect(cafe.characterForMaid("mymaid")?.name).toBe("My Pack")
   })
 
-  test("the variant picks its persona file, apart from the reply language", () => {
-    writeCharacter("bilingual", "English", "English body.")
-    write(join(charactersDir(), "bilingual", "persona.zh.md"), "---\nname: 中文\n---\n中文內容。\n")
-    setConfig({ lang: "Traditional Chinese" })
-    expect(cafe.personaFile("bilingual")).toBe(join(charactersDir(), "bilingual", "persona.md"))
-    setConfig({ variant: "zh" })
-    expect(cafe.personaFile("bilingual")).toBe(join(charactersDir(), "bilingual", "persona.zh.md"))
-    setConfig({ variant: "ja" })
-    expect(cafe.personaFile("bilingual")).toBe(join(charactersDir(), "bilingual", "persona.md"))
+  test("an extending persona inherits the fields and body it leaves blank, but not the parent's retirement", () => {
+    write(
+      join(charactersDir(), "parent", "persona.md"),
+      "---\nid: claudecafe/parent\nname: Parent\noff_duty: true\n---\nParent body.\n",
+    )
+    write(join(charactersDir(), "child", "persona.md"), "---\nextends: parent\nname: Child\n---\n")
+    const text = cafe.persona("child") ?? ""
+    expect(text).toContain("Parent body.")
+    expect(text).not.toContain("extends:")
+    expect(cafe.offDuty(text)).toBe(false)
+    expect(cafe.characterForMaid("child")?.name).toBe("Child")
+  })
+
+  test("an extending persona's own body and fields override the parent's, across generations", () => {
+    writeCharacter("grandma", "Grandma", "Grandma body.")
+    write(join(charactersDir(), "mother", "persona.md"), "---\nextends: grandma\nname: Mother\n---\nMother body.\n")
+    write(join(charactersDir(), "daughter", "persona.md"), "---\nextends: mother\nversion: 9.9.9\n---\n")
+    const text = cafe.persona("daughter") ?? ""
+    expect(text).toContain("Mother body.")
+    expect(text).not.toContain("Grandma body.")
+    expect(text).toContain("id: claudecafe/grandma")
+    expect(text).toContain("version: 9.9.9")
+    expect(cafe.characterForMaid("daughter")?.name).toBe("Mother")
+  })
+
+  test("a child without pixels/ uses the nearest ancestor's whole folder", () => {
+    seedExpressionPack("grandma", "Grandma", ["neutral"])
+    seedExpressionPack("mother", "Mother", ["happy"])
+    write(join(charactersDir(), "mother", "persona.md"), "---\nextends: grandma\n---\n")
+    write(join(charactersDir(), "daughter", "persona.md"), "---\nextends: mother\n---\n")
+    expect(characterForId("daughter")?.pixelsDir).toBe(join(charactersDir(), "mother", "pixels"))
+    seedExpressionPack("daughter", "Daughter", ["neutral"])
+    expect(characterForId("daughter")?.pixelsDir).toBe(join(charactersDir(), "daughter", "pixels"))
+  })
+
+  test("an extends cycle stops at the repeat, and a missing parent leaves the persona as written", () => {
+    write(join(charactersDir(), "ping", "persona.md"), "---\nextends: pong\nname: Ping\n---\nPing body.\n")
+    write(join(charactersDir(), "pong", "persona.md"), "---\nextends: ping\nname: Pong\n---\n")
+    expect(cafe.persona("ping")).toContain("Ping body.")
+    expect(cafe.persona("pong")).toContain("Ping body.")
+    expect(cafe.characterForMaid("pong")?.name).toBe("Pong")
+    write(join(charactersDir(), "orphan", "persona.md"), "---\nextends: ghost\nname: Orphan\n---\nOrphan body.\n")
+    expect(cafe.persona("orphan")).toContain("Orphan body.")
+    expect(characterForId("orphan")?.pixelsDir).toBeNull()
   })
 
   test("a missing persona resolves to nothing", () => {
-    expect(cafe.personaFile("ghost")).toBeNull()
+    expect(cafe.persona("ghost")).toBeNull()
   })
 
   test("off_duty accepts true and yes, any case", () => {

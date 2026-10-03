@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { promisify } from 'node:util'
-import { PUBLISHED_CHARACTER_PACKS, personaFiles } from '@claudecafe/character-core'
+import { PUBLISHED_CHARACTER_PACKS, extendPersona, parsePersona } from '@claudecafe/character-core'
 import { cafeRoot } from './cafehome'
 import type { CastMember } from '../../src/agent/bridge'
 
@@ -51,26 +51,26 @@ export function castOf(directory = charactersDir()): CastMember[] {
   if (!directory) return []
   const version = createHash('sha256').update(directory).digest('hex').slice(0, 16)
   return entries(directory).filter((entry) => entry.isDirectory()).flatMap(({ name: id }) => {
-    const folder = path.join(directory, id)
-    const persona = readPersona(folder)
-    const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(persona)?.[1] ?? ''
-    const name = /^name:[ \t]*(.+)$/m.exec(frontmatter)?.[1].trim().replace(/^(['"])(.*)\1$/, '$2')
-    const portraits = entries(path.join(folder, 'portraits'))
+    const lineage = lineageOf(directory, id)
+    const name = parsePersona(personaFrom(lineage)).name
+    const art = lineage.find((maid) => fs.existsSync(path.join(directory, maid.id, 'portraits')))?.id ?? id
+    const portraits = entries(path.join(directory, art, 'portraits'))
       .filter((entry) => entry.isFile() && entry.name.endsWith('.webp'))
     if (!name || !portraits.some((entry) => entry.name === 'neutral.webp')) return []
-    const url = (file: string) => `cafe-character://cast/${encodeURIComponent(id)}/${file}?v=${version}`
+    const url = (folder: string, file: string) => `cafe-character://cast/${encodeURIComponent(folder)}/${file}?v=${version}`
+    const avatar = [id, art].find((folder) => fs.existsSync(path.join(directory, folder, 'avatar.webp')))
     return [{
       id,
       name,
-      avatar: fs.existsSync(path.join(folder, 'avatar.webp')) ? url('avatar.webp') : url('portraits/neutral.webp'),
-      expressions: Object.fromEntries(portraits.map((entry) => [entry.name.slice(0, -5), url(`portraits/${encodeURIComponent(entry.name)}`)])),
+      avatar: avatar ? url(avatar, 'avatar.webp') : url(art, 'portraits/neutral.webp'),
+      expressions: Object.fromEntries(portraits.map((entry) => [entry.name.slice(0, -5), url(art, `portraits/${encodeURIComponent(entry.name)}`)])),
     }]
   }).sort((one, other) => one.id.localeCompare(other.id))
 }
 
 export function personaOf(maid: string) {
   if (!maid || !castOf().some((entry) => entry.id === maid)) return ''
-  return readPersona(path.join(charactersDir(), maid)).replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').trim()
+  return parsePersona(personaFrom(lineageOf(charactersDir(), maid))).body.trim()
 }
 
 export function nameOf(maid: string) {
@@ -97,24 +97,29 @@ export function characterImage(url: string): string | null {
   }
 }
 
-/** The café config's persona variant picks persona.<variant>.md over persona.md, as in the terminal. */
-function readPersona(folder: string) {
-  for (const file of personaFiles(personaVariant())) {
-    try {
-      const content = fs.readFileSync(path.join(folder, file), 'utf8')
-      if (content.trim()) return content
-    } catch {
-      // A character need not ship the configured variant.
-    }
+/** A maid and the maids her persona extends, nearest first; a cycle or a missing parent ends the line. */
+function lineageOf(directory: string, id: string) {
+  const lineage = [{ id, persona: readPersona(path.join(directory, id)) }]
+  let parent = parsePersona(lineage[0].persona).extends
+  while (parent && !lineage.some((maid) => maid.id === parent)) {
+    const persona = readPersona(path.join(directory, parent))
+    if (!persona.trim()) break
+    lineage.push({ id: parent, persona })
+    parent = parsePersona(persona).extends
   }
-  return ''
+  return lineage
 }
 
-function personaVariant() {
+/** Each persona in the line fills in what the one below it leaves blank. */
+function personaFrom(lineage: { persona: string }[]) {
+  return lineage.map((maid) => maid.persona).reduceRight((parent, child) => extendPersona(child, parent))
+}
+
+function readPersona(folder: string) {
   try {
-    return String(JSON.parse(fs.readFileSync(path.join(cafeRoot(), 'config.json'), 'utf8')).variant ?? '').trim()
+    return fs.readFileSync(path.join(folder, 'persona.md'), 'utf8')
   } catch {
-    return '' // no café config
+    return ''
   }
 }
 

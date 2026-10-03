@@ -48,13 +48,15 @@ character layout:
 
 ```text
 $XDG_CONFIG_HOME/claudecafe/characters/<id>/
-  persona.md          # plus optional variants such as persona.zh.md
+  persona.md          # frontmatter may say `extends: <id>` to build on another maid
   pixels/*.gif        # 36×48 faces; neutral.gif is the fallback
 ```
 
-OpenCode reads `persona.md`, or `persona.<variant>.md` when config `variant`
-names one the pack has; the
-reply language is config `lang`, set on its own. The pack's
+OpenCode reads `persona.md`. A persona with `extends: <id>` builds on that
+character's (which may extend another in turn): each frontmatter field and the
+body it fills in override the parent's, and whatever it leaves blank is
+inherited. A pack without `pixels/` borrows the nearest ancestor's whole
+folder. The reply language is config `lang`, set on its own. The pack's
 frontmatter `name` is shown in the sidebar. `/maid` writes an explicit choice
 for the current session, so it takes precedence over config `character` for
 that session. To add a maid, create another lowercase `<id>/` folder; it joins the

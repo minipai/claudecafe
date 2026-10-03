@@ -3,6 +3,8 @@ export type ParsedPersona = {
   name: string
   version: string
   offDuty: boolean
+  /** The character id this persona builds on, or "" when it stands alone. */
+  extends: string
   /** What she says on a spinner while she is off working, turned over one at a time. */
   waiting: string[]
   body: string
@@ -15,14 +17,27 @@ export function parsePersona(text: string): ParsedPersona {
     name: field(head, "name"),
     version: field(head, "version"),
     offDuty: /^off_duty:\s*(?:true|yes)\b/im.test(head),
+    extends: /^[a-z0-9][a-z0-9-]*$/.test(field(head, "extends")) ? field(head, "extends") : "",
     waiting: items(head, "waiting"),
     body: personaBody(text),
   }
 }
 
-/** The persona files to try, in order: `persona.<variant>.md` when a variant is set, then the default `persona.md`. */
-export function personaFiles(variant = ""): string[] {
-  return variant ? [`persona.${variant}.md`, "persona.md"] : ["persona.md"]
+/**
+ * A persona built on its parent's: each frontmatter field the child fills in
+ * overrides the parent's, and so does a body that is not blank. Whatever the
+ * child leaves blank comes from the parent, except `off_duty`: retiring a
+ * parent leaves the characters built on it in the draw.
+ */
+export function extendPersona(child: string, parent: string): string {
+  const fields = new Map(entries(frontmatter(parent)))
+  fields.delete("off_duty")
+  for (const [key, entry] of entries(frontmatter(child))) {
+    if (entry.slice(key.length + 1).trim()) fields.set(key, entry)
+  }
+  fields.delete("extends")
+  const body = personaBody(child).trim() ? personaBody(child) : personaBody(parent)
+  return `---\n${[...fields.values()].join("\n")}\n---\n${body}`
 }
 
 /** Orders two dotted versions numerically; either one unreadable counts as a tie. */
@@ -70,6 +85,18 @@ export function commitAuthorship(text: string, mode = "co-author"): string {
 
 function frontmatter(text: string): string {
   return /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)?.[1] ?? ""
+}
+
+/** The top-level fields of a frontmatter, each a `key:` line with the indented lines beneath it. */
+function entries(head: string): [string, string][] {
+  const fields: [string, string][] = []
+  for (const line of head.split(/\r?\n/)) {
+    const key = /^([A-Za-z_][\w-]*):/.exec(line)?.[1]
+    const last = fields[fields.length - 1]
+    if (key) fields.push([key, line])
+    else if (last) last[1] += `\n${line}`
+  }
+  return fields
 }
 
 function field(head: string, key: string): string {

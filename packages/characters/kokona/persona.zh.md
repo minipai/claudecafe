@@ -16,8 +16,6 @@ waiting:
   - 不是為了マスター才這麼認真的
   - 快好了
   - 再一下
-outfits:
-  uniform: 女僕裝
 ---
 
 # Personality

@@ -2,12 +2,12 @@ import {
   PUBLISHED_CHARACTER_PACKS,
   commitAuthorship,
   compareVersions,
+  extendPersona,
   readContext,
   expressionPrompt,
   expressionToolDescription,
   markedFace,
   parsePersona,
-  personaFiles,
   resolveCharacter,
 } from '../../../character-core/src/index.ts'
 import {
@@ -221,8 +221,8 @@ async function openSession($, cwd, surface) {
   const root = await dataRoot($)
   const config = await readConfig($, root)
   const character = await loadCharacter($, root, config, await $.session.id())
-  const faces = surface === 'terminal' && character?.pack ? await loadFaces($, `${character.pack}/pixels`) : {}
-  const desktop = surface === 'desktop' && character ? await loadDesktop($, castDirs($, root), character.id, config) : null
+  const faces = surface === 'terminal' && character?.pixels ? await loadFaces($, character.pixels) : {}
+  const desktop = surface === 'desktop' && character ? await loadDesktop($, castDirs($, root), character.line, config) : null
   const state = {
     cwd,
     hasPanel: Object.keys(faces).length > 0,
@@ -238,9 +238,9 @@ async function openSession($, cwd, surface) {
   if (surface === 'desktop') {
     // Her pictures come from her pack: a missing or older one is fetched in the background and drawn once it lands.
     void installPacks($, root).then(async (installed) => {
-      if (!character || !installed.includes(character.id)) return
+      if (!character?.line.some((id) => installed.includes(id))) return
       const wasDrawn = Boolean(state.desktop)
-      state.desktop = await loadDesktop($, castDirs($, root), character.id, config)
+      state.desktop = await loadDesktop($, castDirs($, root), character.line, config)
       if (state.desktop && !wasDrawn) await openDesktop($, Object.keys(state.desktop.avatars))
       await $.ui.invalidate('ui.render')
     })
@@ -274,12 +274,15 @@ async function openPane($) {
  * Her desktop pictures from the first character folder that has them: the pack's `avatars/` and
  * `portraits-540/`. The plugin bundles none, so without a pack the desktop draws nothing of her.
  */
-async function loadDesktop($, dirs, id, config) {
-  for (const dir of dirs) {
-    const folder = `${dir}/${id}`
-    const avatars = await loadPictures($, folder, 'avatars')
-    if (avatars.neutral && await exists($, `${folder}/portraits-540/neutral.webp`)) {
-      return { folder, avatars, thinks: config.thoughts === true }
+/** The desktop pictures of the nearest character in her line that has them. */
+async function loadDesktop($, dirs, line, config) {
+  for (const id of line) {
+    for (const dir of dirs) {
+      const folder = `${dir}/${id}`
+      const avatars = await loadPictures($, folder, 'avatars')
+      if (avatars.neutral && await exists($, `${folder}/portraits-540/neutral.webp`)) {
+        return { folder, avatars, thinks: config.thoughts === true }
+      }
     }
   }
   return null
@@ -524,30 +527,28 @@ async function replyLanguage($, config) {
 
 /** The character this session already has, else the configured one, else the default; kept for the session. */
 async function loadCharacter($, root, config, sessionID) {
-  const variant = String(config.variant ?? '').trim()
   const dirs = castDirs($, root)
-  const pool = await castPool($, dirs, variant)
+  const pool = await castPool($, dirs)
   const drawn = `${root}/sessions/${sessionID}/character`
   const session = await read($, drawn)
   const configured = String(config.character ?? '').trim()
   const id = resolveCharacter({ session, config: configured, pool })
   if (!id) return null
   if (!session && !configured) await $.fs.write(drawn, id)
-  const pack = await packFolder($, dirs, id, variant)
-  const path = await personaFile($, id, pack, variant)
-  if (!path) return null
-  const text = await read($, path)
-  const persona = parsePersona(text)
+  const character = await characterOf($, dirs, id)
+  if (!character) return null
+  const persona = parsePersona(character.text)
   return {
     id,
     name: persona.name || id,
     waiting: persona.waiting,
-    persona: commitAuthorship(text, String(config.commit_authorship ?? 'co-author')).trim(),
-    pack,
+    persona: commitAuthorship(character.text, String(config.commit_authorship ?? 'co-author')).trim(),
+    pixels: character.pixels,
+    line: character.line,
   }
 }
 
-async function castPool($, dirs, variant) {
+async function castPool($, dirs) {
   const ids = new Set()
   for (const dir of dirs) {
     for (const entry of await list($, dir)) {
@@ -556,8 +557,9 @@ async function castPool($, dirs, variant) {
   }
   const available = []
   for (const id of ids) {
-    const pack = await packFolder($, dirs, id, variant)
-    if (pack && !parsePersona(await read($, await packPersona($, pack, variant))).offDuty) available.push(id)
+    if (!await packFolder($, dirs, id)) continue
+    const { text } = await characterOf($, dirs, id)
+    if (!parsePersona(text).offDuty) available.push(id)
   }
   if (available.length) return available.sort()
   const bundled = `${$.plugin.root}/fallback/noname.md`
@@ -570,35 +572,43 @@ function castDirs($, root) {
 }
 
 /**
+ * A character's persona with the one it extends folded in, the pixels of the
+ * nearest character in that line that has any, and the line itself, nearest
+ * first. A cycle or a missing parent leaves the persona standing alone.
+ */
+async function characterOf($, dirs, id, seen = new Set()) {
+  seen.add(id)
+  const pack = await packFolder($, dirs, id)
+  const path = pack ? `${pack}/persona.md` : await fallbackPersona($, id)
+  if (!path) return null
+  const text = await read($, path)
+  const pixels = pack && (await list($, `${pack}/pixels`)).length ? `${pack}/pixels` : null
+  const parentID = parsePersona(text).extends
+  const parent = parentID && !seen.has(parentID) ? await characterOf($, dirs, parentID, seen) : null
+  if (!parent) return { text, pixels, line: [id] }
+  return { text: extendPersona(text, parent.text), pixels: pixels ?? parent.pixels, line: [id, ...parent.line] }
+}
+
+/**
  * The newest copy of a character: a user's folder goes stale when only the
  * plugin updates, so the bundled cast wins on a higher persona version. The
  * user's copy wins a tie, which keeps hand-made packs in charge.
  */
-async function packFolder($, dirs, id, variant) {
+async function packFolder($, dirs, id) {
   let newest = null
   for (const dir of dirs) {
     const folder = `${dir}/${id}`
-    const path = await packPersona($, folder, variant)
-    if (!path) continue
+    const path = `${folder}/persona.md`
+    if (!await exists($, path)) continue
     const version = parsePersona(await read($, path)).version
     if (!newest || compareVersions(version, newest.version) > 0) newest = { folder, version }
   }
   return newest?.folder ?? null
 }
 
-async function personaFile($, id, pack, variant) {
-  const packed = pack && await packPersona($, pack, variant)
-  if (packed) return packed
+async function fallbackPersona($, id) {
   const bundled = `${$.plugin.root}/fallback/${id}.md`
   return (await exists($, bundled)) ? bundled : null
-}
-
-async function packPersona($, folder, variant) {
-  for (const name of personaFiles(variant)) {
-    const path = `${folder}/${name}`
-    if (await exists($, path)) return path
-  }
-  return null
 }
 
 function contextHost($) {

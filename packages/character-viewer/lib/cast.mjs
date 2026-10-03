@@ -31,10 +31,10 @@ function readCharacter(slug, folder, personaFiles) {
     const { ok, fields, raw: head } = parseFrontmatter(raw)
     personas[languageOf(file)] = { file, head, ok, fields, body: personaBody(raw), raw }
   }
-  return { slug, personas, artwork: readArtwork(folder, ''), variants: readVariants(folder) }
+  return { slug, personas, artwork: readArtwork(folder) }
 }
 
-/** `persona.md` is the default persona; `persona.<lang>.md` is a variant of it. */
+/** `persona.md` is the default persona; `persona.<lang>.md` is a translation of it. */
 const languageOf = (file) => /^persona(?:\.([\w-]+))?\.md$/.exec(file)?.[1] ?? 'en'
 
 /** The drawing scripts and the release archives are meant to sit beside the
@@ -44,35 +44,22 @@ function artworkIn(folder) {
   return ['avatar.webp', 'portraits', 'pixels'].filter((name) => fs.existsSync(path.join(folder, name)))
 }
 
-/** A character root is a complete default variant, and each folder under
- *  `variants/` is a complete alternative for the same persona. */
-function readArtwork(folder, prefix) {
+function readArtwork(folder) {
   const avatar = path.join(folder, 'avatar.webp')
   return {
-    avatar: fs.existsSync(avatar) ? picture(avatar, `${prefix}avatar.webp`) : null,
-    portraits: picturesIn(path.join(folder, 'portraits'), '.webp', prefix),
-    pixels: picturesIn(path.join(folder, 'pixels'), '.gif', prefix),
+    avatar: fs.existsSync(avatar) ? picture(avatar, 'avatar.webp') : null,
+    portraits: picturesIn(path.join(folder, 'portraits'), '.webp'),
+    pixels: picturesIn(path.join(folder, 'pixels'), '.gif'),
     unshippable: [...unshippable(path.join(folder, 'portraits'), '.webp'), ...unshippable(path.join(folder, 'pixels'), '.gif')],
   }
 }
 
-function readVariants(folder) {
-  const root = path.join(folder, 'variants')
-  if (!fs.existsSync(root)) return []
-  return foldersOf(root).map((id) => {
-    const dir = path.join(root, id)
-    const persona = filesOf(dir).find(isPersona) ?? null
-    const fields = persona ? parseFrontmatter(fs.readFileSync(path.join(dir, persona), 'utf8')).fields : {}
-    return { id, file: persona, extends: fields.extends ?? '', artwork: readArtwork(dir, `variants/${id}/`) }
-  })
-}
-
-function picturesIn(dir, extension, prefix) {
+function picturesIn(dir, extension) {
   if (!fs.existsSync(dir)) return []
   return filesOf(dir)
     .filter((file) => file.endsWith(extension))
     .sort()
-    .map((file) => picture(path.join(dir, file), `${prefix}${path.basename(dir)}/${file}`))
+    .map((file) => picture(path.join(dir, file), `${path.basename(dir)}/${file}`))
 }
 
 /** Anything in an artwork folder the release archives would not pick up. */

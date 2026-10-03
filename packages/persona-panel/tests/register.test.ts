@@ -146,7 +146,6 @@ describe('Portrait pane', () => {
     on('fs.write', () => ({ value: undefined }))
     on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
     on('session.id', () => ({ value: 'test-session' }))
-  on('session.model', () => ({ value: figures.model }))
     on('session.cwd', () => ({ value: '' }))
     on('session.surfaces', () => ({ value: ['desktop'] }))
     on('http.fetch', () => { throw new Error('offline') })
@@ -175,7 +174,6 @@ describe('Portrait pane', () => {
       on('fs.write', () => ({ value: undefined }))
       on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
       on('session.id', () => ({ value: 'test-session' }))
-  on('session.model', () => ({ value: figures.model }))
       on('session.cwd', () => ({ value: '' }))
       on('session.surfaces', () => ({ value: ['desktop'] }))
       on('http.fetch', () => { throw new Error('offline') })
@@ -185,38 +183,46 @@ describe('Portrait pane', () => {
     })
   }
 
-  for (const [config, persona, reply] of [
-    [{}, 'Default body.', null],
-    [{ variant: 'zh', lang: 'Traditional Chinese' }, '中文內容。', 'Respond in Traditional Chinese.'],
-    [{ variant: 'ja' }, 'Default body.', null],
+  for (const [child, expected, absent] of [
+    ['---\nname: ことね・夜\nextends: kotone\n---\n', ['ことね・夜 <kotone@claudecafe.dev>', 'Kotone body.'], 'ことね <'],
+    ['---\nextends: kotone\n---\nNight body.\n', ['ことね <kotone@claudecafe.dev>', 'Night body.'], 'Kotone body.'],
   ] as const) {
-    test(`reads the persona for variant ${JSON.stringify(config)} apart from the reply language`, async ($, on) => {
-      const files: Record<string, string> = {
-        '/claudecafe/config.json': JSON.stringify(config),
-        '/characters/kotone/persona.md': '---\nname: ことね\n---\nDefault body.\n',
-        '/characters/kotone/persona.zh.md': '---\nname: ことね\n---\n中文內容。\n',
-      }
-      const file = (path = '') => Object.entries(files).find(([suffix]) => path.endsWith(suffix))?.[1]
-      on('fs.list', (_, e) => ({
-        value: e.path?.endsWith('/claudecafe/characters') ? [{ name: 'kotone', kind: 'directory' as const, size: 0, isLink: false }] : [],
-      }))
-      on('fs.read', (_, e) => ({ value: file(e.path) ?? '' }))
-      on('fs.exists', (_, e) => ({ value: e.path?.endsWith('/claudecafe/characters/kotone') || file(e.path) !== undefined }))
-      on('fs.write', () => ({ value: undefined }))
-      on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
-      on('session.id', () => ({ value: 'test-session' }))
-  on('session.model', () => ({ value: figures.model }))
-      on('session.cwd', () => ({ value: '' }))
+    test(`a character that extends another keeps its parent for what it leaves blank: ${JSON.stringify(child)}`, async ($, on) => {
+      cafe(on, {
+        '/claudecafe/characters/kotone-night/persona.md': child,
+        '/dist/characters/kotone/persona.md': '---\nid: claudecafe/kotone\nname: ことね\noff_duty: true\n---\nKotone body.\n',
+      })
       on('session.surfaces', () => ({ value: ['desktop'] }))
-      on('http.fetch', () => { throw new Error('offline') })
-      mock.clock(on)
       on('prompt.context', (_, e) => e)
       const text = (await $.prompt.context({ blocks: [] })).blocks[0]?.text ?? ''
-      expect(text).toContain(persona)
-      if (reply) expect(text).toContain(reply)
-      else expect(text).not.toContain('Respond in')
+      for (const part of expected) expect(text).toContain(part)
+      expect(text).not.toContain(absent)
     })
   }
+
+  test('a character without pixels wears the ones of the character it extends', async ($, on) => {
+    let registrations = 0
+    cafe(on, {
+      '/claudecafe/characters/kurumi-night/persona.md': '---\nname: 夜のくるみ\nextends: kurumi\n---\n',
+      '/dist/characters/kurumi/persona.md': '---\nname: くるみ\noff_duty: true\n---\nKurumi body.\n',
+      '/dist/characters/kurumi/pixels/neutral.gif': '',
+    })
+    on('session.start', (_, e) => ({ cwd: e.cwd }))
+    on('tool.register', () => { registrations++; return { value: { tool } } })
+    on('ui.open', () => ({ value: placed }))
+    await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+    expect(registrations).toBe(1)
+  })
+
+  test('a cycle of characters extending each other leaves each standing alone', async ($, on) => {
+    cafe(on, {
+      '/claudecafe/characters/kotone/persona.md': '---\nname: ことね\nextends: kurumi\n---\nKotone body.\n',
+      '/claudecafe/characters/kurumi/persona.md': '---\nname: くるみ\nextends: kotone\noff_duty: true\n---\n',
+    })
+    on('session.surfaces', () => ({ value: ['desktop'] }))
+    on('prompt.context', (_, e) => e)
+    expect((await $.prompt.context({ blocks: [] })).blocks[0]?.text).toContain('Kotone body.')
+  })
 
   test('adds stable portrait instructions while preserving other context and replacing its own block', async ($, on) => {
     on('ui.invalidate', () => ({ value: undefined }))
@@ -462,6 +468,24 @@ describe('Desktop', () => {
     expect(tree).toContain('Done.')
   })
 
+  test('wears the desktop pictures of the character she extends when she has none', async ($, on) => {
+    const tools: string[] = []
+    cafe(on, {
+      '/claudecafe/config.json': JSON.stringify({ character: 'kurumi-night' }),
+      '/claudecafe/characters/kurumi-night/persona.md': '---\nname: 夜のくるみ\nextends: kurumi\n---\n',
+      '/dist/characters/kurumi/persona.md': '---\nname: くるみ\n---\nKurumi body.\n',
+      '/dist/characters/kurumi/avatars/neutral.webp': '',
+      '/dist/characters/kurumi/portraits-540/neutral.webp': '',
+    })
+    on('session.surfaces', () => ({ value: ['desktop'] }))
+    on('session.start', (_, e) => ({ cwd: e.cwd }))
+    on('tool.register', (_, e) => { tools.push(e.name); return { value: { tool: `mcp__persona-panel__${e.name}` } } })
+    on('command.register', () => ({ value: undefined }))
+    on('ui.open', () => ({ value: placed }))
+    await $.session.start({ cwd: '/work', surface: null, isInteractive: true })
+    expect(tools).toContain('cut_in')
+  })
+
   test('leaves replies alone when her pack has no desktop pictures', async ($, on) => {
     world(on)
     on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -573,6 +597,35 @@ async function startDesktop($: Engine, on: On, config: Record<string, unknown> =
   on('ui.open', () => ({ value: placed }))
   on('ui.invalidate', () => ({ value: undefined }))
   await $.session.start({ cwd: '/work', surface: null, isInteractive: true })
+}
+
+/** A café holding these files, matched by path suffix: each character folder and pixels folder lists what lies under it. */
+function cafe(on: On, files: Record<string, string>): void {
+  const children = (path = '') => [...new Set(Object.keys(files).flatMap((file) => {
+    const parts = file.split('/')
+    for (let end = parts.length - 1; end > 1; end--) {
+      if (path.endsWith(parts.slice(0, end).join('/'))) return [parts[end]!]
+    }
+    return []
+  }))]
+  on('fs.list', (_, e) => ({
+    value: children(e.path).map((name) => ({ name, kind: name.includes('.') ? 'file' as const : 'directory' as const, size: 0, isLink: false })),
+  }))
+  on('fs.read', (_, e) => {
+    if (e.as === 'bytes') return { value: { base64: gifs.neutral! } }
+    return { value: Object.entries(files).find(([suffix]) => e.path?.endsWith(suffix))?.[1] ?? '' }
+  })
+  on('fs.exists', (_, e) => ({ value: Object.keys(files).some((suffix) => e.path?.endsWith(suffix)) }))
+  on('fs.write', () => ({ value: undefined }))
+  on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/Users/tester' : undefined }))
+  on('session.id', () => ({ value: 'test-session' }))
+  on('session.cwd', () => ({ value: '' }))
+  on('session.root', () => ({ value: '/work' }))
+  on('session.model', () => ({ value: 'Opus 5.5' }))
+  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200_000, percent: 0 }, rateLimits: [] } }))
+  on('process.run', () => ({ value: { exitCode: 1, stdout: '', stderr: '' } }))
+  on('http.fetch', () => { throw new Error('offline') })
+  mock.clock(on)
 }
 
 /** Answers the characters directory: one character, くるみ, with her own GIFs and a stray file beside them. */

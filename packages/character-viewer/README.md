@@ -32,8 +32,7 @@ on a whole square.
 `Portraits` and `Pixels` are separate sets; switching between them keeps her on
 the same expression. Any arrow key walks the rail — the rail is a grid, so left
 and right would otherwise be the one pair of directions that did nothing — and
-`[` and `]` change maid. A `variants/<id>/` folder becomes a switch when one
-exists.
+`[` and `]` change maid.
 
 **Persona** — the persona as read, and `Source` for the file as written, in
 whichever languages the folder ships.

@@ -15,7 +15,7 @@ desktop hosts use too; the published cast is at
 ```text
 $XDG_CONFIG_HOME/claudecafe/           # default ~/.config/claudecafe
   config.json
-  characters/<id>/persona.md            # optional character folders, plus persona.<variant>.md
+  characters/<id>/persona.md            # optional character folders; extends: <id> builds on another
   sessions/<session_id>/
 ```
 

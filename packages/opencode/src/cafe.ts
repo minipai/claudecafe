@@ -2,14 +2,14 @@ import {
   commitAuthorship as coreCommitAuthorship,
   fillPrompt,
   parsePersona,
-  personaBody as corePersonaBody,
+  personaBody,
   resolveCharacter,
 } from "./character-core/index.ts"
 import { spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs"
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { characterForId, characterIds, personaFileInCharacters, type Character } from "./characters.ts"
+import { characterForId, characterIds, type Character } from "./characters.ts"
 import { expressionPrompt } from "./expressions.ts"
 import { cafeRoot, expandHome } from "./root.ts"
 
@@ -92,39 +92,29 @@ export function lang(): string {
   return String(config().lang ?? "").trim()
 }
 
-/** The persona variant, optional: a short code picking `persona.<variant>.md` over `persona.md`. */
-export function variant(): string {
-  return String(config().variant ?? "").trim()
-}
-
 // ---------------------------------------------------------------------------
 // Personas: a character folder, or the bundled nameless maid, frontmatter included.
 // ---------------------------------------------------------------------------
 
-/** The persona instructions: the file minus its YAML frontmatter. */
-export function personaBody(path: string): string {
-  return corePersonaBody(read(path))
-}
-
-export function personaFile(maidID: string): string | null {
-  const packed = personaFileInCharacters(maidID, variant())
+/** The maid's persona text, frontmatter included: her character folder first, then the bundled maids. */
+export function persona(maidID: string): string | null {
+  const packed = characterForId(maidID)?.persona
   if (packed && personaBody(packed).trim()) return packed
 
-  const bundled = join(maidsDir(), `${maidID}.md`)
-  return existsSync(bundled) && personaBody(bundled).trim() ? bundled : null
+  const bundled = read(join(maidsDir(), `${maidID}.md`))
+  return personaBody(bundled).trim() ? bundled : null
 }
 
 /** The active persona plus the artwork belonging to the same local character id. */
 export function characterForMaid(maidID: string): Character | null {
-  const personaPath = personaFile(maidID)
-  if (!personaPath) return null
-  const packed = characterForId(maidID, variant())
-  if (packed?.personaPath === personaPath) return packed
-  const name = /^name:[ \t]*(.+)$/m.exec(read(personaPath))?.[1]?.trim().replace(/^(['"])(.*)\1$/, "$2")
+  const text = persona(maidID)
+  if (!text) return null
+  const packed = characterForId(maidID)
+  if (packed?.persona === text) return packed
   return {
     id: maidID,
-    name: name || maidID,
-    personaPath,
+    name: parsePersona(text).name || maidID,
+    persona: text,
     pixelsDir: packed?.pixelsDir ?? null,
   }
 }
@@ -148,16 +138,16 @@ export function drawFrom(dirs: string[], extraIDs: string[] = []): string[] {
       if (!file.endsWith(".md")) continue
       const id = file.slice(0, -3)
       if (id !== id.toLowerCase()) continue // ids are lowercase; a drawn MyMaid.md would never load back
-      if (!pool.has(id)) pool.set(id, join(dir, file))
+      if (!pool.has(id)) pool.set(id, read(join(dir, file)))
     }
   }
   for (const id of extraIDs) {
     if (pool.has(id)) continue
-    const path = personaFileInCharacters(id, variant())
-    if (path) pool.set(id, path)
+    const packed = characterForId(id)
+    if (packed) pool.set(id, packed.persona)
   }
   return [...pool.entries()]
-    .filter(([, path]) => !offDuty(read(path)))
+    .filter(([, text]) => !offDuty(text))
     .map(([id]) => id)
     .sort()
 }
@@ -425,8 +415,8 @@ export function createCafe(directory: string) {
     }
     shift.maid = resolveMaid(sessionID)
     if (shift.maid) {
-      const path = personaFile(shift.maid)
-      shift.persona = path ? commitAuthorship(read(path)).trim() : ""
+      const text = persona(shift.maid)
+      shift.persona = text ? commitAuthorship(text).trim() : ""
       if (!shift.persona) shift.maid = null
     }
     // The briefing is housekeeping's counterpart, not part of the persona:
@@ -441,7 +431,7 @@ export function createCafe(directory: string) {
       if (maid !== "none" && !/^[a-z0-9][a-z0-9-]*$/.test(maid)) {
         throw new Error(`Invalid maid id: ${requested}`)
       }
-      if (maid !== "none" && !personaFile(maid)) {
+      if (maid !== "none" && !persona(maid)) {
         throw new Error(`Maid not found: ${requested}`)
       }
       writeFileSync(join(stateDir(sessionID), "selected-maid"), maid, "utf8")

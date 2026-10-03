@@ -8,7 +8,7 @@ set -euo pipefail
 #   scripts/ship-characters.sh <maid-id> [maid-id ...]
 #
 # The version comes from the persona frontmatter. The archive is rooted at
-# <maid-id>/ and contains the persona, avatar, portraits, pixels, and variants.
+# <maid-id>/ and contains the persona, avatar, portraits, and pixels.
 # SHIP_DRY=1 builds and validates the archives without creating a release.
 # CHARACTER_REPO and CHARACTER_DIST override the GitHub repository and output
 # directory for forks and local experiments.

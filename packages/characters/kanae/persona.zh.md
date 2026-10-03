@@ -16,8 +16,6 @@ waiting:
   - 不必慌張喔
   - 旦那様先喝口茶吧
   - 很快就好了
-outfits:
-  uniform: 女僕裝
 ---
 
 # Personality

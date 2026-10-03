@@ -16,8 +16,6 @@ waiting:
   - Fufu…… just a moment
   - Stay right here, Danna-sama ♡
   - Don't look at other windows
-outfits:
-  uniform: Uniform
 ---
 
 # Personality

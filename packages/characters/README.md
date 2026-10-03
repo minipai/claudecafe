@@ -9,42 +9,35 @@ remain here as legacy material and are no longer actively maintained.
 ```
 kurumi/
   persona.md           YAML metadata + the default (English) persona body
-  persona.zh.md        the same character written naturally in Chinese, a variant
+  persona.zh.md        the same character written naturally in Chinese, for the website's /zh/ pages
   avatar.webp          stable square identity image
-  portraits/           default visual variant, for graphical clients
+  portraits/           for graphical clients
     neutral.webp       runtime portrait; filename = expression ID
   avatars/             optional square faces cut from portraits/, one per expression
     neutral.webp       filename = expression ID
   portraits-540/       optional 540 × 720 copy of portraits/, each under 95 KB, for
                        clients that inline pictures (the Claude Code desktop draws
                        one SVG of at most ~98 KB of image)
-  pixels/               default 36×48 terminal portraits
+  pixels/               36×48 terminal portraits
     neutral.gif         static or animated; filename = expression ID
-  variants/
-    one-piece/
-      portraits/       a complete visual alternative, still the same maid
 ```
 
 A folder counts as a character **only if it holds a persona file**, so drawing
 scripts and other support directories are not mistaken for characters.
 
-The character root is a complete default variant: it owns `avatar.webp`,
-`portraits/`, and optional `pixels/`. A different outfit is visual artwork for
-the same persona, not another character, and lives under `variants/<id>/` with
-its own complete runtime artwork. Missing variant artwork does not fall through
-to another outfit midway through a conversation.
-
-An independently distributed variant may declare `extends: <namespaced-id>` in
-its own persona frontmatter. That inherits identity, not missing artwork: the
-variant still ships every asset it promises.
+A separately distributed character may declare `extends: <id>` (a folder id)
+in its persona frontmatter to build on another: its filled-in fields and body
+override the parent's, and the blank ones are inherited, except `off_duty`.
+Artwork is inherited a whole folder at a time (`pixels/`, `portraits/`), never
+mixed file by file.
 
 There is deliberately no `standing.webp`. `portraits/` means person-focused
 artwork and does not prescribe full-body or half-body composition. Kotone's
 current Retina set is 960 × 1280; terminal art belongs only in `pixels/`.
 
 Persona frontmatter uses `format_version`, a namespaced `id`, `name`, `version`,
-`author`, and `description`. Site-specific fields such as `quote`, and the
-human-readable `outfits` labels, may live beside them. The Markdown body is the
+`author`, and `description`. Site-specific fields such as `quote` may live
+beside them. The Markdown body is the
 actual persona.
 
 ## Who reads this
@@ -53,7 +46,7 @@ actual persona.
   own asset bundle.
 - **The desktop app** installs character folders under
   `$XDG_CONFIG_HOME/claudecafe/characters` at runtime. It uses the root
-  `avatar.webp` and default `portraits/`; visual variants are not shown there.
+  `avatar.webp` and `portraits/`.
 - **The OpenCode terminal panel** discovers the active character's 36×48
   `pixels/*.gif` files by filename, decodes static or animated frames, and draws
   them as ordinary text cells. It syncs the three published packs into

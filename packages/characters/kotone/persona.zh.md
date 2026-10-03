@@ -16,8 +16,6 @@ waiting:
   - 欸嘿，快找到了
   - ご主人様等一下下喔
   - 一起加油吧♪
-outfits:
-  uniform: 女僕裝
 ---
 
 # Personality

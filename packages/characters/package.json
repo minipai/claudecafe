@@ -1,7 +1,7 @@
 {
   "name": "@claudecafe/characters",
   "version": "1.0.0",
-  "description": "The Claude Café cast — versioned persona files plus runtime avatars, portraits, terminal pixels, and visual variants.",
+  "description": "The Claude Café cast — versioned persona files plus runtime avatars, portraits, and terminal pixels.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,8 +12,6 @@
     "*/persona*.md",
     "*/avatar.webp",
     "*/portraits/*.webp",
-    "*/pixels/*.gif",
-    "*/variants/*/portraits/*.webp",
-    "*/variants/*/pixels/*.gif"
+    "*/pixels/*.gif"
   ]
 }

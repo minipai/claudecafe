@@ -8,7 +8,6 @@ const state = {
   slug: '',
   view: 'artwork',
   lang: '',
-  variant: '',
   source: false,
   set: 'portrait',
   pick: 'neutral',
@@ -98,7 +97,6 @@ function identity(character) {
     ['version', fields.version],
     ['author', fields.author],
     ['extends', fields.extends],
-    ['outfits', fields.outfits && Object.entries(fields.outfits).map(([key, value]) => `${key}: ${value}`).join(', ')],
   ].filter(([, value]) => value)
   return `<div class="identity">
     ${art ? `<img src="/asset/${character.slug}/${art.route}" alt="">` : ''}
@@ -129,7 +127,6 @@ function viewOf(character) {
 function artworkView(character) {
   const artwork = currentArtwork()
   return `
-    ${variantBar(character)}
     <h3>Identity <small>avatar.webp</small></h3>
     ${artwork.avatar
       ? `<div class="pictures"><img src="/asset/${character.slug}/${artwork.avatar.route}" alt=""><div class="meta">${size(artwork.avatar)} · ${filesize(artwork.avatar.bytes)}</div></div>`
@@ -154,14 +151,6 @@ function viewer(character) {
       <p class="caption">${esc(shown.id)} ${esc(kaomoji(shown.id))} · ${size(shown)} shown at ${width}×${Math.round(width * shown.height / shown.width)} · ${filesize(shown.bytes)}${shown.animated ? ` · ${shown.frames} frames` : ''} · ${shown.route}</p>
     </div>
   </div>`
-}
-
-function variantBar(character) {
-  if (!character.variants.length) return ''
-  const options = [{ id: '', label: 'default' }, ...character.variants.map((variant) => ({ id: variant.id, label: variant.id }))]
-  return `<div class="tabs variants">${options.map((option) =>
-    `<button data-variant="${option.id}" class="${state.variant === option.id ? 'is-active' : ''}">${option.label}</button>`,
-  ).join('')}</div>`
 }
 
 /** Every expression the mood marker can name, in the order the prompt lists
@@ -241,16 +230,14 @@ function onCastClick(event) {
   const slug = event.target.closest?.('[data-slug]')?.dataset.slug
   if (!slug) return
   state.slug = slug
-  state.variant = ''
   render()
 }
 
 function onDetailClick(event) {
-  const hit = event.target.closest?.('[data-view], [data-variant], [data-set], [data-pick], [data-lang], [data-source]')
+  const hit = event.target.closest?.('[data-view], [data-set], [data-pick], [data-lang], [data-source]')
   if (!hit) return
   const data = hit.dataset
   if (data.view) state.view = data.view
-  else if (data.variant !== undefined) { state.variant = data.variant; state.view = 'artwork' }
   else if (data.set) state.set = data.set
   else if (data.pick) state.pick = data.pick
   else if (data.lang) state.lang = data.lang
@@ -298,7 +285,7 @@ function hopMaid(by) {
 const current = () => state.cast.characters.find((character) => character.slug === state.slug)
 const fieldsOf = (character) => character.personas.en?.fields ?? Object.values(character.personas)[0]?.fields ?? {}
 const identityArt = (character) => character.artwork.avatar ?? character.artwork.portraits.find((portrait) => portrait.id === 'neutral')
-const currentArtwork = () => current().variants.find((variant) => variant.id === state.variant)?.artwork ?? current().artwork
+const currentArtwork = () => current().artwork
 
 /** The two artwork sets, as the rail's switcher. */
 const artSets = () => {

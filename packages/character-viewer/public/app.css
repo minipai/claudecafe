@@ -148,7 +148,6 @@ h3 small { font-weight: 400; letter-spacing: 0; text-transform: none; color: #6b
 .stage img.pixel { image-rendering: pixelated; }
 .stage .caption { width: 0; min-width: 100%; margin: 0; color: var(--dim); font-size: 12px; text-align: center; }
 .keys { margin: 16px 0 0; color: #6b655f; font-size: 11px; }
-.variants { display: flex; gap: 4px; margin: 0 0 16px; }
 
 /* persona */
 

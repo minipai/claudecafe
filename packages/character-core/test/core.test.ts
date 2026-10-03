@@ -8,14 +8,15 @@ import {
   fillPrompt,
   markedFace,
   parsePersona,
-  personaFiles,
+  extendPersona,
+  personaBody,
   resolveCharacter,
 } from "../src/index.ts"
 
 describe("persona contracts", () => {
   test("parses frontmatter and strips the body", () => {
     const persona = parsePersona("---\nid: claudecafe/kotone\nname: ことね\nversion: 1.1.1\noff_duty: yes\n---\nBody.\n")
-    expect(persona).toEqual({ id: "claudecafe/kotone", name: "ことね", version: "1.1.1", offDuty: true, waiting: [], body: "Body.\n" })
+    expect(persona).toEqual({ id: "claudecafe/kotone", name: "ことね", version: "1.1.1", offDuty: true, extends: "", waiting: [], body: "Body.\n" })
   })
 
   test("reads her waiting lines from a block list", () => {
@@ -24,9 +25,19 @@ describe("persona contracts", () => {
     expect(parsePersona("---\nname: ここな\n---\nBody.\n").waiting).toEqual([])
   })
 
-  test("a variant is tried before the default persona", () => {
-    expect(personaFiles()).toEqual(["persona.md"])
-    expect(personaFiles("zh")).toEqual(["persona.zh.md", "persona.md"])
+  test("a child persona overrides the fields and body it fills in, and keeps the parent's for the rest", () => {
+    const parent = "---\nid: claudecafe/kokona\nname: ここな\noff_duty: true\nversion: 1.3.1\nwaiting:\n  - On it\n  - No rushing\n---\nBe sharp.\n"
+    const child = "---\nname: ココナ\nextends: kokona\nversion:\nwaiting:\n  - 任せて\n---\n"
+    const merged = extendPersona(child, parent)
+    expect(merged).toBe("---\nid: claudecafe/kokona\nname: ココナ\nversion: 1.3.1\nwaiting:\n  - 任せて\n---\nBe sharp.\n")
+    expect(parsePersona(merged).extends).toBe("")
+    expect(personaBody(extendPersona(`${child}Be kind.\n`, parent))).toBe("Be kind.\n")
+  })
+
+  test("names the character a persona extends", () => {
+    expect(parsePersona("---\nname: ココナ\nextends: kokona\n---\n").extends).toBe("kokona")
+    expect(parsePersona("---\nname: ここな\n---\nBody.\n").extends).toBe("")
+    expect(parsePersona("---\nextends: ../outside\n---\n").extends).toBe("")
   })
 
   test("versions compare numerically, and an unreadable one ties", () => {

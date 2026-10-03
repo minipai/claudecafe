@@ -64,11 +64,6 @@ function checkArtwork(character, shared, report) {
   if (!artwork.portraits.some((portrait) => portrait.id === 'neutral')) {
     report('error', slug, 'art.neutral', `${slug} has no portraits/neutral.webp, so the desktop app will not list her.`)
   }
-  for (const variant of character.variants) {
-    if (!variant.artwork.portraits.some((portrait) => portrait.id === 'neutral')) {
-      report('error', slug, 'art.variant-neutral', `${slug}/variants/${variant.id} has no portraits/neutral.webp.`)
-    }
-  }
 
   if (!artwork.avatar) {
     report('warn', slug, 'art.avatar', `${slug} has no avatar.webp; the desktop app falls back to the neutral portrait.`)
@@ -122,9 +117,7 @@ function checkArtwork(character, shared, report) {
 function buildMatrix(cast, vocabulary) {
   const drawn = new Set()
   for (const character of cast.characters) {
-    for (const artwork of [character.artwork, ...character.variants.map((variant) => variant.artwork)]) {
-      for (const picture of [...artwork.portraits, ...artwork.pixels]) drawn.add(picture.id)
-    }
+    for (const picture of [...character.artwork.portraits, ...character.artwork.pixels]) drawn.add(picture.id)
   }
   const known = new Set(vocabulary?.map((entry) => entry.expression) ?? [])
   const ordered = [

@@ -16,8 +16,6 @@ waiting:
   - No need to panic
   - Have some tea, Danna-sama
   - Nearly there
-outfits:
-  uniform: Uniform
 ---
 
 # Personality

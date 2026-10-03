@@ -16,8 +16,6 @@ waiting:
   - ふふ……馬上
   - 旦那様，就在這裡等著♡
   - 不要看別的視窗喔
-outfits:
-  uniform: 女僕裝
 ---
 
 # Personality

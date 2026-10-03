@@ -63,7 +63,6 @@ change them for you. Changes apply from the next session.
 ```json
 {
   "character": "kotone",
-  "variant": "zh",
   "lang": "English",
   "commit_authorship": "co-author",
   "greeting": true,
@@ -73,8 +72,6 @@ change them for you. Changes apply from the next session.
 
 - `character` — always use this character; `"none"` turns the persona off.
   Unset, Kotone (or, if she is off duty, the first character on the roster).
-- `variant` — a short code picking a character's `persona.<variant>.md` over
-  its `persona.md`, such as a language (`zh`), an outfit or a mood.
 - `lang` — the language Claude should reply in. Unset, Claude chooses.
 - `commit_authorship` — when Claude makes a Git commit, `"co-author"` adds the
   character as a `Co-Authored-By` trailer; `"author"` makes the character the
@@ -95,7 +92,6 @@ lowercase id:
 ```text
 characters/<id>/
   persona.md          # YAML frontmatter with name:, then the persona text
-  persona.<variant>.md  # optional variants
   pixels/*.gif        # optional 36×48 faces; neutral.gif is the fallback
   avatars/*.webp      # optional square faces for the desktop, one per expression
   portraits-540/*.webp  # optional 540×720 portraits for the desktop, each under 95 KB
@@ -107,6 +103,21 @@ roster. A character without `pixels/` still supplies a persona, but has no
 terminal portrait; without both `avatars/` and `portraits-540/` she has no
 desktop pictures. The published packs carry all three; the plugin bundles only
 personas and pixels, and installs the published packs in desktop sessions.
+
+To make your own take on a character, give the new folder's persona
+`extends: <id>`. Each frontmatter field it fills in replaces the other
+character's, and so does a body that is not blank; whatever it leaves blank,
+and `pixels/` if it has none, comes from the character it extends. `off_duty`
+is the one field that is never passed on:
+
+```text
+characters/kokona-ja/persona.md
+---
+name: ここな
+extends: kokona
+---
+Reply in Japanese, and call the user ご主人様.
+```
 
 ## What it reads, runs and sends
 

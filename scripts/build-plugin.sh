@@ -23,7 +23,7 @@ cp "$PLUGIN/hooks/hooks.json" "$DIST/hooks/hooks.json"
 for pixels in "$ROOT"/packages/characters/*/pixels; do
   id="$(basename "$(dirname "$pixels")")"
   mkdir -p "$DIST/characters/$id/pixels"
-  cp "$ROOT/packages/characters/$id"/persona*.md "$DIST/characters/$id/"
+  cp "$ROOT/packages/characters/$id/persona.md" "$DIST/characters/$id/"
   cp "$pixels"/*.gif "$DIST/characters/$id/pixels/"
 done
 cp "$ROOT/packages/characters/LICENSE" "$DIST/characters/LICENSE"
