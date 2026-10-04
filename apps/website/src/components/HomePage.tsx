@@ -1,6 +1,7 @@
 import { Cast } from "./Cast.js";
+import { Surfaces } from "./Surfaces.js";
 import { Icon } from "./Icon.js";
-import { href, type Locale } from "../i18n.js";
+import type { Locale } from "../i18n.js";
 
 const copy = {
   en: {
@@ -8,8 +9,7 @@ const copy = {
     h1sub: "Welcome home, Goshujin-sama.",
     lead1: "Every time you open Claude Code,",
     lead2: "someone is there, waiting for you.",
-    ctaDesktop: "Desktop app",
-    ctaTerminal: "Terminal plugin",
+    cta: "Install the Claude Code mod",
     shiftTitle: "Same Claude Code, a different vibe",
     shiftLede: "She still fixes your bugs and writes your code — she just talks to you like she cares.",
     // One late night, three moments: she greets you, notices the hour, and
@@ -33,25 +33,12 @@ const copy = {
     ],
     appTitle: "A face for every mood",
     appLede: "She beams when things go well, blushes when you praise her, and sulks when a bug won’t budge.",
-    waysTitle: "Take her home",
-    waysLede: "Two ways in — the same maid.",
-    ways: [
-      {
-        href: "/app",
-        icon: "desktop",
-        title: "Desktop app",
-        desc: "A little window of her own: she stands beside the conversation, her face changing as you talk.",
-        meta: ["macOS · Apple silicon", "Needs Claude Code, signed in"],
-        cta: "Get the app",
-      },
-      {
-        href: "/plugin",
-        icon: "terminal",
-        title: "Terminal plugin",
-        desc: "She keeps you company in the terminal you already use, every session — with a face that follows the work.",
-        meta: ["Claude Code", "Two lines to install"],
-        cta: "Install the plugin",
-      },
+    installTitle: "Two lines, and she’s on shift",
+    installLede: "Paste these into Claude Code and open a new session — Kotone will be there.",
+    installMeta: [
+      "Claude Code v2.1.287 or later",
+      "The terminal and Claude Desktop’s Code tab",
+      "Kotone, Kurumi and Kokona included — or bring your own character",
     ],
   },
   zh: {
@@ -59,8 +46,7 @@ const copy = {
     h1sub: "歡迎回來，ご主人様。",
     lead1: "每次打開 Claude Code，",
     lead2: "都有人在等你。",
-    ctaDesktop: "桌面 App",
-    ctaTerminal: "終端機 Plugin",
+    cta: "安裝 Claude Code Mod",
     shiftTitle: "同樣的 Claude Code，換一種氛圍",
     shiftLede: "一樣幫你修 bug、寫程式，只是跟你說話的方式變溫暖了。",
     shiftChat: [
@@ -82,25 +68,12 @@ const copy = {
     ],
     appTitle: "豐富的表情",
     appLede: "事情順利會笑，被誇獎會害羞，bug 抓不到會鬧彆扭。",
-    waysTitle: "帶她回家",
-    waysLede: "兩種方式，同一位女僕。",
-    ways: [
-      {
-        href: "/app",
-        icon: "desktop",
-        title: "桌面 App",
-        desc: "一個屬於她的小視窗，她就站在對話旁邊，表情跟著你們的對話變化。",
-        meta: ["macOS · Apple 晶片", "需要已登入的 Claude Code"],
-        cta: "下載桌面 App",
-      },
-      {
-        href: "/plugin",
-        icon: "terminal",
-        title: "終端機 Plugin",
-        desc: "不用換工具，在你原本的終端機裡，每個 session 都有她陪著，表情也會跟著工作變化。",
-        meta: ["Claude Code", "貼上兩行指令就裝好"],
-        cta: "安裝 Plugin",
-      },
+    installTitle: "兩行指令，請她來上班",
+    installLede: "在 Claude Code 裡貼上這兩行，開新的 session，ことね就到了。",
+    installMeta: [
+      "Claude Code v2.1.287 以上",
+      "終端機與 Claude Desktop 的 Code 分頁",
+      "內附ことね、くるみ、ここな，也能放進你自己的角色",
     ],
   },
 } as const;
@@ -143,13 +116,9 @@ export function HomePage({ locale }: { locale: Locale }) {
                 {t.lead2}
               </p>
               <nav class="home-cta">
-                <a class="home-pill" href={href(locale, "/app")}>
-                  <Icon name="desktop" />
-                  {t.ctaDesktop}
-                </a>
-                <a class="home-pill" href={href(locale, "/plugin")}>
+                <a class="home-pill" href="#install">
                   <Icon name="terminal" />
-                  {t.ctaTerminal}
+                  {t.cta}
                 </a>
               </nav>
             </header>
@@ -193,27 +162,20 @@ export function HomePage({ locale }: { locale: Locale }) {
       </div>
 
       <div class="home-end">
-        {/* The hero's two buttons again, now with what each one means. */}
-        <section class="home-ways">
-          <h2>{t.waysTitle}</h2>
-          <p class="home-lead">{t.waysLede}</p>
-          <div class="home-way-list">
-            {t.ways.map((way) => (
-              <article class="home-way">
-                <h3>{way.title}</h3>
-                <p>{way.desc}</p>
-                <ul>
-                  {way.meta.map((line) => (
-                    <li>{line}</li>
-                  ))}
-                </ul>
-                <a class="home-pill" href={href(locale, way.href)}>
-                  <Icon name={way.icon} />
-                  {way.cta}
-                </a>
-              </article>
-            ))}
+        <Surfaces locale={locale} />
+
+        <section class="home-install" id="install">
+          <h2>{t.installTitle}</h2>
+          <p class="home-lead">{t.installLede}</p>
+          <div class="install-lines">
+            <p><b>›</b> /plugin marketplace add https://claudecafe.dev/plugins/marketplace.json</p>
+            <p><b>›</b> /plugin install persona-panel@claudecafe</p>
           </div>
+          <ul class="install-meta">
+            {t.installMeta.map((line) => (
+              <li>{line}</li>
+            ))}
+          </ul>
         </section>
 
         <Cast locale={locale} />

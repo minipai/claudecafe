@@ -11,15 +11,9 @@ Kotone, Kurumi and Kokona. You can add your own.
 
 ## Requirements
 
-persona-panel is built on Claude Code's function hooks, which are early access.
-Start Claude Code with them enabled:
-
-```sh
-CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude
-```
-
-Without that switch only the two skills load; the persona and the panel don't.
-The desktop pictures come from the character's pack, not the plugin; in a
+persona-panel is a Claude Code mod, so it needs Claude Code v2.1.287 or later,
+where mods are on by default. It draws in the terminal and in the desktop app's
+Code tab. The desktop pictures come from the character's pack, not the plugin; in a
 desktop session the plugin installs the published packs itself (see below).
 
 ## Install

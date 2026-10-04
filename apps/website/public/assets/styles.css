@@ -531,570 +531,18 @@ main {
     }
 }
 
-/* Plugin page (/plugin) */
-.plugin-page {
-    --code-bg: #3c2f2f;
-    --code-text: #f0e6d8;
-    --code-dim: #a89a8a;
-    --code-accent: #c9b896;
-    --code-mood: #d8a0a0;
-    --code-sep: #6b5b52;
-}
-
-.plugin-page .ui-label {
-    font-family: var(--font-sans);
-}
-
-.plugin-hero {
-    padding: 56px 0 20px;
-}
-
-/* The hero is one terminal window: copy on the left, her live status on
-   the right. Everything in here is HTML — the portrait is the real 36×48
-   GIF, scaled up with hard pixels. */
-.hero-terminal {
-    background: var(--code-bg);
-    color: var(--code-text);
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid #2a2422;
-    box-shadow:
-        1px 2px 6px rgba(0, 0, 0, 0.1),
-        0 1px 2px rgba(0, 0, 0, 0.08);
-}
-
-.hero-term-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    background: #2e2624;
-    border-bottom: 1px solid #241f1e;
-    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-    font-size: 13px;
-    color: var(--code-dim);
-}
-
-.hero-term-dots {
-    display: flex;
-    gap: 7px;
-    flex: none;
-}
-
-.hero-term-dots i {
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-}
-
-.hero-term-dots i:nth-child(1) { background: #e0655f; }
-.hero-term-dots i:nth-child(2) { background: #e8b64c; }
-.hero-term-dots i:nth-child(3) { background: #63c76a; }
-
-.hero-term-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 280px;
-    align-items: stretch;
-}
-
-.hero-copy {
-    align-self: center;
-    min-width: 0;
-    padding: 34px 34px 30px;
-}
-
-.hero-copy .plugin-h1 {
-    color: #d6c6b2;
-    font-size: clamp(34px, 4.6vw, 52px);
-    line-height: 1.15;
-    margin-bottom: 14px;
-}
-
-.hero-tagline {
-    margin: 0 0 44px;
-    color: var(--code-text);
-    font-size: clamp(20px, 2.3vw, 26px);
-    line-height: 1.45;
-    text-wrap: balance;
-    word-break: keep-all;
-}
-
-.plugin-page .hero-copy .lede {
-    margin: 0;
-    max-width: none;
-    color: var(--code-text);
-    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-    font-size: 15px;
-    line-height: 1.75;
-}
-
-.hero-install {
-    margin-top: 24px;
-    overflow-x: auto;
-    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-    font-size: 0.86rem;
-    line-height: 1.5;
-}
-
-.plugin-page .hero-install .term-line {
-    white-space: nowrap;
-    margin-bottom: 6px;
-}
-
-.plugin-page .hero-install .txt-sys {
-    font-style: normal;
-}
-
-.hero-side {
-    border-left: 1px solid #4a4038;
-    padding: 24px 22px;
-    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    min-width: 0;
-}
-
-.hero-side .side-line {
-    margin: 0;
-    white-space: nowrap;
-}
-
-.hero-side .side-cwd {
-    font-weight: 700;
-    margin-bottom: 10px;
-}
-
-.hero-side .side-sep {
-    border-top: 1px dashed #6a5e55;
-    margin: 9px 0;
-}
-
-.hero-side .meter {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.hero-side .m-label {
-    flex: none;
-    width: 2ch;
-}
-
-.hero-side .m-bar {
-    flex: none;
-    width: 60px;
-    height: 16px;
-    background: #4a4038;
-}
-
-.hero-side .m-bar i {
-    display: block;
-    height: 100%;
-    background: var(--c);
-}
-
-.hero-side .m-hp { --c: #4fa352; }
-.hero-side .m-mp { --c: #3d8fb8; }
-
-.hero-side .side-sess {
-    display: flex;
-    gap: 2.5ch;
-}
-
-.hero-side .side-portrait {
-    margin: 36px 0 0;
-    padding: 4px 4px 0;
-    border: 1px solid #d8cfc2;
-    border-radius: 6px;
-}
-
-.hero-side .side-portrait img {
-    display: block;
-    width: 100%;
-    height: auto;
-    image-rendering: pixelated;
-}
-
-.hero-side .side-portrait figcaption {
-    border-top: 1px dashed #6a5e55;
-    margin-top: 4px;
-    padding: 6px 0 8px;
-    text-align: center;
-    color: var(--code-dim);
-    font-size: 15px;
-}
-
-.hero-side .side-portrait figcaption b {
-    color: var(--code-text);
-}
-
-@media (max-width: 820px) {
-    .hero-term-body {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .hero-copy {
-        padding: 28px 22px 6px;
-    }
-
-    .hero-side {
-        border-left: none;
-        border-top: 1px solid #4a4038;
-    }
-
-    .hero-side .side-portrait {
-        max-width: 280px;
-        margin-inline: auto;
-    }
-}
-
-.plugin-h1 {
-    font-size: clamp(30px, 4.6vw, 50px);
-    line-height: 1.32;
-    margin: 0 0 22px;
-    font-weight: 700;
-    color: var(--text);
-}
-
-.plugin-h1 .accent {
-    color: var(--accent-bold);
-}
-
-.plugin-page .lede {
-    font-size: 16.5px;
-    color: var(--text-muted);
-    max-width: 640px;
-    margin: 0 0 34px;
-}
-
-.plugin-page section:not(.home-cast) {
-    padding: 44px 0;
-}
-
-.plugin-page .section-head {
-    margin-bottom: 34px;
-    max-width: 620px;
-}
-
-.plugin-page .section-title {
-    font-size: clamp(21px, 2.6vw, 27px);
-    font-weight: 700;
-    margin: 0 0 10px;
-    color: var(--text);
-    line-height: 1.5;
-}
-
-.plugin-page .section-desc {
-    color: var(--text-muted);
-    font-size: 16.5px;
-}
-
-.plugin-page .terminal {
-    background: var(--code-bg);
-    color: var(--code-text);
-    border-radius: 6px;
-    padding: 1rem 1.1rem;
-    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-    font-size: 0.86rem;
-    line-height: 1.5;
-}
-
-.plugin-page .term-line {
-    white-space: pre-wrap;
-    word-break: break-word;
-    margin: 0 0 4px;
-}
-
-.plugin-page .term-line:last-child {
-    margin-bottom: 0;
-}
-
-.plugin-page .prompt {
-    color: var(--code-sep);
-}
-
-.plugin-page .prompt .p-sym {
-    color: var(--code-accent);
-}
-
-.plugin-page .txt-maid {
-    color: var(--code-text);
-}
-
-.plugin-page .txt-sys {
-    color: var(--code-dim);
-    font-style: italic;
-}
-
-.plugin-page .txt-mood {
-    color: var(--code-mood);
-    font-weight: 600;
-}
-
-.plugin-page .txt-cmd {
-    color: var(--code-text);
-    font-weight: 600;
-}
-
-.plugin-page .cursor {
-    display: inline-block;
-    width: 8px;
-    height: 15px;
-    background: var(--code-accent);
-    vertical-align: -2px;
-    margin-left: 2px;
-    animation: plugin-cursor-blink 1s steps(1) infinite;
-}
-
-@keyframes plugin-cursor-blink {
-    50% {
-        opacity: 0;
-    }
-}
-
-/* These headings span the full-width blocks they introduce. */
-.plugin-page #session .section-head,
-.plugin-page #faces .section-head {
-    max-width: none;
-}
-
-.plugin-page .face-grid {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    gap: 10px;
-}
-
-.plugin-page .face-grid li {
-    background: var(--code-bg);
-    border-radius: 6px;
-    padding: 6px 6px 0;
-    overflow: hidden;
-}
-
-.plugin-page .face-grid img {
-    display: block;
-    width: 100%;
-    height: auto;
-    image-rendering: pixelated;
-}
-
-.plugin-page .face-grid span {
-    display: block;
-    padding: 5px 0 7px;
-    text-align: center;
-    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-    font-size: 12px;
-    color: var(--code-dim);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-@media (max-width: 820px) {
-    .plugin-page .face-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-}
-
-.plugin-page .reveal {
-    opacity: 0;
-    transform: translateY(14px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.plugin-page .reveal.in {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-
-
-
-/* The app page. She is the whole argument, so the page is a title, her, and a
-   way to take her home — the café's own quiet typography, nothing framed. */
-.app-page {
-    max-width: 720px;
-    margin: 0 auto;
-}
-
-.app-head {
-    padding: 52px 0 34px;
-    text-align: center;
-}
-
-.app-h1 {
-    font-size: clamp(30px, 4vw, 44px);
-    color: var(--accent-bold);
-    margin: 0 0 18px;
-}
-
-/* The same voice the café greets people in on the homepage. */
-.app-page .lede {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-    max-width: 680px;
-    margin: 0 auto;
-    text-align: center;
-    /* Centred type breaks wherever the width says, and this sentence ends on a
-       list — left alone it drops "your MCP servers." onto a line of its own.
-       Balanced, the browser evens the lines out instead. */
-    text-wrap: balance;
-}
-
-/* She gets more room than the type does — the window is the picture here. */
-.app-stage {
-    width: min(940px, calc(100vw - 40px));
-    margin-left: calc(50% - min(470px, calc(50vw - 20px)));
-}
-
-/* No border: a frame here would put the window back in the box the app spends
-   its life escaping. Her own background is transparent, so the café's paper
-   shows through and she stands on the page itself.
-
-   She is hung off the bottom edge of her window and stands ~820px tall, so a
-   short frame cuts her head off. The iframe therefore gets a desktop-sized
-   viewport of its own and is scaled into whatever width the page has — the
-   whole window shrinks, nothing is cropped. --demo-scale is measured on the
-   page (see AppPage): CSS cannot divide a length by a length. */
-.app-demo {
-    --demo-w: 1180;
-    --demo-h: 860;
-    --demo-scale: 1;
-    position: relative;
-    width: 100%;
-    aspect-ratio: var(--demo-w) / var(--demo-h);
-    overflow: hidden;
-}
-
-.app-demo iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: calc(var(--demo-w) * 1px);
-    height: calc(var(--demo-h) * 1px);
-    border: 0;
-    background: transparent;
-    transform-origin: top left;
-    transform: scale(var(--demo-scale));
-}
-
-.app-caption {
-    margin-top: 14px;
-    /* Three sentences wide enough to need a measure — a centred line that runs
-       the full page is read twice and understood once. */
-    max-width: 620px;
-    margin-inline: auto;
-    text-align: center;
-    font-size: 15px;
-    line-height: 1.75;
-    color: var(--text-muted);
-}
-
-.app-demo-hint {
-    opacity: 0.7;
-}
-
-.app-rule {
-    height: 1px;
-    background: var(--border);
-    margin: 52px 0 40px;
-}
-
-/* Taking her home: one line, and that is the whole install. */
-.app-dl-meta {
-    font-family: var(--font-sans);
-    font-size: 12.5px;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-}
-
-.app-paper-line {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 16px 18px;
-    border-radius: 10px;
-    background: rgb(from var(--bg-card) r g b / 0.75);
-    border: 1px solid var(--border);
-}
-
-.app-paper-line .p-sym {
-    color: var(--accent-bold);
-    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-}
-
-.app-paper-line code {
-    flex: 1;
-    min-width: 0;
-    overflow-x: auto;
-    white-space: nowrap;
-    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-    font-size: 12.5px;
-    color: var(--text);
-}
-
-.app-copy {
-    flex: none;
-    font-family: var(--font-sans);
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 4px 12px;
-    cursor: pointer;
-}
-
-.app-copy:hover {
-    color: var(--accent-bold);
-    border-color: var(--accent-bold);
-}
-
-.app-dl-note {
-    margin-top: 16px;
-    font-size: 15px;
-    color: var(--text-muted);
-}
-
-/* What she borrows rather than brings — named, not explained. */
-.app-depends {
-    margin-top: 10px;
-    font-size: 14px;
-    color: var(--text-muted);
-    opacity: 0.85;
-}
-
-.app-depends code {
-    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-    font-size: 0.9em;
-    color: var(--text);
-}
-
-@media (max-width: 700px) {
-    .app-stage {
-        width: 100%;
-        margin-left: 0;
-    }
-
-}
-
 /* The homepage. The story pins for three screens: she stands on the left and
    walks from full length to portrait to face while the slides on the right go
-   from the greeting to what she does to the app. The plugin comes after. */
+   from the greeting to what she does to her faces. Where she shows up and
+   how to install her come after. */
 main:has(> .home) {
     max-width: none;
     padding: 0;
 }
 
 /* Faint graph paper in the margins either side of the header's width,
-   fading out before the content — on the home, plugin and app pages, in
-   place of a maid. */
-body:is(:has(.home), :has(.plugin-page))::before {
+   fading out before the content — on the homepage, in place of a maid. */
+body:has(.home)::before {
     --margin: max(0px, (100vw - 960px) / 2);
     content: "";
     position: fixed;
@@ -1303,7 +751,6 @@ html.home-snapping {
     margin-top: 4px;
 }
 
-/* Two ways to take her home, side by side and alike. */
 .home-cta {
     display: flex;
     flex-wrap: wrap;
@@ -1422,18 +869,21 @@ html.home-snapping {
     padding: 0 10px;
 }
 
-.home-ways,
+.home-surfaces,
+.home-install,
 .home-cast {
     margin-top: 72px;
 }
 
-.home-ways h2,
+.home-surfaces h2,
+.home-install h2,
 .home-cast h2 {
     font-size: clamp(21px, 2.6vw, 27px);
     line-height: 1.5;
 }
 
-.home-ways h2 + .home-lead,
+.home-surfaces h2 + .home-lead,
+.home-install h2 + .home-lead,
 .home-cast h2 + .home-lead {
     margin-top: 4px;
 }
@@ -1442,49 +892,408 @@ html.home-snapping {
     margin-bottom: 24px;
 }
 
-.home-way-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
+/* Where she shows up: a tab each for the terminal and Claude Desktop, both
+   drawn in HTML at full width. */
+.surface-tabs {
+    display: flex;
+    gap: 8px;
     margin-top: 28px;
 }
 
-.home-way {
-    display: flex;
-    flex-direction: column;
-    padding: 28px;
+.surface-tabs button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    padding: 8px 18px;
     border: 1px solid var(--border);
-    border-radius: 16px;
-    background: var(--bg-card);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    font: 700 var(--fs-xs) var(--font-sans);
+    cursor: pointer;
 }
 
-.home-way h3 {
-    font-size: var(--fs-lg);
-    color: var(--accent-bold);
+.surface-tabs button[aria-selected="true"] {
+    border-color: var(--header-bg);
+    background: var(--header-bg);
+    color: var(--header-text);
 }
 
-.home-way p {
-    margin-top: 10px;
+.surface {
+    margin-top: 20px;
+}
+
+.surface-caption {
+    max-width: 720px;
+    margin-top: 14px;
+    color: var(--text-muted);
     font-size: var(--fs-md);
 }
 
-.home-way ul {
+/* The terminal: a session on the left, the mod's side panel on the right. */
+.term-shot {
+    overflow: hidden;
+    border: 1px solid #2a2422;
+    border-radius: 12px;
+    background: #3c2f2f;
+    color: #f0e6d8;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.term-shot-bar {
+    display: flex;
+    gap: 7px;
+    padding: 11px 16px;
+    border-bottom: 1px solid #241f1e;
+    background: #2e2624;
+}
+
+.term-shot-bar i {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+}
+
+.term-shot-bar i:nth-child(1) { background: #e0655f; }
+.term-shot-bar i:nth-child(2) { background: #e8b64c; }
+.term-shot-bar i:nth-child(3) { background: #63c76a; }
+
+.term-shot-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    height: 520px;
+}
+
+.term-shot-chat {
+    overflow: hidden;
+    padding: 22px 24px;
+}
+
+.term-shot-chat .prompt b {
+    color: #c9b896;
+    font-weight: 400;
+}
+
+.term-shot-chat .tool {
+    color: #a89a8a;
+}
+
+.term-shot-chat .mood {
+    color: #d8a0a0;
+    font-weight: 600;
+}
+
+.term-shot-chat .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    margin-left: 8px;
+    vertical-align: -2px;
+    background: #c9b896;
+    animation: cursor-blink 1s steps(1) infinite;
+}
+
+@keyframes cursor-blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+.term-shot-side {
+    padding: 22px;
+    border-left: 1px solid #4a4038;
+    white-space: nowrap;
+}
+
+.term-shot-side .cwd {
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.term-shot-side hr {
+    margin: 9px 0;
+    border: none;
+    border-top: 1px dashed #6a5e55;
+}
+
+.term-shot-side .meter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.term-shot-side .meter i {
+    width: 60px;
+    height: 16px;
+    background: linear-gradient(var(--c), var(--c)) 0 / var(--fill) 100% no-repeat #4a4038;
+}
+
+.term-shot-side figure {
+    margin: 28px 0 0;
+    padding: 4px 4px 0;
+    border: 1px solid #d8cfc2;
+    border-radius: 6px;
+}
+
+.term-shot-side figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+}
+
+.term-shot-side figcaption {
+    margin-top: 4px;
+    padding: 6px 0 8px;
+    border-top: 1px dashed #6a5e55;
+    color: #a89a8a;
+    text-align: center;
+}
+
+.term-shot-side figcaption b {
+    color: #f0e6d8;
+}
+
+/* Claude Desktop's Code tab: the conversation, and the mod's portrait pane. */
+.desk-shot {
+    display: flex;
+    height: 560px;
+    overflow: hidden;
+    border: 1px solid #e5e2da;
+    border-radius: 14px;
+    background: #faf9f5;
+    box-shadow: 0 20px 60px rgba(60, 40, 30, 0.12);
+    color: #1f1e1d;
+    font: 14.5px/1.55 -apple-system, "SF Pro Text", "PingFang TC", system-ui, sans-serif;
+}
+
+.desk-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.desk-title {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 9px;
+    height: 40px;
+    padding: 0 14px;
+    font-size: 14px;
+}
+
+.desk-title b {
+    font-weight: 600;
+}
+
+.desk-chip {
+    padding: 1px 7px;
+    border-radius: 6px;
+    background: #ecebe6;
+    color: #55534d;
+    font-size: 12.5px;
+}
+
+.desk-fill {
+    flex: 1;
+}
+
+.desk-chat {
+    flex: 1;
+    overflow: hidden;
+    padding: 18px 32px 0;
+}
+
+.desk-you {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 22px;
+}
+
+.desk-you span {
+    padding: 8px 14px;
+    border-radius: 14px;
+    background: #efeee9;
+}
+
+.desk-reply {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.desk-reply > img {
+    flex: none;
+}
+
+.desk-reply p {
+    margin: 2px 0 8px;
+}
+
+.desk-reply .desk-name {
+    margin: 0;
+    color: #d9708f;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.desk-name span {
+    color: #5a4fcf;
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.desk-mood {
+    color: #8a877f;
+}
+
+.desk-tool {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 14px 70px;
+    color: #8a877f;
+    font-size: 13.5px;
+}
+
+.desk-tool code {
+    color: #3d3b37;
+    font: 12.5px "SF Mono", Menlo, monospace;
+}
+
+.desk-composer {
+    padding: 12px 32px 14px;
+}
+
+.desk-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 44px;
+    padding: 0 14px;
+    border: 1px solid #d6d3cb;
+    border-radius: 12px;
+    background: #fff;
+    color: #9a978f;
+}
+
+.desk-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px 0;
+    color: #3d3b37;
+    font-size: 12.5px;
+}
+
+.desk-pane {
+    flex: none;
+    width: 340px;
+    padding: 5px;
+}
+
+.desk-pane-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 1px solid #e5e2da;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.desk-pane-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 34px;
+    padding: 0 12px;
+    color: #55534d;
+    font-size: 13.5px;
+}
+
+.desk-stage {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    margin: 4px 10px 10px;
+    background: #f8eeee;
+}
+
+.desk-portrait {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+}
+
+/* The mod lays its petal field out twice as wide as the pane and shows the left half. */
+.desk-petals {
+    position: absolute;
+    inset: 0;
+    width: 200%;
+    height: 100%;
+    object-fit: cover;
+    object-position: left top;
+}
+
+/* Her unsaid aside, in a box over her skirt with her name tag on its border. */
+.desk-thought {
+    position: absolute;
+    right: 10px;
+    bottom: 16px;
+    left: 10px;
+    min-height: 76px;
+    padding: 16px 14px 10px;
+    border: 1.5px solid #d9708f;
+    border-radius: 10px;
+    background: rgba(255, 250, 251, 0.92);
+    color: #5d4650;
+    font-size: 12.5px;
+    line-height: 1.55;
+}
+
+.desk-thought img {
+    position: absolute;
+    top: -12px;
+    left: 14px;
+    height: 24px;
+}
+
+/* How to take her home. */
+.install-lines {
+    overflow-x: auto;
+    margin-top: 24px;
+    padding: 18px 22px;
+    border-radius: 12px;
+    background: #3c2f2f;
+    color: #f0e6d8;
+    font: 14px/1.8 "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    white-space: nowrap;
+}
+
+.install-lines b {
+    color: #c9b896;
+    font-weight: 400;
+}
+
+.install-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin-top: 12px;
     list-style: none;
-    margin: 16px 0 24px;
+    color: var(--text-muted);
     font-family: var(--font-sans);
     font-size: var(--fs-xs);
-    color: var(--text-muted);
 }
 
-.home-way ul li::before {
+.install-meta li::before {
     content: "· ";
     color: var(--accent-bold);
-}
-
-/* Pinned to the bottom, so both buttons sit on one line. */
-.home-way .home-pill {
-    margin-top: auto;
-    align-self: flex-start;
 }
 
 @media (max-width: 820px) {
@@ -1540,8 +1349,20 @@ html.home-snapping {
         padding: 0 24px;
     }
 
-    .home-way-list {
-        grid-template-columns: 1fr;
+    /* Too narrow for her side panel or her pane: the conversation alone. */
+    .term-shot-body {
+        grid-template-columns: minmax(0, 1fr);
+        height: auto;
+    }
+
+    .term-shot-side,
+    .desk-pane {
+        display: none;
+    }
+
+    .desk-chat,
+    .desk-composer {
+        padding-inline: 16px;
     }
 
     /* The whole late night has to fit beside her on a phone. */

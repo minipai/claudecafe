@@ -5,8 +5,6 @@ import { trimTrailingSlash } from "hono/trailing-slash";
 import { Layout } from "./components/Layout.js";
 import { HomePage } from "./components/HomePage.js";
 import { MaidPage } from "./pages/MaidPage.js";
-import { PluginPage } from "./pages/PluginPage.js";
-import { AppPage } from "./pages/AppPage.js";
 
 import { NotFoundPage, notFoundQuote } from "./pages/NotFoundPage.js";
 import { getAllMaids, getMaid } from "./utils/maids.js";
@@ -96,33 +94,10 @@ function site(locale: Locale) {
     );
   });
 
-  page.get("/app", (c) => {
-    const title =
-      locale === "zh" ? "ClaudeCafe——最可愛的 Claude Code" : "ClaudeCafe — the most adorable Claude Code";
-    const description =
-      locale === "zh"
-        ? "同一個 Claude Code，跑在沒有邊框的視窗裡：一位女僕站在你的桌面上回話、動手前先問你、做完了告訴你發生什麼事。可以在頁面上直接試玩。"
-        : "The same Claude Code, in a window with no frame: a maid on your desktop who answers in her own voice, asks before she touches anything, and tells you what she found. Try her on the page.";
-    return c.html(
-      <Layout locale={locale} title={title} description={description} path="/app">
-        <AppPage locale={locale} />
-      </Layout>,
-    );
-  });
-
-  page.get("/plugin", (c) => {
-    const title =
-      locale === "zh" ? "Persona Panel — 給 Claude Code 的角色面板" : "Persona Panel — a character panel for Claude Code";
-    const description =
-      locale === "zh"
-        ? "讓 Claude Code 有了自己的樣子。Persona Panel 為 Claude Code 請來一位角色：用她的語氣說話、記得現在幾點，表情在旁邊的面板上跟著工作變。內附 claudecafe 的三位女僕，也能放進你自己的角色。"
-        : "Claude Code, with a character of its own. Persona Panel brings a character into Claude Code: she speaks in her own voice, keeps track of the time, and her face in the side panel changes as the work goes. Three claudecafe maids come bundled — or bring your own.";
-    return c.html(
-      <Layout locale={locale} title={title} description={description} path="/plugin">
-        <PluginPage locale={locale} />
-      </Layout>,
-    );
-  });
+  // The plugin and desktop app pages folded into the homepage.
+  for (const old of ["/plugin", "/app"]) {
+    page.get(old, (c) => c.redirect(`${href(locale, "/")}#install`, 301));
+  }
 
   page.get("/:name", (c) => {
     const accept = c.req.header("Accept") || "";

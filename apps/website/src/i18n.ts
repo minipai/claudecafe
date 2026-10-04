@@ -2,7 +2,7 @@ export type Locale = 'en' | 'zh'
 
 export const locales: Locale[] = ['en', 'zh']
 
-// Logical paths ("/kurumi", "/plugin") are locale-less; English lives at the
+// Logical paths ("/kurumi", "/kotone.md") are locale-less; English lives at the
 // root, Chinese under /zh. href() turns a logical path into a real URL.
 export function href(locale: Locale, path: string): string {
   const p = locale === 'zh' ? `/zh${path}` : path

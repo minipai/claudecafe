@@ -63,14 +63,9 @@ export function Layout({
               The Claude Café
             </a>
             <nav class="header-nav" aria-label={locale === "zh" ? "主要導覽" : "Main navigation"}>
-              <a href={href(locale, "/plugin")} aria-current={path === "/plugin" ? "page" : undefined}>
+              <a href={`${href(locale, "/")}#install`}>
                 <Icon name="terminal" />
-                Plugin
-              </a>
-              <span aria-hidden="true">✦</span>
-              <a href={href(locale, "/app")} aria-current={path === "/app" ? "page" : undefined}>
-                <Icon name="desktop" />
-                Desktop
+                {locale === "zh" ? "安裝" : "Install"}
               </a>
             </nav>
             <div class="header-right">

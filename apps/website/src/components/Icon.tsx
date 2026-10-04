@@ -1,5 +1,5 @@
-/** The two ways to take her home, drawn as line icons in the text's own
- * colour: a screen for the desktop app, a prompt for the terminal plugin. */
+/** The two places the mod shows her, drawn as line icons in the text's own
+ * colour: a screen for Claude Desktop, a prompt for the terminal. */
 export type IconName = "desktop" | "terminal";
 
 export function Icon({ name }: { name: IconName }) {

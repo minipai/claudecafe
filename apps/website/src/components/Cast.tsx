@@ -3,7 +3,7 @@ import { MaidCard } from "./MaidCard.js";
 import type { Locale } from "../i18n.js";
 
 /** Who greets you at the door. The rest of the cast keeps their pages; the
- * homepage, plugin and app pages only introduce these three. */
+ * homepage only introduces these three. */
 const ON_SHIFT = ["kurumi", "kotone", "kokona"];
 
 const copy = {

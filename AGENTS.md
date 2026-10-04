@@ -74,8 +74,7 @@ its kaomoji with `markedFace`/`faceFor` from `packages/character-core`, alongsid
 - **Language split**: the interface is English, but what she says follows the user's
   language — the lines the window feeds her are generated once at startup per the café
   config's `lang` into `lines.json` under userData (`electron/characters/lines.ts`).
-- Releasing: `scripts/ship.sh` → bump the version in `apps/website/src/pages/AppPage.tsx`
-  by hand → ship the site.
+- No longer developed, and the site no longer has a download page.
 - What's still missing before handing it to a stranger is tracked in `notes/`, not in git.
 
 ## apps/website

@@ -34,12 +34,10 @@ one available maid per session; the `config` skill sets the language and picks
 a regular. A nameless maid is the fallback when no character is available.
 
 For OpenCode installation, see [`packages/opencode`](packages/opencode).
-For the macOS desktop app, see [the download page](https://claudecafe.dev/app).
 
 The Claude plugin's function module is bundled from the shared character core
 at release time; the published archive has no Node, Bun, or Python runtime
-dependency. Function hooks are still early access, so enable them when starting
-Claude Code with `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`.
+dependency. It is a Claude Code mod, so it needs Claude Code v2.1.287 or later.
 
 ## The cast
 
