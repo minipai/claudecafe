@@ -1,7 +1,7 @@
 // Reads the cast out of `@claudecafe/characters` into src/cast.json. The site
 // runs as a Cloudflare Worker, which has no filesystem to read persona files
-// from, so they are parsed here and bundled in. `wrangler dev` reruns this
-// whenever a persona changes (see `build` in wrangler.jsonc).
+// from, so they are parsed here and bundled in. The `cast` plugin in
+// vite.config.ts runs this before each build and whenever a persona changes.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'

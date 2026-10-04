@@ -37,5 +37,5 @@ back to the Chinese original when a translation is missing.
 pnpm ship
 ```
 
-Runs `wrangler deploy`. `public/` goes up as static assets; everything else is
+Runs `cf deploy`. `public/` goes up as static assets; everything else is
 answered by the Worker.

@@ -79,9 +79,11 @@ its kaomoji with `markedFace`/`faceFor` from `packages/character-core`, alongsid
 
 ## apps/website
 
-- It runs as a **Cloudflare Worker** (`wrangler.jsonc`): no filesystem at runtime, so no
-  `node:fs` under `src/`. `scripts/build-cast.ts` parses the persona files into
-  `src/cast.json` (gitignored) before bundling; `wrangler dev` reruns it when the cast changes.
+- It runs as a **Cloudflare Worker**, deployed with the `cf` CLI and built with Vite
+  (`cloudflare.config.ts` for the Worker, `vite.config.ts` for the build and dev server):
+  no filesystem at runtime, so no `node:fs` under `src/`. `scripts/build-cast.ts` parses
+  the persona files into `src/cast.json` (gitignored) before bundling; `cf dev` reruns it
+  when the cast changes.
   `public/` is served as static assets in front of the Worker.
 - **i18n**: English at the root, Chinese under `/zh/`; `href()` in `src/i18n.ts` builds every
   URL. English content is the default `persona.md` beside the Chinese `persona.zh.md`,

@@ -4,8 +4,8 @@
   "description": "AI 女僕 persona 展示網站",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --port 5050 --ip 0.0.0.0",
-    "ship": "wrangler deploy",
+    "dev": "cf dev",
+    "ship": "cf deploy",
     "check": "tsx scripts/build-cast.ts && tsc --noEmit"
   },
   "keywords": [],
@@ -17,11 +17,13 @@
   },
   "devDependencies": {
     "@claudecafe/characters": "workspace:*",
+    "@cloudflare/vite-plugin": "2.0.0-beta.sha-52b0dc0e9",
     "@cloudflare/workers-types": "^5.20260924.1",
     "@types/node": "^25.3.3",
+    "cf": "1.0.0-beta.12",
     "gray-matter": "^4.0.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "wrangler": "^4.137.0"
+    "vite": "^8.3.2"
   }
 }

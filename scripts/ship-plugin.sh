@@ -25,9 +25,9 @@ BUCKET="claudecafe-plugins"
 BASE_URL="https://claudecafe.dev/plugins"
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-wrangler() { pnpm --silent --dir "$REPO_ROOT/apps/website" exec wrangler "$@"; }
-shelf_get() { wrangler r2 object get "$BUCKET/$1" --remote --pipe; }
-shelf_put() { wrangler r2 object put "$BUCKET/$(basename "$1")" --remote --file "$1" --content-type "$2" >/dev/null; }
+cf() { pnpm --silent --dir "$REPO_ROOT/apps/website" exec cf "$@"; }
+shelf_get() { cf r2 objects get "$1" --bucket-name "$BUCKET"; }
+shelf_put() { cf r2 objects put "$(basename "$1")" --bucket-name "$BUCKET" --file "$1" --content-type "$2" >/dev/null; }
 
 # The Claude archive is the built plugin: the function bundle already includes
 # character-core, so no workspace package ships.
